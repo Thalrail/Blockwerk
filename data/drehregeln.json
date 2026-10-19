@@ -1,0 +1,44 @@
+{
+  "hinweis": "Wie sich Block-Zustände beim Drehen (im Uhrzeigersinn, von oben) und Spiegeln ändern. Alles Status 'ungeprüft', bis Jonah es in der Kreativwelt bestätigt (Testanleitung: docs/spieltests.md). Quelle: minecraft.wiki, Seiten der Blöcke (Bedrock, Abschnitt Block states / Data values) und Mojang-Zustandsnamen aus data/bloecke.json.",
+  "zustaende": {
+    "minecraft:cardinal_direction": { "art": "richtung", "abbildung": { "north": "north", "east": "east", "south": "south", "west": "west" } },
+    "minecraft:facing_direction": { "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" } },
+    "minecraft:block_face": { "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" } },
+    "facing_direction": { "art": "richtung", "abbildung": { "0": "down", "1": "up", "2": "north", "3": "south", "4": "west", "5": "east" } },
+    "weirdo_direction": { "art": "richtung", "abbildung": { "0": "east", "1": "west", "2": "south", "3": "north" } },
+    "direction": { "art": "richtung", "abbildung": { "0": "south", "1": "west", "2": "north", "3": "east" } },
+    "torch_facing_direction": { "art": "richtung", "abbildung": { "unknown": null, "west": "west", "east": "east", "north": "north", "south": "south", "top": "up" } },
+    "pillar_axis": { "art": "achse", "abbildung": { "y": "y", "x": "x", "z": "z" } },
+    "portal_axis": { "art": "achse", "abbildung": { "unknown": null, "x": "x", "z": "z" } },
+    "coral_fan_direction": { "art": "achse", "abbildung": { "0": "x", "1": "z" } },
+    "minecraft:corner": { "art": "ecke", "tausch": { "inner_left": "inner_right", "inner_right": "inner_left", "outer_left": "outer_right", "outer_right": "outer_left" } },
+    "door_hinge_bit": { "art": "umschalten-beim-spiegeln" },
+    "ground_sign_direction": { "art": "sechzehntel" },
+    "minecraft:sixteen_way_rotation": { "art": "sechzehntel" },
+    "lever_direction": { "art": "woerter" },
+    "orientation": { "art": "woerter" },
+    "multi_face_direction_bits": { "art": "bitmaske", "bits": { "down": 1, "up": 2, "north": 4, "south": 8, "west": 16, "east": 32 } },
+    "vine_direction_bits": { "art": "bitmaske", "bits": { "south": 1, "west": 2, "north": 4, "east": 8 } },
+    "rail_direction": {
+      "art": "tabelle",
+      "drehen": { "0": 1, "1": 0, "2": 5, "5": 3, "3": 4, "4": 2, "6": 7, "7": 8, "8": 9, "9": 6 },
+      "spiegeln": {
+        "x": { "0": 0, "1": 1, "2": 3, "3": 2, "4": 4, "5": 5, "6": 7, "7": 6, "8": 9, "9": 8 },
+        "z": { "0": 0, "1": 1, "2": 2, "3": 3, "4": 5, "5": 4, "6": 9, "9": 6, "7": 8, "8": 7 }
+      },
+      "bedeutung": "0 Nord-Süd, 1 Ost-West, 2 ansteigend Ost, 3 ansteigend West, 4 ansteigend Nord, 5 ansteigend Süd, 6 Süd-Ost, 7 Süd-West, 8 Nord-West, 9 Nord-Ost"
+    }
+  },
+  "familien": [
+    { "name": "wall_connection_type", "seiten": { "north": "wall_connection_type_north", "east": "wall_connection_type_east", "south": "wall_connection_type_south", "west": "wall_connection_type_west" } },
+    { "name": "pale_moss_carpet_side", "seiten": { "north": "pale_moss_carpet_side_north", "east": "pale_moss_carpet_side_east", "south": "pale_moss_carpet_side_south", "west": "pale_moss_carpet_side_west" } },
+    { "name": "connection", "seiten": { "north": "minecraft:connection_north", "east": "minecraft:connection_east", "south": "minecraft:connection_south", "west": "minecraft:connection_west" } }
+  ],
+  "unbehandelt": {
+    "minecraft:connection_up": "senkrecht, wird durch Drehen/Spiegeln nicht verändert",
+    "minecraft:connection_down": "senkrecht, wird durch Drehen/Spiegeln nicht verändert",
+    "rotation": "Bedeutung der Werte 0–3 je nach Block unklar – nicht gedreht, vor Nutzung klären",
+    "coral_direction": "Wert-Zuordnung (0–3) nicht sicher belegt – nicht gedreht, vor Nutzung klären",
+    "huge_mushroom_bits": "Pilzblock-Seitenbits, Zuordnung nicht sicher belegt – nicht gedreht, vor Nutzung klären"
+  }
+}

@@ -11,7 +11,7 @@ Zuletzt aktualisiert: 19.10.2026
 | Schritt | Inhalt | Status |
 |---------|--------|--------|
 | 0 | Projektgerüst: Ordnerstruktur je Ebene, `package.json` (nur `npm test`, Node 22, keine Abhängigkeiten), GitHub Actions für Tests, README mit Faithful-Nennung | **fertig** (wartet auf PR-Abnahme) |
-| 1 | Ebene 0 – Fundament: Koordinaten/Richtungen, Blockregister Bedrock 1.26.50 (Daten), Wesenregister, Voxelwelt in Chunks, Blockinhalte, Vermesser (Verschieben/Drehen/Spiegeln mit facing), Speichern/Laden | **fertig, Status `simuliert`/`entworfen`** (Tests bestanden; Regeln & Eigenschaften noch `ungeprüft`, siehe unten) |
+| 1 | Ebene 0 – Fundament: Koordinaten/Richtungen, Blockregister Bedrock 1.26.50 (Daten), Wesenregister, Voxelwelt in Chunks, Blockinhalte, Vermesser (Verschieben/Drehen/Spiegeln mit facing), Speichern/Laden | **fertig, Status `entworfen`** (Tests bestanden; Drehregeln & Eigenschaften noch `ungeprüft`, siehe unten; `simuliert` gibt es erst mit Ebene 1) |
 | 2 | Ebene 1 – Uhrwerk: Taktgeber (Spieltick, P-/C-Tick), Regelwerk als Daten mit Quelle/Status, Prüfer; dann Mechaniken schrittweise (Schienen, Wasser, Licht, Redstone, Trichter, Wesen) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -31,8 +31,11 @@ Zuletzt aktualisiert: 19.10.2026
 
 ## Bekannte Lücken / Annahmen in Ebene 0 (alles `ungeprüft`)
 - Eigenschaften (Vollblock, durchsichtig, Licht …) sind eine **kuratierte Teilmenge**; unbekannt = `null` bzw. Standardwert, siehe `docs/daten.md`.
-- Drehregeln: Bedeutung der Zahlenwerte (z. B. `weirdo_direction`, `rail_direction`, `direction`) stammt aus dem Wiki; nicht gedreht werden
-  `rotation`, `coral_direction`, `huge_mushroom_bits` (Zuordnung unklar). Weitere Zustände nur nach Test-Hinweis ergänzen.
+- Drehregeln: Bedeutung der Zahlenwerte (`weirdo_direction`, `rail_direction`, `facing_direction`, Ranken-/Lichen-Bits, Schild, Wandkoralle)
+  ist mit Wiki-Seite je Regel belegt (in `data/drehregeln.json`). **Nicht** gedreht werden `direction`, `rotation`, `huge_mushroom_bits`
+  (Zuordnung nicht belegt); `minecraft:sixteen_way_rotation` ist nur analog zum Schild angenommen; `minecraft:corner`-Spiegeln ist Annahme (Spieltest 3).
+- Drehen/Spiegeln wirft einen Fehler, wenn ein Block einen Richtungszustand nicht angibt (statt still falsch zu drehen).
+- Blockinhalt-Plätze: Regale (`*_shelf`) fehlen noch (Platzanzahl nicht belegt).
 - Baby-Hitbox: Mojang gibt Box und Skalierung getrennt an (Dorfbewohner v2: 0,98 × 1,96 mit Skalierung 0,5); ob die Skalierung auf die Box wirkt, ist ungeprüft (Spieltest 6).
 - 12 Wesen ohne Hitbox in den Mojang-Daten (`null`).
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
@@ -44,4 +47,4 @@ Vorher: Jonah macht (wenn Zeit) die Spieltests aus `docs/spieltests.md`, damit D
 ## Offene Entscheidungen
 - Desktop-Umsetzung: eigene Desktop-App oder als Desktop-Fenster installierte Webseite (spätestens vor Schritt 6 klären).
 - Zitadelle-Bilder (14) legt Jonah in `docs/zitadelle/bilder/` ab.
-- Pull Request: Remote `Thalrail/blockwerk` ist lokal nicht angebunden (siehe Abschlussbericht).
+- Pull Request: Es wurde **kein** PR geöffnet – dieser Ordner hat kein Remote und `gh` fehlt. Weg: siehe `docs/pull-request.md` (Jonah entscheidet).

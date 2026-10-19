@@ -99,6 +99,23 @@ export function erzeugeVermesser({ regeln, register }) {
     return z;
   }
 
+  /**
+   * Fehlt einem Block ein Zustand, der beim Drehen/Spiegeln seine Richtung ändern würde, wäre das Ergebnis still falsch
+   * (unbekannt, in welche Richtung der Block zeigt). Darum: lieber ein klarer Fehler.
+   */
+  function pruefeVollstaendig(b, op) {
+    const definiert = register.block(b.id).zustaende;
+    for (const name of Object.keys(definiert)) {
+      const regel = regeln.zustaende[name];
+      if (!regel || Object.hasOwn(b.zustand, name)) continue;
+      const wirkungslos = (op.typ === 'drehen' && (regel.art === 'ecke' || regel.art === 'umschalten-beim-spiegeln'))
+        || (op.typ === 'spiegeln' && regel.art === 'achse');
+      if (!wirkungslos) {
+        throw new Error(`${b.id} bei ${b.x}, ${b.y}, ${b.z}: Zustand "${name}" fehlt – ohne ihn lässt sich der Block nicht richtig ${op.typ === 'drehen' ? 'drehen' : 'spiegeln'}`);
+      }
+    }
+  }
+
   const pruefeVersatz = (d) => {
     if (![d?.x, d?.y, d?.z].every(Number.isInteger)) throw new Error('Versatz muss ganze Zahlen x, y, z enthalten');
   };
@@ -116,6 +133,7 @@ export function erzeugeVermesser({ regeln, register }) {
     const k = modulo(viertel, 4);
     const op = { typ: 'drehen' };
     const bloecke = bauteil.bloecke.map((b) => {
+      if (k > 0) pruefeVollstaendig(b, op);
       let { x, z } = b;
       for (let i = 0; i < k; i++) [x, z] = [-z, x];
       return { ...b, x: nullFrei(x), z: nullFrei(z), zustand: transformiereZustand(b.zustand, op, k) };
@@ -131,7 +149,7 @@ export function erzeugeVermesser({ regeln, register }) {
   function spiegle(bauteil, achse) {
     if (achse !== 'x' && achse !== 'z') throw new Error(`Unbekannte Spiegelachse: ${String(achse)}`);
     const op = { typ: 'spiegeln', achse };
-    const bloecke = bauteil.bloecke.map((b) => ({
+    const bloecke = bauteil.bloecke.map((b) => (pruefeVollstaendig(b, op), {
       ...b,
       ...(achse === 'x' ? { x: nullFrei(-b.x) } : { z: nullFrei(-b.z) }),
       zustand: transformiereZustand(b.zustand, op),

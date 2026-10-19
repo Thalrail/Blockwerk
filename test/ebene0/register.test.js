@@ -14,7 +14,7 @@ test('Datenstand ist Bedrock 1.26.50', () => {
   assert.match(register.wesen.datenstand, /^1\.26\.50(\.\d+)?$/);
 });
 
-test('Register enthält Luft, Stein, Trichter, Treppe, Schiene, Tür', () => {
+test('Register enthÃ¤lt Luft, Stein, Trichter, Treppe, Schiene, TÃ¼r', () => {
   for (const id of [LUFT, 'minecraft:stone', 'minecraft:hopper', 'minecraft:oak_stairs', 'minecraft:rail', 'minecraft:acacia_door', 'minecraft:chest']) {
     assert.ok(register.bloecke.hat(id), id);
   }
@@ -34,7 +34,7 @@ test('Jeder Block: Zustandsnamen existieren, Werte sind nicht leer und vom gemel
   }
 });
 
-test('Jeder Block hat alle sechs Eigenschaften mit gültigem Typ', () => {
+test('Jeder Block hat alle sechs Eigenschaften mit gÃ¼ltigem Typ', () => {
   for (const id of register.bloecke.ids()) {
     const e = register.bloecke.block(id).eigenschaften;
     assert.ok([true, false, null].includes(e.vollblock), id);
@@ -62,14 +62,14 @@ test('Bekannte Eigenschaften (Stichproben aus den Wiki-Angaben)', () => {
   assert.equal(e('minecraft:stone').arbeitsblock, false);
 });
 
-test('Kuratierte Angaben verweisen nur auf existierende Blöcke (kein Tippfehler)', () => {
+test('Kuratierte Angaben verweisen nur auf existierende BlÃ¶cke (kein Tippfehler)', () => {
   const k = lies('quellen/eigenschaften.json');
   for (const id of [...Object.keys(k.lichtstaerke), ...k.arbeitsbloecke, ...Object.keys(k.behaelter)]) {
     assert.ok(register.bloecke.hat(id), `kuratierter Block fehlt im Register: ${id}`);
   }
 });
 
-test('Behälter: Trichter 5, Truhe 27, alle Shulkerkisten 27; Stein 0', () => {
+test('BehÃ¤lter: Trichter 5, Truhe 27, alle Shulkerkisten 27; Stein 0', () => {
   assert.equal(register.bloecke.slots('minecraft:hopper'), 5);
   assert.equal(register.bloecke.slots('minecraft:chest'), 27);
   assert.equal(register.bloecke.slots('minecraft:barrel'), 27);
@@ -77,10 +77,12 @@ test('Behälter: Trichter 5, Truhe 27, alle Shulkerkisten 27; Stein 0', () => {
   assert.equal(register.bloecke.slots('minecraft:stone'), 0);
   const shulker = register.bloecke.ids().filter((i) => i.endsWith('shulker_box'));
   assert.equal(shulker.length, 17);
+  assert.equal(register.bloecke.slots('minecraft:copper_chest'), 27);
+  assert.equal(register.bloecke.slots('minecraft:lit_furnace'), 3);
   for (const s of shulker) assert.equal(register.bloecke.slots(s), 27, s);
 });
 
-test('Zustandsprüfung: erlaubt, falscher Name, falscher Wert, falscher Typ', () => {
+test('ZustandsprÃ¼fung: erlaubt, falscher Name, falscher Wert, falscher Typ', () => {
   const r = register.bloecke;
   assert.ok(r.zustandGueltig('minecraft:hopper', { facing_direction: 3 }));
   assert.ok(r.zustandGueltig('minecraft:hopper', {}));
@@ -92,7 +94,7 @@ test('Zustandsprüfung: erlaubt, falscher Name, falscher Wert, falscher Typ', ()
   assert.throws(() => r.block('__proto__'), /Unbekannter Block/);
 });
 
-test('Ungültige Registerdaten werden abgelehnt', () => {
+test('UngÃ¼ltige Registerdaten werden abgelehnt', () => {
   assert.throws(() => new Blockregister(null));
   assert.throws(() => new Blockregister({ zustandsarten: {}, bloecke: { 'minecraft:x': { zustaende: ['a'], eigenschaften: {} } } }), /unbekannten Zustand/);
   assert.throws(() => new Blockregister({ zustandsarten: {}, bloecke: {} }), /Luft fehlt/);
@@ -115,7 +117,7 @@ test('Wesenregister: alle Loren (Minecarts) sind erfasst und haben eine Hitbox',
   for (const id of lore) assert.ok(register.wesen.hitbox(id), id);
 });
 
-test('Wesenregister: Baby-Hitbox des alten Dorfbewohners ist halb so groß', () => {
+test('Wesenregister: Baby-Hitbox des alten Dorfbewohners ist halb so groÃŸ', () => {
   assert.deepEqual(register.wesen.hitbox('minecraft:villager', { baby: true }), { breite: 0.3, hoehe: 0.95 });
   assert.ok(register.wesen.kannBaby('minecraft:villager_v2'));
   assert.ok(!register.wesen.kannBaby('minecraft:player'));
@@ -131,7 +133,7 @@ test('Wesenregister: jede Hitbox ist positiv, jede Quelle benannt', () => {
   assert.throws(() => new Wesenregister({ wesen: {} }), /fehlt/);
 });
 
-test('Gegenstände enthalten Diamant und Trichter, keine Duplikate', () => {
+test('GegenstÃ¤nde enthalten Diamant und Trichter, keine Duplikate', () => {
   const g = lies('gegenstaende.json').gegenstaende;
   assert.ok(g.includes('minecraft:diamond') && g.includes('minecraft:hopper'));
   assert.equal(new Set(g).size, g.length);

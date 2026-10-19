@@ -1,24 +1,24 @@
 {
-  "hinweis": "Wie sich Block-Zustände beim Drehen (im Uhrzeigersinn, von oben) und Spiegeln ändern. Alles Status 'ungeprüft', bis Jonah es in der Kreativwelt bestätigt (Testanleitung: docs/spieltests.md). Quelle: minecraft.wiki, Seiten der Blöcke (Bedrock, Abschnitt Block states / Data values) und Mojang-Zustandsnamen aus data/bloecke.json.",
+  "hinweis": "Wie sich Block-Zustände beim Drehen (im Uhrzeigersinn, von oben) und Spiegeln ändern. Jede Regel hat eine Quelle (minecraft.wiki, Bedrock-Abschnitt 'Block states' der genannten Seite, abgerufen 19.10.2026). Status aller Regeln: ungeprüft, bis Jonah es in der Kreativwelt bestätigt (Testanleitung: docs/spieltests.md). Was nicht belegt werden konnte, steht unter 'unbehandelt' und wird NICHT gedreht.",
   "zustaende": {
-    "minecraft:cardinal_direction": { "art": "richtung", "abbildung": { "north": "north", "east": "east", "south": "south", "west": "west" } },
-    "minecraft:facing_direction": { "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" } },
-    "minecraft:block_face": { "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" } },
-    "facing_direction": { "art": "richtung", "abbildung": { "0": "down", "1": "up", "2": "north", "3": "south", "4": "west", "5": "east" } },
-    "weirdo_direction": { "art": "richtung", "abbildung": { "0": "east", "1": "west", "2": "south", "3": "north" } },
-    "direction": { "art": "richtung", "abbildung": { "0": "south", "1": "west", "2": "north", "3": "east" } },
-    "torch_facing_direction": { "art": "richtung", "abbildung": { "unknown": null, "west": "west", "east": "east", "north": "north", "south": "south", "top": "up" } },
-    "pillar_axis": { "art": "achse", "abbildung": { "y": "y", "x": "x", "z": "z" } },
-    "portal_axis": { "art": "achse", "abbildung": { "unknown": null, "x": "x", "z": "z" } },
-    "coral_fan_direction": { "art": "achse", "abbildung": { "0": "x", "1": "z" } },
-    "minecraft:corner": { "art": "ecke", "tausch": { "inner_left": "inner_right", "inner_right": "inner_left", "outer_left": "outer_right", "outer_right": "outer_left" } },
-    "door_hinge_bit": { "art": "umschalten-beim-spiegeln" },
-    "ground_sign_direction": { "art": "sechzehntel" },
-    "minecraft:sixteen_way_rotation": { "art": "sechzehntel" },
-    "lever_direction": { "art": "woerter" },
-    "orientation": { "art": "woerter" },
-    "multi_face_direction_bits": { "art": "bitmaske", "bits": { "down": 1, "up": 2, "north": 4, "south": 8, "west": 16, "east": 32 } },
-    "vine_direction_bits": { "art": "bitmaske", "bits": { "south": 1, "west": 2, "north": 4, "east": 8 } },
+    "minecraft:cardinal_direction": { "art": "richtung", "abbildung": { "north": "north", "east": "east", "south": "south", "west": "west" }, "quelle": "https://minecraft.wiki/w/Oak_Door (Werte east/north/south/west als Himmelsrichtung)" },
+    "minecraft:facing_direction": { "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" }, "quelle": "Wertnamen sind selbst die Richtung (Mojang-Zustandsliste)" },
+    "minecraft:block_face": { "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" }, "quelle": "Wertnamen sind selbst die Richtung (Mojang-Zustandsliste)" },
+    "facing_direction": { "art": "richtung", "abbildung": { "0": "down", "1": "up", "2": "north", "3": "south", "4": "west", "5": "east" }, "quelle": "https://minecraft.wiki/w/Hopper (0 unten, 1 oben, 2 Nord, 3 Süd, 4 West, 5 Ost)" },
+    "weirdo_direction": { "art": "richtung", "abbildung": { "0": "east", "1": "west", "2": "south", "3": "north" }, "quelle": "https://minecraft.wiki/w/Stairs (0 Ost, 1 West, 2 Süd, 3 Nord = Seite des Vollblocks)" },
+    "torch_facing_direction": { "art": "richtung", "abbildung": { "unknown": null, "west": "west", "east": "east", "north": "north", "south": "south", "top": "up" }, "quelle": "https://minecraft.wiki/w/Torch (Fläche, an der die Fackel befestigt ist; die Wert-Namen sind Himmelsrichtungen, 'top' = auf einem Block)" },
+    "coral_direction": { "art": "richtung", "abbildung": { "0": "west", "1": "east", "2": "north", "3": "south" }, "quelle": "https://minecraft.wiki/w/Coral_Fan (Wand-Fächer: 0 West, 1 Ost, 2 Nord, 3 Süd)" },
+    "pillar_axis": { "art": "achse", "abbildung": { "y": "y", "x": "x", "z": "z" }, "quelle": "Wertnamen sind selbst die Achse (Mojang-Zustandsliste)" },
+    "portal_axis": { "art": "achse", "abbildung": { "unknown": null, "x": "x", "z": "z" }, "quelle": "Wertnamen sind selbst die Achse (Mojang-Zustandsliste)" },
+    "coral_fan_direction": { "art": "achse", "abbildung": { "0": "x", "1": "z" }, "quelle": "https://minecraft.wiki/w/Coral_Fan ('Ost-West oder Nord-Süd'; welcher Wert welche Achse ist, steht dort nicht – für Drehen egal, es wird 0 ↔ 1 getauscht)" },
+    "minecraft:corner": { "art": "ecke", "tausch": { "inner_left": "inner_right", "inner_right": "inner_left", "outer_left": "outer_right", "outer_right": "outer_left" }, "quelle": "https://minecraft.wiki/w/Stairs (Werte none/inner_left/inner_right/outer_left/outer_right; Spiegeln vertauscht links/rechts – Annahme, Spieltest 3)" },
+    "door_hinge_bit": { "art": "umschalten-beim-spiegeln", "quelle": "https://minecraft.wiki/w/Oak_Door (Scharnier links/rechts; Spiegeln vertauscht die Seite)" },
+    "ground_sign_direction": { "art": "sechzehntel", "quelle": "https://minecraft.wiki/w/Sign (0 Süd, 4 West, 8 Nord, 12 Ost, also im Uhrzeigersinn)" },
+    "minecraft:sixteen_way_rotation": { "art": "sechzehntel", "quelle": "analog ground_sign_direction – Annahme, nicht eigens belegt (Spieltest folgt, bevor ein Baustein es nutzt)" },
+    "lever_direction": { "art": "woerter", "quelle": "Wertnamen enthalten die Richtungen selbst (Mojang-Zustandsliste)" },
+    "orientation": { "art": "woerter", "quelle": "Wertnamen enthalten die Richtungen selbst (Mojang-Zustandsliste)" },
+    "vine_direction_bits": { "art": "bitmaske", "bits": { "south": 1, "west": 2, "north": 4, "east": 8 }, "quelle": "https://minecraft.wiki/w/Vines (0x1 Süd, 0x2 West, 0x4 Nord, 0x8 Ost)" },
+    "multi_face_direction_bits": { "art": "bitmaske", "bits": { "down": 1, "up": 2, "south": 4, "west": 8, "north": 16, "east": 32 }, "quelle": "https://minecraft.wiki/w/Glow_Lichen (0x1 unten, 0x2 oben, 0x4 Süd, 0x8 West, 0x10 Nord, 0x20 Ost)" },
     "rail_direction": {
       "art": "tabelle",
       "drehen": { "0": 1, "1": 0, "2": 5, "5": 3, "3": 4, "4": 2, "6": 7, "7": 8, "8": 9, "9": 6 },
@@ -26,7 +26,8 @@
         "x": { "0": 0, "1": 1, "2": 3, "3": 2, "4": 4, "5": 5, "6": 7, "7": 6, "8": 9, "9": 8 },
         "z": { "0": 0, "1": 1, "2": 2, "3": 3, "4": 5, "5": 4, "6": 9, "9": 6, "7": 8, "8": 7 }
       },
-      "bedeutung": "0 Nord-Süd, 1 Ost-West, 2 ansteigend Ost, 3 ansteigend West, 4 ansteigend Nord, 5 ansteigend Süd, 6 Süd-Ost, 7 Süd-West, 8 Nord-West, 9 Nord-Ost"
+      "bedeutung": "0 Nord-Süd, 1 Ost-West, 2 ansteigend Ost, 3 ansteigend West, 4 ansteigend Nord, 5 ansteigend Süd, 6 Süd-Ost, 7 Süd-West, 8 Nord-West, 9 Nord-Ost",
+      "quelle": "https://minecraft.wiki/w/Rail (Tabelle rail_direction 0–9, wörtlich so belegt)"
     }
   },
   "familien": [
@@ -37,8 +38,8 @@
   "unbehandelt": {
     "minecraft:connection_up": "senkrecht, wird durch Drehen/Spiegeln nicht verändert",
     "minecraft:connection_down": "senkrecht, wird durch Drehen/Spiegeln nicht verändert",
+    "direction": "Zahl 0–3 (alte Zählweise); im Wiki für Bedrock nicht belegt (Repeater nutzt inzwischen minecraft:cardinal_direction) – nicht gedreht, vor Nutzung klären",
     "rotation": "Bedeutung der Werte 0–3 je nach Block unklar – nicht gedreht, vor Nutzung klären",
-    "coral_direction": "Wert-Zuordnung (0–3) nicht sicher belegt – nicht gedreht, vor Nutzung klären",
-    "huge_mushroom_bits": "Pilzblock-Seitenbits, Zuordnung nicht sicher belegt – nicht gedreht, vor Nutzung klären"
+    "huge_mushroom_bits": "Pilzblock-Seitenbits, Zuordnung nicht belegt – nicht gedreht, vor Nutzung klären"
   }
 }

@@ -193,3 +193,32 @@ test('Gedrehte Welt-Ausschnitte lassen sich in die Welt einsetzen (Gültigkeit b
   assert.equal(ziel.leseBlock(10, 0, 11).zustand.facing_direction, 3, 'Trichter zeigte nach Ost, jetzt nach Süd');
   assert.equal(ziel.leseInhalt(10, 0, 11).length, 1, 'Inhalt wandert mit');
 });
+
+test('Fehlender Richtungszustand: Drehen/Spiegeln wirft, statt still falsch zu sein', () => {
+  const leereTreppe = teil([0, 0, 0, 'minecraft:oak_stairs', {}]);
+  assert.throws(() => v.drehe(leereTreppe, 1), /weirdo_direction.*fehlt/);
+  assert.throws(() => v.spiegle(leereTreppe, 'x'), /fehlt/);
+  assert.throws(() => v.drehe(teil([0, 0, 0, 'minecraft:hopper', {}]), 1), /facing_direction.*fehlt/);
+  assert.throws(() => v.drehe(teil([0, 0, 0, 'minecraft:oak_log', {}]), 1), /pillar_axis.*fehlt/);
+  assert.throws(() => v.spiegle(teil([0, 0, 0, 'minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: false }]), 'x'), /minecraft:corner.*fehlt/);
+  // Drehen braucht die Ecke nicht, Spiegeln braucht die Achse nicht
+  assert.doesNotThrow(() => v.drehe(teil([0, 0, 0, 'minecraft:oak_stairs', { weirdo_direction: 0 }]), 1));
+  assert.doesNotThrow(() => v.spiegle(teil([0, 0, 0, 'minecraft:oak_log', {}]), 'x'));
+  // Blöcke ohne Richtung brauchen nichts; Drehen um 0 Viertel ändert nichts und prüft nichts
+  assert.doesNotThrow(() => v.drehe(teil([0, 0, 0, 'minecraft:stone', {}]), 1));
+  assert.doesNotThrow(() => v.drehe(leereTreppe, 4));
+});
+
+test('Jede Drehregel nennt ihre Quelle, jeder Vermerk eine Begründung', () => {
+  for (const [name, regel] of Object.entries(drehregeln.zustaende)) assert.ok(regel.quelle, `${name}: Quelle fehlt`);
+  for (const [name, grund] of Object.entries(drehregeln.unbehandelt)) assert.ok(grund.length > 10, `${name}: Begründung fehlt`);
+  assert.ok(!('direction' in drehregeln.zustaende), 'unbelegte Zuordnung darf nicht gedreht werden');
+});
+
+test('Glow-Lichen-Bits (Wiki: 1 unten, 2 oben, 4 Süd, 8 West, 16 Nord, 32 Ost) und Wand-Koralle', () => {
+  assert.deepEqual(z1('', { multi_face_direction_bits: 4 }, DREH), { multi_face_direction_bits: 8 }, 'Süd → West');
+  assert.deepEqual(z1('', { multi_face_direction_bits: 1 | 2 | 32 }, DREH), { multi_face_direction_bits: 1 | 2 | 4 }, 'Ost → Süd, oben/unten bleiben');
+  assert.deepEqual(z1('', { multi_face_direction_bits: 16 }, sp('z')), { multi_face_direction_bits: 4 }, 'Nord ↔ Süd');
+  assert.deepEqual(z1('', { coral_direction: 0 }, DREH), { coral_direction: 2 }, 'West → Nord');
+  assert.deepEqual(z1('', { coral_direction: 3 }, sp('x')), { coral_direction: 3 }, 'Süd bleibt beim Spiegeln an x');
+});

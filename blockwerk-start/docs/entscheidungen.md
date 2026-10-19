@@ -1,0 +1,16 @@
+# Entscheidungen Blockwerk (Stand 19.10.2026)
+- Programmname: **Blockwerk**. Repo auf GitHub: Konto **Thalrail**, Repo **blockwerk** (eigenes, neues Repo; der Probeplaner bleibt unverändert).
+- Server: Aternos, Bedrock. Bauwerke werden NICHT eingespielt/einkopiert, sondern von Hand nach Bauplan (Schicht für Schicht) gebaut.
+- Oberfläche: ausschließlich Desktop, keine Handy-App. Gespielt wird auf der PS5, Blockwerk läuft auf PC/Laptop daneben als Bauplan-Bildschirm (Kompaktmodus aus Entfernung lesbar).
+- Texturen: Faithful 32x (Bedrock-Fassung), Lizenzpflichten siehe `docs/ebenen.md`, Ebene 5.
+- Ebenenmodell: `docs/ebenen.md` (Ebene 0–5 bestätigt).
+- Seed: soll später einpflegbar sein (Platzprüfung: passt das Bauwerk an die Stelle, Gelände/Biom über Messpunkte).
+- Leser (einzige KI-Stelle): zunächst über Claude-Chat (Briefing-Prompt -> JSON zurückkopieren). API-Schlüssel später optional.
+- Tester: Jonah, jederzeit, auch mobil (Minecraft Pocket).
+- Zitadelle-Bilder (14) legt Jonah im Repo unter `docs/zitadelle/bilder/` ab.
+- Reihenfolge: allgemeine Engine zuerst, Zitadelle als Prüfstein.
+- Neubeginn (19.10.2026): Blockwerk wird von Claude Code komplett neu nach dem Ebenenmodell umgesetzt. Der frühere M0/M1-Prototyp und Blockplan werden nicht übernommen.
+- Technik: reines JavaScript (ES-Module), keine Abhängigkeiten, Tests mit `npm test` (Node 22), Seite über GitHub Pages ohne Build.
+- Offen: Desktop-Umsetzung (eigene Desktop-App oder als Desktop-Fenster installierte Webseite).
+- Arbeitsweg: Entwicklung mit Claude Code in der Cloud (claude.ai/code), Arbeit auf eigenem Branch, Abnahme per Pull Request durch Jonah.
+- Sicherheit: Keine Zugangsschlüssel (Token, Passwörter) im Chat oder im Repo. Der GitHub-Zugang läuft über die Claude GitHub App.

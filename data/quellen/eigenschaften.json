@@ -1,5 +1,5 @@
 {
-  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme.",
+  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme.",
   "quelle": "https://minecraft.wiki/ (Seiten der einzelnen Blöcke, Abschnitt Bedrock Edition)",
   "regeln": [
     {
@@ -77,21 +77,21 @@
       "setze": {
         "fackelOben": "obere-haelfte",
         "fackelSeiten": "keine",
-        "schiene": false
+        "schiene": "wenn-oben"
       },
       "grund": "Halbstufe",
       "status": "geprüft",
-      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur auf ganzer Blockhöhe und nur an ganzen Blöcken seitlich (von Jonah bestätigt: oben nur auf der oberen Hälfte, seitlich gar nicht); Schiene nicht auf Halbstufe"
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur auf ganzer Blockhöhe und nur an ganzen Blöcken seitlich (von Jonah bestätigt: oben nur auf der oberen Hälfte, seitlich gar nicht); Schiene nicht auf Halbstufe Schiene: untere Lage trägt nicht, obere Halbstufe trägt (Jonah, 20./21.10.2026)."
     },
     {
       "muster": "_stairs$",
       "setze": {
         "fackelSeiten": "grosse-seite",
-        "schiene": false
+        "schiene": "wenn-oben"
       },
       "grund": "Treppe",
       "status": "geprüft",
-      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur an der großen Seite; Schiene nicht auf Treppe (Fackel oben auf der Treppe nicht getestet)"
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur an der großen Seite; Schiene nicht auf Treppe (Fackel oben auf der Treppe nicht getestet) Schiene: aufrechte Treppe trägt nicht, kopfstehende Treppe trägt (Jonah, 20./21.10.2026)."
     },
     {
       "muster": "_fence$",

@@ -11,7 +11,7 @@ const datei = (...regeln) => ({ bereich: 'takt', regeln });
 
 test('Jede Regel hat Quelle (Link), gültigen Status und Pflichtfelder', () => {
   const alle = e1.regelwerk.alle();
-  assert.ok(alle.length >= 15);
+  assert.ok(alle.length >= 25);
   for (const r of alle) {
     assert.match(r.quelle, /https:\/\//, r.id);
     assert.ok(['entworfen', 'simuliert', 'geprüft'].includes(r.status), r.id);
@@ -28,9 +28,14 @@ test('Status „simuliert“ verweist auf einen Test, der wirklich existiert', (
   }
 });
 
-test('Niemand setzt Regeln auf „geprüft“ außer Jonah: aktuell keine in Ebene 1', () => {
+test('Niemand setzt Regeln auf „geprüft“ außer Jonah: nur Regeln mit seiner dokumentierten Beobachtung', () => {
   // Wird erst geändert, wenn Jonah im Spiel bestätigt hat (Datum + Beobachtung sind dann Pflicht).
-  assert.deepEqual(e1.regelwerk.nachStatus('geprüft'), []);
+  const geprueft = e1.regelwerk.nachStatus('geprüft');
+  assert.deepEqual(geprueft.map((r) => r.id), ['schiene.antriebsschiene-gerade', 'schiene.t-stelle', 'schiene.zustandswerte']);
+  for (const r of geprueft) {
+    assert.match(r.beobachtung, /^Jonah/, r.id);
+    assert.match(r.geprueftAm, /^2026-10-2[01]$/, r.id);
+  }
 });
 
 test('Parameter lesen, offene Tests auflisten', () => {

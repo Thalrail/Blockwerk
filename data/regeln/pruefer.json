@@ -25,7 +25,7 @@
     {
       "id": "pruefer.braucht-halt-schiene",
       "titel": "Prüfer: Schiene braucht Boden",
-      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`); ist es dort unbekannt (null), meldet der Prüfer einen Hinweis.",
+      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`). Untere Halbstufe und aufrechte Treppe tragen nicht (Verstoß); obere Halbstufe und kopfstehende Treppe tragen (Jonah, 21.10.2026). Ist es für eine Form unbekannt (null), meldet der Prüfer einen Hinweis.",
       "parameter": {
         "getesteteFormen": [
           "Glasblock",
@@ -40,7 +40,7 @@
       "simulationstest": "test/ebene1/pruefer.test.js::Schiene braucht Boden",
       "ungeprueft": true,
       "testanleitung": "Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab.",
-      "beobachtung": "Jonah, 20.10.2026: Glasblock ganz normal; nicht auf Halbstufe, Treppe, Zaun; Glasscheibe geht nicht."
+      "beobachtung": "Jonah, 20./21.10.2026: Glasblock ja; untere Halbstufe, aufrechte Treppe, Zaun, Glasscheibe nein; obere Halbstufe und kopfstehende Treppe: die Schiene bleibt liegen."
     },
     {
       "id": "pruefer.tickbereich",
@@ -52,6 +52,28 @@
       "simulationstest": "test/ebene1/pruefer.test.js::Tickbereich-Prüfung meldet Chunks außerhalb",
       "ungeprueft": true,
       "testanleitung": "Siehe takt.tickbereich."
+    },
+    {
+      "id": "pruefer.schiene-verbindung",
+      "titel": "Prüfer: Schienen sind miteinander verbunden",
+      "regel": "Zeigt das Ende einer Schiene auf eine Schiene, die nicht zurückzeigt (Abzweig an einer Weiche oder eine Lücke), oder führt es ins Leere (Sackgasse), meldet der Prüfer einen Hinweis. Abzweige und Endstücke sind normal; einen Verstoß gibt es hier nicht, weil nicht belegt ist, dass die Lore dort entgleist.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail (Verbindungslogik; Edition nicht überall gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Prüfer: Schienenverbindungen",
+      "ungeprueft": true,
+      "testanleitung": "Eine T-Stelle bauen und die Lore (oder dich in einer Lore) darüberfahren lassen: kommt sie am Abzweig durch, bleibt sie stehen oder fährt sie in die Kurve? Ergebnis melden."
+    },
+    {
+      "id": "pruefer.antriebsschiene-kurve",
+      "titel": "Prüfer: Antriebsschiene nie als Kurve",
+      "regel": "Eine Antriebsschiene (golden_rail) mit rail_direction 6–9 ist ein Verstoß; bei Detektor- und Aktivierungsschiene ist es nur ein Hinweis (nicht belegt).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Tabelle: Werte 6–9 unbenutzt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Prüfer: Antriebsschiene als Kurve",
+      "ungeprueft": true,
+      "testanleitung": "Siehe schiene.detektor-aktivierung-gerade."
     }
   ]
 }

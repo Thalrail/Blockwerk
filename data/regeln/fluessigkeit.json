@@ -54,11 +54,12 @@
       "titel": "Fließen nach unten ohne Grenze",
       "regel": "Flüssigkeit fließt senkrecht nach unten, bis ein Block sie aufhält, und breitet sich dort wie von einer Quelle aus (der Aufprallpunkt zählt als Stufe 0). Eine Quelle über bereits fließender Flüssigkeit breitet sich zusätzlich zur Seite aus; so entsteht um eine Quelle in der Luft eine Plus-Form aus vier Nachbarsäulen (Annahme aus der bekannten Fluss-Logik).",
       "parameter": {},
-      "quelle": "https://minecraft.wiki/w/Water (Aufprallpunkt als Quelle und Plus-Form um eine Quelle in der Luft: Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
+      "quelle": "https://minecraft.wiki/w/Water (Aufprallpunkt als Quelle und Plus-Form um eine Quelle in der Luft: Bedrock dokumentiert dazu nichts; die Logik entspricht der Java-Implementierung, und Jonah bestätigt aus Erfahrung, dass Bedrock sich gleich verhält)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: fällt unbegrenzt und breitet sich unten aus",
       "ungeprueft": true,
-      "testanleitung": "Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus? Außerdem: eine Wasserquelle in die Luft setzen (an eine Wand lehnen und dann die Wand entfernen oder mit Blöcken eine Plattform bauen und wegnehmen): Fällt nur eine Säule, oder entsteht eine Plus-Form aus fünf Säulen? Blockwerk erwartet bei der freien Quelle ein Plus."
+      "testanleitung": "Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus? Außerdem: eine Wasserquelle in die Luft setzen (an eine Wand lehnen und dann die Wand entfernen oder mit Blöcken eine Plattform bauen und wegnehmen): Fällt nur eine Säule, oder entsteht eine Plus-Form aus fünf Säulen? Blockwerk erwartet bei der freien Quelle ein Plus.",
+      "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“)."
     },
     {
       "id": "fluessigkeit.gefaelle",
@@ -67,11 +68,12 @@
       "parameter": {
         "suchweite": 4
       },
-      "quelle": "https://minecraft.wiki/w/Water („Gefälle in höchstens 4 Blöcken“, Edition nicht gekennzeichnet; Zählweise nach der Java-Implementierung – Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
+      "quelle": "https://minecraft.wiki/w/Water („Gefälle in höchstens 4 Blöcken“, Edition nicht gekennzeichnet; Zählweise nach der Java-Implementierung – Bedrock dokumentiert dazu nichts; die Logik entspricht der Java-Implementierung, und Jonah bestätigt aus Erfahrung, dass Bedrock sich gleich verhält)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
       "ungeprueft": true,
-      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) im 3. Block östlich und ein Loch im 6. Block westlich: Fließt das Wasser nur nach Osten zum Loch und nicht nach Westen? Dann mit dem Loch im 4., 5. und 6. Block östlich wiederholen: Bis zu welchem Block bevorzugt das Wasser die Richtung? Blockwerk erwartet bis zum 5. Block."
+      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) im 3. Block östlich und ein Loch im 6. Block westlich: Fließt das Wasser nur nach Osten zum Loch und nicht nach Westen? Dann mit dem Loch im 4., 5. und 6. Block östlich wiederholen: Bis zu welchem Block bevorzugt das Wasser die Richtung? Blockwerk erwartet bis zum 5. Block.",
+      "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“)."
     },
     {
       "id": "fluessigkeit.unten-vor-seitlich",
@@ -80,11 +82,12 @@
       "parameter": {
         "quellenNachbarn": 3
       },
-      "quelle": "https://minecraft.wiki/w/Water (Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
+      "quelle": "https://minecraft.wiki/w/Water (Bedrock dokumentiert dazu nichts; die Logik entspricht der Java-Implementierung, und Jonah bestätigt aus Erfahrung, dass Bedrock sich gleich verhält)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: unten vor seitlich",
       "ungeprueft": true,
-      "testanleitung": "Quelle direkt über einem Loch (2 Blöcke tief) auf ebenem Stein: Breitet sich Wasser auf der Oberfläche seitlich aus, oder fließt es nur in das Loch? Ergebnis melden."
+      "testanleitung": "Quelle direkt über einem Loch (2 Blöcke tief) auf ebenem Stein: Breitet sich Wasser auf der Oberfläche seitlich aus, oder fließt es nur in das Loch? Ergebnis melden.",
+      "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“)."
     },
     {
       "id": "fluessigkeit.quellenbildung",
@@ -125,11 +128,12 @@
       "titel": "Abklingen ohne Nachschub",
       "regel": "Fließblöcke, die nicht mehr von einer Quelle versorgt werden, rücken Stufe für Stufe ab und verschwinden. Bedrock beschreibt das nicht genau; Blockwerk nutzt die bekannte Logik (Stufe = niedrigste Nachbarstufe + Schritt).",
       "parameter": {},
-      "quelle": "https://minecraft.wiki/w/Water (Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
+      "quelle": "https://minecraft.wiki/w/Water (Bedrock dokumentiert dazu nichts; die Logik entspricht der Java-Implementierung, und Jonah bestätigt aus Erfahrung, dass Bedrock sich gleich verhält)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Abklingen ohne Nachschub",
       "ungeprueft": true,
-      "testanleitung": "Wasserquelle auf ebenem Stein, Wasser sich ausbreiten lassen, Quelle entfernen, mit Video messen: Wie lange, bis alles Wasser weg ist? Verschwindet es von außen nach innen oder von innen nach außen?"
+      "testanleitung": "Wasserquelle auf ebenem Stein, Wasser sich ausbreiten lassen, Quelle entfernen, mit Video messen: Wie lange, bis alles Wasser weg ist? Verschwindet es von außen nach innen oder von innen nach außen?",
+      "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“)."
     },
     {
       "id": "fluessigkeit.hindernisse",

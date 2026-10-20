@@ -2,8 +2,8 @@
 // Regeln: data/regeln/fluessigkeit.json (Quelle und Status je Regel; vieles ist im Wiki nicht als Bedrock gekennzeichnet → ungeprüft).
 // Darstellung (Bedrock): `water`/`lava` mit liquid_depth 0 = Quelle, `flowing_water`/`flowing_lava` mit Stufe 1–7,
 // Stufe ab 8 = fallend. Die Ausbreitung läuft über geplante Ticks des Taktgebers (Wasser alle 5 Ticks, Lava 30 bzw. 10).
-// ACHTUNG: Bedrock dokumentiert die Fließ-Logik nicht. Das Verfahren folgt vorläufig der Java-Implementierung (Platzhalter, `ungeprüft`;
-// Ausnahme zu „nie Java übernehmen“ aus CLAUDE.md, bis Jonah im Spiel getestet hat): unten frei → fallen (seitlich nur bei 3 Quellen-Nachbarn), sonst seitlich in
+// Hinweis: Bedrock dokumentiert die Fließ-Logik nicht. Das Verfahren entspricht der Java-Implementierung; Jonah bestätigt aus Erfahrung,
+// dass Bedrock sich gleich verhält (21.10.2026, noch kein gezielter Spieltest → Regeln bleiben `ungeprüft`): unten frei → fallen (seitlich nur bei 3 Quellen-Nachbarn), sonst seitlich in
 // die Richtungen mit dem nächsten Gefälle (höchstens 4 Blöcke), Fließblöcke ohne Nachschub rücken stufenweise ab, bis sie verschwinden.
 // Die Welt wird nur über Ebene 0 gelesen und geschrieben.
 import { VEKTOR } from '../ebene0/richtungen.js';

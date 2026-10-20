@@ -57,7 +57,7 @@ Zuletzt aktualisiert: 20.10.2026
 - `aktiviere(welt, …)` setzt `rail_data_bit`; `mechanik()` ist eine Taktgeber-Mechanik der Tickart `mechanismus` und schaltet damit **nur im C-Tick** (Bedrock-dokumentiert).
 - Prüfer-Hinweis `pruefer.antrieb-ohne-quelle` (nur wenn die Stromquellen übergeben werden).
 - Schienen in Chunks außerhalb des Tickbereichs schalten nicht (der Taktgeber gibt den Tickbereich an die Mechanik weiter).
-- **Java-Platzhalter (Entscheidung für Jonah):** Die Fließ-Logik von Wasser/Lava (Gefälle-Zählung, Abklingen, „unten vor seitlich“, Plus-Form um eine Quelle in der Luft) folgt vorläufig der Java-Implementierung, weil Bedrock nichts dokumentiert. Das ist eine Ausnahme zu „nie Java übernehmen“ (CLAUDE.md) und bleibt `ungeprüft`, bis Jonah getestet hat.
+- **Java-Platzhalter (von Jonah am 21.10.2026 erlaubt, bis er getestet hat):** Die Fließ-Logik von Wasser/Lava (Gefälle-Zählung, Abklingen, „unten vor seitlich“, Plus-Form um eine Quelle in der Luft) folgt vorläufig der Java-Implementierung, weil Bedrock nichts dokumentiert. Das ist eine Ausnahme zu „nie Java übernehmen“ (CLAUDE.md) und bleibt `ungeprüft`.
 - `pruefe()` läuft bei jeder Welt mit Wasser/Lava bis zu 400 Simulationsticks (Kosten wachsen mit der Wassermenge).
 - Bekanntes Limit: `aktive()`/`aktiviere()` gehen bei jedem C-Tick über alle Blöcke der Welt (sortiert). Für Zitadelle-Größe (ca. 3,9 Mio. Blöcke) später Schienen je Chunk indexieren.
 - Regeln: `data/regeln/antrieb.json` (4 Regeln, 3 mit Annahmen und Testanleitung). Reichweite 8 und „nur verbundene geben Strom weiter“ sind nicht als Bedrock belegt.

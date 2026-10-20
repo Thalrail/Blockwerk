@@ -17,3 +17,4 @@
 - Aternos-Server (Angabe von Jonah, 20.10.2026): Simulationsdistanz **4 Chunks**, 20 Ticks pro Sekunde, Chunk 16×16. Steht in `data/server.json`.
 - Händler (Angabe von Jonah, 21.10.2026): Dorfbewohner-Händler geben die Items beim Handel **direkt ins Inventar**, sie werden nicht gedroppt. Für Handels-Items ist also keine Auffang-Technik nötig. (Trichter für Lager und Sortierer der Zitadelle sind davon nicht berührt.)
 - Wasser/Lava vor Trichter & Blockinhalten (Jonah, 21.10.2026): Als Nächstes in Ebene 1 kam Wasser/Lava.
+- Java-Platzhalter für Wasser/Lava (Jonah, 21.10.2026): Die Fließ-Logik (Gefälle-Zählung, Abklingen, „erst nach unten“, Plus-Form um eine Quelle in der Luft) darf vorläufig der Java-Implementierung folgen, weil Bedrock nichts dokumentiert. Ausnahme zu „nie Java übernehmen“, gilt nur bis Jonah getestet hat; bleibt `ungeprüft`.

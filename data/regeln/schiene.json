@@ -8,16 +8,106 @@
       "regel": "rail_direction 0 = Nord-Süd, 1 = Ost-West, 2–5 = Steigung nach Ost/West/Nord/Süd, 6–9 = Kurve Süd-Ost, Süd-West, Nord-West, Nord-Ost. Jede Schiene hat zwei Enden; das hohe Ende einer Steigung liegt einen Block höher (dy = +1).",
       "parameter": {
         "enden": {
-          "0": [["north", 0], ["south", 0]],
-          "1": [["east", 0], ["west", 0]],
-          "2": [["west", 0], ["east", 1]],
-          "3": [["east", 0], ["west", 1]],
-          "4": [["south", 0], ["north", 1]],
-          "5": [["north", 0], ["south", 1]],
-          "6": [["south", 0], ["east", 0]],
-          "7": [["south", 0], ["west", 0]],
-          "8": [["north", 0], ["west", 0]],
-          "9": [["north", 0], ["east", 0]]
+          "0": [
+            [
+              "north",
+              0
+            ],
+            [
+              "south",
+              0
+            ]
+          ],
+          "1": [
+            [
+              "east",
+              0
+            ],
+            [
+              "west",
+              0
+            ]
+          ],
+          "2": [
+            [
+              "west",
+              0
+            ],
+            [
+              "east",
+              1
+            ]
+          ],
+          "3": [
+            [
+              "east",
+              0
+            ],
+            [
+              "west",
+              1
+            ]
+          ],
+          "4": [
+            [
+              "south",
+              0
+            ],
+            [
+              "north",
+              1
+            ]
+          ],
+          "5": [
+            [
+              "north",
+              0
+            ],
+            [
+              "south",
+              1
+            ]
+          ],
+          "6": [
+            [
+              "south",
+              0
+            ],
+            [
+              "east",
+              0
+            ]
+          ],
+          "7": [
+            [
+              "south",
+              0
+            ],
+            [
+              "west",
+              0
+            ]
+          ],
+          "8": [
+            [
+              "north",
+              0
+            ],
+            [
+              "west",
+              0
+            ]
+          ],
+          "9": [
+            [
+              "north",
+              0
+            ],
+            [
+              "east",
+              0
+            ]
+          ]
         }
       },
       "quelle": "https://minecraft.wiki/w/Rail",
@@ -30,7 +120,9 @@
       "id": "schiene.einzeln",
       "titel": "Einzelne Schiene ist Nord-Süd",
       "regel": "Eine Schiene ohne Nachbarschiene stellt sich in Bedrock als gerade Nord-Süd-Schiene ein (in Java richtet sie sich nach der Blickrichtung des Spielers).",
-      "parameter": { "rail_direction": 0 },
+      "parameter": {
+        "rail_direction": 0
+      },
       "quelle": "https://minecraft.wiki/w/Rail",
       "status": "simuliert",
       "simulationstest": "test/ebene1/schienen.test.js::Schiene: einzelne Schiene ist Nord-Süd",
@@ -50,7 +142,7 @@
     {
       "id": "schiene.zwei-nachbarn",
       "titel": "Zwei Nachbarn: verbinden, gerade oder als Kurve",
-      "regel": "Hat eine neue Schiene zwei Nachbarschienen, verbindet sie sich mit beiden: gerade, wenn sie gegenüberliegen, sonst als Kurve. Gegenüberliegende Paare haben Vorrang.",
+      "regel": "Hat eine neue Schiene zwei Nachbarschienen, verbindet sie sich mit beiden: gerade, wenn sie gegenüberliegen, sonst als Kurve.",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Rail (Vorrang gerader Paare ist eine Annahme)",
       "status": "simuliert",
@@ -72,13 +164,13 @@
     {
       "id": "schiene.t-stelle",
       "titel": "T-Stelle und Kreuzung",
-      "regel": "Bei drei oder vier möglichen Nachbarn wählt die neue Schiene zwei davon: bevorzugt ein gegenüberliegendes Paar (gerade), sonst die ersten zwei in der Reihenfolge der Bevorzugung. Bedrock beschreibt nur „wird zur Kurve“.",
+      "regel": "Bei drei oder vier möglichen Nachbarn (T-Stelle, Kreuzung) wird die neue Schiene laut Bedrock-Wiki zur Kurve, die zwei der Seiten verbindet. Blockwerk wählt das erste Eck-Paar in der Reihenfolge der Bevorzugung (West, Ost, Süd, Nord); die genaue Wahl ist nicht belegt. Mit nur zwei Nachbarn gilt: gegenüberliegend = gerade, sonst Kurve.",
       "parameter": {},
-      "quelle": "https://minecraft.wiki/w/Rail (Bedrock: „T-Stelle wird Kurve“, genaue Wahl nicht belegt)",
+      "quelle": "https://minecraft.wiki/w/Rail (Bedrock: „T-Stelle wird Kurve“; welche Kurve, ist nicht belegt)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/schienen.test.js::Schiene: T-Stelle und Kreuzung (Annahme)",
       "ungeprueft": true,
-      "testanleitung": "Drei einzelne Schienen so setzen, dass sie eine T-Form umschließen (West, Ost, Süd einer freien Stelle, jede einzeln und weit genug voneinander), dann die Mitte setzen: Welche Form entsteht (Ost-West gerade oder Kurve)? Mit vier Nachbarn wiederholen. Je Fall melden."
+      "testanleitung": "Drei einzelne Schienen so setzen, dass sie eine T-Form umschließen (West, Ost, Süd einer freien Stelle, jede einzeln und weit genug voneinander), dann die Mitte setzen: Welche Form entsteht (Ost-West gerade oder welche Kurve)? Mit vier Nachbarn wiederholen. Je Fall melden; Blockwerk erwartet bei West, Ost, Süd die Kurve Süd-West."
     },
     {
       "id": "schiene.rampe",
@@ -95,7 +187,14 @@
       "id": "schiene.bevorzugung",
       "titel": "Reihenfolge der Bevorzugung",
       "regel": "Wenn mehrere Nachbarn möglich sind und sonst nichts entscheidet, werden sie in dieser Reihenfolge bevorzugt: West, Ost, Süd, Nord (Wiki-Angabe für Rampen, nicht als Bedrock gekennzeichnet). Blockwerk nutzt sie für alle Fälle.",
-      "parameter": { "bevorzugung": ["west", "east", "south", "north"] },
+      "parameter": {
+        "bevorzugung": [
+          "west",
+          "east",
+          "south",
+          "north"
+        ]
+      },
       "quelle": "https://minecraft.wiki/w/Rail (Edition nicht gekennzeichnet)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/schienen.test.js::Schiene: Rampen-Bevorzugung folgt den Daten (Annahme)",
@@ -106,7 +205,11 @@
       "id": "schiene.antriebsschiene-gerade",
       "titel": "Antriebsschienen sind immer gerade",
       "regel": "Antriebsschienen (golden_rail) haben nur rail_direction 0–5 (gerade oder Steigung), nie 6–9. Blockwerk legt sie darum nie als Kurve.",
-      "parameter": { "nurGerade": ["minecraft:golden_rail"] },
+      "parameter": {
+        "nurGerade": [
+          "minecraft:golden_rail"
+        ]
+      },
       "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Tabelle: Werte 6–9 unbenutzt)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/schienen.test.js::Schiene: Antriebsschienen werden nie zur Kurve",
@@ -116,7 +219,12 @@
       "id": "schiene.detektor-aktivierung-gerade",
       "titel": "Detektor- und Aktivierungsschiene: auch gerade?",
       "regel": "Für Detektor- und Aktivierungsschiene ist nicht belegt, ob sie Kurven bilden können. Blockwerk nimmt an, dass sie wie Antriebsschienen nie Kurven bilden, und meldet Kurven bei ihnen nur als Hinweis.",
-      "parameter": { "nurGerade": ["minecraft:detector_rail", "minecraft:activator_rail"] },
+      "parameter": {
+        "nurGerade": [
+          "minecraft:detector_rail",
+          "minecraft:activator_rail"
+        ]
+      },
       "quelle": "https://minecraft.wiki/w/Powered_Rail (nur Antriebsschiene belegt; Annahme für die anderen)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/schienen.test.js::Schiene: Antriebsschienen werden nie zur Kurve",

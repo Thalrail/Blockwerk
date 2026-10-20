@@ -56,13 +56,13 @@
     {
       "id": "pruefer.schiene-verbindung",
       "titel": "Prüfer: Schienen sind miteinander verbunden",
-      "regel": "Zeigt das Ende einer Schiene auf eine Schiene, die nicht zurückzeigt, ist das ein Verstoß (die Lore entgleist oder bleibt stehen). Führt ein Ende ins Leere, ist es ein Hinweis (Sackgasse), denn Endstücke sind normal.",
+      "regel": "Zeigt das Ende einer Schiene auf eine Schiene, die nicht zurückzeigt (Abzweig an einer Weiche oder eine Lücke), oder führt es ins Leere (Sackgasse), meldet der Prüfer einen Hinweis. Abzweige und Endstücke sind normal; einen Verstoß gibt es hier nicht, weil nicht belegt ist, dass die Lore dort entgleist.",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Rail (Verbindungslogik; Edition nicht überall gekennzeichnet)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/schienen.test.js::Prüfer: Schienenverbindungen",
       "ungeprueft": true,
-      "testanleitung": "Zwei Schienen so legen, dass die eine auf die andere zeigt (z. B. Kurve neben einer Ost-West-Schiene, die sich nicht eindrehen kann, weil beide Enden belegt sind): Fährt die Lore durch oder bleibt sie hängen? Ergebnis melden."
+      "testanleitung": "Eine T-Stelle bauen und die Lore (oder dich in einer Lore) darüberfahren lassen: kommt sie am Abzweig durch, bleibt sie stehen oder fährt sie in die Kurve? Ergebnis melden."
     },
     {
       "id": "pruefer.antriebsschiene-kurve",

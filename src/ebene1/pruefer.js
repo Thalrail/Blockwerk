@@ -120,7 +120,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
     for (const e of ende) {
       const g = schienen.gegenstelle(welt, ort, e);
       const wohin = `${e.richtung}${e.dy ? ' (hoch)' : ''}`;
-      if (g.art === 'einseitig') melde('pruefer.schiene-verbindung', ort, 'verstoss', `${b.id}: Ende ${wohin} zeigt auf ${g.partner.id} bei ${g.partner.pos.x}, ${g.partner.pos.y}, ${g.partner.pos.z}, das nicht zurückzeigt`);
+      if (g.art === 'einseitig') melde('pruefer.schiene-verbindung', ort, 'hinweis', `${b.id}: Ende ${wohin} zeigt auf ${g.partner.id} bei ${g.partner.pos.x}, ${g.partner.pos.y}, ${g.partner.pos.z}, das nicht zurückzeigt (Abzweig oder Lücke) – im Spiel prüfen`);
       else if (g.art === 'leer') melde('pruefer.schiene-verbindung', ort, 'hinweis', `${b.id}: Ende ${wohin} führt ins Leere (Sackgasse)`);
     }
   }

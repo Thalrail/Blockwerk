@@ -129,7 +129,11 @@ export function erzeugeSchienen({ regelwerk, register }) {
       const paare = [];
       for (let i = 0; i < optionen.length; i++) for (let j = i + 1; j < optionen.length; j++) paare.push([optionen[i], optionen[j]]);
       const gegenueber = paare.filter(([a, b]) => a.ende.richtung === gegen(b.ende.richtung));
-      gewaehlt = [...gegenueber, ...paare].find(darstellbar) ?? [];
+      const eckig = paare.filter((p) => !gegenueber.includes(p));
+      // Zwei Möglichkeiten: gegenüberliegend → gerade, sonst Kurve. Ab drei (T-Stelle, Kreuzung) beschreibt Bedrock nur „wird zur Kurve“:
+      // dann zuerst das erste darstellbare Eck-Paar in der Reihenfolge der Bevorzugung, erst danach ein gerades Paar.
+      const reihenfolge = optionen.length >= 3 ? [...eckig, ...gegenueber] : paare;
+      gewaehlt = reihenfolge.find(darstellbar) ?? [];
     }
     if (!gewaehlt.length && optionen.length) gewaehlt = [optionen[0]];
 

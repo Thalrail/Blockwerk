@@ -44,7 +44,7 @@ Zuletzt aktualisiert: 20.10.2026
 - `platziere(welt, pos, id)`: legt eine Schiene so, wie das Spiel sie einstellt (einzeln Nord-Süd, Linie verlängern, zwei Nachbarn verbinden, Rampe zu Schienen eine Ebene höher/tiefer, Nachbarn stellen sich ein, volle Nachbarn bleiben). Gibt zurück, was sich geändert hat und womit die neue Schiene verbunden ist.
 - `enden`, `gegenstelle`, `formAus`: Enden einer Schiene aus `rail_direction` (von Jonah geprüft, Test 4), Gegenstelle am Ende, Rückweg Enden → Wert.
 - Antriebsschienen werden nie zur Kurve; Detektor/Aktivierung wie Antriebsschiene angenommen.
-- Prüfer: `pruefer.schiene-verbindung` (einseitige Verbindung = Verstoß, Sackgasse = Hinweis), `pruefer.antriebsschiene-kurve`.
+- Prüfer: `pruefer.schiene-verbindung` (einseitige Verbindung und Sackgasse = Hinweis), `pruefer.antriebsschiene-kurve`.
 - Regeln: `data/regeln/schiene.json` (10 Regeln, 1 geprüft, 7 mit Annahmen und Testanleitung).
 - Schiene auf Halbstufe/Treppe: normale Lage trägt nicht (Verstoß), obere Halbstufe/kopfstehende Treppe nur Hinweis (laut Wiki möglich, ungetestet).
 - Noch **nicht** da: Antrieb (8 Schienen weit, nur C-Tick), Lorenbewegung, Geschwindigkeit.

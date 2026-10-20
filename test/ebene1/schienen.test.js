@@ -191,18 +191,32 @@ test('Schiene: Antriebsschienen werden nie zur Kurve', () => {
 });
 
 test('Schiene: T-Stelle und Kreuzung (Annahme)', () => {
+  // Bedrock-Wiki: an einer T-Stelle wird die neue Schiene zur Kurve. Welche, ist nicht belegt: erstes Eck-Paar in der Bevorzugung (West, Ost, Süd, Nord).
   const t = boden();
   lege(t, [[-1, 0], [1, 0], [0, 1]]);
   lege(t, [[0, 0]]);
-  assert.equal(wert(t, 0, 0), O_W, 'T: gegenüberliegendes Paar (West, Ost) geht vor');
+  assert.equal(wert(t, 0, 0), 7, 'T mit West, Ost, Süd: Kurve Süd-West');
   const kreuz = boden();
   lege(kreuz, [[-1, 0], [1, 0], [0, 1], [0, -1]]);
   lege(kreuz, [[0, 0]]);
-  assert.equal(wert(kreuz, 0, 0), O_W, 'Kreuzung: erstes gegenüberliegendes Paar in der Reihenfolge der Bevorzugung (West/Ost)');
+  assert.equal(wert(kreuz, 0, 0), 7, 'Kreuzung: erstes Eck-Paar (West, Süd)');
   const nord = boden();
   lege(nord, [[0, -1], [0, 1], [1, 0]]);
   lege(nord, [[0, 0]]);
-  assert.equal(wert(nord, 0, 0), N_S, 'T mit Nord, Süd, Ost: Nord-Süd');
+  assert.equal(wert(nord, 0, 0), 6, 'T mit Nord, Süd, Ost: Kurve Süd-Ost (Ost vor Süd)');
+  // Mit nur zwei gegenüberliegenden Nachbarn bleibt es gerade
+  const zwei = boden();
+  lege(zwei, [[-1, 0], [1, 0], [0, 0]]);
+  assert.equal(wert(zwei, 0, 0), O_W);
+  // Ein T nur durch Platzieren erzeugt keinen Verstoß (Abzweige sind normal)
+  assert.deepEqual(e1.pruefe(t).filter((m) => m.schwere === 'verstoss'), []);
+  assert.deepEqual(e1.pruefe(kreuz).filter((m) => m.schwere === 'verstoss'), []);
+  // Abzweig: Linie Ost-West, dann eine Schiene davor – sie zeigt auf die volle Mittelschiene, die nicht zurückzeigt
+  const abzweig = boden();
+  lege(abzweig, [[-1, 0], [0, 0], [1, 0], [0, 1]]);
+  const m = e1.pruefe(abzweig);
+  assert.deepEqual(m.filter((x) => x.schwere === 'verstoss'), []);
+  assert.ok(m.some((x) => x.regel === 'pruefer.schiene-verbindung' && x.ort.z === 1 && /Abzweig/.test(x.meldung)), 'Abzweig wird als Hinweis genannt');
 });
 
 test('Schiene: Rampen-Bevorzugung folgt den Daten (Annahme)', () => {
@@ -234,6 +248,7 @@ test('Schiene: alle Reihenfolgen in der Nachbarschaft ergeben gültige, gegensei
           const r = S.platziere(w, { x, y: 1, z }, x === 0 && z === 0 ? id : RAIL);
           // Ergebnis gültig
           for (const a of r.geaendert) assert.ok(a.rail_direction >= 0 && a.rail_direction <= 9);
+          assert.deepEqual(e1.pruefe(w).filter((m) => m.schwere === 'verstoss'), [], `Verstoß bei Maske ${maske}, Reihenfolge ${JSON.stringify(reihe)}`);
           // jede gewählte Verbindung ist danach gegenseitig
           const eigene = S.enden(w.leseBlock(x, 1, z).zustand);
           for (const partner of r.verbundenMit) {
@@ -298,9 +313,9 @@ test('Prüfer: Schienenverbindungen', () => {
   const einseitig = boden();
   einseitig.setzeBlock(0, 1, 0, RAIL, { rail_direction: O_W });   // zeigt nach Osten auf (1,1,0)
   einseitig.setzeBlock(1, 1, 0, RAIL, { rail_direction: N_S });   // zeigt nicht zurück
-  const v = e1.pruefe(einseitig).filter((x) => x.schwere === 'verstoss');
-  assert.ok(v.length >= 1);
-  assert.ok(v.some((x) => x.regel === 'pruefer.schiene-verbindung' && x.ort.x === 0 && /nicht zurückzeigt/.test(x.meldung)));
+  const h = e1.pruefe(einseitig).filter((x) => x.regel === 'pruefer.schiene-verbindung');
+  assert.ok(h.every((x) => x.schwere === 'hinweis'), 'einseitige Verbindungen sind nur Hinweise (Abzweig oder Lücke)');
+  assert.ok(h.some((x) => x.ort.x === 0 && /nicht zurückzeigt/.test(x.meldung)));
 
   const rampe = boden();
   rampe.setzeBlock(2, 1, 0, 'minecraft:stone');

@@ -13,7 +13,7 @@ Zuletzt aktualisiert: 20.10.2026
 |---------|--------|--------|
 | 0 | Projektgerüst: Ordnerstruktur je Ebene, `package.json` (nur `npm test`, Node 22, keine Abhängigkeiten), GitHub Actions für Tests, README mit Faithful-Nennung | **fertig** (gemergt, PR #1) |
 | 1 | Ebene 0 – Fundament: Koordinaten/Richtungen, Blockregister Bedrock 1.26.50 (Daten), Wesenregister, Voxelwelt in Chunks, Blockinhalte, Vermesser (Verschieben/Drehen/Spiegeln mit facing), Speichern/Laden | **fertig, Status `entworfen`** (Tests bestanden; Drehregeln teils `geprüft` (7 von 19), Eigenschaften noch `ungeprüft`, siehe unten; `simuliert` gibt es erst mit Ebene 1) |
-| 2a | Ebene 1 – Unterbau: Taktgeber (Spieltick, P-/C-Tick), geplante Ticks, Tickbereich, Sandkasten, Regelwerk als Daten mit Quelle/Status, Prüfer-Gerüst (Fackel/Schiene Halt, Tickbereich) | **fertig, Status `simuliert`** (Regeln mit Annahmen sind `ungeprüft`) |
+| 2a | Ebene 1 – Unterbau: Taktgeber (Spieltick, P-/C-Tick), geplante Ticks, Tickbereich, Sandkasten, Regelwerk als Daten mit Quelle/Status, Prüfer-Gerüst (Fackel/Schiene Halt, Tickbereich) | **fertig, Status `simuliert`** (Ausnahmen: `takt.zufallsticks` und `takt.mechanismus-blockupdate` nur `entworfen`; 8 Regeln mit Annahmen sind `ungeprüft`) |
 | 2b… | Ebene 1 – Mechaniken schrittweise, je ein PR: Schienen, Wasser/Lava, Licht, Trichter & Blockinhalte, fallende Blöcke, Redstone, Wesen | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -34,7 +34,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Was Ebene 1 (Teil 2a) jetzt kann (`src/ebene1`)
 - `taktgeber.js`: Spieltick-Zähler, P-Tick (ungerade) / C-Tick (gerade), Tickarten (Spieltick, Staub, Übertrager, Mechanismus, Wesen), feste Arbeitsreihenfolge aus den Daten, Übertrager lesen im P- und schreiben im folgenden C-Tick (Verzögerung d: Lesetick + 2·d − 1), geplante Ticks, Protokoll für Tests.
 - `geplante-ticks.js`: höchstens 100 je Chunk und Spieltick, Überlauf in den nächsten Tick. `tickbereich.js`: Simulationsdistanz/Tickingarea. `sandkasten.js`: Simulation nur in einer Kopie. `zufall.js`, `weltzeit.js`: deterministischer Zufall, Tag = 24.000 Ticks.
-- `regelwerk.js` + `data/regeln/takt.json`, `pruefer.json`: 15 Regeln mit Quelle und Status; 8 davon mit Annahmen (`ungeprüft`, Testanleitungen in `docs/spieltests.md`).
+- `regelwerk.js` + `data/regeln/takt.json`, `pruefer.json`: 16 Regeln mit Quelle und Status; 8 davon mit Annahmen (`ungeprüft`, Testanleitungen in `docs/spieltests.md`).
 - `pruefer.js`: meldet Verstöße maschinenlesbar mit Koordinate: Fackel ohne Halt, Schiene ohne Boden, Blöcke/Wesen außerhalb des Tickbereichs.
 - Noch **keine** konkrete Mechanik (Wasser, Schienenverkehr, Redstone …): sie melden sich künftig beim Taktgeber an.
 

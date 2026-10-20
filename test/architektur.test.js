@@ -39,7 +39,7 @@ test('Ebenen importieren nur aus gleicher oder tieferer Ebene', () => {
 test('Die Engine (src/) nutzt weder Dateisystem noch Zufall noch Uhrzeit – außer daten-node.js', () => {
   for (const datei of dateien(join(wurzel, 'src'))) {
     if (datei.endsWith('daten-node.js')) continue;
-    const text = readFileSync(datei, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''); // Kommentare zählen nicht
+    const text = readFileSync(datei, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '$1'); // Kommentare zählen nicht (URLs mit „https://“ bleiben stehen)
     assert.doesNotMatch(text, /node:fs|node:path|Math\.random|Date\.now|new Date\(|crypto\./, relative(wurzel, datei));
   }
 });

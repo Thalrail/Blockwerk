@@ -18,7 +18,7 @@
     {
       "id": "takt.redstone-tick",
       "titel": "Redstone-Tick und Phasen",
-      "regel": "Ein Redstone-Tick dauert 2 Spielticks und läuft getrennt vom Haupt-Loop. Ungerade Spielticks sind P-Ticks (Produce), gerade sind C-Ticks (Consume).",
+      "regel": "Ein Redstone-Tick dauert 2 Spielticks. Ungerade Spielticks sind P-Ticks (Produce), gerade sind C-Ticks (Consume). In Bedrock läuft das Redstone-System getrennt vom Haupt-Loop; Blockwerk nähert das als feste Stufen innerhalb des Spielticks an (siehe takt.arbeitsreihenfolge).",
       "parameter": {
         "spielticksProRedstoneTick": 2,
         "pTick": "ungerade",
@@ -55,11 +55,20 @@
     {
       "id": "takt.mechanismus",
       "titel": "Mechanismen schalten im C-Tick",
-      "regel": "Mechanismen (Kolben, Lampe, Tür …) schalten im C-Tick; das Blockupdate läuft im nächsten P-Tick.",
+      "regel": "Mechanismen (Kolben, Lampe, Tür …) schalten im C-Tick.",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Tick",
       "status": "simuliert",
       "simulationstest": "test/ebene1/taktgeber.test.js::Mechanismen arbeiten nur im C-Tick",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.mechanismus-blockupdate",
+      "titel": "Mechanismen: Blockupdate im nächsten P-Tick",
+      "regel": "Nach dem Schalten eines Mechanismus im C-Tick läuft das Blockupdate im nächsten P-Tick. Noch nicht umgesetzt; kommt mit der ersten Redstone-Mechanik.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "entworfen",
       "ungeprueft": false
     },
     {
@@ -108,20 +117,19 @@
     {
       "id": "takt.zufallsticks",
       "titel": "Zufallsticks",
-      "regel": "randomTickSpeed ist in Bedrock standardmäßig 1 und gibt nur die relative Geschwindigkeit an. Blockwerk nutzt Zufall mit festem Startwert und rechnet zusätzlich mit Erwartungswerten („reif nach ca. X Minuten“). Welche Blöcke wie oft ticken, kommt mit den jeweiligen Mechaniken.",
+      "regel": "randomTickSpeed ist in Bedrock standardmäßig 1 und gibt nur die relative Geschwindigkeit an. Blockwerk nutzt Zufall mit festem Startwert und rechnet zusätzlich mit Erwartungswerten („reif nach ca. X Minuten“). Welche Blöcke wie oft ticken, kommt mit den jeweiligen Mechaniken. Umgesetzt ist bisher nur der deterministische Zufallsgenerator; die Zufallsticks-Stufe im Taktgeber ist ein leerer Platzhalter.",
       "parameter": {
         "randomTickSpeed": 1
       },
       "quelle": "https://minecraft.wiki/w/Tick",
-      "status": "simuliert",
-      "simulationstest": "test/ebene1/zufall.test.js::Zufall: gleicher Seed = gleiche Folge",
+      "status": "entworfen",
       "ungeprueft": true,
       "testanleitung": "Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen)."
     },
     {
       "id": "takt.tickbereich",
       "titel": "Tickbereich",
-      "regel": "Bedrock tickt alle Chunks innerhalb der Simulationsdistanz (oder einer Tickingarea). Blockwerk modelliert die Distanz als Quadrat um jeden Spieler in Chunks und hat bewusst keinen Standardwert.",
+      "regel": "Bedrock tickt alle Chunks innerhalb der Simulationsdistanz (oder einer Tickingarea). Blockwerk modelliert die Distanz als Quadrat um jeden Spieler in Chunks und hat bewusst keinen Standardwert. Der Taktgeber wendet den Tickbereich bisher nur auf geplante Ticks an; künftige Mechaniken müssen ihn selbst beachten.",
       "parameter": {
         "form": "quadrat"
       },

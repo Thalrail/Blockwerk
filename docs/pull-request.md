@@ -1,9 +1,6 @@
 # Pull Request: Projektgerüst + Ebene 0 (Fundament)
 
-> Dieser Text ist der PR-Text. Es wurde **noch kein PR geöffnet**: Der Arbeitsordner hatte kein GitHub-Remote (`Thalrail/blockwerk`)
-> und kein `gh`. Der lokale Verlauf hat einen eigenen Start-Commit; wenn `Thalrail/blockwerk` schon CLAUDE.md/docs enthält, würde ein
-> Push von hier unverbundene Verläufe erzeugen. Darum liegen die Änderungen als Patch-Dateien in `patches/`
-> (`git am patches/*.patch` auf einem Branch des echten Repos). Welchen Weg du willst, entscheidest du.
+> Dieser Text war die Grundlage des PR (Thalrail/Blockwerk#1). Der PR ist offen; die Hinweise zu Patch-Dateien unten sind überholt.
 
 ## Was gebaut wurde
 **Schritt 0 – Gerüst:** Ordner je Ebene (`src/ebene0` … `ebene5`), `package.json` (nur `npm test`, Node ≥ 22, keine Abhängigkeiten),

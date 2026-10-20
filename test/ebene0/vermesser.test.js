@@ -215,6 +215,30 @@ test('Jede Drehregel nennt ihre Quelle, jeder Vermerk eine Begründung', () => {
   assert.ok(!('direction' in drehregeln.zustaende), 'unbelegte Zuordnung darf nicht gedreht werden');
 });
 
+test('Jede Drehregel hat einen Status; „geprüft“ nur mit Datum und Beobachtung von Jonahs Spieltest', () => {
+  const gepruefte = [];
+  for (const [name, regel] of Object.entries(drehregeln.zustaende)) {
+    assert.ok(['geprüft', 'ungeprüft'].includes(regel.status), `${name}: Status fehlt oder ungültig`);
+    if (regel.status === 'geprüft') {
+      gepruefte.push(name);
+      assert.match(regel.geprueftAm, /^\d{4}-\d{2}-\d{2}$/, `${name}: Datum fehlt`);
+      assert.ok(regel.beobachtung?.length > 10, `${name}: Beobachtung fehlt`);
+    }
+  }
+  // Stand der Spieltests vom 20.10.2026 (Jonah): Test 1, 2, 5, 7, 8 bestätigt; Test 3 und 4 nicht aussagekräftig
+  assert.deepEqual(gepruefte.sort(), [
+    'door_hinge_bit', 'facing_direction', 'minecraft:cardinal_direction', 'multi_face_direction_bits', 'torch_facing_direction', 'weirdo_direction',
+  ]);
+  assert.equal(drehregeln.zustaende['minecraft:corner'].status, 'ungeprüft');
+  assert.equal(drehregeln.zustaende.rail_direction.status, 'ungeprüft');
+});
+
+test('Fackel: Wert = Seite des Nachbarblocks, an dem sie hängt (Spieltest 7) – dreht mit', () => {
+  // Fackel hängt an einem Block im Westen; nach einer Vierteldrehung liegt dieser Block im Norden
+  assert.deepEqual(z1('', { torch_facing_direction: 'west' }, DREH), { torch_facing_direction: 'north' });
+  assert.deepEqual(z1('', { torch_facing_direction: 'east' }, sp('x')), { torch_facing_direction: 'west' });
+});
+
 test('Glow-Lichen-Bits (Wiki: 1 unten, 2 oben, 4 Süd, 8 West, 16 Nord, 32 Ost) und Wand-Koralle', () => {
   assert.deepEqual(z1('', { multi_face_direction_bits: 4 }, DREH), { multi_face_direction_bits: 8 }, 'Süd → West');
   assert.deepEqual(z1('', { multi_face_direction_bits: 1 | 2 | 32 }, DREH), { multi_face_direction_bits: 1 | 2 | 4 }, 'Ost → Süd, oben/unten bleiben');

@@ -99,6 +99,9 @@ test('Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt', () => {
   // Loch 4 Blöcke östlich: auch gefunden
   const vier = mitLoch(4);
   assert.ok(luft(vier, -1, 1, 0), 'Loch im 4. Block wird noch gefunden');
+  // Loch im 5. Block (nach höchstens 4 Blöcken Weg): gerade noch gefunden – pinnt den Parameter suchweite = 4
+  const fuenf = mitLoch(5);
+  assert.ok(luft(fuenf, -1, 1, 0) && luft(fuenf, 0, 1, 1), 'Loch im 5. Block wird noch gefunden');
   // Loch 6 Blöcke östlich: zu weit, Wasser breitet sich nach allen Seiten aus
   const fern = mitLoch(6);
   assert.ok(stufe(fern, -1, 1, 0) !== null && stufe(fern, 0, 1, 1) !== null, 'zu weit weg: keine Vorzugsrichtung');

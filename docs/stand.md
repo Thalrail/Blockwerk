@@ -17,7 +17,7 @@ Zuletzt aktualisiert: 20.10.2026
 | 2b-1 | Ebene 1 – Schienen: Form und Verbindung (Platzieren wie im Spiel, Prüfer für Verbindungen und Antriebsschienen) | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #3) |
 | 2b-2 | Ebene 1 – Schienen-Antrieb: Antriebsschienen (Reichweite 8, nur im C-Tick), Prüfer-Hinweis | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
 | 2c | Ebene 1 – Wasser und Lava: Weite, Tempo, Fallen, Gefälle, Quellenbildung, Mischen, Wegspülen, Prüfer „Wasser zerstört“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
-| 2d… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), Licht, fallende Blöcke, Redstone, Wesen, zuletzt Trichter & Blockinhalte (nachrangig, siehe Händler-Notiz) | **als Nächstes** |
+| 2d… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), Licht, fallende Blöcke, Trichter & Blockinhalte, Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -57,6 +57,8 @@ Zuletzt aktualisiert: 20.10.2026
 - `aktiviere(welt, …)` setzt `rail_data_bit`; `mechanik()` ist eine Taktgeber-Mechanik der Tickart `mechanismus` und schaltet damit **nur im C-Tick** (Bedrock-dokumentiert).
 - Prüfer-Hinweis `pruefer.antrieb-ohne-quelle` (nur wenn die Stromquellen übergeben werden).
 - Schienen in Chunks außerhalb des Tickbereichs schalten nicht (der Taktgeber gibt den Tickbereich an die Mechanik weiter).
+- **Java-Platzhalter (Entscheidung für Jonah):** Die Fließ-Logik von Wasser/Lava (Gefälle-Zählung, Abklingen, „unten vor seitlich“, Plus-Form um eine Quelle in der Luft) folgt vorläufig der Java-Implementierung, weil Bedrock nichts dokumentiert. Das ist eine Ausnahme zu „nie Java übernehmen“ (CLAUDE.md) und bleibt `ungeprüft`, bis Jonah getestet hat.
+- `pruefe()` läuft bei jeder Welt mit Wasser/Lava bis zu 400 Simulationsticks (Kosten wachsen mit der Wassermenge).
 - Bekanntes Limit: `aktive()`/`aktiviere()` gehen bei jedem C-Tick über alle Blöcke der Welt (sortiert). Für Zitadelle-Größe (ca. 3,9 Mio. Blöcke) später Schienen je Chunk indexieren.
 - Regeln: `data/regeln/antrieb.json` (4 Regeln, 3 mit Annahmen und Testanleitung). Reichweite 8 und „nur verbundene geben Strom weiter“ sind nicht als Bedrock belegt.
 - **Keine Lorenphysik:** Bedrock nennt dazu keine Zahlen. Jonahs Messungen A–F (`docs/messungen-lore.md`) sind die Grundlage für Schritt 2b-3.
@@ -88,7 +90,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2d: Lorenbewegung**, aber erst nach Jonahs Messungen (sonst wäre es geraten). Bis dahin als Nächstes Licht & Spawnstellen oder fallende Blöcke – Jonah entscheidet. Detektor-/Aktivierungsschiene folgen mit der Redstone-Mechanik. Trichter & Blockinhalte sind nachrangig (Händler geben Items direkt ins Inventar).
+**Schritt 2d: Lorenbewegung**, aber erst nach Jonahs Messungen (sonst wäre es geraten). Bis dahin als Nächstes Licht & Spawnstellen oder fallende Blöcke – Jonah entscheidet. Detektor-/Aktivierungsschiene folgen mit der Redstone-Mechanik. Trichter & Blockinhalte sind gleichberechtigt (Händler geben Items direkt ins Inventar, aber Lager/Sortierer der Zitadelle brauchen Trichter).
 Nebenbei: Jonah macht die Antriebs-Tests und Messungen aus `docs/spieltests.md` und `docs/messungen-lore.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

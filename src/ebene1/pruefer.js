@@ -99,11 +99,13 @@ function pruefeFluessigkeit(welt, fluessigkeit, maxTicks) {
   if (!fluessigkeit.enthaeltFluessigkeit(welt)) return [];
   const lauf = fluessigkeit.simuliere(welt, { maxTicks });
   const meldungen = [];
+  const erster = welt.alleBloecke().find((x) => fluessigkeit.artVon(x.id));
+  const ersterOrt = { x: erster.x, y: erster.y, z: erster.z };
   for (const e of lauf.ereignisse) {
     if (e.was === 'weggespuelt') meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: e.pos, schwere: 'verstoss', meldung: `${e.von} wird von ${e.art === 'wasser' ? 'Wasser' : 'Lava'} weggespült` });
     else if (e.was === 'gemischt') meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: e.pos, schwere: 'hinweis', meldung: `Wasser und Lava mischen sich bei diesem Block: ${e.von} wird zu ${e.nach}` });
   }
-  if (!lauf.stabil) meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: { x: 0, y: 0, z: 0 }, schwere: 'hinweis', meldung: `Die Flüssigkeit war nach ${maxTicks} Ticks noch in Bewegung; die Meldungen sind unvollständig` });
+  if (!lauf.stabil) meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: ersterOrt, schwere: 'hinweis', meldung: `Die Flüssigkeit war nach ${maxTicks} Ticks noch in Bewegung; die Meldungen sind unvollständig` });
   return meldungen;
 }
 

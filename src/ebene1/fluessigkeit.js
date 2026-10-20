@@ -2,7 +2,8 @@
 // Regeln: data/regeln/fluessigkeit.json (Quelle und Status je Regel; vieles ist im Wiki nicht als Bedrock gekennzeichnet → ungeprüft).
 // Darstellung (Bedrock): `water`/`lava` mit liquid_depth 0 = Quelle, `flowing_water`/`flowing_lava` mit Stufe 1–7,
 // Stufe ab 8 = fallend. Die Ausbreitung läuft über geplante Ticks des Taktgebers (Wasser alle 5 Ticks, Lava 30 bzw. 10).
-// Das Verfahren folgt der bekannten Fluss-Logik: unten frei → fallen (seitlich nur bei 3 Quellen-Nachbarn), sonst seitlich in
+// ACHTUNG: Bedrock dokumentiert die Fließ-Logik nicht. Das Verfahren folgt vorläufig der Java-Implementierung (Platzhalter, `ungeprüft`;
+// Ausnahme zu „nie Java übernehmen“ aus CLAUDE.md, bis Jonah im Spiel getestet hat): unten frei → fallen (seitlich nur bei 3 Quellen-Nachbarn), sonst seitlich in
 // die Richtungen mit dem nächsten Gefälle (höchstens 4 Blöcke), Fließblöcke ohne Nachschub rücken stufenweise ab, bis sie verschwinden.
 // Die Welt wird nur über Ebene 0 gelesen und geschrieben.
 import { VEKTOR } from '../ebene0/richtungen.js';
@@ -125,7 +126,7 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
       return false;
     }
 
-    /** Entfernung bis zu einem Gefälle in Richtung r ab Zelle n (Java-Logik; 1000 = keins in Reichweite). */
+    /** Entfernung bis zu einem Gefälle ab Zelle n (Zählweise der Java-Implementierung als Platzhalter, siehe Regel fluessigkeit.gefaelle; 1000 = keins in Reichweite). */
     function gefaelle(welt, art, n, tiefeSchritt, herkunft) {
       let best = 1000;
       for (const r of SEITEN) {

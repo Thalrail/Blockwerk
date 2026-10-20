@@ -27,7 +27,7 @@
         "schritt": 2,
         "verzoegerung": 30
       },
-      "quelle": "https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet)",
+      "quelle": "https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet; das Wiki nennt im Text 3 Blöcke, im Infokasten 4 – Blockwerk nimmt 3, passend zu den Stufen 2, 4, 6 von liquid_depth)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Lava: Weite 3 (Oberwelt) und 7 (Nether), Tempo 30 und 10 Ticks",
       "ungeprueft": true,
@@ -54,7 +54,7 @@
       "titel": "Fließen nach unten ohne Grenze",
       "regel": "Flüssigkeit fließt senkrecht nach unten, bis ein Block sie aufhält, und breitet sich dort wie von einer Quelle aus (der Aufprallpunkt zählt als Stufe 0). Eine Quelle über bereits fließender Flüssigkeit breitet sich zusätzlich zur Seite aus; so entsteht um eine Quelle in der Luft eine Plus-Form aus vier Nachbarsäulen (Annahme aus der bekannten Fluss-Logik).",
       "parameter": {},
-      "quelle": "https://minecraft.wiki/w/Water (Aufprallpunkt als Quelle: Annahme)",
+      "quelle": "https://minecraft.wiki/w/Water (Aufprallpunkt als Quelle und Plus-Form um eine Quelle in der Luft: Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: fällt unbegrenzt und breitet sich unten aus",
       "ungeprueft": true,
@@ -63,11 +63,11 @@
     {
       "id": "fluessigkeit.gefaelle",
       "titel": "Gefälle in höchstens 4 Blöcken wird bevorzugt",
-      "regel": "Findet das Wasser ein Gefälle (Loch) in höchstens 4 Blöcken Entfernung, fließt es in diese Richtung(en); sonst in alle Richtungen.",
+      "regel": "Findet das Wasser ein Gefälle (Loch) in der Nähe, fließt es in diese Richtung(en); sonst in alle. Gezählt wird so: ein Loch im ersten bis zum 5. Block neben der Quelle wird gefunden (also nach höchstens 4 Blöcken Weg bis vor das Loch); im 6. Block nicht mehr.",
       "parameter": {
         "suchweite": 4
       },
-      "quelle": "https://minecraft.wiki/w/Water (Edition nicht gekennzeichnet)",
+      "quelle": "https://minecraft.wiki/w/Water („Gefälle in höchstens 4 Blöcken“, Edition nicht gekennzeichnet; Zählweise nach der Java-Implementierung – Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
       "ungeprueft": true,
@@ -80,7 +80,7 @@
       "parameter": {
         "quellenNachbarn": 3
       },
-      "quelle": "https://minecraft.wiki/w/Water (Annahme aus der bekannten Fluss-Logik)",
+      "quelle": "https://minecraft.wiki/w/Water (Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: unten vor seitlich",
       "ungeprueft": true,
@@ -125,7 +125,7 @@
       "titel": "Abklingen ohne Nachschub",
       "regel": "Fließblöcke, die nicht mehr von einer Quelle versorgt werden, rücken Stufe für Stufe ab und verschwinden. Bedrock beschreibt das nicht genau; Blockwerk nutzt die bekannte Logik (Stufe = niedrigste Nachbarstufe + Schritt).",
       "parameter": {},
-      "quelle": "https://minecraft.wiki/w/Water (Annahme)",
+      "quelle": "https://minecraft.wiki/w/Water (Bedrock dokumentiert dazu nichts; Blockwerk folgt vorläufig der Java-Implementierung als Platzhalter (Ausnahme zu „nie Java übernehmen“ in CLAUDE.md, bis Jonah getestet hat))",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Abklingen ohne Nachschub",
       "ungeprueft": true,

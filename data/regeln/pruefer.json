@@ -85,6 +85,19 @@
       "simulationstest": "test/ebene1/antrieb.test.js::Prüfer: Antriebsschiene ohne Stromquelle",
       "ungeprueft": true,
       "testanleitung": "Siehe antrieb.reichweite."
+    },
+    {
+      "id": "pruefer.wasser-zerstoert",
+      "titel": "Prüfer: Wasser zerstört etwas",
+      "regel": "Der Prüfer lässt vorhandenes Wasser und Lava in einer Kopie der Welt bis zum stabilen Zustand fließen. Was dabei weggespült wird (Fackel, Schiene …), ist ein Verstoß mit Koordinate; Mischungen aus Wasser und Lava (Obsidian, Bruchstein, Stein) sind ein Hinweis.",
+      "parameter": {
+        "maxTicks": 400
+      },
+      "quelle": "https://minecraft.wiki/w/Water (folgt aus fluessigkeit.wegspuelen und fluessigkeit.mischen)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Prüfer: Wasser zerstört Schiene und Fackel",
+      "ungeprueft": true,
+      "testanleitung": "Siehe fluessigkeit.wegspuelen."
     }
   ]
 }

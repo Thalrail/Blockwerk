@@ -94,6 +94,21 @@ function pruefeAntrieb(welt, antrieb, stromQuellen, bloecke) {
     }));
 }
 
+/** Lässt vorhandenes Wasser/Lava in einer Kopie fließen und meldet, was zerstört oder gemischt wird. */
+function pruefeFluessigkeit(welt, fluessigkeit, maxTicks) {
+  if (!fluessigkeit.enthaeltFluessigkeit(welt)) return [];
+  const lauf = fluessigkeit.simuliere(welt, { maxTicks });
+  const meldungen = [];
+  const erster = welt.alleBloecke().find((x) => fluessigkeit.artVon(x.id));
+  const ersterOrt = { x: erster.x, y: erster.y, z: erster.z };
+  for (const e of lauf.ereignisse) {
+    if (e.was === 'weggespuelt') meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: e.pos, schwere: 'verstoss', meldung: `${e.von} wird von ${e.art === 'wasser' ? 'Wasser' : 'Lava'} weggespült` });
+    else if (e.was === 'gemischt') meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: e.pos, schwere: 'hinweis', meldung: `Wasser und Lava mischen sich bei diesem Block: ${e.von} wird zu ${e.nach}` });
+  }
+  if (!lauf.stabil) meldungen.push({ regel: 'pruefer.wasser-zerstoert', ort: ersterOrt, schwere: 'hinweis', meldung: `Die Flüssigkeit war nach ${maxTicks} Ticks noch in Bewegung; die Meldungen sind unvollständig` });
+  return meldungen;
+}
+
 function pruefeTickbereich(welt, bloecke, tickbereich) {
   const ersteProChunk = new Map();
   const merke = (x, y, z, was) => {
@@ -147,11 +162,12 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined, fluessigkeit = null }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   if (schienen) meldungen.push(...pruefeSchienen(welt, schienen, bloecke));
   if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
+  if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);
 }

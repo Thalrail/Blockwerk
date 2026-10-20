@@ -55,10 +55,14 @@ async function bloecke(eig) {
   const arbeits = new Set(eig.arbeitsbloecke);
   const ergebnis = {};
   for (const b of roh.data_items) {
-    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null };
+    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null, lichtfilter: null };
     for (const r of regeln) if (r.re.test(b.name) && !(r.ausser && r.ausser.test(b.name))) Object.assign(e, r.setze);
     if (e.fluessigkeit === null && e.vollblock === true) e.fluessigkeit = 'fest';
+    if (e.lichtfilter === null && e.vollblock === true && e.durchsichtig === false) e.lichtfilter = 15;
     if (b.name in eig.lichtstaerke) e.licht = eig.lichtstaerke[b.name];
+    const lb = new RegExp(eig.lichtstaerkeAusName.muster).exec(b.name);
+    if (lb) e.licht = Number(lb[1]);
+    if (eig.lichtZustandsabhaengig.includes(b.name)) e.licht = null;
     const namen = b.properties.map((p) => p.name).sort();
     for (const n of namen) if (!zustandsarten[n]) throw new Error(`${b.name}: unbekannter Zustand ${n}`);
     const eintrag = { zustaende: namen, eigenschaften: e };

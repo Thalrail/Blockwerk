@@ -8,6 +8,7 @@ import { pruefe } from './pruefer.js';
 import { erzeugeSchienen } from './schienen.js';
 import { erzeugeAntrieb } from './antrieb.js';
 import { erzeugeFluessigkeit } from './fluessigkeit.js';
+import { erzeugeLicht } from './licht.js';
 
 export * from './weltzeit.js';
 export { Zufall, erwarteteTicks, erwarteteMinuten } from './zufall.js';
@@ -20,6 +21,7 @@ export { pruefe } from './pruefer.js';
 export { erzeugeSchienen } from './schienen.js';
 export { erzeugeAntrieb } from './antrieb.js';
 export { erzeugeFluessigkeit } from './fluessigkeit.js';
+export { erzeugeLicht } from './licht.js';
 
 /**
  * @param {{ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>, regeln: object[]}} quellen
@@ -31,11 +33,13 @@ export function erzeugeEbene1({ ebene0, regeln }) {
   const schienen = erzeugeSchienen({ regelwerk, register: ebene0.register });
   const antrieb = erzeugeAntrieb({ regelwerk, schienen });
   const fluessigkeit = erzeugeFluessigkeit({ regelwerk, register: ebene0.register });
+  const licht = erzeugeLicht({ regelwerk, register: ebene0.register });
   return {
     regelwerk,
     schienen,
     antrieb,
     fluessigkeit,
+    licht,
     neuerSandkasten: (welt) => new Sandkasten(welt),
     neuerTaktgeber: (sandkasten, optionen = {}) => new Taktgeber(sandkasten, { reihenfolge, ...optionen }),
     pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, ...optionen }),

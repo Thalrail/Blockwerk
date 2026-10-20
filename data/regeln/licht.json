@@ -1,0 +1,93 @@
+{
+  "bereich": "licht",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "licht.blocklicht",
+      "titel": "Blocklicht nimmt um 1 je Block ab",
+      "regel": "Eine Lichtquelle mit Stärke s erhellt ihre Umgebung per Flutfüllung; je Block (Taxi-Abstand, in allen drei Achsen) nimmt das Licht um 1 ab, mindestens aber um den Lichtfilter des betretenen Blocks. Undurchsichtige Blöcke lassen nichts durch.",
+      "parameter": {
+        "abnahme": 1
+      },
+      "quelle": "https://minecraft.wiki/w/Light (Edition nicht ausdrücklich gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Blocklicht nimmt um 1 je Block ab",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt, dunkle Höhle oder Raum ohne Himmel: Eine Fackel (Stärke 14) in der Mitte eines großen Raums. Mit einem Lichtblock (/give @s light_block [\"block_light_level\"=…]) oder Beobachtung der Monsterspawns prüfen, wie weit das Licht reicht. Erwartung: 13 Blöcke Entfernung noch Licht 1, ab 14 Blöcken dunkel."
+    },
+    {
+      "id": "licht.himmelslicht",
+      "titel": "Himmelslicht: senkrecht ungeschwächt, seitlich minus 1",
+      "regel": "Himmelslicht ist 15 an Blöcken mit freiem Himmel darüber und geht laut Wiki senkrecht nach unten durch Luft ungeschwächt hindurch. Belegt ist das nur für den vollen Wert 15. Seitlich nimmt es um 1 je Block ab. Für bereits seitlich verteiltes Licht (unter 15) rechnet Blockwerk mit Schranken: Obergrenze = auch senkrecht ungeschwächt, Untergrenze = wie seitlich (1 je Block).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Light (Edition nicht ausdrücklich gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Himmelslicht fällt senkrecht ungeschwächt und seitlich um 1",
+      "ungeprueft": true,
+      "testanleitung": "Tagsüber: ein 1×1-Schacht, 20 Blöcke tief, mit Dach daneben. Ganz unten im Schacht ist es hell (Himmelslicht 15). Zeigt der waagerechte Gang vom Schachtboden aus, nach wie vielen Blöcken er dunkel wird (erwartet 15)? Mit Spawn-Beobachtung oder Lichtblock-Vergleich."
+    },
+    {
+      "id": "licht.filter",
+      "titel": "Lichtfilter von Laub, Wasser und Halbstufen",
+      "regel": "Laub (2), Wasser (1) und Amboss (3) filtern Licht in Bedrock; doppelte Halbstufen und undurchsichtige Vollblöcke blockieren ganz. Das Wiki nennt dazu Filterwerte („Laub 2“) und zugleich „−1 zusätzlich zur normalen Abnahme“ für Wasser und Eis. Blockwerk rechnet darum mit Schranken: Abnahme je Block zwischen max(1, Filter) (Obergrenze) und 1 + Filter (Untergrenze).",
+      "parameter": {
+        "laub": 2,
+        "wasser": 1,
+        "doppelteHalbstufe": 15
+      },
+      "quelle": "https://minecraft.wiki/w/Light; https://minecraft.wiki/w/Opacity (beide Bedrock-Angaben, nicht ganz widerspruchsfrei)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Filter von Laub, Wasser und doppelten Halbstufen",
+      "ungeprueft": true,
+      "testanleitung": "Fackel hinter einer 1-Block-Wand aus Laub, dann aus Wasser (Eimer in einem 1-Block-Loch): Wie viel dunkler ist es dahinter als durch Luft (eine Stufe weniger = Wiki-Filterwert, zwei Stufen weniger = „plus 1“)? Mit Lichtblöcken vergleichen und die Differenz melden."
+    },
+    {
+      "id": "licht.durchsichtig",
+      "titel": "Glas und Teppiche lassen Licht durch wie Luft",
+      "regel": "Glasblöcke (außer getöntem Glas) und Teppiche vermindern durchgehendes Licht nicht über die normale Abnahme von 1 je Block hinaus. Glasscheiben, Türen, Fackeln, Schienen und andere dünne Blöcke sind nicht belegt und bleiben „unbekannt“. Lava blockiert in Bedrock die Lichtausbreitung vollständig.",
+      "parameter": {
+        "filterNull": [
+          "Glasblöcke",
+          "Teppiche"
+        ],
+        "blockiert": [
+          "Lava"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Opacity (Glas und Teppiche: Edition nicht gekennzeichnet; Lava: nur Bedrock)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Glas und Teppich lassen Licht durch wie Luft (Wiki „Opacity“)",
+      "ungeprueft": true,
+      "testanleitung": "Fackel hinter einer 1-Block-Wand aus Glas, aus Teppich (Teppich auf dem Boden, Fackel auf gleicher Höhe wie der Teppich) und aus einem Block Lava: Wird es dahinter hell wie durch Luft? Bei Lava dunkel? Ergebnis je Block melden."
+    },
+    {
+      "id": "licht.unbekannte-filter",
+      "titel": "Unbekannte Lichtfilter werden mit zwei Schranken gerechnet",
+      "regel": "Für Glasscheiben, getöntes Glas, Treppen, Halbstufen, Zäune, Türen, Fackeln, Schienen, Redstone-Staub und viele andere dünne Blöcke nennt das Wiki keine Bedrock-Werte. Blockwerk rechnet mit „blockiert“ (Minimum) und „lässt durch“ (Maximum). Wo beide verschieden sind, ist das Feld „unklar“ (Hinweis statt Verstoß).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Light (nicht belegt – bewusst nicht geraten)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Unbekanntes wird mit zwei Schranken berechnet",
+      "ungeprueft": true,
+      "testanleitung": "Der wichtigste Test: Fackel hinter einer Reihe aus Schienen, Teppich, Blume, Schild, Redstone-Staub: Ist es dahinter hell? Dann je Block eine 1-Block-Wand mit Fackel dahinter: (1) Glasscheibe, (2) getöntes Glas, (3) Treppe, (4) untere Halbstufe, (5) obere Halbstufe, (6) Zaun, (7) Tür, (8) Falltür. Je Block melden: Licht dringt durch, schwächer oder gar nicht?"
+    },
+    {
+      "id": "licht.himmel-innen",
+      "titel": "Inneres Himmelslicht für Spawnregeln",
+      "regel": "Für Spawnregeln zählt das „innere“ Himmelslicht: bei freiem Himmel (Rohwert 15) ist es am Tag 15, bei Regen 12, bei Gewitter 10 und um Mitternacht 4. Für Rohwerte unter 15 zieht Blockwerk dieselbe Differenz ab (Annahme).",
+      "parameter": {
+        "werte": {
+          "tag": 15,
+          "regen": 12,
+          "gewitter": 10,
+          "nacht": 4
+        }
+      },
+      "quelle": "https://minecraft.wiki/w/Light (Werte laut Wiki; Abzug bei Rohwert unter 15 ist eine Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Himmelslicht innen (Tag, Regen, Gewitter, Nacht)",
+      "ungeprueft": true,
+      "testanleitung": "Siehe licht.himmelslicht; zusätzlich nachts im Freien und in einer Höhle mit schmalem Zugang: Spawnen Monster am Höhleneingang, wo das Himmelslicht schwach ist?"
+    }
+  ]
+}

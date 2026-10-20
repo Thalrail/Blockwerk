@@ -98,6 +98,17 @@
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Prüfer: Wasser zerstört Schiene und Fackel",
       "ungeprueft": true,
       "testanleitung": "Siehe fluessigkeit.wegspuelen."
+    },
+    {
+      "id": "pruefer.licht-unklar",
+      "titel": "Prüfer: Lichtquelle mit zustandsabhängiger Stärke",
+      "regel": "Bei Kerzen, Seegurken, Kupferglühbirnen, Respawn-Ankern, Tresoren und ähnlichen Blöcken hängt die Lichtstärke vom Zustand ab und ist in Ebene 0 noch nicht erfasst. Der Prüfer meldet sie als Hinweis; die Lichtberechnung rechnet für sie mit 0 bis 15.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Light (Lichtquellen-Tabelle)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Prüfer: Lichtquellen mit unklarer Stärke",
+      "ungeprueft": true,
+      "testanleitung": "Kerze (1 bis 4 Kerzen, angezündet), Seegurke (1–4, im Wasser), Respawn-Anker (Ladung 0–4): Wie hell ist es jeweils? Mit einem Lichtblock vergleichen und die Stufe melden."
     }
   ]
 }

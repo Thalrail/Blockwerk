@@ -109,6 +109,13 @@ function pruefeFluessigkeit(welt, fluessigkeit, maxTicks) {
   return meldungen;
 }
 
+/** Lichtquellen, deren Stärke vom Zustand abhängt (licht = null in Ebene 0). */
+function pruefeLicht(register, bloecke) {
+  return bloecke
+    .filter((b) => register.bloecke.block(b.id).eigenschaften.licht === null)
+    .map((b) => ({ regel: 'pruefer.licht-unklar', ort: { x: b.x, y: b.y, z: b.z }, schwere: 'hinweis', meldung: `${b.id}: Die Lichtstärke hängt vom Zustand ab und ist noch nicht erfasst (Licht 0–15 möglich)` }));
+}
+
 function pruefeTickbereich(welt, bloecke, tickbereich) {
   const ersteProChunk = new Map();
   const merke = (x, y, z, was) => {
@@ -165,6 +172,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
 export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined, fluessigkeit = null }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
+  meldungen.push(...pruefeLicht(register, bloecke));
   if (schienen) meldungen.push(...pruefeSchienen(welt, schienen, bloecke));
   if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
   if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));

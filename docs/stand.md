@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut: Branch `claude/ebene-1-antrieb`. 148 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gebaut: Branch `claude/ebene-1-wasser` (aufbauend auf dem Antrieb-Branch). 163 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -16,7 +16,8 @@ Zuletzt aktualisiert: 20.10.2026
 | 2a | Ebene 1 – Unterbau: Taktgeber (Spieltick, P-/C-Tick), geplante Ticks, Tickbereich, Sandkasten, Regelwerk als Daten mit Quelle/Status, Prüfer-Gerüst (Fackel/Schiene Halt, Tickbereich) | **fertig, Status `simuliert`** (Ausnahmen: `takt.zufallsticks` und `takt.mechanismus-blockupdate` nur `entworfen`; 8 Regeln mit Annahmen sind `ungeprüft`) |
 | 2b-1 | Ebene 1 – Schienen: Form und Verbindung (Platzieren wie im Spiel, Prüfer für Verbindungen und Antriebsschienen) | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #3) |
 | 2b-2 | Ebene 1 – Schienen-Antrieb: Antriebsschienen (Reichweite 8, nur im C-Tick), Prüfer-Hinweis | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
-| 2b-3… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), Wasser/Lava, Licht, Trichter & Blockinhalte, fallende Blöcke, Redstone, Wesen | **als Nächstes** |
+| 2c | Ebene 1 – Wasser und Lava: Weite, Tempo, Fallen, Gefälle, Quellenbildung, Mischen, Wegspülen, Prüfer „Wasser zerstört“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
+| 2d… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), Licht, fallende Blöcke, Redstone, Wesen, zuletzt Trichter & Blockinhalte (nachrangig, siehe Händler-Notiz) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -60,6 +61,14 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/antrieb.json` (4 Regeln, 3 mit Annahmen und Testanleitung). Reichweite 8 und „nur verbundene geben Strom weiter“ sind nicht als Bedrock belegt.
 - **Keine Lorenphysik:** Bedrock nennt dazu keine Zahlen. Jonahs Messungen A–F (`docs/messungen-lore.md`) sind die Grundlage für Schritt 2b-3.
 
+## Was Wasser und Lava (Teil 2c) jetzt können (`src/ebene1/fluessigkeit.js`)
+- Als Taktgeber-Mechanik über geplante Ticks: Wasser 7 Blöcke weit, 1 Block alle 5 Ticks; Lava Oberwelt 3 Blöcke / 30 Ticks, Nether 7 Blöcke / 10 Ticks. Darstellung mit `liquid_depth` (0 Quelle, 1–7 Fluss, ab 8 fallend).
+- Fließt nach unten ohne Grenze, sucht Gefälle in bis zu 4 Blöcken, bildet neue Wasserquellen (2 Quellen), Lava nie; Mischen: Obsidian, Bruchstein, Stein; spült Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen u. a. weg (Ebene-0-Eigenschaft `fluessigkeit`); Abklingen ohne Nachschub.
+- `simuliere(welt)` läuft in einer Kopie bis zum stabilen Zustand. Prüfer `pruefer.wasser-zerstoert`: Verstoß mit Koordinate für alles, was weggespült wird; Hinweis bei Wasser-Lava-Mischungen.
+- Regeln: `data/regeln/fluessigkeit.json` (11 Regeln, 2 belegt, 9 mit Annahmen und Testanleitung). Vieles ist im Wiki nicht als Bedrock gekennzeichnet.
+- Nicht dabei: Strömung auf Wesen, Waterlogging, Blasensäulen, Eis/Schnee, Lava-Feuer, Dimension im Plan (nur Einstellung der Simulation).
+- Annahme mit Wirkung: Eine Quelle über fließendem Wasser breitet sich auch seitlich aus (Plus-Form um eine Quelle in der Luft). Treppen, Halbstufen, Zäune usw. halten Wasser wie feste Blöcke auf, bis getestet.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -79,7 +88,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2b-3: Lorenbewegung**, aber erst nach Jonahs Messungen (sonst wäre es geraten). Bis dahin als Nächstes Wasser/Lava (Fließweite, geplante Ticks) oder Trichter & Blockinhalte – Jonah entscheidet. Detektor-/Aktivierungsschiene folgen mit der Redstone-Mechanik.
+**Schritt 2d: Lorenbewegung**, aber erst nach Jonahs Messungen (sonst wäre es geraten). Bis dahin als Nächstes Licht & Spawnstellen oder fallende Blöcke – Jonah entscheidet. Detektor-/Aktivierungsschiene folgen mit der Redstone-Mechanik. Trichter & Blockinhalte sind nachrangig (Händler geben Items direkt ins Inventar).
 Nebenbei: Jonah macht die Antriebs-Tests und Messungen aus `docs/spieltests.md` und `docs/messungen-lore.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

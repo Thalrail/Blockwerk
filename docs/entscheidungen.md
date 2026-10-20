@@ -15,3 +15,5 @@
 - Arbeitsweg: Entwicklung mit Claude Code in der Cloud (claude.ai/code), Arbeit auf eigenem Branch, Abnahme per Pull Request durch Jonah.
 - Sicherheit: Keine Zugangsschlüssel (Token, Passwörter) im Chat oder im Repo. Der GitHub-Zugang läuft über die Claude GitHub App.
 - Aternos-Server (Angabe von Jonah, 20.10.2026): Simulationsdistanz **4 Chunks**, 20 Ticks pro Sekunde, Chunk 16×16. Steht in `data/server.json`.
+- Händler (Angabe von Jonah, 21.10.2026): Dorfbewohner-Händler geben die Items beim Handel **direkt ins Inventar**, sie werden nicht gedroppt. Die Zitadelle braucht dafür keine Auffang-Technik (Trichter, Wasser); Trichter & Blockinhalte sind daher nachrangig.
+- Reihenfolge Ebene 1 (Jonah, 21.10.2026): nach Schienen jetzt Wasser/Lava; Lorenbewegung erst nach Jonahs Messungen (`docs/messungen-lore.md`).

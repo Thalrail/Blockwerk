@@ -1,0 +1,146 @@
+{
+  "bereich": "fluessigkeit",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "fluessigkeit.wasser",
+      "titel": "Wasser: 7 Blöcke weit, ein Block alle 5 Ticks",
+      "regel": "Wasser breitet sich waagerecht bis 7 Blöcke von einer Quelle aus (Stufen 1–7) und rückt alle 5 Spielticks einen Block vor.",
+      "parameter": {
+        "reichweite": 7,
+        "maxStufe": 7,
+        "schritt": 1,
+        "verzoegerung": 5
+      },
+      "quelle": "https://minecraft.wiki/w/Water (Wiki: gilt für beide Editionen, sofern nicht anders gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Weite 7 Blöcke und Tempo 5 Ticks",
+      "ungeprueft": false
+    },
+    {
+      "id": "fluessigkeit.lava-oberwelt",
+      "titel": "Lava (Oberwelt, Ende): 3 Blöcke weit, ein Block alle 30 Ticks",
+      "regel": "Lava breitet sich in Oberwelt und Ende 3 Blöcke weit aus (Stufen 2, 4, 6: zwei Stufen je Block) und rückt alle 30 Ticks einen Block vor.",
+      "parameter": {
+        "reichweite": 3,
+        "maxStufe": 6,
+        "schritt": 2,
+        "verzoegerung": 30
+      },
+      "quelle": "https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Lava: Weite 3 (Oberwelt) und 7 (Nether), Tempo 30 und 10 Ticks",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt: Lava-Quelle auf ebenem Stein setzen, mit Video messen: Wie weit kommt die Lava (erwartet 3 Blöcke) und wie lange braucht jeder Block (erwartet 1,5 s)? Im Nether: 7 Blöcke, 0,5 s je Block."
+    },
+    {
+      "id": "fluessigkeit.lava-nether",
+      "titel": "Lava (Nether): 7 Blöcke weit, ein Block alle 10 Ticks",
+      "regel": "Im Nether breitet sich Lava 7 Blöcke weit aus (eine Stufe je Block) und rückt alle 10 Ticks einen Block vor. Blockwerk kennt die Dimension nur als Einstellung der Simulation.",
+      "parameter": {
+        "reichweite": 7,
+        "maxStufe": 7,
+        "schritt": 1,
+        "verzoegerung": 10
+      },
+      "quelle": "https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Lava: Weite 3 (Oberwelt) und 7 (Nether), Tempo 30 und 10 Ticks",
+      "ungeprueft": true,
+      "testanleitung": "Siehe fluessigkeit.lava-oberwelt (Nether-Teil)."
+    },
+    {
+      "id": "fluessigkeit.fallen",
+      "titel": "Fließen nach unten ohne Grenze",
+      "regel": "Flüssigkeit fließt senkrecht nach unten, bis ein Block sie aufhält, und breitet sich dort wie von einer Quelle aus (der Aufprallpunkt zählt als Stufe 0). Eine Quelle über bereits fließender Flüssigkeit breitet sich zusätzlich zur Seite aus; so entsteht um eine Quelle in der Luft eine Plus-Form aus vier Nachbarsäulen (Annahme aus der bekannten Fluss-Logik).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Water (Aufprallpunkt als Quelle: Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: fällt unbegrenzt und breitet sich unten aus",
+      "ungeprueft": true,
+      "testanleitung": "Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus? Außerdem: eine Wasserquelle in die Luft setzen (an eine Wand lehnen und dann die Wand entfernen oder mit Blöcken eine Plattform bauen und wegnehmen): Fällt nur eine Säule, oder entsteht eine Plus-Form aus fünf Säulen? Blockwerk erwartet bei der freien Quelle ein Plus."
+    },
+    {
+      "id": "fluessigkeit.gefaelle",
+      "titel": "Gefälle in höchstens 4 Blöcken wird bevorzugt",
+      "regel": "Findet das Wasser ein Gefälle (Loch) in höchstens 4 Blöcken Entfernung, fließt es in diese Richtung(en); sonst in alle Richtungen.",
+      "parameter": {
+        "suchweite": 4
+      },
+      "quelle": "https://minecraft.wiki/w/Water (Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
+      "ungeprueft": true,
+      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) im 3. Block östlich und ein Loch im 6. Block westlich: Fließt das Wasser nur nach Osten zum Loch und nicht nach Westen? Dann mit dem Loch im 4., 5. und 6. Block östlich wiederholen: Bis zu welchem Block bevorzugt das Wasser die Richtung? Blockwerk erwartet bis zum 5. Block."
+    },
+    {
+      "id": "fluessigkeit.unten-vor-seitlich",
+      "titel": "Erst nach unten, seitlich nur ohne Weg nach unten",
+      "regel": "Kann eine Flüssigkeit nach unten fließen, tut sie das und breitet sich nicht seitlich aus (Ausnahme: 3 Quellen als Nachbarn).",
+      "parameter": {
+        "quellenNachbarn": 3
+      },
+      "quelle": "https://minecraft.wiki/w/Water (Annahme aus der bekannten Fluss-Logik)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: unten vor seitlich",
+      "ungeprueft": true,
+      "testanleitung": "Quelle direkt über einem Loch (2 Blöcke tief) auf ebenem Stein: Breitet sich Wasser auf der Oberfläche seitlich aus, oder fließt es nur in das Loch? Ergebnis melden."
+    },
+    {
+      "id": "fluessigkeit.quellenbildung",
+      "titel": "Neue Quellen: Wasser ja, Lava nein",
+      "regel": "Ein Wasser-Flussblock mit mindestens 2 Wasserquellen als waagerechten Nachbarn wird zur Quelle, wenn er auf einem festen Block oder einer Quelle steht. Lava bildet keine neuen Quellen.",
+      "parameter": {
+        "quellenNoetig": 2
+      },
+      "quelle": "https://minecraft.wiki/w/Water; https://minecraft.wiki/w/Lava",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: zwei Quellen ergeben eine neue Quelle, Lava nicht",
+      "ungeprueft": false
+    },
+    {
+      "id": "fluessigkeit.mischen",
+      "titel": "Wasser und Lava mischen",
+      "regel": "Lava mit Wasser darüber oder daneben wird zu Obsidian (Quelle) bzw. Bruchstein (Fluss). Lava, die nach unten auf Wasser fällt, macht Stein. Wasser unter Lava zählt nicht.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Water; https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet; Lage „darunter“ ist eine Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Mischen von Wasser und Lava",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt: (1) Wasserquelle neben Lava-Quelle, (2) Wasserfluss trifft Lavafluss, (3) Lava fließt von oben auf Wasser, (4) Wasserquelle unter einer Lava-Quelle. Je Fall melden: Obsidian, Bruchstein, Stein oder nichts."
+    },
+    {
+      "id": "fluessigkeit.wegspuelen",
+      "titel": "Wasser spült bestimmte Blöcke weg",
+      "regel": "Fließendes Wasser ersetzt Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe und Blumentöpfe (sie gehen verloren). Schienen: in Bedrock seit 1.7.0 wieder.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Water (Liste „einige Redstone-Bauteile“ nicht vollständig)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: spült wegspülbare Blöcke weg",
+      "ungeprueft": true,
+      "testanleitung": "Wasser neben Fackel, Schiene, Teppich, Redstone-Staub, Knopf, Druckplatte, Leiter, Schild, Trichter, Schalter: Welche werden weggespült? Ergebnis je Block melden."
+    },
+    {
+      "id": "fluessigkeit.abklingen",
+      "titel": "Abklingen ohne Nachschub",
+      "regel": "Fließblöcke, die nicht mehr von einer Quelle versorgt werden, rücken Stufe für Stufe ab und verschwinden. Bedrock beschreibt das nicht genau; Blockwerk nutzt die bekannte Logik (Stufe = niedrigste Nachbarstufe + Schritt).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Water (Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Abklingen ohne Nachschub",
+      "ungeprueft": true,
+      "testanleitung": "Wasserquelle auf ebenem Stein, Wasser sich ausbreiten lassen, Quelle entfernen, mit Video messen: Wie lange, bis alles Wasser weg ist? Verschwindet es von außen nach innen oder von innen nach außen?"
+    },
+    {
+      "id": "fluessigkeit.hindernisse",
+      "titel": "Nur feste Blöcke halten Flüssigkeit auf",
+      "regel": "Vollblöcke halten Flüssigkeit auf. Luft und wegspülbare Blöcke lassen sie durch. Alles andere (Treppen, Halbstufen, Zäune, Glasscheiben …) behandelt Blockwerk wie fest, bis Jonah es getestet hat.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Water (Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: nur feste Blöcke halten Wasser auf",
+      "ungeprueft": true,
+      "testanleitung": "Wasser neben Treppe (Vorder- und Rückseite), Halbstufe (oben/unten), Zaun, Glasscheibe, Leiter, Schild, Tür, Falltür, Mauer: Fließt es hinein, vorbei oder hält der Block es auf? Ergebnis je Block melden."
+    }
+  ]
+}

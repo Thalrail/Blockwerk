@@ -21,10 +21,10 @@ function haltUrteil(art, block, register, richtungVon, zurFackel) {
     if (e.schiene === true) return 'ok';
     if (e.schiene === false) return 'nein';
     if (e.schiene === 'wenn-oben') {
-      // Halbstufe: obere Hälfte, Treppe: kopfstehend. Die normale Lage trägt nachweislich nicht (Spieltest 20.10.2026),
-      // die umgekehrte ist laut Wiki möglich, in Bedrock aber ungetestet → 'unklar' (Hinweis).
+      // Halbstufe: obere Hälfte, Treppe: kopfstehend. Die normale Lage trägt nachweislich nicht, die umgekehrte schon
+      // (Spieltests Jonah, 20./21.10.2026).
       const oben = block.zustand['minecraft:vertical_half'] ?? (block.zustand.upside_down_bit === undefined ? undefined : block.zustand.upside_down_bit ? 'top' : 'bottom');
-      return oben === undefined ? 'unklar' : oben === 'top' ? 'unklar' : 'nein';
+      return oben === undefined ? 'unklar' : oben === 'top' ? 'ok' : 'nein';
     }
     return 'unklar';
   }

@@ -21,6 +21,7 @@ const schluessel = (e) => `${e.richtung}:${e.dy}`;
 export function erzeugeSchienen({ regelwerk, register }) {
   const tabelle = regelwerk.parameter('schiene.zustandswerte', 'enden');
   const bevorzugung = regelwerk.parameter('schiene.bevorzugung', 'bevorzugung');
+  const kurvenpaare = regelwerk.parameter('schiene.kurvenwahl', 'kurvenpaare');
   const belegtGerade = new Set(regelwerk.parameter('schiene.antriebsschiene-gerade', 'nurGerade'));
   const nurGerade = new Set([...belegtGerade, ...regelwerk.parameter('schiene.detektor-aktivierung-gerade', 'nurGerade')]);
 
@@ -132,7 +133,11 @@ export function erzeugeSchienen({ regelwerk, register }) {
       const eckig = paare.filter((p) => !gegenueber.includes(p));
       // Zwei Möglichkeiten: gegenüberliegend → gerade, sonst Kurve. Ab drei (T-Stelle, Kreuzung) beschreibt Bedrock nur „wird zur Kurve“:
       // dann zuerst das erste darstellbare Eck-Paar in der Reihenfolge der Bevorzugung, erst danach ein gerades Paar.
-      const reihenfolge = optionen.length >= 3 ? [...eckig, ...gegenueber] : paare;
+      // Ab drei Möglichkeiten gilt die Kurvenwahl aus den Daten (Jonah, Spieltest 21.10.2026: Ost-Süd vor Ost-Nord; Ost-West nur ohne weitere Nachbarn).
+      const nachKurvenwahl = optionen.length >= 3
+        ? kurvenpaare.map(([a, b]) => [optionen.find((o) => o.richtung === a), optionen.find((o) => o.richtung === b)]).filter(([a, b]) => a && b)
+        : [];
+      const reihenfolge = optionen.length >= 3 ? [...nachKurvenwahl, ...eckig, ...gegenueber] : paare;
       gewaehlt = reihenfolge.find(darstellbar) ?? [];
     }
     if (!gewaehlt.length && optionen.length) gewaehlt = [optionen[0]];

@@ -45,8 +45,9 @@ Zuletzt aktualisiert: 20.10.2026
 - `enden`, `gegenstelle`, `formAus`: Enden einer Schiene aus `rail_direction` (von Jonah geprüft, Test 4), Gegenstelle am Ende, Rückweg Enden → Wert.
 - Antriebsschienen werden nie zur Kurve; Detektor/Aktivierung wie Antriebsschiene angenommen.
 - Prüfer: `pruefer.schiene-verbindung` (einseitige Verbindung und Sackgasse = Hinweis), `pruefer.antriebsschiene-kurve`.
-- Regeln: `data/regeln/schiene.json` (10 Regeln, 1 geprüft, 7 mit Annahmen und Testanleitung).
-- Schiene auf Halbstufe/Treppe: normale Lage trägt nicht (Verstoß), obere Halbstufe/kopfstehende Treppe nur Hinweis (laut Wiki möglich, ungetestet).
+- Regeln: `data/regeln/schiene.json` (11 Regeln, 2 geprüft, 7 mit Annahmen und Testanleitung).
+- Schiene auf Halbstufe/Treppe: normale Lage trägt nicht (Verstoß), obere Halbstufe und kopfstehende Treppe tragen (Jonah, 21.10.2026).
+- Schienen-Spieltests 21.10.2026 (Jonah): T-Stelle = Ost-Süd vor Ost-Nord, gerade nur ohne weitere Nachbarn (**geprüft**); Rampen: West vor Ost, Süd vor Nord. Offen: Antriebsschiene an der Ecke (Rückfrage), Kurven ohne Ost-Nachbar, Kreuzung.
 - Noch **nicht** da: Antrieb (8 Schienen weit, nur C-Tick), Lorenbewegung, Geschwindigkeit.
 
 ## Bekannte Lücken / Annahmen in Ebene 1

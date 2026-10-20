@@ -190,27 +190,23 @@ test('Schiene: Antriebsschienen werden nie zur Kurve', () => {
   for (let v = 0; v <= 9; v++) assert.ok(S.formAus(S.enden({ rail_direction: v }), { gerade: true }) === (v <= 5 ? v : null));
 });
 
-test('Schiene: T-Stelle und Kreuzung (Annahme)', () => {
-  // Bedrock-Wiki: an einer T-Stelle wird die neue Schiene zur Kurve. Welche, ist nicht belegt: erstes Eck-Paar in der Bevorzugung (West, Ost, Süd, Nord).
-  const t = boden();
-  lege(t, [[-1, 0], [1, 0], [0, 1]]);
-  lege(t, [[0, 0]]);
-  assert.equal(wert(t, 0, 0), 7, 'T mit West, Ost, Süd: Kurve Süd-West');
-  const kreuz = boden();
-  lege(kreuz, [[-1, 0], [1, 0], [0, 1], [0, -1]]);
-  lege(kreuz, [[0, 0]]);
-  assert.equal(wert(kreuz, 0, 0), 7, 'Kreuzung: erstes Eck-Paar (West, Süd)');
-  const nord = boden();
-  lege(nord, [[0, -1], [0, 1], [1, 0]]);
-  lege(nord, [[0, 0]]);
-  assert.equal(wert(nord, 0, 0), 6, 'T mit Nord, Süd, Ost: Kurve Süd-Ost (Ost vor Süd)');
-  // Mit nur zwei gegenüberliegenden Nachbarn bleibt es gerade
-  const zwei = boden();
-  lege(zwei, [[-1, 0], [1, 0], [0, 0]]);
-  assert.equal(wert(zwei, 0, 0), O_W);
+test('Schiene: T-Stelle und Kreuzung', () => {
+  // Spieltest Jonah 21.10.2026: wenn möglich Ost-Süd; ohne Süd Ost-Nord; gerade nur ohne weitere Nachbarn.
+  const lege3 = (nachbarn) => { const w = boden(); lege(w, [...nachbarn, [0, 0]]); return w; };
+  assert.equal(wert(lege3([[-1, 0], [1, 0], [0, 1]]), 0, 0), 6, 'West, Ost, Süd: Kurve Ost-Süd');
+  assert.equal(wert(lege3([[-1, 0], [1, 0], [0, -1]]), 0, 0), 9, 'West, Ost, Nord: Kurve Ost-Nord');
+  assert.equal(wert(lege3([[0, -1], [0, 1], [1, 0]]), 0, 0), 6, 'Nord, Süd, Ost: Ost-Süd');
+  assert.equal(wert(lege3([[-1, 0], [1, 0], [0, 1], [0, -1]]), 0, 0), 6, 'Kreuzung: Ost-Süd');
+  assert.equal(wert(lege3([[-1, 0], [1, 0]]), 0, 0), O_W, 'nur West und Ost: gerade');
+  // Annahmen (ohne Ost-Nachbar): West-Süd, dann West-Nord
+  assert.equal(wert(lege3([[-1, 0], [0, 1], [0, -1]]), 0, 0), 7, 'West, Süd, Nord: West-Süd (Annahme)');
+  // Reihenfolge des Setzens der Nachbarn ändert nichts
+  assert.equal(wert(lege3([[0, 1], [1, 0], [-1, 0]]), 0, 0), 6);
+  assert.equal(wert(lege3([[0, -1], [-1, 0], [1, 0]]), 0, 0), 9);
   // Ein T nur durch Platzieren erzeugt keinen Verstoß (Abzweige sind normal)
-  assert.deepEqual(e1.pruefe(t).filter((m) => m.schwere === 'verstoss'), []);
-  assert.deepEqual(e1.pruefe(kreuz).filter((m) => m.schwere === 'verstoss'), []);
+  for (const nachbarn of [[[-1, 0], [1, 0], [0, 1]], [[-1, 0], [1, 0], [0, 1], [0, -1]]]) {
+    assert.deepEqual(e1.pruefe(lege3(nachbarn)).filter((m) => m.schwere === 'verstoss'), []);
+  }
   // Abzweig: Linie Ost-West, dann eine Schiene davor – sie zeigt auf die volle Mittelschiene, die nicht zurückzeigt
   const abzweig = boden();
   lege(abzweig, [[-1, 0], [0, 0], [1, 0], [0, 1]]);
@@ -219,7 +215,7 @@ test('Schiene: T-Stelle und Kreuzung (Annahme)', () => {
   assert.ok(m.some((x) => x.regel === 'pruefer.schiene-verbindung' && x.ort.z === 1 && /Abzweig/.test(x.meldung)), 'Abzweig wird als Hinweis genannt');
 });
 
-test('Schiene: Rampen-Bevorzugung folgt den Daten (Annahme)', () => {
+test('Schiene: Rampen-Bevorzugung folgt den Daten', () => {
   const aufbauen = (schienen) => {
     const w = boden();
     for (const x of [-1, 1]) { w.setzeBlock(x, 1, 0, 'minecraft:stone'); }
@@ -228,6 +224,12 @@ test('Schiene: Rampen-Bevorzugung folgt den Daten (Annahme)', () => {
     return wert(w, 0, 0);
   };
   assert.equal(aufbauen(S), 3, 'Standard: West zuerst → Steigung nach Westen');
+  // Spieltest Jonah 21.10.2026: bei Nord-Süd steigt sie nach Süden
+  const ns = boden();
+  for (const z of [-1, 1]) ns.setzeBlock(0, 1, z, 'minecraft:stone');
+  lege(ns, [[0, 2, -1, RAIL], [0, 2, 1, RAIL]]);
+  lege(ns, [[0, 0]]);
+  assert.equal(wert(ns, 0, 0), 5, 'Nord oder Süd möglich: Steigung nach Süden');
   const dateien = ladeRegeldateien();
   const ost = JSON.parse(JSON.stringify(dateien));
   ost.find((d) => d.bereich === 'schiene').regeln.find((r) => r.id === 'schiene.bevorzugung').parameter.bevorzugung = ['east', 'west', 'south', 'north'];

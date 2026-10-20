@@ -163,14 +163,44 @@
     },
     {
       "id": "schiene.t-stelle",
-      "titel": "T-Stelle und Kreuzung",
-      "regel": "Bei drei oder vier möglichen Nachbarn (T-Stelle, Kreuzung) wird die neue Schiene laut Bedrock-Wiki zur Kurve, die zwei der Seiten verbindet. Blockwerk wählt das erste Eck-Paar in der Reihenfolge der Bevorzugung (West, Ost, Süd, Nord); die genaue Wahl ist nicht belegt. Mit nur zwei Nachbarn gilt: gegenüberliegend = gerade, sonst Kurve.",
+      "titel": "T-Stelle: Ost-Süd vor Ost-Nord, gerade nur ohne weitere Nachbarn",
+      "regel": "Hat eine neue Schiene drei Nachbarn (West, Ost und Süd bzw. Nord), wird sie zur Kurve: wenn möglich Ost-Süd; gibt es keine Schiene im Süden, Ost-Nord. Ost-West (gerade) entsteht nur, wenn beim Platzieren keine weitere Schiene daneben liegt.",
       "parameter": {},
-      "quelle": "https://minecraft.wiki/w/Rail (Bedrock: „T-Stelle wird Kurve“; welche Kurve, ist nicht belegt)",
+      "quelle": "https://minecraft.wiki/w/Rail (Bedrock: „T-Stelle wird Kurve“); Spieltest Jonah, 21.10.2026",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-21",
+      "beobachtung": "Jonah, 21.10.2026: Wenn möglich wird immer Ost-Süd gemacht. Gibt es keine Schiene nach Süden, wird Ost-Nord gemacht. Ost-West geht nur, wenn beim Platzieren keine andere Schiene daneben ist.",
+      "ungeprueft": false
+    },
+    {
+      "id": "schiene.kurvenwahl",
+      "titel": "Kurvenwahl bei mehreren Möglichkeiten (Reihenfolge der Eck-Paare)",
+      "regel": "Bei drei oder vier Nachbarn wählt die neue Schiene das erste mögliche Eck-Paar in dieser Reihenfolge: Ost-Süd, Ost-Nord, West-Süd, West-Nord. Ost-Süd und Ost-Nord hat Jonah getestet; West-Süd und West-Nord (ohne Ost-Nachbar) sowie die Kreuzung mit vier Nachbarn sind Annahmen.",
+      "parameter": {
+        "kurvenpaare": [
+          [
+            "east",
+            "south"
+          ],
+          [
+            "east",
+            "north"
+          ],
+          [
+            "west",
+            "south"
+          ],
+          [
+            "west",
+            "north"
+          ]
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Rail; Spieltest Jonah, 21.10.2026 (Ost-Süd, Ost-Nord); Rest Annahme",
       "status": "simuliert",
-      "simulationstest": "test/ebene1/schienen.test.js::Schiene: T-Stelle und Kreuzung (Annahme)",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: T-Stelle und Kreuzung",
       "ungeprueft": true,
-      "testanleitung": "Drei einzelne Schienen so setzen, dass sie eine T-Form umschließen (West, Ost, Süd einer freien Stelle, jede einzeln und weit genug voneinander), dann die Mitte setzen: Welche Form entsteht (Ost-West gerade oder welche Kurve)? Mit vier Nachbarn wiederholen. Je Fall melden; Blockwerk erwartet bei West, Ost, Süd die Kurve Süd-West."
+      "testanleitung": "Drei einzelne Schienen so setzen, dass West, Süd und Nord einer freien Stelle belegt sind (kein Ost), dann die Mitte setzen: Welche Kurve entsteht (Blockwerk erwartet West-Süd)? Dann alle vier Nachbarn (Kreuzung): Blockwerk erwartet Ost-Süd."
     },
     {
       "id": "schiene.rampe",
@@ -185,8 +215,8 @@
     },
     {
       "id": "schiene.bevorzugung",
-      "titel": "Reihenfolge der Bevorzugung",
-      "regel": "Wenn mehrere Nachbarn möglich sind und sonst nichts entscheidet, werden sie in dieser Reihenfolge bevorzugt: West, Ost, Süd, Nord (Wiki-Angabe für Rampen, nicht als Bedrock gekennzeichnet). Blockwerk nutzt sie für alle Fälle.",
+      "titel": "Rampen: West vor Ost, Süd vor Nord",
+      "regel": "Sind zwei Rampen möglich, steigt die neue Schiene bei Ost-West nach Westen an, bei Nord-Süd nach Süden. Die Reihenfolge zwischen den Achsen (z. B. West gegen Süd) ist nicht getestet; Blockwerk nutzt West, Ost, Süd, Nord.",
       "parameter": {
         "bevorzugung": [
           "west",
@@ -195,11 +225,12 @@
           "north"
         ]
       },
-      "quelle": "https://minecraft.wiki/w/Rail (Edition nicht gekennzeichnet)",
+      "quelle": "https://minecraft.wiki/w/Rail; Spieltest Jonah, 21.10.2026",
       "status": "simuliert",
-      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Rampen-Bevorzugung folgt den Daten (Annahme)",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Rampen-Bevorzugung folgt den Daten",
       "ungeprueft": true,
-      "testanleitung": "Eine freie Stelle mit einer Rampe nach oben auf der Westseite und einer nach oben auf der Ostseite vorbereiten (jeweils eine Schiene einen Block höher), dann in der Mitte eine Schiene setzen: Steigt sie nach Westen oder nach Osten an? Dann West gegen Süd, Ost gegen Nord."
+      "testanleitung": "Nur noch die Achsen-Mischung offen: links (West) und unten (Süd) je eine Schiene einen Block höher, in der Mitte unten eine Schiene setzen: Steigt sie nach Westen oder nach Süden an?",
+      "beobachtung": "Jonah, 21.10.2026: Bei Ost-West steigt sie nach Westen, bei Nord-Süd nach Süden."
     },
     {
       "id": "schiene.antriebsschiene-gerade",

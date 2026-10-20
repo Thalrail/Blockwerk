@@ -25,7 +25,7 @@
     {
       "id": "pruefer.braucht-halt-schiene",
       "titel": "Prüfer: Schiene braucht Boden",
-      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`). Untere Halbstufe und aufrechte Treppe tragen nachweislich nicht (Verstoß). Obere Halbstufe und kopfstehende Treppe sollen laut Wiki tragen, in Bedrock ist das ungetestet (Hinweis). Ist es unbekannt (null), meldet der Prüfer einen Hinweis.",
+      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`). Untere Halbstufe und aufrechte Treppe tragen nicht (Verstoß); obere Halbstufe und kopfstehende Treppe tragen (Jonah, 21.10.2026). Ist es für eine Form unbekannt (null), meldet der Prüfer einen Hinweis.",
       "parameter": {
         "getesteteFormen": [
           "Glasblock",
@@ -39,8 +39,8 @@
       "status": "simuliert",
       "simulationstest": "test/ebene1/pruefer.test.js::Schiene braucht Boden",
       "ungeprueft": true,
-      "testanleitung": "Zuerst: Schiene auf eine OBERE Halbstufe (`/setblock … oak_slab [\"minecraft:vertical_half\"=\"top\"]`) und auf eine KOPFSTEHENDE Treppe (`oak_stairs [\"upside_down_bit\"=true,\"weirdo_direction\"=0]`) setzen: bleibt sie liegen? Danach ungetestete Formen: Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab.",
-      "beobachtung": "Jonah, 20.10.2026: Glasblock ganz normal; nicht auf Halbstufe, Treppe, Zaun; Glasscheibe geht nicht."
+      "testanleitung": "Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab.",
+      "beobachtung": "Jonah, 20./21.10.2026: Glasblock ja; untere Halbstufe, aufrechte Treppe, Zaun, Glasscheibe nein; obere Halbstufe und kopfstehende Treppe: die Schiene bleibt liegen."
     },
     {
       "id": "pruefer.tickbereich",

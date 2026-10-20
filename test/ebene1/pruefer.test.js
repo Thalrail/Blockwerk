@@ -183,10 +183,10 @@ test('Treppe + Fackel bleibt nach Drehen und Spiegeln mit dem Vermesser gültig'
 test('Spieltest 20.10.2026 (Schiene): Glasblock ja; Halbstufe, Treppe, Zaun, Glasscheibe nein', () => {
   assert.deepEqual(schienenUrteil('minecraft:glass', {}), []);
   assert.deepEqual(schienenUrteil('minecraft:stone', {}), []);
-  assert.deepEqual(schienenUrteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'top' }), ['hinweis'], 'obere Halbstufe: laut Wiki möglich, ungetestet');
+  assert.deepEqual(schienenUrteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'top' }), [], 'obere Halbstufe trägt die Schiene (Spieltest 21.10.2026)');
   assert.deepEqual(schienenUrteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'bottom' }), ['verstoss']);
   assert.deepEqual(schienenUrteil('minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: false }), ['verstoss'], 'aufrechte Treppe');
-  assert.deepEqual(schienenUrteil('minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: true }), ['hinweis'], 'kopfstehende Treppe: laut Wiki möglich, ungetestet');
+  assert.deepEqual(schienenUrteil('minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: true }), [], 'kopfstehende Treppe trägt die Schiene (Spieltest 21.10.2026)');
   assert.deepEqual(schienenUrteil('minecraft:oak_stairs', { weirdo_direction: 0 }), ['hinweis'], 'Lage nicht angegeben: unklar');
   assert.deepEqual(schienenUrteil('minecraft:oak_fence', {}), ['verstoss']);
   assert.deepEqual(schienenUrteil('minecraft:glass_pane', {}), ['verstoss']);

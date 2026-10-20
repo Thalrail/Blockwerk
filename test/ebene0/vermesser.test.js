@@ -225,12 +225,11 @@ test('Jede Drehregel hat einen Status; „geprüft“ nur mit Datum und Beobacht
       assert.ok(regel.beobachtung?.length > 10, `${name}: Beobachtung fehlt`);
     }
   }
-  // Stand der Spieltests vom 20.10.2026 (Jonah): Test 1, 2, 5, 7, 8 bestätigt; Test 3 und 4 nicht aussagekräftig
+  // Stand der Spieltests vom 20.10.2026 (Jonah): Test 1, 2, 4 (wiederholt), 5, 7, 8 bestätigt; Test 3 nicht aussagekräftig
   assert.deepEqual(gepruefte.sort(), [
-    'door_hinge_bit', 'facing_direction', 'minecraft:cardinal_direction', 'multi_face_direction_bits', 'torch_facing_direction', 'weirdo_direction',
+    'door_hinge_bit', 'facing_direction', 'minecraft:cardinal_direction', 'multi_face_direction_bits', 'rail_direction', 'torch_facing_direction', 'weirdo_direction',
   ]);
   assert.equal(drehregeln.zustaende['minecraft:corner'].status, 'ungeprüft');
-  assert.equal(drehregeln.zustaende.rail_direction.status, 'ungeprüft');
 });
 
 test('Fackel: Wert = Seite des Nachbarblocks, an dem sie hängt (Spieltest 7) – dreht mit', () => {

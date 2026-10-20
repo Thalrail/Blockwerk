@@ -19,7 +19,7 @@
     "orientation": { "status": "ungeprüft", "art": "woerter", "quelle": "Wertnamen enthalten die Richtungen selbst (Mojang-Zustandsliste)" },
     "vine_direction_bits": { "status": "ungeprüft", "art": "bitmaske", "bits": { "south": 1, "west": 2, "north": 4, "east": 8 }, "quelle": "https://minecraft.wiki/w/Vines (0x1 Süd, 0x2 West, 0x4 Nord, 0x8 Ost)" },
     "multi_face_direction_bits": { "status": "geprüft", "geprueftAm": "2026-10-20", "beobachtung": "Test 8 (Glow Lichen): 1 unten, 2 oben, 4 Süd, 8 West, 16 Nord, 32 Ost bestätigt", "art": "bitmaske", "bits": { "down": 1, "up": 2, "south": 4, "west": 8, "north": 16, "east": 32 }, "quelle": "https://minecraft.wiki/w/Glow_Lichen (0x1 unten, 0x2 oben, 0x4 Süd, 0x8 West, 0x10 Nord, 0x20 Ost)" },
-    "rail_direction": { "status": "ungeprüft", "beobachtung": "Test 4 nicht möglich (Schienen sprangen ab, keine tragende Fläche) – Wiederholung siehe docs/spieltests.md", 
+    "rail_direction": { "status": "geprüft", "geprueftAm": "2026-10-20", "beobachtung": "Test 4 (wiederholt): 0 Nord-Süd, 1 Ost-West, 2–5 Steigung nach Ost/West/Nord/Süd, 6 Süd-Ost, 7 Süd-West, 8 Nord-West, 9 Nord-Ost bestätigt", 
       "art": "tabelle",
       "drehen": { "0": 1, "1": 0, "2": 5, "5": 3, "3": 4, "4": 2, "6": 7, "7": 8, "8": 9, "9": 6 },
       "spiegeln": {

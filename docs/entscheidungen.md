@@ -14,3 +14,4 @@
 - Offen: Desktop-Umsetzung (eigene Desktop-App oder als Desktop-Fenster installierte Webseite).
 - Arbeitsweg: Entwicklung mit Claude Code in der Cloud (claude.ai/code), Arbeit auf eigenem Branch, Abnahme per Pull Request durch Jonah.
 - Sicherheit: Keine Zugangsschlüssel (Token, Passwörter) im Chat oder im Repo. Der GitHub-Zugang läuft über die Claude GitHub App.
+- Aternos-Server (Angabe von Jonah, 20.10.2026): Simulationsdistanz **4 Chunks**, 20 Ticks pro Sekunde, Chunk 16×16. Steht in `data/server.json`.

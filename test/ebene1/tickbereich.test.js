@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { Tickbereich } from '../../src/ebene1/tickbereich.js';
 
 test('Tickbereich: Spieler mit Simulationsdistanz und Tickingarea', () => {
@@ -27,4 +28,14 @@ test('Tickbereich: ohne Distanz kein Rateversuch', () => {
   assert.throws(() => new Tickbereich({ spieler: [{ x: 0, z: 0 }] }), /Simulationsdistanz/);
   assert.throws(() => new Tickbereich({ spieler: [{ x: 0, z: 0 }], distanz: -1 }));
   assert.deepEqual(new Tickbereich().chunks(), []);
+});
+
+test('Aternos-Server (data/server.json): 4 Chunks Simulationsdistanz um den Spieler', () => {
+  const server = JSON.parse(readFileSync(new URL('../../data/server.json', import.meta.url), 'utf8'));
+  assert.equal(server.simulationsdistanzChunks, 4);
+  assert.equal(server.ticksProSekunde, 20);
+  assert.equal(server.chunkGroesse, 16);
+  const t = new Tickbereich({ spieler: [{ x: 0, z: 0 }], distanz: server.simulationsdistanzChunks });
+  assert.equal(t.chunks().length, 81, '9 × 9 Chunks');
+  assert.ok(t.ticktBlock(4 * 16 + 15, 0) && !t.ticktBlock(5 * 16, 0), 'bis 79 Blöcke Entfernung, ab 80 nicht mehr');
 });

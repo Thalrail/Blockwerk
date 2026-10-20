@@ -1,0 +1,7 @@
+{
+  "hinweis": "Einstellungen von Jonahs Aternos-Server (Bedrock). Keine Bedrock-Regel, sondern eine Projekt-Angabe; wird als Eingabe für Prüfungen genutzt (z. B. Tickbereich).",
+  "simulationsdistanzChunks": 4,
+  "ticksProSekunde": 20,
+  "chunkGroesse": 16,
+  "quelle": "Jonah, 20.10.2026 (Server-Einstellungen)"
+}

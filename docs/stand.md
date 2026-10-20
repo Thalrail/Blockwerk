@@ -41,7 +41,7 @@ Zuletzt aktualisiert: 20.10.2026
 
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
-- Simulationsdistanz deines Aternos-Servers fehlt noch (Jonah nennt sie; es gibt bewusst keinen Standardwert).
+- Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
 - Prüfer: Was Fackel/Schiene hält, ist für Glasblock, Halbstufe, Treppe, Zaun und Glasscheibe von Jonah getestet (20.10.2026, als Fakt in Ebene 0: `fackelOben`, `fackelSeiten`, `schiene`). Alle anderen Formen (Mauer, Falltür, Laub, Eis, Trichter …) bleiben unbekannt → Hinweis statt Verstoß. Dass alle Varianten einer Form gleich reagieren (z. B. jede Holzart), ist eine Annahme.
 
 ## Bekannte Lücken / Annahmen in Ebene 0 (alles `ungeprüft`)
@@ -65,4 +65,3 @@ Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein
 - Desktop-Umsetzung: eigene Desktop-App oder als Desktop-Fenster installierte Webseite (spätestens vor Schritt 6 klären).
 - Zitadelle-Bilder (14) legt Jonah in `docs/zitadelle/bilder/` ab.
 - Pull Request #1 (Ebene 0) ist gemergt. Pull Request für Ebene 1, Teil 2a: Abnahme durch Jonah steht aus.
-- Jonah: Simulationsdistanz deines Aternos-Servers nennen (für die Tickbereich-Prüfung).

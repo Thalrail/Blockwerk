@@ -1,0 +1,57 @@
+{
+  "bereich": "pruefer",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "pruefer.braucht-halt-fackel",
+      "titel": "Prüfer: Fackel braucht Halt",
+      "regel": "Eine Fackel muss an einem Block hängen, der auf der Seite liegt, die `torch_facing_direction` nennt (`top`: Block darunter), und dieser Block muss sie halten. Was ein Block hält, steht als Fakt in Ebene 0 (`fackelOben`, `fackelSeiten`). Ist es dort unbekannt (null), meldet der Prüfer einen Hinweis statt eines Verstoßes.",
+      "parameter": {
+        "getesteteFormen": [
+          "Glasblock",
+          "Halbstufe",
+          "Treppe",
+          "Zaun",
+          "Glasscheibe"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Torch; Spieltest 7 (Jonah, 20.10.2026): Wert = Seite des Nachbarblocks, ohne Nachbar springt die Fackel ab",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/pruefer.test.js::Fackel braucht Halt auf der genannten Seite",
+      "ungeprueft": true,
+      "testanleitung": "Noch ungetestete Formen: Fackel oben auf einer Treppe (richtig herum und kopfüber), auf einer oberen Halbstufe, an Mauer, Falltür, Laub, Eis, Trichter, Kessel. Je Form melden: hält oben / hält seitlich / hält nicht. Auch prüfen, ob andere Varianten derselben Form (Stein-Treppe, Birkenzaun, gefärbtes Glas) gleich reagieren.",
+      "beobachtung": "Jonah, 20.10.2026: Halbstufe nur auf ganzer Blockhöhe und seitlich nur an ganzen Blöcken; Treppe nur an der großen Seite; Zaun nur oben drauf; Glasblock an allen Seiten außer unten; Glasscheibe nur oben drauf. Ohne angrenzenden Block springt die Fackel ab."
+    },
+    {
+      "id": "pruefer.braucht-halt-schiene",
+      "titel": "Prüfer: Schiene braucht Boden",
+      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`); ist es dort unbekannt (null), meldet der Prüfer einen Hinweis.",
+      "parameter": {
+        "getesteteFormen": [
+          "Glasblock",
+          "Halbstufe",
+          "Treppe",
+          "Zaun",
+          "Glasscheibe"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Rail; Spieltest 4 (Jonah, 20.10.2026): ohne Boden springen Schienen beim Setzen ab",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/pruefer.test.js::Schiene braucht Boden",
+      "ungeprueft": true,
+      "testanleitung": "Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab.",
+      "beobachtung": "Jonah, 20.10.2026: Glasblock ganz normal; nicht auf Halbstufe, Treppe, Zaun; Glasscheibe geht nicht."
+    },
+    {
+      "id": "pruefer.tickbereich",
+      "titel": "Prüfer: Anlage im tickenden Bereich",
+      "regel": "Blöcke und Wesen in Chunks außerhalb des Tickbereichs laufen im Spiel nicht. Der Prüfer meldet je Chunk einen Verstoß mit der ersten betroffenen Koordinate.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick (folgt aus takt.tickbereich)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/pruefer.test.js::Tickbereich-Prüfung meldet Chunks außerhalb",
+      "ungeprueft": true,
+      "testanleitung": "Siehe takt.tickbereich."
+    }
+  ]
+}

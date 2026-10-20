@@ -1,45 +1,242 @@
 {
-  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen).",
+  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme.",
   "quelle": "https://minecraft.wiki/ (Seiten der einzelnen Blöcke, Abschnitt Bedrock Edition)",
   "regeln": [
-    { "muster": "(_planks|_log|_wood|_stem|_hyphae|_bricks|_concrete|_wool|_terracotta|_ore)$", "setze": { "vollblock": true, "durchsichtig": false }, "grund": "Standard-Vollblöcke" },
-    { "muster": "^minecraft:(stone|cobblestone|dirt|grass_block|sand|red_sand|gravel|bedrock|netherrack|obsidian|deepslate|granite|diorite|andesite|sandstone|red_sandstone|clay|smooth_stone|end_stone|soul_sand|glowstone|sea_lantern|bookshelf|tnt|crafting_table|furnace|iron_block|gold_block|diamond_block|emerald_block|redstone_block|coal_block|lapis_block)$", "setze": { "vollblock": true, "durchsichtig": false }, "grund": "Vollblöcke" },
-    { "muster": "(glass|^minecraft:ice$)", "ausser": "(pane|door|trapdoor|bottle)", "setze": { "vollblock": true, "durchsichtig": true }, "grund": "Glas und Eis: Vollblock, lässt Licht durch" },
-    { "muster": "_leaves$", "setze": { "vollblock": true, "durchsichtig": true }, "grund": "Laub" },
-    { "muster": "(_stairs|_slab|_door|_trapdoor|_fence|_fence_gate|_wall|_button|_pressure_plate|_sign|_carpet|_pane|_bed|_banner|_candle|_head|_skull|_rail|_sapling|_torch)$", "setze": { "vollblock": false }, "grund": "Teilblöcke" },
-    { "muster": "^minecraft:(air|water|flowing_water|lava|flowing_lava|torch|redstone_torch|soul_torch|lever|ladder|rail|golden_rail|detector_rail|activator_rail|redstone_wire|snow_layer|hopper|chest|trapped_chest|ender_chest|barrel|cauldron|enchanting_table|brewing_stand|bell|lantern|soul_lantern|campfire|soul_campfire|end_rod|fire|soul_fire|web|vine)$", "setze": { "vollblock": false }, "grund": "Kein Vollblock" },
-    { "muster": "^minecraft:(air|water|flowing_water|lava|flowing_lava)$", "setze": { "durchsichtig": true }, "grund": "Luft/Flüssigkeit" },
-    { "muster": "(_torch$|_button$|_pressure_plate$|_carpet$|_door$|_sign$|_banner$|_sapling$|_rail$|_candle$|_coral_fan$|^minecraft:(torch|redstone_torch|unlit_redstone_torch|rail|redstone_wire|lever|ladder|snow_layer|tripwire|tripwire_hook|repeater|unpowered_repeater|powered_repeater|comparator|unpowered_comparator|powered_comparator|wheat|carrots|potatoes|beetroot|nether_wart|sweet_berry_bush|bamboo|reeds|cactus|deadbush|tallgrass|double_plant|yellow_flower|red_flower|brown_mushroom|red_mushroom|waterlily|flower_pot|cocoa|kelp|seagrass|stone_button|wooden_button|wooden_pressure_plate|light_weighted_pressure_plate|heavy_weighted_pressure_plate))", "setze": { "brauchtHalt": true }, "grund": "bricht ab, wenn die tragende Fläche / der Befestigungsblock fehlt (Fackel, Schiene, Staub, Knopf, Tür, Pflanze …)" },
-    { "muster": "^minecraft:(sand|red_sand|gravel|anvil|dragon_egg|scaffolding|suspicious_sand|suspicious_gravel)$|_concrete_powder$", "setze": { "faellt": true }, "grund": "Fallender Block" }
+    {
+      "muster": "(_planks|_log|_wood|_stem|_hyphae|_bricks|_concrete|_wool|_terracotta|_ore)$",
+      "setze": {
+        "vollblock": true,
+        "durchsichtig": false,
+        "fackelOben": true,
+        "fackelSeiten": "alle",
+        "schiene": true
+      },
+      "grund": "Standard-Vollblöcke"
+    },
+    {
+      "muster": "^minecraft:(stone|cobblestone|dirt|grass_block|sand|red_sand|gravel|bedrock|netherrack|obsidian|deepslate|granite|diorite|andesite|sandstone|red_sandstone|clay|smooth_stone|end_stone|soul_sand|glowstone|sea_lantern|bookshelf|tnt|crafting_table|furnace|iron_block|gold_block|diamond_block|emerald_block|redstone_block|coal_block|lapis_block)$",
+      "setze": {
+        "vollblock": true,
+        "durchsichtig": false,
+        "fackelOben": true,
+        "fackelSeiten": "alle",
+        "schiene": true
+      },
+      "grund": "Vollblöcke"
+    },
+    {
+      "muster": "glass",
+      "ausser": "(pane|door|trapdoor|bottle)",
+      "setze": {
+        "vollblock": true,
+        "durchsichtig": true,
+        "fackelOben": true,
+        "fackelSeiten": "alle",
+        "schiene": true
+      },
+      "grund": "Glasblock: Vollblock, lässt Licht durch, hält Fackel (oben und seitlich) und Schiene",
+      "status": "geprüft",
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel an allen Seiten außer unten, Schiene „ganz normal“"
+    },
+    {
+      "muster": "^minecraft:ice$",
+      "setze": {
+        "vollblock": true,
+        "durchsichtig": true
+      },
+      "grund": "Eis: Vollblock, lässt Licht durch (Tragfähigkeit unbekannt)"
+    },
+    {
+      "muster": "_leaves$",
+      "setze": {
+        "vollblock": true,
+        "durchsichtig": true
+      },
+      "grund": "Laub"
+    },
+    {
+      "muster": "(_stairs|_slab|_door|_trapdoor|_fence|_fence_gate|_wall|_button|_pressure_plate|_sign|_carpet|_pane|_bed|_banner|_candle|_head|_skull|_rail|_sapling|_torch)$",
+      "setze": {
+        "vollblock": false
+      },
+      "grund": "Teilblöcke"
+    },
+    {
+      "muster": "_double_slab$",
+      "setze": {
+        "vollblock": true,
+        "fackelOben": true,
+        "fackelSeiten": "alle",
+        "schiene": true
+      },
+      "grund": "Doppelte Halbstufe = ganzer Block (Annahme, „nur an ganzen Blöcken“)"
+    },
+    {
+      "muster": "_slab$",
+      "ausser": "_double_slab$",
+      "setze": {
+        "fackelOben": "obere-haelfte",
+        "fackelSeiten": "keine",
+        "schiene": false
+      },
+      "grund": "Halbstufe",
+      "status": "geprüft",
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur auf ganzer Blockhöhe und nur an ganzen Blöcken seitlich (von Jonah bestätigt: oben nur auf der oberen Hälfte, seitlich gar nicht); Schiene nicht auf Halbstufe"
+    },
+    {
+      "muster": "_stairs$",
+      "setze": {
+        "fackelSeiten": "grosse-seite",
+        "schiene": false
+      },
+      "grund": "Treppe",
+      "status": "geprüft",
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur an der großen Seite; Schiene nicht auf Treppe (Fackel oben auf der Treppe nicht getestet)"
+    },
+    {
+      "muster": "_fence$",
+      "setze": {
+        "fackelOben": true,
+        "fackelSeiten": "keine",
+        "schiene": false
+      },
+      "grund": "Zaun",
+      "status": "geprüft",
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur oben drauf; Schiene nicht auf Zaun"
+    },
+    {
+      "muster": "_pane$",
+      "setze": {
+        "fackelOben": true,
+        "fackelSeiten": "keine",
+        "schiene": false
+      },
+      "grund": "Glasscheibe",
+      "status": "geprüft",
+      "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel nur oben drauf; Schiene geht nicht"
+    },
+    {
+      "muster": "^minecraft:(air|water|flowing_water|lava|flowing_lava|torch|redstone_torch|soul_torch|lever|ladder|rail|golden_rail|detector_rail|activator_rail|redstone_wire|snow_layer|hopper|chest|trapped_chest|ender_chest|barrel|cauldron|enchanting_table|brewing_stand|bell|lantern|soul_lantern|campfire|soul_campfire|end_rod|fire|soul_fire|web|vine)$",
+      "setze": {
+        "vollblock": false
+      },
+      "grund": "Kein Vollblock"
+    },
+    {
+      "muster": "^minecraft:(air|water|flowing_water|lava|flowing_lava)$",
+      "setze": {
+        "durchsichtig": true
+      },
+      "grund": "Luft/Flüssigkeit"
+    },
+    {
+      "muster": "(_torch$|_button$|_pressure_plate$|_carpet$|_door$|_sign$|_banner$|_sapling$|_rail$|_candle$|_coral_fan$|^minecraft:(torch|redstone_torch|unlit_redstone_torch|rail|redstone_wire|lever|ladder|snow_layer|tripwire|tripwire_hook|repeater|unpowered_repeater|powered_repeater|comparator|unpowered_comparator|powered_comparator|wheat|carrots|potatoes|beetroot|nether_wart|sweet_berry_bush|bamboo|reeds|cactus|deadbush|tallgrass|double_plant|yellow_flower|red_flower|brown_mushroom|red_mushroom|waterlily|flower_pot|cocoa|kelp|seagrass|stone_button|wooden_button|wooden_pressure_plate|light_weighted_pressure_plate|heavy_weighted_pressure_plate))",
+      "setze": {
+        "brauchtHalt": true
+      },
+      "grund": "bricht ab, wenn die tragende Fläche / der Befestigungsblock fehlt (Fackel, Schiene, Staub, Knopf, Tür, Pflanze …)"
+    },
+    {
+      "muster": "^minecraft:(sand|red_sand|gravel|anvil|dragon_egg|scaffolding|suspicious_sand|suspicious_gravel)$|_concrete_powder$",
+      "setze": {
+        "faellt": true
+      },
+      "grund": "Fallender Block"
+    }
   ],
   "lichtstaerke": {
-    "minecraft:torch": 14, "minecraft:soul_torch": 10, "minecraft:redstone_torch": 7, "minecraft:lantern": 15, "minecraft:soul_lantern": 10,
-    "minecraft:glowstone": 15, "minecraft:sea_lantern": 15, "minecraft:shroomlight": 15, "minecraft:lit_pumpkin": 15,
-    "minecraft:lava": 15, "minecraft:flowing_lava": 15, "minecraft:fire": 15, "minecraft:soul_fire": 10,
-    "minecraft:campfire": 15, "minecraft:soul_campfire": 10, "minecraft:beacon": 15, "minecraft:end_rod": 14,
-    "minecraft:lit_redstone_lamp": 15, "minecraft:lit_furnace": 13, "minecraft:lit_blast_furnace": 13, "minecraft:lit_smoker": 13,
-    "minecraft:magma": 3, "minecraft:enchanting_table": 7, "minecraft:ender_chest": 7, "minecraft:brewing_stand": 1,
-    "minecraft:crying_obsidian": 10, "minecraft:conduit": 15, "minecraft:ochre_froglight": 15, "minecraft:verdant_froglight": 15,
-    "minecraft:pearlescent_froglight": 15, "minecraft:end_portal": 15, "minecraft:portal": 11, "minecraft:sculk_catalyst": 6
+    "minecraft:torch": 14,
+    "minecraft:soul_torch": 10,
+    "minecraft:redstone_torch": 7,
+    "minecraft:lantern": 15,
+    "minecraft:soul_lantern": 10,
+    "minecraft:glowstone": 15,
+    "minecraft:sea_lantern": 15,
+    "minecraft:shroomlight": 15,
+    "minecraft:lit_pumpkin": 15,
+    "minecraft:lava": 15,
+    "minecraft:flowing_lava": 15,
+    "minecraft:fire": 15,
+    "minecraft:soul_fire": 10,
+    "minecraft:campfire": 15,
+    "minecraft:soul_campfire": 10,
+    "minecraft:beacon": 15,
+    "minecraft:end_rod": 14,
+    "minecraft:lit_redstone_lamp": 15,
+    "minecraft:lit_furnace": 13,
+    "minecraft:lit_blast_furnace": 13,
+    "minecraft:lit_smoker": 13,
+    "minecraft:magma": 3,
+    "minecraft:enchanting_table": 7,
+    "minecraft:ender_chest": 7,
+    "minecraft:brewing_stand": 1,
+    "minecraft:crying_obsidian": 10,
+    "minecraft:conduit": 15,
+    "minecraft:ochre_froglight": 15,
+    "minecraft:verdant_froglight": 15,
+    "minecraft:pearlescent_froglight": 15,
+    "minecraft:end_portal": 15,
+    "minecraft:portal": 11,
+    "minecraft:sculk_catalyst": 6
   },
   "arbeitsbloecke": [
-    "minecraft:composter", "minecraft:barrel", "minecraft:blast_furnace", "minecraft:smoker", "minecraft:cartography_table",
-    "minecraft:fletching_table", "minecraft:grindstone", "minecraft:lectern", "minecraft:loom", "minecraft:smithing_table",
-    "minecraft:stonecutter_block", "minecraft:brewing_stand", "minecraft:cauldron"
+    "minecraft:composter",
+    "minecraft:barrel",
+    "minecraft:blast_furnace",
+    "minecraft:smoker",
+    "minecraft:cartography_table",
+    "minecraft:fletching_table",
+    "minecraft:grindstone",
+    "minecraft:lectern",
+    "minecraft:loom",
+    "minecraft:smithing_table",
+    "minecraft:stonecutter_block",
+    "minecraft:brewing_stand",
+    "minecraft:cauldron"
   ],
   "behaelter": {
-    "minecraft:chest": 27, "minecraft:trapped_chest": 27, "minecraft:barrel": 27, "minecraft:hopper": 5,
-    "minecraft:dropper": 9, "minecraft:dispenser": 9, "minecraft:furnace": 3, "minecraft:blast_furnace": 3,
-    "minecraft:smoker": 3, "minecraft:brewing_stand": 5, "minecraft:lectern": 1, "minecraft:jukebox": 1,
-    "minecraft:lit_furnace": 3, "minecraft:lit_blast_furnace": 3, "minecraft:lit_smoker": 3,
-    "minecraft:copper_chest": 27, "minecraft:exposed_copper_chest": 27, "minecraft:weathered_copper_chest": 27, "minecraft:oxidized_copper_chest": 27,
-    "minecraft:waxed_copper_chest": 27, "minecraft:waxed_exposed_copper_chest": 27, "minecraft:waxed_weathered_copper_chest": 27, "minecraft:waxed_oxidized_copper_chest": 27,
-    "minecraft:crafter": 9, "minecraft:chiseled_bookshelf": 6, "minecraft:decorated_pot": 1,
-    "minecraft:undyed_shulker_box": 27, "minecraft:white_shulker_box": 27, "minecraft:orange_shulker_box": 27,
-    "minecraft:magenta_shulker_box": 27, "minecraft:light_blue_shulker_box": 27, "minecraft:yellow_shulker_box": 27,
-    "minecraft:lime_shulker_box": 27, "minecraft:pink_shulker_box": 27, "minecraft:gray_shulker_box": 27,
-    "minecraft:light_gray_shulker_box": 27, "minecraft:cyan_shulker_box": 27, "minecraft:purple_shulker_box": 27,
-    "minecraft:blue_shulker_box": 27, "minecraft:brown_shulker_box": 27, "minecraft:green_shulker_box": 27,
-    "minecraft:red_shulker_box": 27, "minecraft:black_shulker_box": 27
+    "minecraft:chest": 27,
+    "minecraft:trapped_chest": 27,
+    "minecraft:barrel": 27,
+    "minecraft:hopper": 5,
+    "minecraft:dropper": 9,
+    "minecraft:dispenser": 9,
+    "minecraft:furnace": 3,
+    "minecraft:blast_furnace": 3,
+    "minecraft:smoker": 3,
+    "minecraft:brewing_stand": 5,
+    "minecraft:lectern": 1,
+    "minecraft:jukebox": 1,
+    "minecraft:lit_furnace": 3,
+    "minecraft:lit_blast_furnace": 3,
+    "minecraft:lit_smoker": 3,
+    "minecraft:copper_chest": 27,
+    "minecraft:exposed_copper_chest": 27,
+    "minecraft:weathered_copper_chest": 27,
+    "minecraft:oxidized_copper_chest": 27,
+    "minecraft:waxed_copper_chest": 27,
+    "minecraft:waxed_exposed_copper_chest": 27,
+    "minecraft:waxed_weathered_copper_chest": 27,
+    "minecraft:waxed_oxidized_copper_chest": 27,
+    "minecraft:crafter": 9,
+    "minecraft:chiseled_bookshelf": 6,
+    "minecraft:decorated_pot": 1,
+    "minecraft:undyed_shulker_box": 27,
+    "minecraft:white_shulker_box": 27,
+    "minecraft:orange_shulker_box": 27,
+    "minecraft:magenta_shulker_box": 27,
+    "minecraft:light_blue_shulker_box": 27,
+    "minecraft:yellow_shulker_box": 27,
+    "minecraft:lime_shulker_box": 27,
+    "minecraft:pink_shulker_box": 27,
+    "minecraft:gray_shulker_box": 27,
+    "minecraft:light_gray_shulker_box": 27,
+    "minecraft:cyan_shulker_box": 27,
+    "minecraft:purple_shulker_box": 27,
+    "minecraft:blue_shulker_box": 27,
+    "minecraft:brown_shulker_box": 27,
+    "minecraft:green_shulker_box": 27,
+    "minecraft:red_shulker_box": 27,
+    "minecraft:black_shulker_box": 27
   }
 }

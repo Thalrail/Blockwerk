@@ -1,0 +1,164 @@
+{
+  "bereich": "takt",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "takt.spieltick",
+      "titel": "Spieltick und Tag",
+      "regel": "20 Spielticks pro Sekunde (0,05 s); ein Tag hat 24.000 Spielticks.",
+      "parameter": {
+        "ticksProSekunde": 20,
+        "ticksProTag": 24000
+      },
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/weltzeit.test.js::Ein Tag hat 24.000 Ticks (20 Ticks pro Sekunde)",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.redstone-tick",
+      "titel": "Redstone-Tick und Phasen",
+      "regel": "Ein Redstone-Tick dauert 2 Spielticks. Ungerade Spielticks sind P-Ticks (Produce), gerade sind C-Ticks (Consume). In Bedrock läuft das Redstone-System getrennt vom Haupt-Loop; Blockwerk nähert das als feste Stufen innerhalb des Spielticks an (siehe takt.arbeitsreihenfolge).",
+      "parameter": {
+        "spielticksProRedstoneTick": 2,
+        "pTick": "ungerade",
+        "cTick": "gerade"
+      },
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Redstone-Tick = 2 Spielticks; ungerade = P, gerade = C",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.uebertrager",
+      "titel": "Übertrager: lesen im P-Tick, schreiben im folgenden C-Tick",
+      "regel": "Übertrager und Stromquellen (Verstärker, Komparator, Redstonefackel, Beobachter) lesen ihre Eingabe im P-Tick und schreiben ihr Ergebnis nach ihrer Verzögerung im folgenden C-Tick.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Übertrager lesen im P-Tick und schreiben im folgenden C-Tick",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.uebertrager-verzoegerung",
+      "titel": "Übertrager: Schreibzeitpunkt bei Verzögerung d",
+      "regel": "Bei einer Verzögerung von d Redstone-Ticks schreibt der Übertrager im Spielticks Lesetick + 2·d − 1 (also im C-Tick, der d Redstone-Ticks nach dem Lesen liegt). Abgeleitet aus der Beschreibung, nicht wörtlich dokumentiert.",
+      "parameter": {
+        "formel": "lesetick + 2*d - 1"
+      },
+      "quelle": "https://minecraft.wiki/w/Tick (abgeleitet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Übertrager-Verzögerung 1…4 Redstone-Ticks",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt: Hebel → Verstärker mit Verzögerung 4 (4× Rechtsklick) → Lampe. Mit Video (60 fps) die Zeit zwischen Hebelklick und Lampe messen: Erwartung 0,4 s (8 Spielticks); bei Verzögerung 1: 0,1 s. Dann zwei Verstärker (je Verzögerung 1) hintereinander: Erwartung 0,2 s."
+    },
+    {
+      "id": "takt.mechanismus",
+      "titel": "Mechanismen schalten im C-Tick",
+      "regel": "Mechanismen (Kolben, Lampe, Tür …) schalten im C-Tick.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Mechanismen arbeiten nur im C-Tick",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.mechanismus-blockupdate",
+      "titel": "Mechanismen: Blockupdate im nächsten P-Tick",
+      "regel": "Nach dem Schalten eines Mechanismus im C-Tick läuft das Blockupdate im nächsten P-Tick. Noch nicht umgesetzt; kommt mit der ersten Redstone-Mechanik.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "entworfen",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.staub",
+      "titel": "Redstone-Staub aktualisiert jeden Spieltick",
+      "regel": "Redstone-Staub aktualisiert in jedem Spieltick (20× pro Sekunde) und kann daher 1-Tick-Impulse tragen.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Redstone-Staub aktualisiert in jedem Spieltick",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.wesen-bauteile",
+      "titel": "Wesen-Bauteile reagieren auf P- und C-Ticks",
+      "regel": "Wesen-Bauteile (Trichterlore, TNT-Lore, Rüstungsständer) reagieren auf P- und C-Ticks.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Wesen-Bauteile arbeiten in P- und C-Tick",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.geplante-ticks-grenze",
+      "titel": "Geplante Ticks: höchstens 100 je Chunk und Spieltick",
+      "regel": "Geplante Ticks (Wasser, verzögerte Bauteile): höchstens 100 pro Chunk und Spieltick.",
+      "parameter": {
+        "maxProChunkUndTick": 100
+      },
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/geplante-ticks.test.js::Höchstens 100 geplante Ticks je Chunk und Spieltick",
+      "ungeprueft": false
+    },
+    {
+      "id": "takt.geplante-ticks-ueberlauf",
+      "titel": "Geplante Ticks: Überlauf",
+      "regel": "Was über der Grenze liegt, bleibt in der Warteschlange und kommt im nächsten Spieltick zuerst wieder dran. Bedrock dokumentiert nicht, was bei mehr als 100 passiert.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick (Grenze dokumentiert, Überlauf nicht – Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/geplante-ticks.test.js::Überlauf kommt im nächsten Tick zuerst wieder dran",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt: eine große Wasserfläche (z. B. 40×40 Quellblöcke) auf einmal fließen lassen (Block unter dem Becken entfernen) und beobachten, ob sich der Abfluss verlangsamt, ohne dass Wasser fehlt. Ergebnis: schnell/verzögert/Wasser fehlt."
+    },
+    {
+      "id": "takt.zufallsticks",
+      "titel": "Zufallsticks",
+      "regel": "randomTickSpeed ist in Bedrock standardmäßig 1 und gibt nur die relative Geschwindigkeit an. Blockwerk nutzt Zufall mit festem Startwert und rechnet zusätzlich mit Erwartungswerten („reif nach ca. X Minuten“). Welche Blöcke wie oft ticken, kommt mit den jeweiligen Mechaniken. Umgesetzt ist bisher nur der deterministische Zufallsgenerator; die Zufallsticks-Stufe im Taktgeber ist ein leerer Platzhalter.",
+      "parameter": {
+        "randomTickSpeed": 1
+      },
+      "quelle": "https://minecraft.wiki/w/Tick",
+      "status": "entworfen",
+      "ungeprueft": true,
+      "testanleitung": "Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen)."
+    },
+    {
+      "id": "takt.tickbereich",
+      "titel": "Tickbereich",
+      "regel": "Bedrock tickt alle Chunks innerhalb der Simulationsdistanz (oder einer Tickingarea). Blockwerk modelliert die Distanz als Quadrat um jeden Spieler in Chunks und hat bewusst keinen Standardwert. Der Taktgeber wendet den Tickbereich bisher nur auf geplante Ticks an; künftige Mechaniken müssen ihn selbst beachten.",
+      "parameter": {
+        "form": "quadrat"
+      },
+      "quelle": "https://minecraft.wiki/w/Tick (Form der Distanz und Standardwert nicht belegt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/tickbereich.test.js::Tickbereich: Spieler mit Simulationsdistanz und Tickingarea",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt: Wasserfall- oder Pflanzenfarm bauen, dich 10 Chunks entfernen und zurückkehren: Hat sie sich währenddessen weiterbewegt (z. B. Weizen gewachsen)? Dazu die Simulationsdistanz deines Aternos-Servers nennen."
+    },
+    {
+      "id": "takt.arbeitsreihenfolge",
+      "titel": "Arbeitsreihenfolge innerhalb eines Spielticks",
+      "regel": "Bedrock dokumentiert die Reihenfolge innerhalb eines Spielticks nicht. Blockwerk arbeitet in fester Reihenfolge ab: geplante Ticks, Zufallsticks, Spieltick-Mechaniken, Redstone-Staub, Übertrager, Mechanismen, Wesen-Bauteile; innerhalb einer Stufe in der Reihenfolge der Anmeldung.",
+      "parameter": {
+        "reihenfolge": [
+          "geplante-ticks",
+          "zufallsticks",
+          "spieltick",
+          "staub",
+          "uebertrager",
+          "mechanismus",
+          "wesen"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Tick (Bedrock-Abschnitt „Game process“ ist leer – eigene Festlegung)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/taktgeber.test.js::Arbeitsreihenfolge ist fest und kommt aus den Daten",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden."
+    }
+  ]
+}

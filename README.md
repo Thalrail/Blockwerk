@@ -10,8 +10,8 @@ Jede Ebene baut nur auf tieferen Ebenen auf (siehe [docs/ebenen.md](docs/ebenen.
 
 | Ebene | Ordner | Inhalt | Stand |
 |-------|--------|--------|-------|
-| 0 | `src/ebene0` | Fundament: Koordinaten, Blockregister, Wesenregister, Voxelwelt, Vermesser, Speichern/Laden | im Aufbau |
-| 1 | `src/ebene1` | Uhrwerk & Mechanik | offen |
+| 0 | `src/ebene0` | Fundament: Koordinaten, Blockregister, Wesenregister, Voxelwelt, Vermesser, Speichern/Laden | fertig |
+| 1 | `src/ebene1` | Uhrwerk & Mechanik (Unterbau fertig: Taktgeber, Regelwerk, Prüfer; Mechaniken folgen) | im Aufbau |
 | 2 | `src/ebene2` | Bausteine | offen |
 | 3 | `src/ebene3` | Planung | offen |
 | 4 | `src/ebene4` | Leser (einzige KI-Stelle) | offen |

@@ -1,0 +1,13 @@
+{
+  "name": "blockwerk",
+  "version": "0.1.0",
+  "description": "Bauplaner für Minecraft Bedrock Edition (Ebenenmodell 0–5)",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  }
+}

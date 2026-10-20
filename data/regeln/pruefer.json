@@ -25,7 +25,7 @@
     {
       "id": "pruefer.braucht-halt-schiene",
       "titel": "Prüfer: Schiene braucht Boden",
-      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`); ist es dort unbekannt (null), meldet der Prüfer einen Hinweis.",
+      "regel": "Eine Schiene braucht einen tragenden Block darunter. Was trägt, steht als Fakt in Ebene 0 (`schiene`). Untere Halbstufe und aufrechte Treppe tragen nachweislich nicht (Verstoß). Obere Halbstufe und kopfstehende Treppe sollen laut Wiki tragen, in Bedrock ist das ungetestet (Hinweis). Ist es unbekannt (null), meldet der Prüfer einen Hinweis.",
       "parameter": {
         "getesteteFormen": [
           "Glasblock",
@@ -39,7 +39,7 @@
       "status": "simuliert",
       "simulationstest": "test/ebene1/pruefer.test.js::Schiene braucht Boden",
       "ungeprueft": true,
-      "testanleitung": "Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab.",
+      "testanleitung": "Zuerst: Schiene auf eine OBERE Halbstufe (`/setblock … oak_slab [\"minecraft:vertical_half\"=\"top\"]`) und auf eine KOPFSTEHENDE Treppe (`oak_stairs [\"upside_down_bit\"=true,\"weirdo_direction\"=0]`) setzen: bleibt sie liegen? Danach ungetestete Formen: Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab.",
       "beobachtung": "Jonah, 20.10.2026: Glasblock ganz normal; nicht auf Halbstufe, Treppe, Zaun; Glasscheibe geht nicht."
     },
     {
@@ -52,6 +52,28 @@
       "simulationstest": "test/ebene1/pruefer.test.js::Tickbereich-Prüfung meldet Chunks außerhalb",
       "ungeprueft": true,
       "testanleitung": "Siehe takt.tickbereich."
+    },
+    {
+      "id": "pruefer.schiene-verbindung",
+      "titel": "Prüfer: Schienen sind miteinander verbunden",
+      "regel": "Zeigt das Ende einer Schiene auf eine Schiene, die nicht zurückzeigt, ist das ein Verstoß (die Lore entgleist oder bleibt stehen). Führt ein Ende ins Leere, ist es ein Hinweis (Sackgasse), denn Endstücke sind normal.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail (Verbindungslogik; Edition nicht überall gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Prüfer: Schienenverbindungen",
+      "ungeprueft": true,
+      "testanleitung": "Zwei Schienen so legen, dass die eine auf die andere zeigt (z. B. Kurve neben einer Ost-West-Schiene, die sich nicht eindrehen kann, weil beide Enden belegt sind): Fährt die Lore durch oder bleibt sie hängen? Ergebnis melden."
+    },
+    {
+      "id": "pruefer.antriebsschiene-kurve",
+      "titel": "Prüfer: Antriebsschiene nie als Kurve",
+      "regel": "Eine Antriebsschiene (golden_rail) mit rail_direction 6–9 ist ein Verstoß; bei Detektor- und Aktivierungsschiene ist es nur ein Hinweis (nicht belegt).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Tabelle: Werte 6–9 unbenutzt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Prüfer: Antriebsschiene als Kurve",
+      "ungeprueft": true,
+      "testanleitung": "Siehe schiene.detektor-aktivierung-gerade."
     }
   ]
 }

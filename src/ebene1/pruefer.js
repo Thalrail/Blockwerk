@@ -17,7 +17,17 @@ function sortiert(liste) {
 function haltUrteil(art, block, register, richtungVon, zurFackel) {
   if (block.id === LUFT) return 'fehlt';
   const e = register.bloecke.block(block.id).eigenschaften;
-  if (art === 'schiene') return e.schiene === true ? 'ok' : e.schiene === false ? 'nein' : 'unklar';
+  if (art === 'schiene') {
+    if (e.schiene === true) return 'ok';
+    if (e.schiene === false) return 'nein';
+    if (e.schiene === 'wenn-oben') {
+      // Halbstufe: obere Hälfte, Treppe: kopfstehend. Die normale Lage trägt nachweislich nicht (Spieltest 20.10.2026),
+      // die umgekehrte ist laut Wiki möglich, in Bedrock aber ungetestet → 'unklar' (Hinweis).
+      const oben = block.zustand['minecraft:vertical_half'] ?? (block.zustand.upside_down_bit === undefined ? undefined : block.zustand.upside_down_bit ? 'top' : 'bottom');
+      return oben === undefined ? 'unklar' : oben === 'top' ? 'unklar' : 'nein';
+    }
+    return 'unklar';
+  }
   if (art === 'fackel-oben') {
     if (e.fackelOben === true) return 'ok';
     if (e.fackelOben === false) return 'nein';
@@ -91,15 +101,42 @@ function pruefeTickbereich(welt, bloecke, tickbereich) {
   }));
 }
 
+function pruefeSchienen(welt, schienen, bloecke) {
+  const meldungen = [];
+  const melde = (regel, ort, schwere, meldung) => meldungen.push({ regel, ort, schwere, meldung });
+  for (const b of bloecke) {
+    if (!schienen.istSchienenId(b.id)) continue;
+    const ort = { x: b.x, y: b.y, z: b.z };
+    const ende = schienen.enden(b.zustand);
+    if (!ende) {
+      melde('pruefer.schiene-verbindung', ort, 'hinweis', `${b.id}: Form (rail_direction) ist nicht angegeben, Verbindungen nicht prüfbar`);
+      continue;
+    }
+    const wert = b.zustand.rail_direction;
+    if (wert > 5 && schienen.nurGerade.has(b.id)) {
+      melde('pruefer.antriebsschiene-kurve', ort, schienen.belegtGerade.has(b.id) ? 'verstoss' : 'hinweis',
+        `${b.id} als Kurve (${wert}): Antriebsschienen sind gerade${schienen.belegtGerade.has(b.id) ? '' : ' (für diese Schiene nicht belegt)'}`);
+    }
+    for (const e of ende) {
+      const g = schienen.gegenstelle(welt, ort, e);
+      const wohin = `${e.richtung}${e.dy ? ' (hoch)' : ''}`;
+      if (g.art === 'einseitig') melde('pruefer.schiene-verbindung', ort, 'verstoss', `${b.id}: Ende ${wohin} zeigt auf ${g.partner.id} bei ${g.partner.pos.x}, ${g.partner.pos.y}, ${g.partner.pos.z}, das nicht zurückzeigt`);
+      else if (g.art === 'leer') melde('pruefer.schiene-verbindung', ort, 'hinweis', `${b.id}: Ende ${wohin} führt ins Leere (Sackgasse)`);
+    }
+  }
+  return meldungen;
+}
+
 /**
  * @param {import('../ebene0/welt.js').Welt} welt
- * @param {{register: object, richtungVon: (zustandName:string, wert:any) => string|null, tickbereich?: import('./tickbereich.js').Tickbereich}} optionen
+ * @param {{register: object, richtungVon: (zustandName:string, wert:any) => string|null, tickbereich?: import('./tickbereich.js').Tickbereich, schienen?: ReturnType<typeof import('./schienen.js').erzeugeSchienen>}} optionen
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
+  if (schienen) meldungen.push(...pruefeSchienen(welt, schienen, bloecke));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);
 }

@@ -42,8 +42,15 @@ Anleitung folgt, sobald ein Baustein sie braucht.
 
 Eingetragen in Ebene 0 (`fackelOben`, `fackelSeiten`, `schiene`). Halbstufe (von Jonah bestätigt): oben nur auf der oberen Hälfte, seitlich gar nicht.
 
+## Die wichtigsten Schienen-Tests (Ebene 1, Reihenfolge nach Nutzen)
+Alle in der Kreativ-Testwelt auf ebenem Steinboden. Pro Test: **Welche Form entsteht?** (Wert 0–9 wie in Test 4 oder einfach beschreiben.)
+1. **Obere Halbstufe und kopfstehende Treppe**: Schiene darauf setzen: bleibt sie liegen? (`pruefer.braucht-halt-schiene`)
+2. **T-Stelle**: Links und rechts einer freien Stelle je eine einzelne Schiene, davor (Süden) eine dritte einzeln; dann in die Mitte eine Schiene: Ost-West gerade oder Kurve? Dasselbe mit vier Nachbarn. (`schiene.t-stelle`)
+3. **Rampe mit zwei Möglichkeiten**: Links und rechts je einen Stein mit einer Schiene darauf (einen Block höher), dann in der Mitte unten eine Schiene: Steigt sie nach Westen oder nach Osten an? (`schiene.bevorzugung`)
+4. **Antriebsschiene an der Ecke**: Eine Antriebsschiene im rechten Winkel zu einer Schiene setzen: bleibt sie gerade? Dasselbe mit Detektor- und Aktivierungsschiene. (`schiene.detektor-aktivierung-gerade`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
-Diese Regeln hat der Taktgeber/Prüfer umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
+Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
 | Regel | Was testen |
 |---|---|
@@ -52,6 +59,15 @@ Diese Regeln hat der Taktgeber/Prüfer umgesetzt, aber Bedrock dokumentiert sie 
 | `takt.zufallsticks` – Zufallsticks | Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen). |
 | `takt.tickbereich` – Tickbereich | Kreativ-Testwelt: Wasserfall- oder Pflanzenfarm bauen, dich 10 Chunks entfernen und zurückkehren: Hat sie sich währenddessen weiterbewegt (z. B. Weizen gewachsen)? Dazu die Simulationsdistanz deines Aternos-Servers nennen. |
 | `takt.arbeitsreihenfolge` – Arbeitsreihenfolge innerhalb eines Spielticks | Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden. |
+| `schiene.linie-verlaengern` – Eine Linie wird in derselben Richtung verlängert | Kreativ-Testwelt auf ebenem Boden: eine Schiene setzen, daneben in Ost-West-Richtung eine zweite, dann eine dritte in derselben Reihe. Erwartung: alle drei liegen Ost-West. Dasselbe in Nord-Süd-Richtung. Abweichungen melden. |
+| `schiene.zwei-nachbarn` – Zwei Nachbarn: verbinden, gerade oder als Kurve | Zwei Schienen im rechten Winkel zueinander setzen (z. B. eine im Westen, eine im Norden einer freien Stelle) und dazwischen die Ecke legen: Kurve? Dann die Ecke so legen, dass drei Schienen Nachbarn sind (siehe schiene.t-stelle). |
+| `schiene.nachbar-umstellen` – Nachbarschienen stellen sich auf die neue Schiene ein | Eine Ost-West-Linie aus drei Schienen legen, dann an das Ende der Mittelschiene seitlich (Nord) eine vierte setzen: Bleibt die Linie unverändert, oder dreht sich die Mittelschiene? Ergebnis melden. |
+| `schiene.t-stelle` – T-Stelle und Kreuzung | Drei einzelne Schienen so setzen, dass sie eine T-Form umschließen (West, Ost, Süd einer freien Stelle, jede einzeln und weit genug voneinander), dann die Mitte setzen: Welche Form entsteht (Ost-West gerade oder Kurve)? Mit vier Nachbarn wiederholen. Je Fall melden. |
+| `schiene.rampe` – Rampe zur Schiene eine Ebene höher | Auf Boden einen Block-Absatz bauen: unten drei Schienen in einer Linie, oben am Absatz eine Schiene direkt am Rand der Linie, in der Fluchtlinie. Erwartung: die letzte untere Schiene steigt zur oberen an. Dann umgekehrte Reihenfolge des Setzens und das Ergebnis vergleichen. |
+| `schiene.bevorzugung` – Reihenfolge der Bevorzugung | Eine freie Stelle mit einer Rampe nach oben auf der Westseite und einer nach oben auf der Ostseite vorbereiten (jeweils eine Schiene einen Block höher), dann in der Mitte eine Schiene setzen: Steigt sie nach Westen oder nach Osten an? Dann West gegen Süd, Ost gegen Nord. |
+| `schiene.detektor-aktivierung-gerade` – Detektor- und Aktivierungsschiene: auch gerade? | Detektorschiene und Aktivierungsschiene jeweils an eine Schiene im rechten Winkel setzen (Ecke): Bleibt sie gerade, oder wird sie eine Kurve? Je Schienenart melden. |
 | `pruefer.braucht-halt-fackel` – Prüfer: Fackel braucht Halt | Noch ungetestete Formen: Fackel oben auf einer Treppe (richtig herum und kopfüber), auf einer oberen Halbstufe, an Mauer, Falltür, Laub, Eis, Trichter, Kessel. Je Form melden: hält oben / hält seitlich / hält nicht. Auch prüfen, ob andere Varianten derselben Form (Stein-Treppe, Birkenzaun, gefärbtes Glas) gleich reagieren. |
-| `pruefer.braucht-halt-schiene` – Prüfer: Schiene braucht Boden | Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab. |
+| `pruefer.braucht-halt-schiene` – Prüfer: Schiene braucht Boden | Zuerst: Schiene auf eine OBERE Halbstufe (`/setblock … oak_slab ["minecraft:vertical_half"="top"]`) und auf eine KOPFSTEHENDE Treppe (`oak_stairs ["upside_down_bit"=true,"weirdo_direction"=0]`) setzen: bleibt sie liegen? Danach ungetestete Formen: Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab. |
 | `pruefer.tickbereich` – Prüfer: Anlage im tickenden Bereich | Siehe takt.tickbereich. |
+| `pruefer.schiene-verbindung` – Prüfer: Schienen sind miteinander verbunden | Zwei Schienen so legen, dass die eine auf die andere zeigt (z. B. Kurve neben einer Ost-West-Schiene, die sich nicht eindrehen kann, weil beide Enden belegt sind): Fährt die Lore durch oder bleibt sie hängen? Ergebnis melden. |
+| `pruefer.antriebsschiene-kurve` – Prüfer: Antriebsschiene nie als Kurve | Siehe schiene.detektor-aktivierung-gerade. |

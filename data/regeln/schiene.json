@@ -1,0 +1,127 @@
+{
+  "bereich": "schiene",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "schiene.zustandswerte",
+      "titel": "Bedeutung von rail_direction",
+      "regel": "rail_direction 0 = Nord-Süd, 1 = Ost-West, 2–5 = Steigung nach Ost/West/Nord/Süd, 6–9 = Kurve Süd-Ost, Süd-West, Nord-West, Nord-Ost. Jede Schiene hat zwei Enden; das hohe Ende einer Steigung liegt einen Block höher (dy = +1).",
+      "parameter": {
+        "enden": {
+          "0": [["north", 0], ["south", 0]],
+          "1": [["east", 0], ["west", 0]],
+          "2": [["west", 0], ["east", 1]],
+          "3": [["east", 0], ["west", 1]],
+          "4": [["south", 0], ["north", 1]],
+          "5": [["north", 0], ["south", 1]],
+          "6": [["south", 0], ["east", 0]],
+          "7": [["south", 0], ["west", 0]],
+          "8": [["north", 0], ["west", 0]],
+          "9": [["north", 0], ["east", 0]]
+        }
+      },
+      "quelle": "https://minecraft.wiki/w/Rail",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-20",
+      "beobachtung": "Jonah, Spieltest 4 (wiederholt): 0 Nord-Süd, 1 Ost-West, 2–5 Steigung nach Ost/West/Nord/Süd, 6 Süd-Ost, 7 Süd-West, 8 Nord-West, 9 Nord-Ost bestätigt.",
+      "ungeprueft": false
+    },
+    {
+      "id": "schiene.einzeln",
+      "titel": "Einzelne Schiene ist Nord-Süd",
+      "regel": "Eine Schiene ohne Nachbarschiene stellt sich in Bedrock als gerade Nord-Süd-Schiene ein (in Java richtet sie sich nach der Blickrichtung des Spielers).",
+      "parameter": { "rail_direction": 0 },
+      "quelle": "https://minecraft.wiki/w/Rail",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: einzelne Schiene ist Nord-Süd",
+      "ungeprueft": false
+    },
+    {
+      "id": "schiene.linie-verlaengern",
+      "titel": "Eine Linie wird in derselben Richtung verlängert",
+      "regel": "Eine Schiene am Ende einer Schienenlinie setzt die Linie in derselben Richtung fort; dabei stellt sich auch die bisher einzelne Nachbarschiene auf die Linie ein.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail (Aussage nicht ausdrücklich als Bedrock gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Linie wird verlängert",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt auf ebenem Boden: eine Schiene setzen, daneben in Ost-West-Richtung eine zweite, dann eine dritte in derselben Reihe. Erwartung: alle drei liegen Ost-West. Dasselbe in Nord-Süd-Richtung. Abweichungen melden."
+    },
+    {
+      "id": "schiene.zwei-nachbarn",
+      "titel": "Zwei Nachbarn: verbinden, gerade oder als Kurve",
+      "regel": "Hat eine neue Schiene zwei Nachbarschienen, verbindet sie sich mit beiden: gerade, wenn sie gegenüberliegen, sonst als Kurve. Gegenüberliegende Paare haben Vorrang.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail (Vorrang gerader Paare ist eine Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: zwei Nachbarn verbinden sich (gerade oder Kurve)",
+      "ungeprueft": true,
+      "testanleitung": "Zwei Schienen im rechten Winkel zueinander setzen (z. B. eine im Westen, eine im Norden einer freien Stelle) und dazwischen die Ecke legen: Kurve? Dann die Ecke so legen, dass drei Schienen Nachbarn sind (siehe schiene.t-stelle)."
+    },
+    {
+      "id": "schiene.nachbar-umstellen",
+      "titel": "Nachbarschienen stellen sich auf die neue Schiene ein",
+      "regel": "Eine Nachbarschiene mit freiem Ende dreht sich zur neuen Schiene (z. B. Nord-Süd wird Ost-West, wenn seitlich eine Schiene dazukommt). Eine Nachbarschiene, deren beide Enden schon verbunden sind, bleibt unverändert und wird nicht angeschlossen.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail (Teil „beide Enden besetzt“ ist eine Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Nachbar stellt sich auf neue Schiene ein",
+      "ungeprueft": true,
+      "testanleitung": "Eine Ost-West-Linie aus drei Schienen legen, dann an das Ende der Mittelschiene seitlich (Nord) eine vierte setzen: Bleibt die Linie unverändert, oder dreht sich die Mittelschiene? Ergebnis melden."
+    },
+    {
+      "id": "schiene.t-stelle",
+      "titel": "T-Stelle und Kreuzung",
+      "regel": "Bei drei oder vier möglichen Nachbarn wählt die neue Schiene zwei davon: bevorzugt ein gegenüberliegendes Paar (gerade), sonst die ersten zwei in der Reihenfolge der Bevorzugung. Bedrock beschreibt nur „wird zur Kurve“.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail (Bedrock: „T-Stelle wird Kurve“, genaue Wahl nicht belegt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: T-Stelle und Kreuzung (Annahme)",
+      "ungeprueft": true,
+      "testanleitung": "Drei einzelne Schienen so setzen, dass sie eine T-Form umschließen (West, Ost, Süd einer freien Stelle, jede einzeln und weit genug voneinander), dann die Mitte setzen: Welche Form entsteht (Ost-West gerade oder Kurve)? Mit vier Nachbarn wiederholen. Je Fall melden."
+    },
+    {
+      "id": "schiene.rampe",
+      "titel": "Rampe zur Schiene eine Ebene höher",
+      "regel": "Liegt neben einer neuen Schiene eine Schiene einen Block höher, steigt die neue Schiene zu ihr hin an. Liegt neben ihr eine Schiene einen Block tiefer, steigt diese zur neuen Schiene hin an. Kurven können nicht ansteigen.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Abschnitt Steigungen; Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Rampe nach oben und unten",
+      "ungeprueft": true,
+      "testanleitung": "Auf Boden einen Block-Absatz bauen: unten drei Schienen in einer Linie, oben am Absatz eine Schiene direkt am Rand der Linie, in der Fluchtlinie. Erwartung: die letzte untere Schiene steigt zur oberen an. Dann umgekehrte Reihenfolge des Setzens und das Ergebnis vergleichen."
+    },
+    {
+      "id": "schiene.bevorzugung",
+      "titel": "Reihenfolge der Bevorzugung",
+      "regel": "Wenn mehrere Nachbarn möglich sind und sonst nichts entscheidet, werden sie in dieser Reihenfolge bevorzugt: West, Ost, Süd, Nord (Wiki-Angabe für Rampen, nicht als Bedrock gekennzeichnet). Blockwerk nutzt sie für alle Fälle.",
+      "parameter": { "bevorzugung": ["west", "east", "south", "north"] },
+      "quelle": "https://minecraft.wiki/w/Rail (Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Rampen-Bevorzugung folgt den Daten (Annahme)",
+      "ungeprueft": true,
+      "testanleitung": "Eine freie Stelle mit einer Rampe nach oben auf der Westseite und einer nach oben auf der Ostseite vorbereiten (jeweils eine Schiene einen Block höher), dann in der Mitte eine Schiene setzen: Steigt sie nach Westen oder nach Osten an? Dann West gegen Süd, Ost gegen Nord."
+    },
+    {
+      "id": "schiene.antriebsschiene-gerade",
+      "titel": "Antriebsschienen sind immer gerade",
+      "regel": "Antriebsschienen (golden_rail) haben nur rail_direction 0–5 (gerade oder Steigung), nie 6–9. Blockwerk legt sie darum nie als Kurve.",
+      "parameter": { "nurGerade": ["minecraft:golden_rail"] },
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Tabelle: Werte 6–9 unbenutzt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Antriebsschienen werden nie zur Kurve",
+      "ungeprueft": false
+    },
+    {
+      "id": "schiene.detektor-aktivierung-gerade",
+      "titel": "Detektor- und Aktivierungsschiene: auch gerade?",
+      "regel": "Für Detektor- und Aktivierungsschiene ist nicht belegt, ob sie Kurven bilden können. Blockwerk nimmt an, dass sie wie Antriebsschienen nie Kurven bilden, und meldet Kurven bei ihnen nur als Hinweis.",
+      "parameter": { "nurGerade": ["minecraft:detector_rail", "minecraft:activator_rail"] },
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (nur Antriebsschiene belegt; Annahme für die anderen)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/schienen.test.js::Schiene: Antriebsschienen werden nie zur Kurve",
+      "ungeprueft": true,
+      "testanleitung": "Detektorschiene und Aktivierungsschiene jeweils an eine Schiene im rechten Winkel setzen (Ecke): Bleibt sie gerade, oder wird sie eine Kurve? Je Schienenart melden."
+    }
+  ]
+}

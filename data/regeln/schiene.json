@@ -242,9 +242,11 @@
         ]
       },
       "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Tabelle: Werte 6–9 unbenutzt)",
-      "status": "simuliert",
+      "status": "geprüft",
       "simulationstest": "test/ebene1/schienen.test.js::Schiene: Antriebsschienen werden nie zur Kurve",
-      "ungeprueft": false
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-21",
+      "beobachtung": "Jonah, 21.10.2026: Die Antriebsschiene bleibt an der Ecke gerade, die normale Schiene daneben dreht sich zu ihr."
     },
     {
       "id": "schiene.detektor-aktivierung-gerade",

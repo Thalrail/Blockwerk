@@ -167,6 +167,17 @@ test('Schiene: Rampe nach oben und unten', () => {
 });
 
 test('Schiene: Antriebsschienen werden nie zur Kurve', () => {
+  // Spieltest Jonah 21.10.2026: Die Antriebsschiene bleibt an der Ecke gerade, die normale Schiene daneben dreht sich zu ihr.
+  const ecke = boden();
+  lege(ecke, [[1, -1], [1, 0]]);       // normale Schiene (1,0) hängt nach Norden an (1,-1)
+  lege(ecke, [[0, 0, GOLD]]);          // Antriebsschiene links daneben
+  assert.equal(wert(ecke, 0, 0), O_W, 'Antriebsschiene bleibt gerade');
+  assert.equal(wert(ecke, 1, 0), 8, 'normale Schiene dreht sich zu ihr (Kurve Nord-West)');
+  const ecke2 = boden();
+  lege(ecke2, [[0, 0, GOLD]]);         // umgekehrte Reihenfolge: erst Antriebsschiene, dann die normale daneben
+  lege(ecke2, [[1, 0]]);
+  assert.equal(wert(ecke2, 0, 0), O_W);
+  assert.equal(wert(ecke2, 1, 0), O_W);
   for (const id of [GOLD, 'minecraft:detector_rail', 'minecraft:activator_rail']) {
     const w = boden();
     lege(w, [[-1, 0], [0, -1], [0, 0, id]]);

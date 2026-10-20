@@ -78,9 +78,8 @@ test('Schiene braucht Boden', () => {
   }
   const auf_stufe = welt();
   auf_stufe.setzeBlock(0, 1, 0, 'minecraft:rail', { rail_direction: 1 });
-  auf_stufe.setzeBlock(0, 0, 0, 'minecraft:oak_slab', {});
-  assert.ok(auf_stufe.alleBloecke().length === 2);
-  assert.deepEqual(e1.pruefe(auf_stufe).map((m) => m.schwere), ['hinweis'], 'Halbstufe als Boden: im Spiel prüfen');
+  auf_stufe.setzeBlock(0, 0, 0, 'minecraft:oak_slab', { 'minecraft:vertical_half': 'bottom' });
+  assert.deepEqual(e1.pruefe(auf_stufe).map((m) => m.schwere), ['verstoss'], 'Spieltest 20.10.2026: Schiene nicht auf Halbstufe');
 });
 
 test('Prüfer: sortierte, maschinenlesbare Meldungen; die Welt bleibt unverändert', () => {
@@ -118,4 +117,91 @@ test('Tickbereich-Prüfung meldet Chunks außerhalb', () => {
   const alles = new Tickbereich({ spieler: [{ x: 0, z: 0 }], distanz: 30 });
   assert.deepEqual(nur(e1.pruefe(w, { tickbereich: alles }), 'pruefer.tickbereich'), []);
   assert.deepEqual(nur(e1.pruefe(w), 'pruefer.tickbereich'), [], 'ohne Tickbereich wird nicht geprüft');
+});
+
+/** Hilfe: setzt Haltblock + Fackel/Schiene und liefert die Schwere der Meldungen. */
+const urteil = (haltId, haltZustand, seite, ort = [10, 5, 10]) => {
+  const w = welt();
+  const [x, y, z] = ort;
+  const v = { west: [-1, 0, 0], east: [1, 0, 0], north: [0, 0, -1], south: [0, 0, 1], top: [0, -1, 0] }[seite];
+  w.setzeBlock(x, y, z, 'minecraft:torch', { torch_facing_direction: seite });
+  w.setzeBlock(x + v[0], y + v[1], z + v[2], haltId, haltZustand);
+  return e1.pruefe(w).map((m) => m.schwere);
+};
+const schienenUrteil = (haltId, haltZustand) => {
+  const w = welt();
+  w.setzeBlock(0, 1, 0, 'minecraft:rail', { rail_direction: 0 });
+  w.setzeBlock(0, 0, 0, haltId, haltZustand);
+  return e1.pruefe(w).map((m) => m.schwere);
+};
+
+test('Spieltest 20.10.2026 (Fackel): Glas hält an allen Seiten und oben, Zaun/Glasscheibe nur oben, Halbstufe nur oben auf der oberen Hälfte', () => {
+  for (const glas of ['minecraft:glass', 'minecraft:white_stained_glass']) {
+    for (const seite of ['west', 'east', 'north', 'south', 'top']) assert.deepEqual(urteil(glas, {}, seite), [], `${glas} ${seite}`);
+  }
+  for (const id of ['minecraft:oak_fence', 'minecraft:glass_pane']) {
+    assert.deepEqual(urteil(id, {}, 'top'), [], `${id}: oben drauf geht`);
+    for (const seite of ['west', 'east', 'north', 'south']) assert.deepEqual(urteil(id, {}, seite), ['verstoss'], `${id} ${seite}: seitlich nicht`);
+  }
+  for (const seite of ['west', 'east', 'north', 'south']) assert.deepEqual(urteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'bottom' }, seite), ['verstoss'], `Halbstufe seitlich ${seite}`);
+  assert.deepEqual(urteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'top' }, 'top'), [], 'obere Halbstufe: oben drauf geht');
+  assert.deepEqual(urteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'bottom' }, 'top'), ['verstoss'], 'untere Halbstufe: nicht ganze Blockhöhe');
+  assert.deepEqual(urteil('minecraft:oak_slab', {}, 'top'), ['hinweis'], 'Hälfte nicht angegeben: unklar');
+  assert.deepEqual(urteil('minecraft:oak_double_slab', {}, 'west'), [], 'doppelte Halbstufe = ganzer Block');
+});
+
+test('Spieltest 20.10.2026 (Fackel): Treppe hält nur an der großen Seite', () => {
+  // weirdo_direction: 0 Ost, 1 West, 2 Süd, 3 Nord = Richtung der großen (hohen) Seite
+  const gross = { 0: 'east', 1: 'west', 2: 'south', 3: 'north' };
+  const zurFackel = { west: 'east', east: 'west', north: 'south', south: 'north' }; // Fackel mit Wert „west“ liegt östlich vom Haltblock
+  for (const [w, richtung] of Object.entries(gross)) {
+    for (const seite of ['west', 'east', 'north', 'south']) {
+      const erwartet = zurFackel[seite] === richtung ? [] : ['verstoss'];
+      assert.deepEqual(urteil('minecraft:oak_stairs', { weirdo_direction: Number(w) }, seite), erwartet, `Treppe groß=${richtung}, Fackel-Wert ${seite}`);
+    }
+  }
+  assert.deepEqual(urteil('minecraft:oak_stairs', {}, 'west'), ['hinweis'], 'Richtung der Treppe nicht angegeben');
+  assert.deepEqual(urteil('minecraft:oak_stairs', { weirdo_direction: 0 }, 'top'), ['hinweis'], 'Fackel oben auf der Treppe ist nicht getestet');
+});
+
+test('Treppe + Fackel bleibt nach Drehen und Spiegeln mit dem Vermesser gültig', () => {
+  const original = welt();
+  original.setzeBlock(0, 0, 0, 'minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: false, 'minecraft:corner': 'none' });
+  original.setzeBlock(1, 0, 0, 'minecraft:torch', { torch_facing_direction: 'west' });
+  assert.deepEqual(e1.pruefe(original), [], 'große Seite zeigt nach Osten, Fackel steht östlich');
+  const teil = original.ausschnitt({ x: -3, y: -3, z: -3 }, { x: 3, y: 3, z: 3 });
+  const ops = [(t) => e0.vermesser.drehe(t, 1), (t) => e0.vermesser.drehe(t, 2), (t) => e0.vermesser.drehe(t, 3), (t) => e0.vermesser.spiegle(t, 'x'), (t) => e0.vermesser.spiegle(t, 'z')];
+  for (const op of ops) {
+    const ziel = welt();
+    ziel.fuegeBauteilEin(op(teil), { x: 10, y: 0, z: 10 });
+    assert.deepEqual(e1.pruefe(ziel), [], 'Treppe und Fackel drehen gemeinsam');
+  }
+});
+
+test('Spieltest 20.10.2026 (Schiene): Glasblock ja; Halbstufe, Treppe, Zaun, Glasscheibe nein', () => {
+  assert.deepEqual(schienenUrteil('minecraft:glass', {}), []);
+  assert.deepEqual(schienenUrteil('minecraft:stone', {}), []);
+  assert.deepEqual(schienenUrteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'top' }), ['verstoss']);
+  assert.deepEqual(schienenUrteil('minecraft:oak_slab', { 'minecraft:vertical_half': 'bottom' }), ['verstoss']);
+  assert.deepEqual(schienenUrteil('minecraft:oak_stairs', { weirdo_direction: 0 }), ['verstoss']);
+  assert.deepEqual(schienenUrteil('minecraft:oak_fence', {}), ['verstoss']);
+  assert.deepEqual(schienenUrteil('minecraft:glass_pane', {}), ['verstoss']);
+  assert.deepEqual(schienenUrteil('minecraft:cobblestone_wall', {}), ['hinweis'], 'Mauer: nicht getestet');
+  assert.deepEqual(schienenUrteil('minecraft:oak_leaves', {}), ['hinweis'], 'Laub: nicht getestet');
+});
+
+test('Ebene 0: Tragfähigkeit steht als Fakt im Register (nicht im Prüfer)', () => {
+  const eig = (id) => e0.register.bloecke.block(id).eigenschaften;
+  assert.deepEqual([eig('minecraft:glass').fackelOben, eig('minecraft:glass').fackelSeiten, eig('minecraft:glass').schiene], [true, 'alle', true]);
+  assert.deepEqual([eig('minecraft:oak_stairs').fackelSeiten, eig('minecraft:oak_stairs').schiene], ['grosse-seite', false]);
+  assert.deepEqual([eig('minecraft:oak_fence').fackelOben, eig('minecraft:oak_fence').fackelSeiten], [true, 'keine']);
+  assert.equal(eig('minecraft:oak_slab').fackelOben, 'obere-haelfte');
+  assert.equal(eig('minecraft:oak_double_slab').vollblock, true, 'doppelte Halbstufe ist ein Vollblock');
+  assert.equal(eig('minecraft:oak_leaves').fackelOben, null, 'Laub: unbekannt statt geraten');
+  for (const id of e0.register.bloecke.ids()) {
+    const x = eig(id);
+    assert.ok([true, false, null, 'obere-haelfte'].includes(x.fackelOben), id);
+    assert.ok(['alle', 'keine', 'grosse-seite', null].includes(x.fackelSeiten), id);
+    assert.ok([true, false, null].includes(x.schiene), id);
+  }
 });

@@ -26,6 +26,6 @@ export function erzeugeEbene1({ ebene0, regeln }) {
     regelwerk,
     neuerSandkasten: (welt) => new Sandkasten(welt),
     neuerTaktgeber: (sandkasten, optionen = {}) => new Taktgeber(sandkasten, { reihenfolge, ...optionen }),
-    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, ...optionen }),
+    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, ...optionen }),
   };
 }

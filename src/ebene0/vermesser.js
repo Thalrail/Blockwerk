@@ -162,7 +162,17 @@ export function erzeugeVermesser({ regeln, register }) {
     return { bloecke: bloeckeSortiert(bloecke), wesen };
   }
 
-  return { verschiebe, drehe, spiegle, transformiereZustand };
+  /**
+   * Himmelsrichtung, für die ein Zahlen-/Textwert eines Richtungszustands steht (z. B. weirdo_direction 0 → 'east'),
+   * oder null, wenn der Zustand keine Richtung beschreibt oder der Wert keine hat.
+   */
+  function richtungVon(zustandName, wert) {
+    const regel = regeln.zustaende[zustandName];
+    if (regel?.art !== 'richtung') return null;
+    return regel.abbildung[String(wert)] ?? null;
+  }
+
+  return { verschiebe, drehe, spiegle, transformiereZustand, richtungVon };
 }
 
 /**

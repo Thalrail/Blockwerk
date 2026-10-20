@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (Branch `claude/changes`, PR #1 ist gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut: Branch `claude/ebene-1-taktgeber`. 121 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (Branch `claude/changes`, PR #1 ist gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut: Branch `claude/ebene-1-taktgeber`. 126 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -35,13 +35,14 @@ Zuletzt aktualisiert: 20.10.2026
 - `taktgeber.js`: Spieltick-Zähler, P-Tick (ungerade) / C-Tick (gerade), Tickarten (Spieltick, Staub, Übertrager, Mechanismus, Wesen), feste Arbeitsreihenfolge aus den Daten, Übertrager lesen im P- und schreiben im folgenden C-Tick (Verzögerung d: Lesetick + 2·d − 1), geplante Ticks, Protokoll für Tests.
 - `geplante-ticks.js`: höchstens 100 je Chunk und Spieltick, Überlauf in den nächsten Tick. `tickbereich.js`: Simulationsdistanz/Tickingarea. `sandkasten.js`: Simulation nur in einer Kopie. `zufall.js`, `weltzeit.js`: deterministischer Zufall, Tag = 24.000 Ticks.
 - `regelwerk.js` + `data/regeln/takt.json`, `pruefer.json`: 16 Regeln mit Quelle und Status; 8 davon mit Annahmen (`ungeprüft`, Testanleitungen in `docs/spieltests.md`).
-- `pruefer.js`: meldet Verstöße maschinenlesbar mit Koordinate: Fackel ohne Halt, Schiene ohne Boden, Blöcke/Wesen außerhalb des Tickbereichs.
+- `pruefer.js`: meldet Verstöße maschinenlesbar mit Koordinate: Fackel/Schiene ohne tragenden Block (nach Jonahs Spieltests), Blöcke/Wesen außerhalb des Tickbereichs.
+- Ebene 0 hat dafür drei neue Fakten je Block (`fackelOben`, `fackelSeiten`, `schiene`) und `vermesser.richtungVon` bekommen; doppelte Halbstufen sind jetzt Vollblöcke (vorher fälschlich nicht).
 - Noch **keine** konkrete Mechanik (Wasser, Schienenverkehr, Redstone …): sie melden sich künftig beim Taktgeber an.
 
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz deines Aternos-Servers fehlt noch (Jonah nennt sie; es gibt bewusst keinen Standardwert).
-- Prüfer: ob Halbstufen, Treppen, Zäune, Glas usw. eine Fackel/Schiene halten, ist offen (Hinweis statt Verstoß, Spieltests stehen in `docs/spieltests.md`).
+- Prüfer: Was Fackel/Schiene hält, ist für Glasblock, Halbstufe, Treppe, Zaun und Glasscheibe von Jonah getestet (20.10.2026, als Fakt in Ebene 0: `fackelOben`, `fackelSeiten`, `schiene`). Alle anderen Formen (Mauer, Falltür, Laub, Eis, Trichter …) bleiben unbekannt → Hinweis statt Verstoß. Dass alle Varianten einer Form gleich reagieren (z. B. jede Holzart), ist eine Annahme.
 
 ## Bekannte Lücken / Annahmen in Ebene 0 (alles `ungeprüft`)
 - Eigenschaften (Vollblock, durchsichtig, Licht …) sind eine **kuratierte Teilmenge**; unbekannt = `null` bzw. Standardwert, siehe `docs/daten.md`.

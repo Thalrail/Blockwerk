@@ -55,8 +55,9 @@ async function bloecke(eig) {
   const arbeits = new Set(eig.arbeitsbloecke);
   const ergebnis = {};
   for (const b of roh.data_items) {
-    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null };
+    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null };
     for (const r of regeln) if (r.re.test(b.name) && !(r.ausser && r.ausser.test(b.name))) Object.assign(e, r.setze);
+    if (e.fluessigkeit === null && e.vollblock === true) e.fluessigkeit = 'fest';
     if (b.name in eig.lichtstaerke) e.licht = eig.lichtstaerke[b.name];
     const namen = b.properties.map((p) => p.name).sort();
     for (const n of namen) if (!zustandsarten[n]) throw new Error(`${b.name}: unbekannter Zustand ${n}`);

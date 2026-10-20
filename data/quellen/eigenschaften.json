@@ -1,5 +1,5 @@
 {
-  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme.",
+  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft.",
   "quelle": "https://minecraft.wiki/ (Seiten der einzelnen Blöcke, Abschnitt Bedrock Edition)",
   "regeln": [
     {
@@ -142,6 +142,20 @@
         "faellt": true
       },
       "grund": "Fallender Block"
+    },
+    {
+      "muster": "^minecraft:air$",
+      "setze": {
+        "fluessigkeit": "offen"
+      },
+      "grund": "Luft"
+    },
+    {
+      "muster": "(^minecraft:(torch|redstone_torch|unlit_redstone_torch|soul_torch|copper_torch|colored_torch_[a-z]+)$|_carpet$|_rail$|^minecraft:rail$|^minecraft:redstone_wire$|_sapling$|^minecraft:(yellow_flower|red_flower|tallgrass|double_plant|deadbush|snow_layer|web|end_rod|flower_pot|wheat|carrots|potatoes|beetroot|brown_mushroom|red_mushroom)$|_head$|_skull$)",
+      "setze": {
+        "fluessigkeit": "wegspuelbar"
+      },
+      "grund": "Wasser spült diese Blöcke weg (Wiki „Water“; Bedrock: auch Schienen)"
     }
   ],
   "lichtstaerke": {

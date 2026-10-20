@@ -56,10 +56,18 @@ Eingetragen in Ebene 0 (`fackelOben`, `fackelSeiten`, `schiene`). Halbstufe (von
 3. **Wo darf der Redstone-Block stehen?** Links, rechts, vorn, hinten, unter und über der Schiene. (`antrieb.stromblock`)
 4. Lorenphysik: Messungen A–F in `docs/messungen-lore.md` (kein Muss, aber ohne sie gibt es kein Lorenmodell).
 
+## Wasser und Lava: die wichtigsten Tests (Ebene 1)
+Alle in der Kreativ-Testwelt auf ebenem Steinboden, mit Video (Zeiten) und Koordinaten.
+1. **Weite und Tempo:** Wasserquelle auf ebenem Boden: Wie weit kommt das Wasser (erwartet 7 Blöcke) und wie schnell (erwartet 1 Block je 5 Ticks = 0,25 s)? Dasselbe mit Lava (erwartet 3 Blöcke, 1,5 s je Block). (`fluessigkeit.wasser`, `fluessigkeit.lava-oberwelt`)
+2. **Wegspülen:** Wasser neben Fackel, Schiene, Teppich, Redstone-Staub, Knopf, Druckplatte, Leiter, Schild: Welche gehen verloren? (`fluessigkeit.wegspuelen`)
+3. **Hindernisse:** Wasser neben Treppe, Halbstufe, Zaun, Glasscheibe, Tür, Falltür: Wird es aufgehalten? (`fluessigkeit.hindernisse`)
+4. **Gefälle:** Loch im 3., 4., 5. und 6. Block neben der Quelle: Bis wohin zieht das Wasser dorthin? (`fluessigkeit.gefaelle`)
+5. **Wasserquelle in der Luft:** Fällt nur eine Säule, oder entsteht ein Plus aus fünf Säulen? (`fluessigkeit.fallen`)
+6. **Abklingen:** Quelle entfernen: Wie lange bis alles Wasser weg ist? (`fluessigkeit.abklingen`)
+7. **Mischen:** Wasser neben Lava-Quelle (Obsidian?), Fluss trifft Fluss (Bruchstein?), Lava fällt auf Wasser (Stein?). (`fluessigkeit.mischen`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
-
-| Regel | Was testen |
 
 | Regel | Was testen |
 |---|---|
@@ -78,9 +86,19 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `antrieb.reichweite` – Reichweite: 8 Schienen weit | Kreativ-Testwelt auf ebenem Boden: 20 Antriebsschienen in einer Reihe, einen Redstone-Block seitlich neben die erste setzen: Wie viele Schienen leuchten (aktiviert)? Erwartung: 9 (die erste und 8 weitere). Dann den Redstone-Block neben die zehnte setzen: Erwartung 17 (8 links, 8 rechts, die zehnte). Ergebnis melden. |
 | `antrieb.nur-verbundene` – Strom geben nur verbundene Antriebsschienen weiter | Fünf Antriebsschienen in einer Reihe, in der Mitte (dritte) eine normale Schiene statt einer Antriebsschiene, Redstone-Block neben die erste: Leuchten Schiene 4 und 5? Dann die Reihe mit einer Lücke (ein Feld ohne Schiene) wiederholen. Ergebnis melden. |
 | `antrieb.stromblock` – Redstone-Block neben der Schiene versorgt sie | Einzelne Antriebsschiene, Redstone-Block nacheinander links, rechts, vor, hinter, unter und über (soweit möglich) der Schiene: In welchen Lagen leuchtet sie? Ergebnis je Lage melden. |
+| `fluessigkeit.lava-oberwelt` – Lava (Oberwelt, Ende): 3 Blöcke weit, ein Block alle 30 Ticks | Kreativ-Testwelt: Lava-Quelle auf ebenem Stein setzen, mit Video messen: Wie weit kommt die Lava (erwartet 3 Blöcke) und wie lange braucht jeder Block (erwartet 1,5 s)? Im Nether: 7 Blöcke, 0,5 s je Block. |
+| `fluessigkeit.lava-nether` – Lava (Nether): 7 Blöcke weit, ein Block alle 10 Ticks | Siehe fluessigkeit.lava-oberwelt (Nether-Teil). |
+| `fluessigkeit.fallen` – Fließen nach unten ohne Grenze | Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus? Außerdem: eine Wasserquelle in die Luft setzen (an eine Wand lehnen und dann die Wand entfernen oder mit Blöcken eine Plattform bauen und wegnehmen): Fällt nur eine Säule, oder entsteht eine Plus-Form aus fünf Säulen? Blockwerk erwartet bei der freien Quelle ein Plus. |
+| `fluessigkeit.gefaelle` – Gefälle in höchstens 4 Blöcken wird bevorzugt | Quelle auf ebenem Stein, ein Loch (1 Block tief) im 3. Block östlich und ein Loch im 6. Block westlich: Fließt das Wasser nur nach Osten zum Loch und nicht nach Westen? Dann mit dem Loch im 4., 5. und 6. Block östlich wiederholen: Bis zu welchem Block bevorzugt das Wasser die Richtung? Blockwerk erwartet bis zum 5. Block. |
+| `fluessigkeit.unten-vor-seitlich` – Erst nach unten, seitlich nur ohne Weg nach unten | Quelle direkt über einem Loch (2 Blöcke tief) auf ebenem Stein: Breitet sich Wasser auf der Oberfläche seitlich aus, oder fließt es nur in das Loch? Ergebnis melden. |
+| `fluessigkeit.mischen` – Wasser und Lava mischen | Kreativ-Testwelt: (1) Wasserquelle neben Lava-Quelle, (2) Wasserfluss trifft Lavafluss, (3) Lava fließt von oben auf Wasser, (4) Wasserquelle unter einer Lava-Quelle. Je Fall melden: Obsidian, Bruchstein, Stein oder nichts. |
+| `fluessigkeit.wegspuelen` – Wasser spült bestimmte Blöcke weg | Wasser neben Fackel, Schiene, Teppich, Redstone-Staub, Knopf, Druckplatte, Leiter, Schild, Trichter, Schalter: Welche werden weggespült? Ergebnis je Block melden. |
+| `fluessigkeit.abklingen` – Abklingen ohne Nachschub | Wasserquelle auf ebenem Stein, Wasser sich ausbreiten lassen, Quelle entfernen, mit Video messen: Wie lange, bis alles Wasser weg ist? Verschwindet es von außen nach innen oder von innen nach außen? |
+| `fluessigkeit.hindernisse` – Nur feste Blöcke halten Flüssigkeit auf | Wasser neben Treppe (Vorder- und Rückseite), Halbstufe (oben/unten), Zaun, Glasscheibe, Leiter, Schild, Tür, Falltür, Mauer: Fließt es hinein, vorbei oder hält der Block es auf? Ergebnis je Block melden. |
 | `pruefer.braucht-halt-fackel` – Prüfer: Fackel braucht Halt | Noch ungetestete Formen: Fackel oben auf einer Treppe (richtig herum und kopfüber), auf einer oberen Halbstufe, an Mauer, Falltür, Laub, Eis, Trichter, Kessel. Je Form melden: hält oben / hält seitlich / hält nicht. Auch prüfen, ob andere Varianten derselben Form (Stein-Treppe, Birkenzaun, gefärbtes Glas) gleich reagieren. |
 | `pruefer.braucht-halt-schiene` – Prüfer: Schiene braucht Boden | Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab. |
 | `pruefer.tickbereich` – Prüfer: Anlage im tickenden Bereich | Siehe takt.tickbereich. |
 | `pruefer.schiene-verbindung` – Prüfer: Schienen sind miteinander verbunden | Eine T-Stelle bauen und die Lore (oder dich in einer Lore) darüberfahren lassen: kommt sie am Abzweig durch, bleibt sie stehen oder fährt sie in die Kurve? Ergebnis melden. |
 | `pruefer.antriebsschiene-kurve` – Prüfer: Antriebsschiene nie als Kurve | Siehe schiene.detektor-aktivierung-gerade. |
 | `pruefer.antrieb-ohne-quelle` – Prüfer: Antriebsschiene ohne Stromquelle in Reichweite | Siehe antrieb.reichweite. |
+| `pruefer.wasser-zerstoert` – Prüfer: Wasser zerstört etwas | Siehe fluessigkeit.wegspuelen. |

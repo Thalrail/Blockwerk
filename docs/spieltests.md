@@ -40,7 +40,7 @@ Anleitung folgt, sobald ein Baustein sie braucht.
 | Zaun | nur oben drauf | geht nicht |
 | Glasscheibe | nur oben drauf | geht nicht |
 
-Eingetragen in Ebene 0 (`fackelOben`, `fackelSeiten`, `schiene`). Auslegung bei der Halbstufe: oben nur auf der oberen Hälfte, seitlich gar nicht. Falls du etwas anderes gemeint hast, sag Bescheid.
+Eingetragen in Ebene 0 (`fackelOben`, `fackelSeiten`, `schiene`). Halbstufe (von Jonah bestätigt): oben nur auf der oberen Hälfte, seitlich gar nicht.
 
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat der Taktgeber/Prüfer umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.

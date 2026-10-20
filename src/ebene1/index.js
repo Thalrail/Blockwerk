@@ -6,6 +6,7 @@ import { Sandkasten } from './sandkasten.js';
 import { Taktgeber, STANDARD_REIHENFOLGE } from './taktgeber.js';
 import { pruefe } from './pruefer.js';
 import { erzeugeSchienen } from './schienen.js';
+import { erzeugeAntrieb } from './antrieb.js';
 
 export * from './weltzeit.js';
 export { Zufall, erwarteteTicks, erwarteteMinuten } from './zufall.js';
@@ -16,6 +17,7 @@ export { Taktgeber, TICKARTEN, STANDARD_REIHENFOLGE, phaseVon } from './taktgebe
 export { Regelwerk, STATI } from './regelwerk.js';
 export { pruefe } from './pruefer.js';
 export { erzeugeSchienen } from './schienen.js';
+export { erzeugeAntrieb } from './antrieb.js';
 
 /**
  * @param {{ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>, regeln: object[]}} quellen
@@ -25,11 +27,13 @@ export function erzeugeEbene1({ ebene0, regeln }) {
   const regelwerk = new Regelwerk(regeln);
   const reihenfolge = regelwerk.parameter('takt.arbeitsreihenfolge', 'reihenfolge') ?? [...STANDARD_REIHENFOLGE];
   const schienen = erzeugeSchienen({ regelwerk, register: ebene0.register });
+  const antrieb = erzeugeAntrieb({ regelwerk, schienen });
   return {
     regelwerk,
     schienen,
+    antrieb,
     neuerSandkasten: (welt) => new Sandkasten(welt),
     neuerTaktgeber: (sandkasten, optionen = {}) => new Taktgeber(sandkasten, { reihenfolge, ...optionen }),
-    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, ...optionen }),
+    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, ...optionen }),
   };
 }

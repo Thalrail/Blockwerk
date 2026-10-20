@@ -81,6 +81,19 @@ function pruefeHalt(welt, register, richtungVon, bloecke) {
   return meldungen;
 }
 
+/** Antriebsschienen, die von keiner Stromquelle in Reichweite erreicht werden. */
+function pruefeAntrieb(welt, antrieb, stromQuellen, bloecke) {
+  const aktiv = antrieb.aktive(welt, stromQuellen);
+  return bloecke
+    .filter((b) => antrieb.istAntriebsschiene(b.id) && !aktiv.has(`${b.x},${b.y},${b.z}`))
+    .map((b) => ({
+      regel: 'pruefer.antrieb-ohne-quelle',
+      ort: { x: b.x, y: b.y, z: b.z },
+      schwere: 'hinweis',
+      meldung: `${b.id} wird von keiner Stromquelle erreicht (höchstens ${antrieb.reichweite} Schienen von einer versorgten Antriebsschiene entfernt): sie bleibt unbestromt und bremst die Lore`,
+    }));
+}
+
 function pruefeTickbereich(welt, bloecke, tickbereich) {
   const ersteProChunk = new Map();
   const merke = (x, y, z, was) => {
@@ -129,14 +142,16 @@ function pruefeSchienen(welt, schienen, bloecke) {
 
 /**
  * @param {import('../ebene0/welt.js').Welt} welt
- * @param {{register: object, richtungVon: (zustandName:string, wert:any) => string|null, tickbereich?: import('./tickbereich.js').Tickbereich, schienen?: ReturnType<typeof import('./schienen.js').erzeugeSchienen>}} optionen
+ * @param {{register: object, richtungVon: (zustandName:string, wert:any) => string|null, tickbereich?: import('./tickbereich.js').Tickbereich, schienen?: ReturnType<typeof import('./schienen.js').erzeugeSchienen>, antrieb?: ReturnType<typeof import('./antrieb.js').erzeugeAntrieb>, stromQuellen?: Iterable<{x:number,y:number,z:number}>}} optionen
+ *   Die Antriebs-Prüfung läuft nur, wenn `stromQuellen` übergeben wird (auch leer)
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   if (schienen) meldungen.push(...pruefeSchienen(welt, schienen, bloecke));
+  if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);
 }

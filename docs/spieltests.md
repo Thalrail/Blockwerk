@@ -50,8 +50,16 @@ Eingetragen in Ebene 0 (`fackelOben`, `fackelSeiten`, `schiene`). Halbstufe (von
 | 3 | Rampe mit zwei Möglichkeiten | Bei Ost-West steigt sie nach Westen, bei Nord-Süd nach Süden → eingetragen (`schiene.bevorzugung`) |
 | 4 | Antriebsschiene an der Ecke | Die Antriebsschiene bleibt gerade, die normale Schiene daneben dreht sich zu ihr → **geprüft** (`schiene.antriebsschiene-gerade`). Detektor- und Aktivierungsschiene sind damit noch nicht getestet |
 
+## Antrieb: die wichtigsten Tests (Ebene 1)
+1. **Reichweite:** 20 Antriebsschienen in einer Reihe, Redstone-Block seitlich neben der ersten: wie viele sind aktiv (leuchten)? Blockwerk erwartet 9. Dann den Block neben die zehnte: Blockwerk erwartet 17. (`antrieb.reichweite`)
+2. **Normale Schiene dazwischen** (statt einer Antriebsschiene) und **Lücke**: geht der Strom dahinter weiter? Blockwerk erwartet nein. (`antrieb.nur-verbundene`)
+3. **Wo darf der Redstone-Block stehen?** Links, rechts, vorn, hinten, unter und über der Schiene. (`antrieb.stromblock`)
+4. Lorenphysik: Messungen A–F in `docs/messungen-lore.md` (kein Muss, aber ohne sie gibt es kein Lorenmodell).
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
+
+| Regel | Was testen |
 
 | Regel | Was testen |
 |---|---|
@@ -67,8 +75,12 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `schiene.rampe` – Rampe zur Schiene eine Ebene höher | Auf Boden einen Block-Absatz bauen: unten drei Schienen in einer Linie, oben am Absatz eine Schiene direkt am Rand der Linie, in der Fluchtlinie. Erwartung: die letzte untere Schiene steigt zur oberen an. Dann umgekehrte Reihenfolge des Setzens und das Ergebnis vergleichen. |
 | `schiene.bevorzugung` – Rampen: West vor Ost, Süd vor Nord | Nur noch die Achsen-Mischung offen: links (West) und unten (Süd) je eine Schiene einen Block höher, in der Mitte unten eine Schiene setzen: Steigt sie nach Westen oder nach Süden an? |
 | `schiene.detektor-aktivierung-gerade` – Detektor- und Aktivierungsschiene: auch gerade? | Detektorschiene und Aktivierungsschiene jeweils an eine Schiene im rechten Winkel setzen (Ecke): Bleibt sie gerade, oder wird sie eine Kurve? Je Schienenart melden. |
+| `antrieb.reichweite` – Reichweite: 8 Schienen weit | Kreativ-Testwelt auf ebenem Boden: 20 Antriebsschienen in einer Reihe, einen Redstone-Block seitlich neben die erste setzen: Wie viele Schienen leuchten (aktiviert)? Erwartung: 9 (die erste und 8 weitere). Dann den Redstone-Block neben die zehnte setzen: Erwartung 17 (8 links, 8 rechts, die zehnte). Ergebnis melden. |
+| `antrieb.nur-verbundene` – Strom geben nur verbundene Antriebsschienen weiter | Fünf Antriebsschienen in einer Reihe, in der Mitte (dritte) eine normale Schiene statt einer Antriebsschiene, Redstone-Block neben die erste: Leuchten Schiene 4 und 5? Dann die Reihe mit einer Lücke (ein Feld ohne Schiene) wiederholen. Ergebnis melden. |
+| `antrieb.stromblock` – Redstone-Block neben der Schiene versorgt sie | Einzelne Antriebsschiene, Redstone-Block nacheinander links, rechts, vor, hinter, unter und über (soweit möglich) der Schiene: In welchen Lagen leuchtet sie? Ergebnis je Lage melden. |
 | `pruefer.braucht-halt-fackel` – Prüfer: Fackel braucht Halt | Noch ungetestete Formen: Fackel oben auf einer Treppe (richtig herum und kopfüber), auf einer oberen Halbstufe, an Mauer, Falltür, Laub, Eis, Trichter, Kessel. Je Form melden: hält oben / hält seitlich / hält nicht. Auch prüfen, ob andere Varianten derselben Form (Stein-Treppe, Birkenzaun, gefärbtes Glas) gleich reagieren. |
 | `pruefer.braucht-halt-schiene` – Prüfer: Schiene braucht Boden | Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab. |
 | `pruefer.tickbereich` – Prüfer: Anlage im tickenden Bereich | Siehe takt.tickbereich. |
 | `pruefer.schiene-verbindung` – Prüfer: Schienen sind miteinander verbunden | Eine T-Stelle bauen und die Lore (oder dich in einer Lore) darüberfahren lassen: kommt sie am Abzweig durch, bleibt sie stehen oder fährt sie in die Kurve? Ergebnis melden. |
 | `pruefer.antriebsschiene-kurve` – Prüfer: Antriebsschiene nie als Kurve | Siehe schiene.detektor-aktivierung-gerade. |
+| `pruefer.antrieb-ohne-quelle` – Prüfer: Antriebsschiene ohne Stromquelle in Reichweite | Siehe antrieb.reichweite. |

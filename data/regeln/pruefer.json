@@ -74,6 +74,17 @@
       "simulationstest": "test/ebene1/schienen.test.js::Prüfer: Antriebsschiene als Kurve",
       "ungeprueft": true,
       "testanleitung": "Siehe schiene.detektor-aktivierung-gerade."
+    },
+    {
+      "id": "pruefer.antrieb-ohne-quelle",
+      "titel": "Prüfer: Antriebsschiene ohne Stromquelle in Reichweite",
+      "regel": "Eine Antriebsschiene, die von keiner Stromquelle direkt versorgt wird und auch nicht höchstens 8 verbundene Antriebsschienen von einer versorgten entfernt liegt, bleibt unbestromt und bremst die Lore. Der Prüfer meldet das als Hinweis, sobald ihm die Stromquellen übergeben werden.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (folgt aus antrieb.reichweite)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/antrieb.test.js::Prüfer: Antriebsschiene ohne Stromquelle",
+      "ungeprueft": true,
+      "testanleitung": "Siehe antrieb.reichweite."
     }
   ]
 }

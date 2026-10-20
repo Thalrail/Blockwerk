@@ -1,0 +1,49 @@
+{
+  "bereich": "antrieb",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "antrieb.c-tick",
+      "titel": "Antriebsschienen schalten im C-Tick",
+      "regel": "In Bedrock aktivieren Antriebsschienen nur im Consume-Tick (C-Tick, gerader Spielticks). Ändert sich die Stromversorgung in einem P-Tick, schaltet die Schiene erst im folgenden C-Tick.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Abschnitt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: schaltet nur im C-Tick",
+      "ungeprueft": false
+    },
+    {
+      "id": "antrieb.reichweite",
+      "titel": "Reichweite: 8 Schienen weit",
+      "regel": "Eine aktivierte Antriebsschiene aktiviert verbundene Antriebsschienen bis zu 8 weit; eine Stromquelle in der Mitte versorgt so bis zu 17 Schienen.",
+      "parameter": { "reichweite": 8, "maximalVersorgt": 17 },
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Aussage nicht ausdrücklich als Bedrock gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Reichweite 8 Schienen weit",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt auf ebenem Boden: 20 Antriebsschienen in einer Reihe, einen Redstone-Block seitlich neben die erste setzen: Wie viele Schienen leuchten (aktiviert)? Erwartung: 9 (die erste und 8 weitere). Dann den Redstone-Block neben die zehnte setzen: Erwartung 17 (8 links, 8 rechts, die zehnte). Ergebnis melden."
+    },
+    {
+      "id": "antrieb.nur-verbundene",
+      "titel": "Strom geben nur verbundene Antriebsschienen weiter",
+      "regel": "Der Strom läuft nur über miteinander verbundene Antriebsschienen. Eine normale Schiene oder eine Lücke dazwischen unterbricht ihn (Annahme).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Powered_Rail (Annahme, nicht ausdrücklich belegt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: nur verbundene Antriebsschienen geben Strom weiter",
+      "ungeprueft": true,
+      "testanleitung": "Fünf Antriebsschienen in einer Reihe, in der Mitte (dritte) eine normale Schiene statt einer Antriebsschiene, Redstone-Block neben die erste: Leuchten Schiene 4 und 5? Dann die Reihe mit einer Lücke (ein Feld ohne Schiene) wiederholen. Ergebnis melden."
+    },
+    {
+      "id": "antrieb.stromblock",
+      "titel": "Redstone-Block neben der Schiene versorgt sie",
+      "regel": "Ein Redstone-Block, der an eine Antriebsschiene grenzt (auch seitlich oder darunter), versorgt sie direkt mit Strom. Andere Stromquellen (Hebel, Fackel, Staub) kommen mit der Redstone-Mechanik und werden bis dahin von außen übergeben.",
+      "parameter": { "quellenBloecke": ["minecraft:redstone_block"] },
+      "quelle": "https://minecraft.wiki/w/Redstone_Block (Annahme für Bedrock, Lage der Quelle nicht belegt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Redstone-Block versorgt die Nachbarschiene",
+      "ungeprueft": true,
+      "testanleitung": "Einzelne Antriebsschiene, Redstone-Block nacheinander links, rechts, vor, hinter, unter und über (soweit möglich) der Schiene: In welchen Lagen leuchtet sie? Ergebnis je Lage melden."
+    }
+  ]
+}

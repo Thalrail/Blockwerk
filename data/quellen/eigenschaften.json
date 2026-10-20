@@ -1,5 +1,5 @@
 {
-  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft.",
+  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft. Lichtfilter (lichtfilter): wie viel Licht ein Block beim Durchgang schluckt. 0 = Luft u. Ä., 15 = undurchsichtiger Vollblock und doppelte Halbstufe (blockiert ganz), 2 = Laub, 1 = Wasser (Bedrock-Werte laut minecraft.wiki „Light“), null = unbekannt (Glas, Eis, Treppen, Halbstufen, Zäune, Türen …). Die Engine rechnet bei null mit zwei Schranken (blockiert / lässt durch). Lichtquellen, deren Stärke vom Zustand abhängt (Kerzen, Seegurken, Kupferglühbirnen, Respawn-Anker, Tresor …), stehen in lichtZustandsabhaengig und haben licht = null.",
   "quelle": "https://minecraft.wiki/ (Seiten der einzelnen Blöcke, Abschnitt Bedrock Edition)",
   "regeln": [
     {
@@ -50,7 +50,8 @@
       "muster": "_leaves$",
       "setze": {
         "vollblock": true,
-        "durchsichtig": true
+        "durchsichtig": true,
+        "lichtfilter": 2
       },
       "grund": "Laub"
     },
@@ -146,7 +147,8 @@
     {
       "muster": "^minecraft:air$",
       "setze": {
-        "fluessigkeit": "offen"
+        "fluessigkeit": "offen",
+        "lichtfilter": 0
       },
       "grund": "Luft"
     },
@@ -156,6 +158,20 @@
         "fluessigkeit": "wegspuelbar"
       },
       "grund": "Wasser spült diese Blöcke weg (Wiki „Water“; Bedrock: auch Schienen)"
+    },
+    {
+      "muster": "^minecraft:(water|flowing_water)$",
+      "setze": {
+        "lichtfilter": 1
+      },
+      "grund": "Wasser filtert Licht um 1 (Bedrock, Wiki „Light“)"
+    },
+    {
+      "muster": "_double_slab$",
+      "setze": {
+        "lichtfilter": 15
+      },
+      "grund": "Doppelte Halbstufen blockieren Licht ganz (Bedrock, Wiki „Light“)"
     }
   ],
   "lichtstaerke": {
@@ -191,7 +207,24 @@
     "minecraft:pearlescent_froglight": 15,
     "minecraft:end_portal": 15,
     "minecraft:portal": 11,
-    "minecraft:sculk_catalyst": 6
+    "minecraft:sculk_catalyst": 6,
+    "minecraft:underwater_torch": 14,
+    "minecraft:copper_torch": 14,
+    "minecraft:colored_torch_blue": 14,
+    "minecraft:colored_torch_green": 14,
+    "minecraft:colored_torch_purple": 14,
+    "minecraft:colored_torch_red": 14,
+    "minecraft:lit_redstone_ore": 9,
+    "minecraft:lit_deepslate_redstone_ore": 9,
+    "minecraft:glow_lichen": 7,
+    "minecraft:copper_lantern": 15,
+    "minecraft:exposed_copper_lantern": 15,
+    "minecraft:weathered_copper_lantern": 15,
+    "minecraft:oxidized_copper_lantern": 15,
+    "minecraft:waxed_copper_lantern": 15,
+    "minecraft:waxed_exposed_copper_lantern": 15,
+    "minecraft:waxed_weathered_copper_lantern": 15,
+    "minecraft:waxed_oxidized_copper_lantern": 15
   },
   "arbeitsbloecke": [
     "minecraft:composter",
@@ -252,5 +285,40 @@
     "minecraft:green_shulker_box": 27,
     "minecraft:red_shulker_box": 27,
     "minecraft:black_shulker_box": 27
-  }
+  },
+  "lichtstaerkeAusName": {
+    "muster": "^minecraft:light_block_(\\d+)$",
+    "grund": "Lichtblock: die Zahl im Namen ist die Lichtstärke"
+  },
+  "lichtZustandsabhaengig": [
+    "minecraft:candle",
+    "minecraft:white_candle",
+    "minecraft:orange_candle",
+    "minecraft:magenta_candle",
+    "minecraft:light_blue_candle",
+    "minecraft:yellow_candle",
+    "minecraft:lime_candle",
+    "minecraft:pink_candle",
+    "minecraft:gray_candle",
+    "minecraft:light_gray_candle",
+    "minecraft:cyan_candle",
+    "minecraft:purple_candle",
+    "minecraft:blue_candle",
+    "minecraft:brown_candle",
+    "minecraft:green_candle",
+    "minecraft:red_candle",
+    "minecraft:black_candle",
+    "minecraft:sea_pickle",
+    "minecraft:respawn_anchor",
+    "minecraft:copper_bulb",
+    "minecraft:exposed_copper_bulb",
+    "minecraft:weathered_copper_bulb",
+    "minecraft:oxidized_copper_bulb",
+    "minecraft:waxed_copper_bulb",
+    "minecraft:waxed_exposed_copper_bulb",
+    "minecraft:waxed_weathered_copper_bulb",
+    "minecraft:waxed_oxidized_copper_bulb",
+    "minecraft:vault",
+    "minecraft:firefly_bush"
+  ]
 }

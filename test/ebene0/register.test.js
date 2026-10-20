@@ -39,7 +39,8 @@ test('Jeder Block hat alle sechs Eigenschaften mit gÃ¼ltigem Typ', () => {
     const e = register.bloecke.block(id).eigenschaften;
     assert.ok([true, false, null].includes(e.vollblock), id);
     assert.ok([true, false, null].includes(e.durchsichtig), id);
-    assert.ok(Number.isInteger(e.licht) && e.licht >= 0 && e.licht <= 15, id);
+    assert.ok(e.licht === null || (Number.isInteger(e.licht) && e.licht >= 0 && e.licht <= 15), id);
+    assert.ok(e.lichtfilter === null || (Number.isInteger(e.lichtfilter) && e.lichtfilter >= 0 && e.lichtfilter <= 15), id);
     for (const k of ['faellt', 'brauchtHalt', 'arbeitsblock']) assert.equal(typeof e[k], 'boolean', `${id}.${k}`);
   }
 });

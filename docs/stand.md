@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gebaut: Branch `claude/ebene-1-wasser` (aufbauend auf dem Antrieb-Branch). 163 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gebaut: Branch `claude/ebene-1-licht`. 172 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -16,8 +16,10 @@ Zuletzt aktualisiert: 20.10.2026
 | 2a | Ebene 1 – Unterbau: Taktgeber (Spieltick, P-/C-Tick), geplante Ticks, Tickbereich, Sandkasten, Regelwerk als Daten mit Quelle/Status, Prüfer-Gerüst (Fackel/Schiene Halt, Tickbereich) | **fertig, Status `simuliert`** (Ausnahmen: `takt.zufallsticks` und `takt.mechanismus-blockupdate` nur `entworfen`; 8 Regeln mit Annahmen sind `ungeprüft`) |
 | 2b-1 | Ebene 1 – Schienen: Form und Verbindung (Platzieren wie im Spiel, Prüfer für Verbindungen und Antriebsschienen) | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #3) |
 | 2b-2 | Ebene 1 – Schienen-Antrieb: Antriebsschienen (Reichweite 8, nur im C-Tick), Prüfer-Hinweis | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
-| 2c | Ebene 1 – Wasser und Lava: Weite, Tempo, Fallen, Gefälle, Quellenbildung, Mischen, Wegspülen, Prüfer „Wasser zerstört“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
-| 2d… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), Licht, fallende Blöcke, Trichter & Blockinhalte, Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
+| 2c | Ebene 1 – Wasser und Lava: Weite, Tempo, Fallen, Gefälle, Quellenbildung, Mischen, Wegspülen, Prüfer „Wasser zerstört“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #5/#6) |
+| 2d-1 | Ebene 1 – Licht: Blocklicht und Himmelslicht mit Minimum/Maximum bei unbekannten Filtern | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
+| 2d-2 | Ebene 1 – Spawnstellen: wo können Monster spawnen (Licht, Boden, Platz), Prüfer „Spawn möglich“ | **als Nächstes** |
+| 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), fallende Blöcke, Trichter & Blockinhalte, Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -71,6 +73,14 @@ Zuletzt aktualisiert: 20.10.2026
 - Nicht dabei: Strömung auf Wesen, Waterlogging, Blasensäulen, Eis/Schnee, Lava-Feuer, Dimension im Plan (nur Einstellung der Simulation).
 - Annahme mit Wirkung: Eine Quelle über fließendem Wasser breitet sich auch seitlich aus (Plus-Form um eine Quelle in der Luft). Treppen, Halbstufen, Zäune usw. halten Wasser wie feste Blöcke auf, bis getestet.
 
+## Was Licht (Teil 2d-1) jetzt kann (`src/ebene1/licht.js`)
+- `lichtkarte(welt, bereich, { himmel })`: Blocklicht und Himmelslicht für einen Bereich (± 15 Rand), je Feld **Minimum und Maximum**. Unbekannte Lichtfilter (Glas, Treppen, Halbstufen, Zäune, Türen, Eis …) und zustandsabhängige Quellen (Kerzen, Seegurken …) werden nicht geraten: Minimum = „blockiert“, Maximum = „lässt durch“. `blocklicht()` sagt `hell` / `dunkel` / `unklar`.
+- Blocklicht: Quellen aus Ebene 0 (`licht`), Abnahme max(1, Filter) je Block. Himmelslicht: 15 bei freiem Himmel, senkrecht nur um den Filter schwächer, seitlich und aufwärts −1; „inneres“ Himmelslicht für Spawnregeln: Tag 15, Regen 12, Gewitter 10, Nacht 4 (Rohwerte unter 15: gleicher Abzug, Annahme).
+- Ebene 0: neue Eigenschaft `lichtfilter` (0 Luft, 15 undurchsichtige Vollblöcke und doppelte Halbstufen, 2 Laub, 1 Wasser, sonst unbekannt); weitere Lichtquellen (Unterwasser-/Kupfer-/farbige Fackeln, leuchtende Redstone-Erze, Kupferlaternen, Glühflechte, Lichtblöcke).
+- Prüfer-Hinweis `pruefer.licht-unklar` für Quellen mit zustandsabhängiger Stärke.
+- Regeln: `data/regeln/licht.json` (5 Regeln, 1 belegt, 4 mit Annahmen und Testanleitung).
+- Bekanntes Limit: die Lichtkarte rechnet nur den angefragten Bereich (± 15); für ganze Zitadelle-Größe bereichsweise anfragen. Nicht dabei: Zeitverlauf von Tag und Nacht, Nether/Ende, Lichtupdate-Verzögerung.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -90,7 +100,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2d: Lorenbewegung**, aber erst nach Jonahs Messungen (sonst wäre es geraten). Bis dahin als Nächstes Licht & Spawnstellen oder fallende Blöcke – Jonah entscheidet. Detektor-/Aktivierungsschiene folgen mit der Redstone-Mechanik. Trichter & Blockinhalte sind gleichberechtigt (Händler geben Items direkt ins Inventar, aber Lager/Sortierer der Zitadelle brauchen Trichter).
+**Schritt 2d-2: Spawnstellen** (aufbauend auf dem Licht): wo können Monster spawnen (Blocklicht 0, Himmelslicht unter 7, Boden mit voller Oberseite, Platz für die Hitbox); Prüfer „Spawn möglich“ für Innenräume. Danach fallende Blöcke oder Trichter & Blockinhalte – Jonah entscheidet. Lorenbewegung erst nach Jonahs Messungen. Detektor-/Aktivierungsschiene folgen mit der Redstone-Mechanik.
 Nebenbei: Jonah macht die Antriebs-Tests und Messungen aus `docs/spieltests.md` und `docs/messungen-lore.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

@@ -74,14 +74,15 @@ test('Licht: Filter von Laub, Wasser und doppelten Halbstufen', () => {
   // Die Regel und die Fakten in Ebene 0 stimmen überein
   const f = (id) => e0.register.bloecke.block(id).eigenschaften.lichtfilter;
   assert.deepEqual([f('minecraft:oak_leaves'), f('minecraft:water'), f('minecraft:oak_double_slab'), f('minecraft:stone'), f('minecraft:air')], [2, 1, 15, 15, 0]);
-  assert.deepEqual([f('minecraft:glass'), f('minecraft:oak_stairs'), f('minecraft:oak_slab'), f('minecraft:oak_fence')], [null, null, null, null], 'unbekannt bleibt unbekannt');
+  assert.deepEqual([f('minecraft:glass'), f('minecraft:white_carpet'), f('minecraft:lava'), f('minecraft:ice')], [0, 0, 15, 1], 'Wiki „Opacity“: Glas und Teppich wie Luft, Lava blockiert, Eis wie Wasser');
+  assert.deepEqual([f('minecraft:oak_stairs'), f('minecraft:oak_slab'), f('minecraft:oak_fence'), f('minecraft:torch'), f('minecraft:tinted_glass'), f('minecraft:glass_pane')], [null, null, null, null, null, null], 'unbekannt bleibt unbekannt');
   const dach = (id, zustand = {}) => {
     const w = e0.neueWelt();
     for (let x = -20; x <= 20; x++) for (let z = -20; z <= 20; z++) { w.setzeBlock(x, 0, z, STEIN); w.setzeBlock(x, 5, z, id, zustand); }
     return L.lichtkarte(w, { von: { x: -1, y: 1, z: -1 }, bis: { x: 1, y: 4, z: 1 } }, { himmel: 'tag' }).himmelRoh(0, 4, 0);
   };
-  assert.deepEqual(dach('minecraft:oak_leaves'), { min: 13, max: 13 }, 'Laub: 15 − 2');
-  assert.deepEqual(dach('minecraft:water', { liquid_depth: 0 }), { min: 14, max: 14 }, 'Wasser: 15 − 1');
+  assert.deepEqual(dach('minecraft:oak_leaves'), { min: 12, max: 13 }, 'Laub: 15 − 2 (Obergrenze) bzw. 15 − (1 + 2) (Untergrenze)');
+  assert.deepEqual(dach('minecraft:water', { liquid_depth: 0 }), { min: 13, max: 14 }, 'Wasser: 15 − 1 bzw. 15 − (1 + 1)');
   assert.deepEqual(dach('minecraft:oak_double_slab', { 'minecraft:vertical_half': 'bottom' }), { min: 0, max: 0 }, 'doppelte Halbstufe blockiert');
   // waagerecht: ein Laubblock kostet 2 statt 1
   const w = raum(); fackel(w, 0, 1, 0);
@@ -90,16 +91,16 @@ test('Licht: Filter von Laub, Wasser und doppelten Halbstufen', () => {
   const laub = L.lichtkarte(w, bereich(6, 1)).block(4, 1, 0);
   assert.equal(luft, 10);
   assert.equal(laub.max, 9, 'durch ein Laubblatt eine Stufe weniger als durch Luft (um 2 statt 1)');
-  assert.equal(laub.min, laub.max, 'Laub ist bekannt: Minimum = Maximum');
+  assert.equal(laub.min, 8, 'Untergrenze: um 1 + 2 = 3');
 });
 
 test('Licht: Unbekanntes wird mit zwei Schranken berechnet', () => {
   // Wand über den ganzen Raum, in der Mitte ein Glasblock: dahinter kommt Licht nur durch das Glas
   const w = raum(); fackel(w, 0, 1, 0);
   for (let y = 1; y <= 5; y++) for (let z = -21; z <= 21; z++) w.setzeBlock(3, y, z, STEIN);
-  w.setzeBlock(3, 1, 0, 'minecraft:glass');
+  w.setzeBlock(3, 1, 0, 'minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: false, 'minecraft:corner': 'none' });
   const k = L.lichtkarte(w, bereich(8, 1));
-  assert.deepEqual(k.block(4, 1, 0), { min: 0, max: 10 }, 'Glas unbekannt: dahinter 0 bis 10');
+  assert.deepEqual(k.block(4, 1, 0), { min: 0, max: 10 }, 'Treppe unbekannt: dahinter 0 bis 10');
   assert.equal(k.blocklicht(4, 1, 0), 'unklar');
   assert.equal(k.blocklicht(2, 1, 0), 'hell');
   assert.equal(k.blocklicht(8, 1, 5), 'unklar');
@@ -117,6 +118,35 @@ test('Licht: Unbekanntes wird mit zwei Schranken berechnet', () => {
   const kc = L.lichtkarte(kerze, bereich(3, 1));
   assert.deepEqual(kc.block(0, 1, 0), { min: 0, max: 15 });
   assert.deepEqual(kc.block(2, 1, 0), { min: 0, max: 13 });
+});
+
+test('Licht: Glas und Teppich lassen Licht durch wie Luft (Wiki „Opacity“)', () => {
+  for (const [id, zustand] of [['minecraft:glass', {}], ['minecraft:white_stained_glass', {}], ['minecraft:white_carpet', {}]]) {
+    const w = raum(); fackel(w, 0, 1, 0);
+    for (let y = 1; y <= 5; y++) for (let z = -21; z <= 21; z++) w.setzeBlock(3, y, z, STEIN);
+    w.setzeBlock(3, 1, 0, id, zustand);
+    const k = L.lichtkarte(w, bereich(8, 1));
+    assert.deepEqual(k.block(4, 1, 0), { min: 10, max: 10 }, `${id}: dahinter genauso hell wie durch Luft`);
+  }
+  // getöntes Glas und Glasscheibe sind nicht belegt → unklar
+  for (const id of ['minecraft:tinted_glass', 'minecraft:glass_pane']) {
+    const w = raum(); fackel(w, 0, 1, 0);
+    for (let y = 1; y <= 5; y++) for (let z = -21; z <= 21; z++) w.setzeBlock(3, y, z, STEIN);
+    w.setzeBlock(3, 1, 0, id, {});
+    assert.equal(L.lichtkarte(w, bereich(8, 1)).blocklicht(4, 1, 0), 'unklar', id);
+  }
+});
+
+test('Licht: Himmelslicht unter 15 senkrecht – Schranken statt Raten', () => {
+  // Dach ab x = 1, Grube bei x = 3 (tiefer Schacht im Boden): seitlich verteiltes Licht im Schacht
+  const w = e0.neueWelt();
+  for (let x = -30; x <= 30; x++) for (let z = -30; z <= 30; z++) { w.setzeBlock(x, -4, z, STEIN); if (!(x === 3 && z === 0)) w.setzeBlock(x, 0, z, STEIN); if (x !== 0 || z !== 0) w.setzeBlock(x, 5, z, STEIN); }
+  const k = L.lichtkarte(w, { von: { x: 0, y: -3, z: -2 }, bis: { x: 4, y: 4, z: 2 } }, { himmel: 'tag' });
+  assert.deepEqual(k.himmelRoh(3, 1, 0), { min: 12, max: 12 }, 'unter dem Dach drei Blöcke seitlich');
+  assert.deepEqual(k.himmelRoh(3, -3, 0), { min: 8, max: 12 }, 'Grubenboden: Obergrenze senkrecht ungeschwächt (12), Untergrenze 1 je Block (12 − 4)');
+  assert.deepEqual(k.himmelRoh(3, 0, 0), { min: 11, max: 12 });
+  // Unter freiem Himmel (15) fällt das Licht in beiden Schranken ungeschwächt
+  for (let y = 1; y <= 4; y++) assert.deepEqual(k.himmelRoh(0, y, 0), { min: 15, max: 15 });
 });
 
 test('Licht: Himmelslicht innen (Tag, Regen, Gewitter, Nacht)', () => {

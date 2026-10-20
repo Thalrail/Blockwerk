@@ -1,5 +1,5 @@
 {
-  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft. Lichtfilter (lichtfilter): wie viel Licht ein Block beim Durchgang schluckt. 0 = Luft u. Ä., 15 = undurchsichtiger Vollblock und doppelte Halbstufe (blockiert ganz), 2 = Laub, 1 = Wasser (Bedrock-Werte laut minecraft.wiki „Light“), null = unbekannt (Glas, Eis, Treppen, Halbstufen, Zäune, Türen …). Die Engine rechnet bei null mit zwei Schranken (blockiert / lässt durch). Lichtquellen, deren Stärke vom Zustand abhängt (Kerzen, Seegurken, Kupferglühbirnen, Respawn-Anker, Tresor …), stehen in lichtZustandsabhaengig und haben licht = null.",
+  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft. Lichtfilter (lichtfilter): wie viel Licht ein Block beim Durchgang schluckt. 0 = Luft u. Ä., 15 = undurchsichtiger Vollblock und doppelte Halbstufe (blockiert ganz), 2 = Laub, 1 = Wasser (Bedrock-Werte laut minecraft.wiki „Light“), null = unbekannt (Glas, Eis, Treppen, Halbstufen, Zäune, Türen …). Die Engine rechnet bei null mit zwei Schranken (blockiert / lässt durch). Lichtquellen, deren Stärke vom Zustand abhängt (Kerzen, Seegurken, Kupferglühbirnen, Respawn-Anker, Tresor …), stehen in lichtZustandsabhaengig und haben licht = null. Glasblöcke (außer getöntem Glas) und Teppiche gelten als lichtdurchlässig wie Luft (Filter 0, Wiki „Opacity“; Scheiben, Türen, Fackeln, Schienen u. a. sind nicht belegt und bleiben unbekannt). Bedrock-Besonderheit laut Wiki: Wasser und Eis haben −1 zusätzlich zur normalen Abnahme; Blockwerk rechnet bei bekannten Filtern deshalb mit Schranken: Schritt = max(1, Filter) bis 1 + Filter.",
   "quelle": "https://minecraft.wiki/ (Seiten der einzelnen Blöcke, Abschnitt Bedrock Edition)",
   "regeln": [
     {
@@ -32,11 +32,19 @@
         "durchsichtig": true,
         "fackelOben": true,
         "fackelSeiten": "alle",
-        "schiene": true
+        "schiene": true,
+        "lichtfilter": 0
       },
       "grund": "Glasblock: Vollblock, lässt Licht durch, hält Fackel (oben und seitlich) und Schiene",
       "status": "geprüft",
       "beobachtung": "Jonah, Spieltest 20.10.2026: Fackel an allen Seiten außer unten, Schiene „ganz normal“"
+    },
+    {
+      "muster": "^minecraft:tinted_glass$",
+      "setze": {
+        "lichtfilter": null
+      },
+      "grund": "Getöntes Glas: Lichtdurchlass nicht belegt (bleibt unbekannt)"
     },
     {
       "muster": "^minecraft:ice$",
@@ -172,6 +180,27 @@
         "lichtfilter": 15
       },
       "grund": "Doppelte Halbstufen blockieren Licht ganz (Bedrock, Wiki „Light“)"
+    },
+    {
+      "muster": "_carpet$",
+      "setze": {
+        "lichtfilter": 0
+      },
+      "grund": "Teppiche lassen Licht wie Luft durch (Wiki „Opacity“, Edition nicht gekennzeichnet)"
+    },
+    {
+      "muster": "^minecraft:(lava|flowing_lava)$",
+      "setze": {
+        "lichtfilter": 15
+      },
+      "grund": "Lava blockiert in Bedrock die Lichtausbreitung vollständig (Wiki „Opacity“, nur Bedrock); sie leuchtet selbst mit 15"
+    },
+    {
+      "muster": "^minecraft:(ice|frosted_ice)$",
+      "setze": {
+        "lichtfilter": 1
+      },
+      "grund": "Eis wie Wasser: in Bedrock zusätzlich −1 zur normalen Abnahme (Wiki „Opacity“)"
     }
   ],
   "lichtstaerke": {

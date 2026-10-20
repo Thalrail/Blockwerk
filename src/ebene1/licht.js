@@ -1,7 +1,9 @@
 // Ebene 1 – Mechanik „Licht“ (Blocklicht und Himmelslicht)
 // Regeln: data/regeln/licht.json (Quelle und Status je Regel).
-//   - Blocklicht: Lichtquellen (Ebene-0-Eigenschaft `licht`), Flutfüllung, Abnahme je Block = max(1, Lichtfilter des betretenen Blocks).
-//   - Himmelslicht: 15 an freien Blöcken; senkrecht nach unten nur um den Lichtfilter, seitlich und aufwärts wie Blocklicht.
+//   - Blocklicht: Lichtquellen (Ebene-0-Eigenschaft `licht`), Flutfüllung, Abnahme je Block: Obergrenze max(1, Filter), Untergrenze 1 + Filter
+//     (das Wiki nennt für Bedrock Filterwerte und zugleich „−1 zusätzlich zur normalen Abnahme“; beide Lesarten sind in den Schranken enthalten).
+//   - Himmelslicht: 15 an freien Blöcken; die Spalte darunter geht laut Wiki ungeschwächt hindurch. Für bereits seitlich verteiltes Licht
+//     (unter 15) ist das nicht belegt: Obergrenze = auch ungeschwächt senkrecht, Untergrenze = wie seitlich (mindestens 1 je Block).
 //   - Unbekannte Lichtfilter (null in Ebene 0, z. B. Glas, Treppen, Zäune) werden NICHT geraten: es wird zweimal gerechnet,
 //     mit „Unbekanntes blockiert“ (Minimum) und „Unbekanntes lässt durch“ (Maximum). Dasselbe gilt für Lichtquellen mit
 //     zustandsabhängiger Stärke (licht = null: Minimum 0, Maximum 15). Wo Minimum und Maximum auseinanderliegen, ist das Ergebnis „unklar“.
@@ -16,6 +18,7 @@ const NACHBARN = [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -
  */
 export function erzeugeLicht({ regelwerk, register }) {
   const himmelsWerte = regelwerk.parameter('licht.himmel-innen', 'werte');
+  const abnahme = regelwerk.parameter('licht.blocklicht', 'abnahme');
 
   /**
    * Berechnet Block- und Himmelslicht für einen Bereich.
@@ -38,18 +41,21 @@ export function erzeugeLicht({ regelwerk, register }) {
     const innen = (x, y, z) => x >= x0 && x < x0 + dx && y >= y0 && y <= y1 && z >= z0 && z < z0 + dz;
 
     // Filter und Quellen je Zelle für beide Schranken (Luft: Filter 0, keine Quelle)
-    const filterMin = new Uint8Array(n), filterMax = new Uint8Array(n);
+    const filterMin = new Uint8Array(n), filterMax = new Uint8Array(n); // Lichtfilter je Schranke (Min: 15 = blockiert)
+    const schrittMin = new Uint8Array(n).fill(abnahme), schrittMax = new Uint8Array(n).fill(abnahme); // Abnahme beim Betreten waagerecht/aufwärts
     const quelleMin = new Uint8Array(n), quelleMax = new Uint8Array(n);
     for (const b of alle) {
       if (!innen(b.x, b.y, b.z)) continue;
       const e = register.bloecke.block(b.id).eigenschaften;
       const i = idx(b.x, b.y, b.z);
       if (e.lichtfilter === null) { filterMin[i] = 15; filterMax[i] = 0; } else { filterMin[i] = e.lichtfilter; filterMax[i] = e.lichtfilter; }
+      schrittMax[i] = Math.max(abnahme, filterMax[i]);
+      schrittMin[i] = filterMin[i] >= 15 ? 16 : Math.max(abnahme, abnahme + filterMin[i]);
       if (e.licht === null) { quelleMin[i] = 0; quelleMax[i] = 15; } else { quelleMin[i] = e.licht; quelleMax[i] = e.licht; }
     }
 
     /** Flutfüllung: `start` enthält die Anfangswerte; Schritt = max(1, Filter), Himmelslicht senkrecht nach unten nur der Filter. */
-    function flut(start, filter, himmelslicht) {
+    function flut(start, schritt, filter, himmelslicht, untere) {
       const stufe = start;
       const eimer = Array.from({ length: 16 }, () => []);
       for (let i = 0; i < n; i++) if (stufe[i] > 0) eimer[stufe[i]].push(i);
@@ -65,8 +71,9 @@ export function erzeugeLicht({ regelwerk, register }) {
             const nx = xx + ax, ny = yy + ay, nz = zz + az;
             if (!innen(nx, ny, nz)) continue;
             const j = idx(nx, ny, nz);
-            const schritt = himmelslicht && ay === -1 ? filter[j] : Math.max(1, filter[j]);
-            const neu = l - schritt;
+            // senkrecht nach unten: Obergrenze nur der Filter; Untergrenze nur bei vollem Himmelslicht (15), sonst wie seitlich
+            const abzug = himmelslicht && ay === -1 && (!untere || l === 15) ? filter[j] : schritt[j];
+            const neu = l - abzug;
             if (neu > stufe[j]) { stufe[j] = neu; eimer[neu].push(j); }
           }
         }
@@ -74,26 +81,26 @@ export function erzeugeLicht({ regelwerk, register }) {
       return stufe;
     }
 
-    const blockMin = flut(Uint8Array.from(quelleMin), filterMin, false);
-    const blockMax = flut(Uint8Array.from(quelleMax), filterMax, false);
+    const blockMin = flut(Uint8Array.from(quelleMin), schrittMin, filterMin, false, true);
+    const blockMax = flut(Uint8Array.from(quelleMax), schrittMax, filterMax, false, false);
 
     /** Himmelslicht: Spalten von oben, dann seitlich auffüllen. */
-    function himmelAnfang(filter) {
+    function himmelAnfang(filter, untere) {
       const start = new Uint8Array(n);
       for (let z = z0; z < z0 + dz; z++) {
         for (let x = x0; x < x0 + dx; x++) {
           let s = 15;
           for (let y = y1; y >= y0 && s > 0; y--) {
             const i = idx(x, y, z);
-            s = Math.max(0, s - filter[i]);
+            s = Math.max(0, s - (untere && filter[i] > 0 && filter[i] < 15 ? abnahme + filter[i] : filter[i]));
             start[i] = s;
           }
         }
       }
       return start;
     }
-    const himmelMin = flut(himmelAnfang(filterMin), filterMin, true);
-    const himmelMax = flut(himmelAnfang(filterMax), filterMax, true);
+    const himmelMin = flut(himmelAnfang(filterMin, true), schrittMin, filterMin, true, true);
+    const himmelMax = flut(himmelAnfang(filterMax, false), schrittMax, filterMax, true, false);
 
     const pruefe = (x, y, z) => {
       if (x < lo.x || x > hi.x || y < lo.y || y > hi.y || z < lo.z || z > hi.z) throw new Error(`(${x}, ${y}, ${z}) liegt außerhalb des berechneten Bereichs`);

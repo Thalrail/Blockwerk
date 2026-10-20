@@ -5,7 +5,7 @@
     {
       "id": "antrieb.c-tick",
       "titel": "Antriebsschienen schalten im C-Tick",
-      "regel": "In Bedrock aktivieren Antriebsschienen nur im Consume-Tick (C-Tick, gerader Spielticks). Ändert sich die Stromversorgung in einem P-Tick, schaltet die Schiene erst im folgenden C-Tick.",
+      "regel": "In Bedrock aktivieren Antriebsschienen nur im Consume-Tick (C-Tick, gerader Spielticks). Ändert sich die Stromversorgung in einem P-Tick, schaltet die Schiene erst im folgenden C-Tick. Schienen in Chunks außerhalb des Tickbereichs schalten nicht (siehe takt.tickbereich).",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Powered_Rail (Bedrock-Abschnitt)",
       "status": "simuliert",
@@ -16,7 +16,10 @@
       "id": "antrieb.reichweite",
       "titel": "Reichweite: 8 Schienen weit",
       "regel": "Eine aktivierte Antriebsschiene aktiviert verbundene Antriebsschienen bis zu 8 weit; eine Stromquelle in der Mitte versorgt so bis zu 17 Schienen.",
-      "parameter": { "reichweite": 8, "maximalVersorgt": 17 },
+      "parameter": {
+        "reichweite": 8,
+        "maximalVersorgt": 17
+      },
       "quelle": "https://minecraft.wiki/w/Powered_Rail (Aussage nicht ausdrücklich als Bedrock gekennzeichnet)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Reichweite 8 Schienen weit",
@@ -37,9 +40,13 @@
     {
       "id": "antrieb.stromblock",
       "titel": "Redstone-Block neben der Schiene versorgt sie",
-      "regel": "Ein Redstone-Block, der an eine Antriebsschiene grenzt (auch seitlich oder darunter), versorgt sie direkt mit Strom. Andere Stromquellen (Hebel, Fackel, Staub) kommen mit der Redstone-Mechanik und werden bis dahin von außen übergeben.",
-      "parameter": { "quellenBloecke": ["minecraft:redstone_block"] },
-      "quelle": "https://minecraft.wiki/w/Redstone_Block (Annahme für Bedrock, Lage der Quelle nicht belegt)",
+      "regel": "Ein Redstone-Block, der an eine Antriebsschiene grenzt, versorgt sie direkt mit Strom (belegt ist nur die Lage darunter; seitlich und oben sind Annahmen). Andere Stromquellen (Hebel, Fackel, Staub) kommen mit der Redstone-Mechanik und werden bis dahin von außen übergeben.",
+      "parameter": {
+        "quellenBloecke": [
+          "minecraft:redstone_block"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Block_of_Redstone (gibt schwachen Strom der Stärke 15 an direkte Nachbarn; Beispielbild: Schienen „von unten“ versorgt; Edition und die übrigen Seiten nicht belegt → Annahme)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Redstone-Block versorgt die Nachbarschiene",
       "ungeprueft": true,

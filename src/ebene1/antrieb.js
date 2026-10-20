@@ -67,12 +67,14 @@ export function erzeugeAntrieb({ regelwerk, schienen }) {
 
   /**
    * Setzt rail_data_bit aller Antriebsschienen entsprechend der Versorgung.
+   * Mit `tickbereich` bleiben Schienen in Chunks, die nicht ticken, unverändert (dort läuft im Spiel nichts).
    * @returns {{pos:{x:number,y:number,z:number}, aktiv:boolean}[]} nur die Schienen, die sich geändert haben
    */
-  function aktiviere(welt, stromQuellen = []) {
+  function aktiviere(welt, stromQuellen = [], tickbereich = null) {
     const aktiv = aktive(welt, stromQuellen);
     const aenderungen = [];
     for (const s of alleAntriebsschienen(welt)) {
+      if (tickbereich && !tickbereich.ticktBlock(s.pos.x, s.pos.z)) continue;
       const soll = aktiv.has(key(s.pos));
       if ((s.zustand.rail_data_bit ?? false) === soll) continue;
       welt.setzeBlock(s.pos.x, s.pos.y, s.pos.z, s.id, { ...s.zustand, rail_data_bit: soll });
@@ -89,7 +91,7 @@ export function erzeugeAntrieb({ regelwerk, schienen }) {
     return {
       id: 'antrieb',
       tickart: 'mechanismus',
-      schritt: (ktx) => { aktiviere(ktx.welt, stromQuellen()); },
+      schritt: (ktx) => { aktiviere(ktx.welt, stromQuellen(), ktx.tickbereich ?? null); },
     };
   }
 

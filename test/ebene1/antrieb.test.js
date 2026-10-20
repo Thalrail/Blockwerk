@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ebene1 } from '../hilfe.js';
+import { Tickbereich } from '../../src/ebene1/tickbereich.js';
 
 const e1 = ebene1();
 const e0 = e1.ebene0;
@@ -136,4 +137,23 @@ test('Prüfer: Antriebsschiene ohne Stromquelle', () => {
   // Eine zweite Quelle in der Mitte deckt den Rest ab
   redstoneBlock(w, 10);
   assert.deepEqual(e1.pruefe(w, { stromQuellen: [], schienen: null }).filter((x) => x.regel === 'pruefer.antrieb-ohne-quelle'), []);
+});
+
+test('Antrieb: Schienen außerhalb des Tickbereichs schalten nicht', () => {
+  // Reihe über die Chunkgrenze bei x = 16: Chunk 0 tickt, Chunk 1 nicht
+  const welt = boden(); reihe(welt, 12, 8); redstoneBlock(welt, 12);
+  const sk = e1.neuerSandkasten(welt);
+  const bereich = new Tickbereich({ tickingAreas: [{ von: { x: 0, z: 0 }, bis: { x: 15, z: 15 } }] });
+  const t = e1.neuerTaktgeber(sk, { tickbereich: bereich });
+  t.registriere(A.mechanik());
+  t.laufe(2);
+  const bit = (x) => sk.welt.leseBlock(x, 1, 0).zustand.rail_data_bit;
+  assert.deepEqual([12, 13, 14, 15].map(bit), [true, true, true, true], 'im tickenden Chunk aktiv');
+  assert.deepEqual([16, 17, 18, 19].map(bit), [false, false, false, false], 'im nicht tickenden Chunk unverändert');
+  // Ohne Tickbereich (Standard) schalten alle
+  const sk2 = e1.neuerSandkasten(welt);
+  const t2 = e1.neuerTaktgeber(sk2);
+  t2.registriere(A.mechanik());
+  t2.laufe(2);
+  assert.equal(sk2.welt.leseBlock(19, 1, 0).zustand.rail_data_bit, true);
 });

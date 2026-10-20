@@ -58,6 +58,7 @@ export class Taktgeber {
       sandkasten: this.sandkasten,
       welt: this.sandkasten.welt,
       zufall: this.zufall,
+      tickbereich: this.tickbereich,
       plane: (e) => this.geplant.plane(e),
     };
   }

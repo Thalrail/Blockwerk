@@ -55,6 +55,8 @@ Zuletzt aktualisiert: 20.10.2026
 - `aktive(welt, stromQuellen)`: welche Antriebsschienen sind aktiv? Direkt versorgt durch einen angrenzenden Redstone-Block (oder eine von außen übergebene Stromquelle), dazu verbundene Antriebsschienen bis 8 Schienen weit (17 bei Quelle in der Mitte); normale Schienen und Lücken unterbrechen.
 - `aktiviere(welt, …)` setzt `rail_data_bit`; `mechanik()` ist eine Taktgeber-Mechanik der Tickart `mechanismus` und schaltet damit **nur im C-Tick** (Bedrock-dokumentiert).
 - Prüfer-Hinweis `pruefer.antrieb-ohne-quelle` (nur wenn die Stromquellen übergeben werden).
+- Schienen in Chunks außerhalb des Tickbereichs schalten nicht (der Taktgeber gibt den Tickbereich an die Mechanik weiter).
+- Bekanntes Limit: `aktive()`/`aktiviere()` gehen bei jedem C-Tick über alle Blöcke der Welt (sortiert). Für Zitadelle-Größe (ca. 3,9 Mio. Blöcke) später Schienen je Chunk indexieren.
 - Regeln: `data/regeln/antrieb.json` (4 Regeln, 3 mit Annahmen und Testanleitung). Reichweite 8 und „nur verbundene geben Strom weiter“ sind nicht als Bedrock belegt.
 - **Keine Lorenphysik:** Bedrock nennt dazu keine Zahlen. Jonahs Messungen A–F (`docs/messungen-lore.md`) sind die Grundlage für Schritt 2b-3.
 

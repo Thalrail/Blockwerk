@@ -109,6 +109,17 @@
       "simulationstest": "test/ebene1/licht.test.js::Prüfer: Lichtquellen mit unklarer Stärke",
       "ungeprueft": true,
       "testanleitung": "Kerze (1 bis 4 Kerzen, angezündet), Seegurke (1–4, im Wasser), Respawn-Anker (Ladung 0–4): Wie hell ist es jeweils? Mit einem Lichtblock vergleichen und die Stufe melden."
+    },
+    {
+      "id": "pruefer.spawn-moeglich",
+      "titel": "Prüfer: Monster können hier spawnen",
+      "regel": "Für einen übergebenen Bereich (z. B. die Innenräume der Zitadelle) meldet der Prüfer jede Stelle, an der ein Monster nachts spawnen kann (Verstoß mit Koordinate), und jede Stelle, bei der es wegen unbekannter Blöcke oder Lichtwerte unklar ist (Hinweis).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (folgt aus den Regeln spawn.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Prüfer: Spawn möglich in Innenräumen",
+      "ungeprueft": true,
+      "testanleitung": "Siehe spawn.platz und spawn.boden-unklar."
     }
   ]
 }

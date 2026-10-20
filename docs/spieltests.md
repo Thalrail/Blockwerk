@@ -30,3 +30,17 @@ Schienen brauchen einen Block unter sich, Steigungen außerdem einen Block auf d
 ## Weitere Tests (noch offen)
 Schilder/16er-Drehung (`ground_sign_direction`), Ranken (`vine_direction_bits`), Hebel (`lever_direction`), Wandkoralle (`coral_direction`).
 Anleitung folgt, sobald ein Baustein sie braucht.
+
+## Ebene 1: Regeln mit Annahmen (ungeprüft)
+Diese Regeln hat der Taktgeber/Prüfer umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
+
+| Regel | Was testen |
+|---|---|
+| `takt.uebertrager-verzoegerung` – Übertrager: Schreibzeitpunkt bei Verzögerung d | Kreativ-Testwelt: Hebel → Verstärker mit Verzögerung 4 (4× Rechtsklick) → Lampe. Mit Video (60 fps) die Zeit zwischen Hebelklick und Lampe messen: Erwartung 0,4 s (8 Spielticks); bei Verzögerung 1: 0,1 s. Dann zwei Verstärker (je Verzögerung 1) hintereinander: Erwartung 0,2 s. |
+| `takt.geplante-ticks-ueberlauf` – Geplante Ticks: Überlauf | Kreativ-Testwelt: eine große Wasserfläche (z. B. 40×40 Quellblöcke) auf einmal fließen lassen (Block unter dem Becken entfernen) und beobachten, ob sich der Abfluss verlangsamt, ohne dass Wasser fehlt. Ergebnis: schnell/verzögert/Wasser fehlt. |
+| `takt.zufallsticks` – Zufallsticks | Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen). |
+| `takt.tickbereich` – Tickbereich | Kreativ-Testwelt: Wasserfall- oder Pflanzenfarm bauen, dich 10 Chunks entfernen und zurückkehren: Hat sie sich währenddessen weiterbewegt (z. B. Weizen gewachsen)? Dazu die Simulationsdistanz deines Aternos-Servers nennen. |
+| `takt.arbeitsreihenfolge` – Arbeitsreihenfolge innerhalb eines Spielticks | Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden. |
+| `pruefer.braucht-halt-fackel` – Prüfer: Fackel braucht Halt | Fackel an Halbstufe, Treppe, Zaun, Glas, Laub und Eis setzen (`/setblock … torch ["torch_facing_direction"="top"]` auf den jeweiligen Block): bleibt sie stehen? Ergebnis je Blockart melden. |
+| `pruefer.braucht-halt-schiene` – Prüfer: Schiene braucht Boden | Schiene auf Halbstufe, Treppe, Zaun, Glas, Laub, Trichter, Eis setzen: bleibt sie liegen? Ergebnis je Blockart melden. |
+| `pruefer.tickbereich` – Prüfer: Anlage im tickenden Bereich | Siehe takt.tickbereich. |

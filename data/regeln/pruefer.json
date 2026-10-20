@@ -1,0 +1,39 @@
+{
+  "bereich": "pruefer",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "pruefer.braucht-halt-fackel",
+      "titel": "Prüfer: Fackel braucht Halt",
+      "regel": "Eine Fackel muss an einem Block hängen, der auf der Seite liegt, die `torch_facing_direction` nennt (`top`: Block darunter). Ohne angrenzenden Block springt sie ab. Ist der Haltblock kein sicherer Vollblock, meldet der Prüfer einen Hinweis statt eines Verstoßes.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Torch; Spieltest 7 (Jonah, 20.10.2026): Wert = Seite des Nachbarblocks, ohne Nachbar springt die Fackel ab",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/pruefer.test.js::Fackel braucht Halt auf der genannten Seite",
+      "ungeprueft": true,
+      "testanleitung": "Fackel an Halbstufe, Treppe, Zaun, Glas, Laub und Eis setzen (`/setblock … torch [\"torch_facing_direction\"=\"top\"]` auf den jeweiligen Block): bleibt sie stehen? Ergebnis je Blockart melden."
+    },
+    {
+      "id": "pruefer.braucht-halt-schiene",
+      "titel": "Prüfer: Schiene braucht Boden",
+      "regel": "Eine Schiene braucht einen tragenden Block darunter. Ohne springt sie ab. Ist der Block darunter kein sicherer Vollblock, meldet der Prüfer einen Hinweis.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Rail; Spieltest 4 (Jonah, 20.10.2026): ohne Boden springen Schienen beim Setzen ab",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/pruefer.test.js::Schiene braucht Boden",
+      "ungeprueft": true,
+      "testanleitung": "Schiene auf Halbstufe, Treppe, Zaun, Glas, Laub, Trichter, Eis setzen: bleibt sie liegen? Ergebnis je Blockart melden."
+    },
+    {
+      "id": "pruefer.tickbereich",
+      "titel": "Prüfer: Anlage im tickenden Bereich",
+      "regel": "Blöcke und Wesen in Chunks außerhalb des Tickbereichs laufen im Spiel nicht. Der Prüfer meldet je Chunk einen Verstoß mit der ersten betroffenen Koordinate.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tick (folgt aus takt.tickbereich)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/pruefer.test.js::Tickbereich-Prüfung meldet Chunks außerhalb",
+      "ungeprueft": true,
+      "testanleitung": "Siehe takt.tickbereich."
+    }
+  ]
+}

@@ -173,11 +173,29 @@ test('Antrieb: Redstonefackel und Hebel versorgen die Schiene', () => {
   assert.equal(mit(1, 1, 0, 'minecraft:unlit_redstone_torch', fackel('top')), 0);
   assert.equal(mit(0, 2, 0, 'minecraft:redstone_torch', fackel('west')), 0, 'über der Schiene: nicht angenommen');
   assert.equal(mit(0, 0, 0, 'minecraft:redstone_torch', fackel('top')), 0, 'unter der Schiene: nicht angenommen');
-  // Hebel: nur eingeschaltet, auf jedem der Nachbarfelder
-  for (const [x, y, z] of [[1, 1, 0], [-1, 1, 0], [0, 1, 1], [0, 1, -1], [0, 2, 0], [0, 0, 0]]) {
-    assert.equal(mit(x, y, z, 'minecraft:lever', { lever_direction: 'up_north_south', open_bit: true }), 1, `Hebel an ${x},${y},${z} ein`);
-    assert.equal(mit(x, y, z, 'minecraft:lever', { lever_direction: 'up_north_south', open_bit: false }), 0, `Hebel an ${x},${y},${z} aus`);
+  // Hebel (Jonah, 24.10.2026): auf der Oberseite der vier Nachbarblöcke, oder irgendwo an den vier Blöcken eine Ebene höher / dem Block zwei Ebenen darüber
+  const hebelBei = (block, stelle, richtung, ein = true) => {
+    const w = boden(); e1.schienen.platziere(w, { x: 0, y: 1, z: 0 }, GOLD);
+    w.setzeBlock(...block, 'minecraft:stone');
+    w.setzeBlock(...stelle, 'minecraft:lever', { lever_direction: richtung, open_bit: ein });
+    return A.aktive(w).size;
+  };
+  for (const [x, z] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    assert.equal(hebelBei([x, 1, z], [x, 2, z], 'up_north_south'), 1, `Oberseite Nachbarblock ${x},${z}`);
+    assert.equal(hebelBei([x, 1, z], [x, 2, z], 'up_north_south', false), 0, 'ausgeschaltet');
+    assert.equal(hebelBei([x, 1, z], [x, 0, z], 'down_east_west'), 0, 'Unterseite eines Nachbarblocks auf Schienenhöhe: nicht');
+    assert.equal(hebelBei([x, 1, z], [2 * x, 1, 2 * z], x !== 0 ? (x > 0 ? 'east' : 'west') : (z > 0 ? 'south' : 'north')), 0, 'Seite eines Nachbarblocks auf Schienenhöhe: nicht');
+    assert.equal(hebelBei([x, 2, z], [x, 3, z], 'up_east_west'), 1, 'Oberseite, eine Ebene höher');
+    assert.equal(hebelBei([x, 2, z], [x, 1, z], 'down_east_west'), 1, 'Unterseite, eine Ebene höher');
   }
+  // Seite eines Blocks eine Ebene höher: Hebel direkt über der Schiene, am Block im Osten (Hebel zeigt nach Westen, Annahme)
+  assert.equal(hebelBei([1, 2, 0], [0, 2, 0], 'west'), 1, 'Seite, Block im Osten');
+  assert.equal(hebelBei([-1, 2, 0], [0, 2, 0], 'east'), 1, 'Seite, Block im Westen');
+  assert.equal(hebelBei([0, 3, 0], [0, 4, 0], 'up_north_south'), 1, 'Oberseite des Blocks zwei Ebenen darüber');
+  assert.equal(hebelBei([0, 3, 0], [0, 2, 0], 'down_north_south'), 1, 'Unterseite des Blocks zwei Ebenen darüber');
+  assert.equal(hebelBei([0, 3, 0], [1, 3, 0], 'east'), 1, 'Seite des Blocks zwei Ebenen darüber');
+  assert.equal(hebelBei([3, 1, 0], [3, 2, 0], 'up_north_south'), 0, 'zu weit weg');
+  assert.equal(hebelBei([1, 3, 0], [1, 4, 0], 'up_north_south'), 0, 'zwei Ebenen höher daneben: nicht genannt');
   // Der Strom läuft durch die Kette: Fackel an der ersten Schiene versorgt 9
   const w = boden(); reihe(w, 0, 12); w.setzeBlock(0, 1, 1, 'minecraft:redstone_torch', { torch_facing_direction: 'top' });
   assert.equal(A.aktive(w).size, 9);

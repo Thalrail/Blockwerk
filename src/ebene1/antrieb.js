@@ -5,7 +5,7 @@
 //   - Eine versorgte Antriebsschiene aktiviert verbundene Antriebsschienen bis zu `reichweite` Schienen weit
 //     (Wiki, Edition nicht gekennzeichnet → ungeprüft). Strom geben nur verbundene Antriebsschienen weiter (Annahme).
 //   - Direkte Versorgung (Spieltests Jonah, 24.10.2026): Redstone-Block auf einem der 6 Nachbarfelder, leuchtende Redstonefackel seitlich,
-//     eingeschalteter Hebel auf einem Nachbarfeld, oder eine von außen übergebene Stromquelle.
+//     eingeschalteter Hebel an den von Jonah genannten Blöcken (antrieb.hebel), oder eine von außen übergebene Stromquelle.
 // Die Welt wird nur über Ebene 0 gelesen und geschrieben.
 import { RICHTUNGEN, VEKTOR } from '../ebene0/richtungen.js';
 
@@ -18,7 +18,13 @@ export function erzeugeAntrieb({ regelwerk, schienen }) {
   const reichweite = regelwerk.parameter('antrieb.reichweite', 'reichweite');
   const stromBloecke = new Set(regelwerk.parameter('antrieb.stromblock', 'quellenBloecke'));
   const stromHorizontal = new Set(regelwerk.parameter('antrieb.redstonefackel', 'quellenHorizontal'));
-  const stromMitZustand = regelwerk.parameter('antrieb.hebel', 'quellenMitZustand');
+  const hebel = {
+    block: regelwerk.parameter('antrieb.hebel', 'block'),
+    zustand: regelwerk.parameter('antrieb.hebel', 'zustand'),
+    oberseiteVon: regelwerk.parameter('antrieb.hebel', 'oberseiteVon'),
+    ueberallAn: regelwerk.parameter('antrieb.hebel', 'ueberallAn'),
+    befestigtAn: regelwerk.parameter('antrieb.hebel', 'befestigtAn'),
+  };
   const antriebsIds = schienen.belegtGerade; // golden_rail (Antriebsschiene)
 
   const istAntriebsschiene = (id) => antriebsIds.has(id);
@@ -31,7 +37,26 @@ export function erzeugeAntrieb({ regelwerk, schienen }) {
       const nb = welt.leseBlock(n.x, n.y, n.z);
       if (stromBloecke.has(nb.id)) return true;
       if (r !== 'up' && r !== 'down' && stromHorizontal.has(nb.id)) return true; // Fackel: seitlich (links/rechts getestet, vorn/hinten angenommen)
-      if (stromMitZustand.some((q) => q.block === nb.id && Object.entries(q.zustand).every(([k, v]) => nb.zustand[k] === v))) return true;
+    }
+    return hebelVersorgt(welt, pos);
+  }
+
+  /** Sitzt ein eingeschalteter Hebel so, wie Jonah es gemessen hat (antrieb.hebel)? */
+  function hebelVersorgt(welt, pos) {
+    const bei = (b, d) => ({ x: b.x + d[0], y: b.y + d[1], z: b.z + d[2] });
+    const sitztAn = (stelle, block) => {
+      const h = welt.leseBlock(stelle.x, stelle.y, stelle.z);
+      if (h.id !== hebel.block || !Object.entries(hebel.zustand).every(([k, v]) => h.zustand[k] === v)) return false;
+      const r = hebel.befestigtAn[h.zustand.lever_direction];
+      return r !== undefined && stelle.x + VEKTOR[r].x === block.x && stelle.y + VEKTOR[r].y === block.y && stelle.z + VEKTOR[r].z === block.z;
+    };
+    for (const d of hebel.oberseiteVon) {
+      const block = bei(pos, d);
+      if (sitztAn(bei(block, [0, 1, 0]), block)) return true;
+    }
+    for (const d of hebel.ueberallAn) {
+      const block = bei(pos, d);
+      for (const r of RICHTUNGEN) if (sitztAn({ x: block.x + VEKTOR[r].x, y: block.y + VEKTOR[r].y, z: block.z + VEKTOR[r].z }, block)) return true;
     }
     return false;
   }

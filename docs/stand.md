@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gebaut: Branch `claude/ebene-1-kolben`. 246 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gebaut: Branch `claude/ebene-1-wesen-bewegung`. 252 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -25,8 +25,10 @@ Zuletzt aktualisiert: 20.10.2026
 | 2f-1 | Ebene 1 – Redstone-Strom (Gleichgewicht): Staub, Quellen (Block, Hebel, Knopf, Fackel, Detektorschiene), starke/schwache Bestromung, Fackel-Inversion, Aktivierungsschiene, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #15) |
 | 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater (Sperre, Impulse), Komparator, Knopfdauer, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #16) |
 | 2f-3 | Ebene 1 – Redstone-Mechanismen: Lampen, Türen/Falltüren/Zauntore, Beobachter, Tagessensor, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #17) |
-| 2f-4 | Ebene 1 – Kolben (Schieben bis 12 Blöcke, klebriger Kolben, unbewegliche und zerstörbare Blöcke, Zeit 2 + 2 Ticks im C-Tick), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
+| 2f-4 | Ebene 1 – Kolben (Schieben bis 12 Blöcke, klebriger Kolben, unbewegliche und zerstörbare Blöcke, Zeit 2 + 2 Ticks im C-Tick), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #18) |
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
+| 2g-1 | Ebene 1 – Wesen: Bewegung und Erreichbarkeit (Spieler, Dorfbewohner, Baby): gehen, Stufen, Treppen, springen, fallen, Lücken, Türen, Leitern, Wasser, Prüfer „begehbar“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
+| 2g-2 | Ebene 1 – Wesen: Dorfbewohner-Verhalten (Berufsblock-Suche, Betten, Iron-Golem-Spawn) | als Nächstes |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -153,6 +155,12 @@ Zuletzt aktualisiert: 20.10.2026
 - Prüfer `pruefer.kolben` (Option `kolben`): Hinweis „Kolben kann nicht ausfahren: …“ oder „zerstört beim Ausfahren …“ mit Koordinate.
 - Regeln: `data/regeln/kolben.json` (8 Regeln, alle `ungeprüft` mit Testanleitung). **Annahmen mit Wirkung:** Behälter werden nicht geschoben (Bedrock nicht eindeutig), Türen/Schilder/Leitern/Banner gelten als zerstörbar (Java), alle anderen Blöcke als beweglich (Java-Standard). Nicht dabei: Schleim-/Honigblöcke kleben nicht an Nachbarn, Wesen auf dem Kolben, Null-Tick-Impulse, weiche Inversion, Staub dreht sich zum Kolben (Bedrock).
 
+## Was die Bewegung (Teil 2g-1) jetzt kann (`src/ebene1/bewegung.js`)
+- Ebene 0: neue Eigenschaft `kollision` je Block: `voll` (Vollblöcke und alle Blöcke ohne Angabe, Java-Standard), `keine` (Luft, Pflanzen, Fackeln, Staub, Schienen, Teppiche …), `halbstufe`, `treppe`, `hoch` (Zäune, Mauern: 1,5), `tor`, `tuer`, `falltuer`, `leiter`, `wasser`, `lava`; **unklar (null)** bei Teilformen wie Truhen, Betten, Ambosse, Trichter, Kessel, Kerzen, Laternen, Gitter, Glasscheiben, Kolben.
+- Modell auf einem Halbblock-Raster: Stehstelle mit tragender Fläche und freiem Platz für die Körperhöhe (Spieler und Dorfbewohner 2 Blöcke, Baby 1, kriechender Spieler 1). Schritte: **gehen** (≤ 0,5), **Stufe** (Treppe von der niedrigen Seite, Halbstufe), **springen** (1 Block, Platz über dem Start), **fallen** (Schaden ab 3 Blöcke: 1 Herzhälfte je Block; Dorfbewohner/Baby nur bis 3; Wasser fängt ab), **Lücke** (nur Spieler, 1 Block breit), **Leiter** (nur Spieler), **schwimmen**, **Türen** (Holz/Kupfer alle, Eisen keiner, Zauntor nur Spieler, Falltür trägt geschlossen). Lava und unklare Blöcke sperren und werden genannt.
+- `erreichbar(welt, start, art)` (alle Stehstellen mit Kosten), `weg(welt, von, nach, art)` (Weg, Kosten, Fallschaden, Grund bei Misserfolg: „zu hoch“, „Fallhöhe“, „Weg versperrt“, „Ziel nicht begehbar“), `fallschaden(h)`. Prüfer `pruefer.begehbar` (Option `begehbarkeit: { start, ziele }`): Verstoß für unerreichbare Ziele, Hinweis bei Wegen nur mit Sprung oder Sturz.
+- Regeln: `data/regeln/bewegung.json` (10 Regeln, alle `ungeprüft`). **Annahmen mit Wirkung:** Stufenhöhe 0,5, Fallschaden `ceil(h − 3)` (Java), Treppen ohne Richtungsprüfung (Stufen mit Höhenunterschied ≤ 0,5 von jeder Seite), Truhen und andere Teilformen werden nicht betreten. Nicht dabei: Geschwindigkeit/Zeit, Kriechen im Wasser, Honig/Seelensand/Eis, Kanten-Schleichen, Boote und Loren.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -172,7 +180,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Nächste Mechanik – Jonah entscheidet:** Wesen (Spieler und Dorfbewohner: Bewegung, Erreichbarkeit, Berufssuche, Betten, Golems) oder Schleim-/Honigblöcke und Druckplatten (brauchen Wesen). Danach Ebene 2 (Bausteine).
+**Schritt 2g-2: Dorfbewohner-Verhalten** (Berufsblock-Suche im Umkreis von 16 Blöcken, Betten, Iron-Golem-Spawn; baut auf der Erreichbarkeit auf). Danach Ebene 2 (Bausteine).
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

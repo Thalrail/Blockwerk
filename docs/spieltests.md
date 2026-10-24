@@ -200,6 +200,12 @@ Kreativwelt. Die Anordnung ist ein Blockwerk-Entwurf nach dem Wiki-Text; sie sti
 3. **Volle Geschwindigkeit:** dasselbe mit einer Trichterkette direkt vor dem Rohr. Kommt Stein am Rohrende an? (`lager.eingang`)
 4. **Enderperlen** (Stapel 16): Haltemenge 4 statt 18, gleiches Verhalten? (`lager.filter`)
 
+## Sortierlager: Tests (Ebene 2)
+Kreativwelt. Auch hier ist die Anordnung ein Blockwerk-Entwurf (Füller: vier nie vorkommende Gegenstände, zum Beispiel per Befehl):
+1. **Drossel:** Einwurfkiste mit vollen Stapeln, Trichter darunter und Komparator-/Repeater-Weg nach Plan. Mit Stoppuhr den Abstand zwischen zwei Gegenständen am Rohr messen: etwa 0,8 Sekunden (16 Ticks). Ohne den Sperrweg 0,4 Sekunden. (`lager.drossel`)
+2. **Dauerstrom:** Sortierlager mit 3 Sorten, in die Einwurfkiste gemischte volle Stapel legen (inklusive Fremdem). Liegt jede Sorte in ihrer Kiste, nichts Fremdes dort, der Rest in der Überlaufkiste, und behalten die Filtertrichter Haltemenge und Füller? (`lager.lager`)
+3. **Reihe:** Wird es bei mehr Sorten (zum Beispiel 10) nur länger, sonst gleich? (`lager.lager`)
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
@@ -262,6 +268,8 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `lager.filter` – Filtertrichter mit Haltemenge und Füllern | Einen Trichter mit 18 Stück der Sorte und vier verschiedenen, nie im Strom vorkommenden Füllern (je 1) bauen, einen Komparator dahinter: zeigt er Signal 1? Mit 19 Stück Signal 2? Bei einer 16er-Sorte (Enderperle) mit 4 und 5 Stück? |
 | `lager.sperre` – Ausgabetrichter gesperrt, solange der Filtertrichter nicht übervoll ist | Sortiereinheit mit zwei Sorten nach Plan bauen und aus einem Gemisch aus drei Sorten durchlaufen lassen (Eingangsabstand mindestens 9 Ticks): Liegt alles Gewünschte in der Lagerkiste, nichts Fremdes? Bleibt der Filtertrichter bei Haltemenge, bleiben die Füller drin, und bleibt der Ausgabetrichter sonst gesperrt? |
 | `lager.eingang` – Eingangsabstand mindestens 9 Ticks | Gemisch einmal mit voller Geschwindigkeit (Trichterkette direkt vor dem Rohr) und einmal gedrosselt (alle 10 Ticks) durchlaufen lassen: Kommt bei voller Geschwindigkeit etwas von der Sorte am Rohrende an? |
+| `lager.drossel` – Einwurf-Drossel („Handschlag“) | Einwurfkiste mit vollen Stapeln über dem Trichter bauen, Komparator und Repeater-Weg nach Plan: Mit der Stoppuhr den Abstand zwischen zwei Gegenständen am Rohrende messen. Erwartet: deutlich mehr als 9 Ticks (etwa 0,8 Sekunden). Ohne den Sperrweg: genau 8 Ticks (0,4 Sekunden). |
+| `lager.lager` – Sortierlager: Reihe von Einheiten mit Überlaufkiste | Sortierlager mit 3 Sorten bauen und aus einer vollen Kiste mit gemischten Stapeln laufen lassen: Liegt jede Sorte in ihrer Kiste, nichts Fremdes dort, der Rest in der Überlaufkiste? |
 | `licht.blocklicht` – Blocklicht nimmt um 1 je Block ab | Kreativ-Testwelt, dunkle Höhle oder Raum ohne Himmel: Eine Fackel (Stärke 14) in der Mitte eines großen Raums. Mit einem Lichtblock (/give @s light_block ["block_light_level"=…]) oder Beobachtung der Monsterspawns prüfen, wie weit das Licht reicht. Erwartung: 13 Blöcke Entfernung noch Licht 1, ab 14 Blöcken dunkel. |
 | `licht.himmelslicht` – Himmelslicht: senkrecht ungeschwächt, seitlich minus 1 | Tagsüber: ein 1×1-Schacht, 20 Blöcke tief, mit Dach daneben. Ganz unten im Schacht ist es hell (Himmelslicht 15). Zeigt der waagerechte Gang vom Schachtboden aus, nach wie vielen Blöcken er dunkel wird (erwartet 15)? Mit Spawn-Beobachtung oder Lichtblock-Vergleich. |
 | `licht.filter` – Lichtfilter von Laub, Wasser und Halbstufen | Fackel hinter einer 1-Block-Wand aus Laub, dann aus Wasser (Eimer in einem 1-Block-Loch): Wie viel dunkler ist es dahinter als durch Luft (eine Stufe weniger = Wiki-Filterwert, zwei Stufen weniger = „plus 1“)? Mit Lichtblöcken vergleichen und die Differenz melden. |

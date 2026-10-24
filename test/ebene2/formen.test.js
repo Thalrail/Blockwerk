@@ -10,7 +10,7 @@ const e0 = e2.ebene0;
 const TOLERANZ = e1.regelwerk.parameter('formen.rundung', 'toleranz');
 
 test('Bausteine: Paketform', () => {
-  assert.equal(e2.bausteine.size, 20);
+  assert.equal(e2.bausteine.size, 21);
   for (const b of e2.bausteine.values()) {
     const p = b.erzeuge();
     pruefePaket(p);

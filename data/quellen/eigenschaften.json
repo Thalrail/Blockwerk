@@ -161,11 +161,11 @@
       "grund": "Luft"
     },
     {
-      "muster": "(^minecraft:(torch|redstone_torch|unlit_redstone_torch|soul_torch|copper_torch|colored_torch_[a-z]+)$|_carpet$|_rail$|^minecraft:rail$|^minecraft:redstone_wire$|_sapling$|^minecraft:(yellow_flower|red_flower|tallgrass|double_plant|deadbush|snow_layer|web|end_rod|flower_pot|wheat|carrots|potatoes|beetroot|brown_mushroom|red_mushroom)$|_head$|_skull$)",
+      "muster": "(^minecraft:(torch|redstone_torch|unlit_redstone_torch|soul_torch|copper_torch|colored_torch_[a-z]+)$|_carpet$|_rail$|^minecraft:rail$|^minecraft:redstone_wire$|_sapling$|^minecraft:(yellow_flower|red_flower|tallgrass|double_plant|deadbush|snow_layer|web|end_rod|flower_pot|wheat|carrots|potatoes|beetroot|brown_mushroom|red_mushroom|melon_stem|pumpkin_stem|torchflower_crop|pitcher_crop|sea_pickle|vine|cave_vines|cave_vines_body_with_berries|cave_vines_head_with_berries|weeping_vines|twisting_vines|bamboo_sapling|mangrove_propagule|leaf_litter|pink_petals|wildflowers|dandelion|golden_dandelion|poppy|blue_orchid|allium|azure_bluet|red_tulip|orange_tulip|white_tulip|pink_tulip|oxeye_daisy|cornflower|lily_of_the_valley|wither_rose|torchflower|sunflower|lilac|rose_bush|peony|pitcher_plant|short_grass|tall_grass|fern|large_fern|[a-z_]+_coral|[a-z_]+_coral_fan|[a-z_]+_coral_wall_fan)$|_head$|_skull$)",
       "setze": {
         "fluessigkeit": "wegspuelbar"
       },
-      "grund": "Wasser spült diese Blöcke weg (Wiki „Water“; Bedrock: auch Schienen)"
+      "grund": "Wasser spült diese Blöcke weg (Wiki „Water“; Bedrock: auch Schienen; Fackeln, Redstone-Staub, Samen, Seegurken, Ranken, Setzlinge, Bodendecker, Korallen, Blumen von Jonah am 24.10.2026 getestet)"
     },
     {
       "muster": "^minecraft:(water|flowing_water)$",

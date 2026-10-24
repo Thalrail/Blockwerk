@@ -392,5 +392,10 @@
   ],
   "spawnBodenUnklar": [
     "minecraft:soul_sand"
-  ]
+  ],
+  "stapelgroesse": {
+    "hinweis": "Stapelgröße je Gegenstand: 64 ist der Standard. 16 und 1 über Muster (Wiki „Item“, Abschnitt Stackable; Java und Bedrock laut Wiki gleich, nicht im Spiel geprüft). Ein Fehler wird gezielt hier korrigiert.",
+    "eins": "_sword$|_pickaxe$|_axe$|_shovel$|_hoe$|_helmet$|_chestplate$|_leggings$|_boots$|_horse_armor$|_wolf_armor$|_nautilus_armor$|_boat$|_chest_boat$|_raft$|_chest_raft$|minecart$|^minecraft:music_disc_|^minecraft:disc_fragment_5$|_bucket$|^minecraft:(bow|crossbow|shield|fishing_rod|carrot_on_a_stick|warped_fungus_on_a_stick|flint_and_steel|shears|brush|spyglass|elytra|turtle_helmet|trident|mace|saddle|harness|totem_of_undying|enchanted_book|writable_book|bundle|goat_horn|suspicious_stew|mushroom_stew|rabbit_stew|beetroot_soup|bed|cake|potion|splash_potion|lingering_potion|boat|banner_pattern|[a-z_]+_banner_pattern|[a-z_]+_shulker_box|shulker_box|undyed_shulker_box)$|_banner_pattern$|_shulker_box$|^minecraft:[a-z_]*bed$",
+    "sechzehn": "^minecraft:(ender_pearl|egg|blue_egg|brown_egg|snowball|honey_bottle|written_book|armor_stand|bucket|banner)$|_sign$|_hanging_sign$"
+  }
 }

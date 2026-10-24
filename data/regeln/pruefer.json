@@ -142,6 +142,17 @@
       "simulationstest": "test/ebene1/fallen.test.js::Prüfer: Block fällt",
       "ungeprueft": true,
       "testanleitung": "Siehe fallen.landen-block und fallen.landen-gegenstand."
+    },
+    {
+      "id": "pruefer.trichter",
+      "titel": "Prüfer: Trichter ohne Ziel, im Kreis oder verstopft",
+      "regel": "Für jeden Trichter meldet der Prüfer: zeigt auf einen Block ohne Behälter oder auf einen Sonderbehälter (Hinweis), zeigt nach oben (Hinweis), liegt in einem Kreis aus Trichtern (Hinweis), oder hält nach der Simulation noch Gegenstände, weil das Ziel voll ist (Hinweis).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Hopper (folgt aus den Regeln trichter.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Prüfer: Trichter",
+      "ungeprueft": true,
+      "testanleitung": "Siehe trichter.ziel und trichter.behaelter."
     }
   ]
 }

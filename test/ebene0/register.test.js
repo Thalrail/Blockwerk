@@ -140,3 +140,24 @@ test('GegenstÃ¤nde enthalten Diamant und Trichter, keine Duplikate', () => {
   assert.ok(g.includes('minecraft:diamond') && g.includes('minecraft:hopper'));
   assert.equal(new Set(g).size, g.length);
 });
+
+test('Gegenstände: Stapelgrößen sind 64, 16 oder 1 und gehören zu bekannten Gegenständen', () => {
+  const { register } = ebene0();
+  assert.equal(register.stapel('minecraft:stone'), 64);
+  assert.equal(register.stapel('minecraft:ender_pearl'), 16);
+  assert.equal(register.stapel('minecraft:snowball'), 16);
+  assert.equal(register.stapel('minecraft:oak_sign'), 16);
+  assert.equal(register.stapel('minecraft:iron_sword'), 1);
+  assert.equal(register.stapel('minecraft:diamond_chestplate'), 1);
+  assert.equal(register.stapel('minecraft:water_bucket'), 1);
+  assert.equal(register.stapel('minecraft:potion'), 1);
+  assert.equal(register.stapel('minecraft:bucket'), 16);
+  const bekannt = new Set(register.gegenstaende);
+  let abweichend = 0;
+  for (const id of bekannt) {
+    const n = register.stapel(id);
+    assert.ok([1, 16, 64].includes(n), id);
+    if (n !== 64) abweichend += 1;
+  }
+  assert.ok(abweichend > 100, 'viele Gegenstände stapeln nicht zu 64');
+});

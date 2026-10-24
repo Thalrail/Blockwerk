@@ -83,12 +83,23 @@ async function bloecke(eig) {
   };
 }
 
-async function gegenstaende() {
+async function gegenstaende(eig) {
   const roh = JSON.parse(await hole('metadata/vanilladata_modules/mojang-items.json'));
+  const namen = roh.data_items.map((i) => i.name).sort();
+  // Stapelgrößen abweichend von 64 (Muster in data/quellen/eigenschaften.json)
+  const sg = eig.stapelgroesse;
+  const eins = new RegExp(sg.eins), sechzehn = new RegExp(sg.sechzehn);
+  const stapel = {};
+  for (const n of namen) {
+    if (eins.test(n)) stapel[n] = 1;
+    else if (sechzehn.test(n)) stapel[n] = 16;
+  }
   return {
     datenstand: DATENSTAND,
     quelle: 'https://github.com/Mojang/bedrock-samples (metadata/vanilladata_modules/mojang-items.json)',
-    gegenstaende: roh.data_items.map((i) => i.name).sort(),
+    stapelQuelle: sg.hinweis,
+    gegenstaende: namen,
+    stapel,
   };
 }
 
@@ -144,7 +155,7 @@ function schreibe(datei, objekt, zeilenweiseKey) {
 const eig = JSON.parse(await readFile(join(wurzel, 'data', 'quellen', 'eigenschaften.json'), 'utf8'));
 const b = await bloecke(eig);
 await schreibe('bloecke.json', b, 'bloecke');
-const g = await gegenstaende();
+const g = await gegenstaende(eig);
 await writeFile(join(wurzel, 'data', 'gegenstaende.json'), JSON.stringify(g, null, 1) + '\n');
 const w = await wesen();
 await schreibe('wesen.json', w, 'wesen');

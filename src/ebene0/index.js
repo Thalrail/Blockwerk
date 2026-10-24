@@ -2,7 +2,7 @@
 // Eine Kopie von Minecraft Bedrock ohne Simulation und ohne Weltgenerator.
 import { Blockregister } from './blockregister.js';
 import { Wesenregister } from './wesenregister.js';
-import { Welt } from './welt.js';
+import { Welt, MAX_STAPEL } from './welt.js';
 import { erzeugeVermesser } from './vermesser.js';
 import { weltAusJson, weltAusObjekt, weltZuJson, weltZuObjekt } from './speichern.js';
 
@@ -20,7 +20,10 @@ export { weltAusJson, weltAusObjekt, weltZuJson, weltZuObjekt } from './speicher
 export function erzeugeEbene0(daten) {
   const bloecke = new Blockregister(daten.bloecke);
   const wesen = new Wesenregister(daten.wesen);
-  const register = { bloecke, wesen, gegenstaende: daten.gegenstaende.gegenstaende };
+  const stapelAbweichend = daten.gegenstaende.stapel ?? {};
+  /** Stapelgröße eines Gegenstands: 64, 16 oder 1 (Muster in data/quellen/eigenschaften.json, ungeprüft). */
+  const stapel = (id) => stapelAbweichend[id] ?? MAX_STAPEL;
+  const register = { bloecke, wesen, gegenstaende: daten.gegenstaende.gegenstaende, stapel };
   const vermesser = erzeugeVermesser({ regeln: daten.drehregeln, register: bloecke });
   return {
     register,

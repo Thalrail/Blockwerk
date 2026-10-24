@@ -1,0 +1,126 @@
+{
+  "bereich": "trichter",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "trichter.cooldown",
+      "titel": "Wartezeit nach einem Vorgang",
+      "regel": "Ein Trichter wartet nach jedem Schieben oder Ziehen 8 Spielticks (2,5 Gegenstände je Sekunde). Ein Trichter ohne Arbeit prüft jeden Tick erneut. Die Simulation endet, wenn 16 Ticks lang nichts mehr bewegt wurde.",
+      "parameter": {
+        "ticks": 8,
+        "ruheTicks": 16
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper („waits 8 game ticks after each push or pull“; Bedrock-Tabelle: 8 Ticks auch nach dem Schieben in einen leeren Trichter)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Tempo und Reihenfolge",
+      "ungeprueft": true,
+      "testanleitung": "Kiste mit 64 Gegenständen, darunter ein Trichter, der in eine zweite Kiste zeigt. Mit Video (60 fps) die Zeit für 64 Gegenstände messen: Blockwerk erwartet etwa 8 Ticks je Gegenstand (rund 25,6 s). Ergebnis melden."
+    },
+    {
+      "id": "trichter.reihenfolge",
+      "titel": "Erst schieben, dann ziehen",
+      "regel": "Je Trichter und Vorgang wird zuerst geschoben, dann gezogen; nach einem von beiden gilt die Wartezeit. Die Reihenfolge mehrerer Trichter im selben Tick folgt den Koordinaten (y, z, x) und ist in Bedrock nicht dokumentiert.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Hopper („Within a tick, pushes are processed before pulls“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Tempo und Reihenfolge",
+      "ungeprueft": true,
+      "testanleitung": "Zwei Trichter nebeneinander, die einander füttern (Kette A → B), mit Gegenständen füllen und beobachten, ob die Gegenstände ohne Stau weiterlaufen. Außerdem: Zwei Trichter in einer senkrechten Säule zwischen zwei Kisten: Wie viele Gegenstände je Sekunde laufen durch?"
+    },
+    {
+      "id": "trichter.slots",
+      "titel": "Slots und ein Gegenstand je Vorgang",
+      "regel": "Ein Trichter hat 5 Slots und bewegt einen Gegenstand je Vorgang. Gelegt wird in den am weitesten links liegenden Slot mit gleichem Gegenstand und Platz, sonst in den ersten leeren Slot. Genommen wird aus dem ersten gefüllten Slot, dessen Gegenstand ins Ziel passt.",
+      "parameter": {
+        "proVorgang": 1,
+        "trichterSlots": 5
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper („uses the leftmost available slot“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Slots und Stapelgrenzen",
+      "ungeprueft": true,
+      "testanleitung": "Kiste mit Gegenständen in verschiedenen Slots (z. B. Slot 3 Kohle, Slot 5 Eisen), Trichter darunter: In welcher Reihenfolge landen sie in der Zielkiste und in welchem Slot?"
+    },
+    {
+      "id": "trichter.ziel",
+      "titel": "Trichter schiebt in Blickrichtung und zieht von oben",
+      "regel": "Ein Trichter schiebt in den Behälter, zu dem er zeigt (facing_direction: unten, Nord, Ost, Süd, West), und zieht aus einem Behälter direkt über sich. Zeigt er auf einen Block ohne Behälter, bewegt er nichts.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Hopper („Items are pushed only in the direction the hopper faces“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Ziel und Richtungen",
+      "ungeprueft": true,
+      "testanleitung": "Je einen Trichter in jede der fünf Richtungen (unten, N, O, S, W) neben eine Kiste setzen und Gegenstände einfüllen: Wohin schiebt er jeweils?"
+    },
+    {
+      "id": "trichter.sperre",
+      "titel": "Bestromter Trichter sperrt",
+      "regel": "Ein bestromter Trichter (Zustand toggle_bit) schiebt und zieht nicht, kann aber weiter Gegenstände empfangen. Die Bedrock-Sperre wirkt nur im C-Tick; Blockwerk liest den Zustand zu jedem Tick (Vereinfachung).",
+      "parameter": {
+        "zustand": "toggle_bit"
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper („A powered hopper stops pushing, pulling, and collecting. It can still receive items“; Bedrock: Redstone-Sperre nur im C-Tick)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Redstone-Sperre",
+      "ungeprueft": true,
+      "testanleitung": "Trichter mit Redstone-Block daneben (bestromt) zwischen zwei Kisten: Bleibt er stehen? Empfängt er trotzdem von einem Trichter darüber? Redstone-Block wegnehmen: Läuft er sofort weiter oder mit Verzögerung?"
+    },
+    {
+      "id": "trichter.behaelter",
+      "titel": "Welche Behälter bewegt werden",
+      "regel": "Kiste, Redstone-Kiste, Fass, Werfer, Spender, Trichter, Shulkerkisten (nicht in Shulkerkisten) und Kupferkisten werden bewegt. Eine Doppelkiste zählt wie zwei einzelne Kisten (Annahme, Verbund nicht gerechnet).",
+      "parameter": {
+        "muster": [
+          "^minecraft:(chest|trapped_chest|barrel|dropper|dispenser|hopper)$",
+          "_shulker_box$",
+          "^minecraft:undyed_shulker_box$",
+          "_copper_chest$",
+          "^minecraft:copper_chest$"
+        ],
+        "trichter": "minecraft:hopper",
+        "nichtInSich": "_shulker_box$|^minecraft:undyed_shulker_box$"
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper (Containerliste, Shulker „can't place shulker boxes into other shulker boxes“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Behälter und Sonderbehälter",
+      "ungeprueft": true,
+      "testanleitung": "Trichter in eine Doppelkiste: Wird zuerst die linke oder die rechte Kiste gefüllt (Reihenfolge der Slots)? Trichter in eine Shulkerkiste mit einer Shulkerkiste im Trichter: Wird sie abgelehnt?"
+    },
+    {
+      "id": "trichter.komparator",
+      "titel": "Komparator-Wert eines Behälters",
+      "regel": "Ein Komparator an einem Behälter liest floor(1 + (Σ Füllgrad ÷ Slotzahl) × 14); leer = 0, voll = 15. Füllgrad eines Slots = Anzahl ÷ Stapelgröße (64, 16 oder 1).",
+      "parameter": {
+        "basis": 1,
+        "faktor": 14
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Comparator (Formel für Behälter, Edition nicht unterschieden)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Komparator-Wert",
+      "ungeprueft": true,
+      "testanleitung": "Kiste (27 Slots) mit 1, 64, 128, 1728 Steinen und mit 16 Enderperlen / 1 Schwert je Slot füllen und den Komparator-Wert (Redstone-Lampe-Stärke oder Signalstärke) ablesen. Dasselbe mit Trichter (5 Slots), Fass, Werfer (9 Slots)."
+    },
+    {
+      "id": "trichter.stapel",
+      "titel": "Stapelgrößen",
+      "regel": "Die Stapelgröße eines Gegenstands (64, 16 oder 1) kommt aus Ebene 0 (Muster in data/quellen/eigenschaften.json). Ein Slot nimmt nie mehr auf.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Item (Stackable)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Slots und Stapelgrenzen",
+      "ungeprueft": true,
+      "testanleitung": "Je 20 Enderperlen, Eier, Schilder, Tränke, Schwerter einzeln in eine Kiste legen: Wie viele passen in einen Slot? Besonders prüfen: Betten, Kuchen, Wasserbecher (Eimer), Bücher, Boote."
+    },
+    {
+      "id": "trichter.unklar",
+      "titel": "Sonderbehälter",
+      "regel": "Öfen, Braustand, Komposter, Plattenspieler, Pult, Mehrfachregal, Dekotopf und Handwerker haben eigene Regeln (z. B. Ofen von oben/Seite/unten). Blockwerk bewegt dort nichts und meldet „unklar“.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Hopper (Abschnitt Containers)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Behälter und Sonderbehälter",
+      "ungeprueft": true,
+      "testanleitung": "Trichter über, neben und unter einem Ofen mit Kohle und Eisenerz: Was wandert wohin? Ergebnis je Seite melden. Das schließt die Lücke für den Ofen."
+    }
+  ]
+}

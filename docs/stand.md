@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gebaut: Branch `claude/ebene-1-fallen`. 210 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gebaut: Branch `claude/ebene-1-trichter`. 219 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -20,8 +20,9 @@ Zuletzt aktualisiert: 20.10.2026
 | 2d-1 | Ebene 1 – Licht: Blocklicht und Himmelslicht mit Minimum/Maximum bei unbekannten Filtern | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #7) |
 | 2d-2 | Ebene 1 – Spawnstellen: wo können Monster spawnen (Licht, Boden, Platz), Prüfer „Spawn möglich“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #8) |
 | 2e-1 | Ebene 1 – Lorenbewegung aus Messtabellen (keine Physik): Auslauf, Abstand der Antriebsschienen, Steighöhe, Fahrzeit, Prüfer „Lore bleibt stehen“ | **fertig**: Messwerte `geprüft` (Jonah, 24.10.2026), Lücken `ungeprüft`; gemergt, PR #10 |
-| 2e-2 | Ebene 1 – Fallende Blöcke: Sand, Kies, Betonpulver, Amboss, Drachenei fallen, landen, werden zu Gegenständen oder Beton; Prüfer „Block fällt“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; PR wartet auf Abnahme) |
-| 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Trichter & Blockinhalte, Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
+| 2e-2 | Ebene 1 – Fallende Blöcke: Sand, Kies, Betonpulver, Amboss, Drachenei fallen, landen, werden zu Gegenständen oder Beton; Prüfer „Block fällt“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #13) |
+| 2e-3 | Ebene 1 – Trichter & Blockinhalte: Cooldown 8 Ticks, Schieben/Ziehen, Redstone-Sperre, Stapelgrößen (Ebene 0), Komparator-Lesewert, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; PR wartet auf Abnahme) |
+| 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -108,6 +109,14 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/fallen.json` (9 Regeln, alle `ungeprüft` mit Testanleitung; Startverzögerung und Wasserverhalten sind Java-Platzhalter). Ebene 0: Amboss-Stufen sind jetzt `faellt`.
 - Nicht dabei: Entitäten (Amboss-Schaden, Spieler getroffen), Gerüst, Tropfstein, Schnee, Kolben/Honig/Schleim, Spinnweben-Bremse, Blasensäule, Despawn nach 600 Ticks.
 
+## Was Trichter & Blockinhalte (Teil 2e-3) jetzt können (`src/ebene1/trichter.js`)
+- Ebene 0: neue Stapelgröße je Gegenstand (`register.stapel(id)`: 64, 16 oder 1, Muster in `data/quellen/eigenschaften.json`, Wiki „Item“, `ungeprüft`); `welt.setzeInhalt` lehnt zu große Stapel ab.
+- Taktgeber-Mechanik: Jeder Trichter wartet nach einem Vorgang 8 Spielticks; bereit und nicht bestromt (`toggle_bit`) **schiebt** er erst einen Gegenstand in den Behälter, zu dem er zeigt (`facing_direction`), und **zieht** dann einen aus dem Behälter über sich. Gelegt wird links zuerst (gleicher Gegenstand mit Platz, sonst erster leerer Slot), genommen aus dem ersten passenden Slot. Behälter: Kiste, Redstone-Kiste, Fass, Werfer, Spender, Trichter, Shulkerkisten (nicht ineinander), Kupferkisten. Sonderbehälter (Ofen, Braustand, Komposter, Plattenspieler, Pult …) werden nicht bewegt, sondern als „unklar“ gemeldet.
+- `simuliere(welt)` läuft in einer Kopie, bis 16 Ticks lang nichts mehr bewegt wurde. `lesewert(welt, pos)`: Komparator-Signalstärke `floor(1 + (Σ Anzahl ÷ Stapelgröße ÷ Slotzahl) × 14)` (leer 0, voll 15; Wiki-Beispiel 300 Blöcke in 9 Slots = 8 ist ein Test).
+- Prüfer `pruefer.trichter` (Option `trichter`): Hinweis bei Ziel ohne Behälter, Sonderbehälter, Blick nach oben, Kreis aus Trichtern und Stau (Trichter hält am Ende Gegenstände).
+- Regeln: `data/regeln/trichter.json` (9 Regeln, alle `ungeprüft` mit Testanleitung). Nicht dabei: Gegenstands-Entitäten über dem Trichter, Trichter-Loren, Ofen/Braustand/Komposter, Doppelkisten-Verbund, Sortierer (Baustein in Ebene 2).
+- Bekanntes Limit: die Reihenfolge mehrerer Trichter im selben Tick folgt den Koordinaten (y, z, x), in Bedrock ist sie nicht dokumentiert. Die Redstone-Sperre wirkt in Bedrock nur im C-Tick; Blockwerk liest `toggle_bit` zu jedem Tick.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -127,7 +136,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2e: nächste Mechanik – Jonah entscheidet:** Trichter & Blockinhalte oder Redstone (Signalstärke, Fackeln, Hebel; damit auch Detektor-/Aktivierungsschiene). Lorenbewegung erst nach Jonahs Messungen (`docs/messungen-lore.md`).
+**Schritt 2e: nächste Mechanik – Jonah entscheidet:** Redstone (Signalstärke, Fackeln, Hebel; damit auch Detektor-/Aktivierungsschiene). Lorenbewegung erst nach Jonahs Messungen (`docs/messungen-lore.md`).
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

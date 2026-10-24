@@ -15,8 +15,8 @@ export class Welt {
   /**
    * @param {{bloecke: import('./blockregister.js').Blockregister, wesen: import('./wesenregister.js').Wesenregister, gegenstaende: Iterable<string>}} register
    */
-  constructor({ bloecke, wesen, gegenstaende }) {
-    this.register = { bloecke, wesen, gegenstaende: new Set(gegenstaende) };
+  constructor({ bloecke, wesen, gegenstaende, stapel = () => MAX_STAPEL }) {
+    this.register = { bloecke, wesen, gegenstaende: new Set(gegenstaende), stapel };
     /** @type {Map<string, Map<number, {id:string, zustand:object, inhalt?:object[]}>>} */
     this._chunks = new Map();
     /** @type {Map<number, object>} */
@@ -95,7 +95,7 @@ export class Welt {
       if (benutzt.has(s.slot)) throw new Error(`${id}: Slot ${s.slot} doppelt belegt`);
       benutzt.add(s.slot);
       if (!this.register.gegenstaende.has(s.gegenstand)) throw new Error(`Unbekannter Gegenstand: ${String(s.gegenstand)}`);
-      if (!Number.isInteger(s.anzahl) || s.anzahl < 1 || s.anzahl > MAX_STAPEL) throw new Error(`${s.gegenstand}: Anzahl muss 1…${MAX_STAPEL} sein`);
+      if (!Number.isInteger(s.anzahl) || s.anzahl < 1 || s.anzahl > this.register.stapel(s.gegenstand)) throw new Error(`${s.gegenstand}: Anzahl muss 1…${this.register.stapel(s.gegenstand)} sein`);
     }
     return kopieInhalt([...inhalt].sort((a, b) => a.slot - b.slot));
   }

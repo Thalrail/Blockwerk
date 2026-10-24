@@ -135,6 +135,39 @@ function pruefeFallen(welt, fallen) {
   return meldungen;
 }
 
+/** Trichter ohne Ziel, im Kreis oder verstopft (nach der Simulation). */
+function pruefeTrichter(welt, trichter) {
+  if (!trichter.enthaeltTrichter(welt)) return [];
+  const liste = trichter.trichterListe(welt);
+  const meldungen = [];
+  const ort = (p) => `(${p.x}, ${p.y}, ${p.z})`;
+  const nachKey = new Map(liste.map((t) => [`${t.pos.x},${t.pos.y},${t.pos.z}`, t]));
+  for (const t of liste) {
+    if (t.art === 'ohne-richtung') meldungen.push({ regel: 'pruefer.trichter', ort: t.pos, schwere: 'hinweis', meldung: 'Der Trichter zeigt nach oben oder hat keine gültige Richtung und schiebt nichts' });
+    else if (t.art === 'kein-behaelter') meldungen.push({ regel: 'pruefer.trichter', ort: t.pos, schwere: 'hinweis', meldung: `Der Trichter zeigt auf ${t.zielId} bei ${ort(t.ziel)}: kein Behälter, es wird nichts geschoben` });
+    else if (t.art === 'sonder') meldungen.push({ regel: 'pruefer.trichter', ort: t.pos, schwere: 'hinweis', meldung: `Der Trichter zeigt auf ${t.zielId} bei ${ort(t.ziel)}: Sonderbehälter, Blockwerk kennt die Regeln dafür noch nicht (unklar)` });
+    // Kreis: dem Ziel folgen, solange es wieder ein Trichter ist; kommt man zum Ausgangstrichter zurück, ist es ein Kreis
+    const start = `${t.pos.x},${t.pos.y},${t.pos.z}`;
+    const gesehen = new Set();
+    let aktuell = t;
+    while (aktuell && aktuell.art === 'ok') {
+      const nk = `${aktuell.ziel.x},${aktuell.ziel.y},${aktuell.ziel.z}`;
+      if (nk === start) { meldungen.push({ regel: 'pruefer.trichter', ort: t.pos, schwere: 'hinweis', meldung: 'Dieser Trichter liegt in einem Kreis aus Trichtern, Gegenstände laufen im Kreis' }); break; }
+      if (gesehen.has(nk)) break;
+      gesehen.add(nk);
+      aktuell = nachKey.get(nk) ?? null;
+    }
+  }
+  const lauf = trichter.simuliere(welt);
+  for (const t of liste) {
+    const b = lauf.welt.leseBlock(t.pos.x, t.pos.y, t.pos.z);
+    if (t.art === 'ok' && (b.inhalt ?? []).length > 0 && lauf.stabil && b.zustand.toggle_bit !== true) {
+      meldungen.push({ regel: 'pruefer.trichter', ort: t.pos, schwere: 'hinweis', meldung: 'Der Trichter hält am Ende noch Gegenstände (Ziel voll oder nimmt sie nicht an); er staut' });
+    }
+  }
+  return meldungen;
+}
+
 /** Stellen im Bereich, an denen Monster spawnen können (Verstoß) oder vielleicht können (Hinweis). */
 function pruefeSpawn(welt, spawn, spawnBereich, himmel) {
   return spawn.spawnstellen(welt, spawnBereich, { himmel }).map((s) => ({
@@ -216,7 +249,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -225,6 +258,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
   if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));
   if (fallen) meldungen.push(...pruefeFallen(welt, fallen));
+  if (trichter) meldungen.push(...pruefeTrichter(welt, trichter));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);

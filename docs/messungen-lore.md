@@ -35,3 +35,13 @@ Das ist kein Muss und eilt nicht. Je mehr du misst, desto genauer wird das Model
 
 ## Messung F (optional): Mit Dorfbewohner
 Gleicher Aufbau wie Messung D, aber ein Dorfbewohner sitzt in der Lore: Ändert sich die Zeit?
+
+## Ergebnisse (Jonah, 24.10.2026) – ausgewertet
+Alle Messungen mit leerer Lore, Start aus dem Stand. Eingetragen als geprüfte Regeln in `data/regeln/lore.json`.
+- **Messung 1 (Auslauf nach n Antriebsschienen am Stück, Strecke nach der letzten Antriebsschiene):** 1→7,5 · 2→11 · 3→14 · 4→14,75 · 5→16,25 · 6→17 · 7→18 · 8→18,25 · 9→19,25 · 10→19,5 · 11→20 · 12→20,25 · 13→21 · 14→21,25 · 15→21,25 · 16→21,5 · 17→21,75 · 18→21,9 · 19→22 · 27→23 · 37→23 Blöcke.
+- **Messung 2 (Abstand auf ebener Strecke):** jede 2., 4., 6., 8. Schiene eine Antriebsschiene: kommt durch; jede 10.: nicht. (Jede 9. nicht gemessen.)
+- **Messung 3 (Rampe bis 5 Blöcke hoch):** Abstand 2 geht immer; 3 bis 6 nur, wenn die erste steigende Schiene eine Antriebsschiene ist; 7 geht nicht.
+- **Messung 3.1 (Steighöhe nach n Antriebsschienen):** 1→2,5 · 2→4 · 3→5 · 4→5,5 · 5→6 · 6→6,5 · 7→7 · 8→etwas über 7 Blöcke.
+- **Messung 4:** 20 bestromte Antriebsschienen in 3,2 s.
+- **Messung 5:** Ring 9×9 (32 Schienen plus Start) in 5,01 s, kein Verlust in Kurven; mit Dorfbewohner 4,93 s, ebenfalls kein Verlust.
+- **Noch offen** (Tests in `docs/spieltests.md`): Abstand 9 auf ebener Strecke, Rampen über 5 Blöcke, Rampe mitten in einer Antriebsstrecke.

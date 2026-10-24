@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gebaut: Branch `claude/ebene-1-wesen-dorf`. 259 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gebaut: Branch `claude/ebene-2-formen`. 265 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -28,8 +28,11 @@ Zuletzt aktualisiert: 20.10.2026
 | 2f-4 | Ebene 1 – Kolben (Schieben bis 12 Blöcke, klebriger Kolben, unbewegliche und zerstörbare Blöcke, Zeit 2 + 2 Ticks im C-Tick), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #18) |
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 2g-1 | Ebene 1 – Wesen: Bewegung und Erreichbarkeit (Spieler, Dorfbewohner, Baby): gehen, Stufen, Treppen, springen, fallen, Lücken, Türen, Leitern, Wasser, Prüfer „begehbar“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #19) |
-| 2g-2 | Ebene 1 – Wesen: Dorfbewohner-Verhalten (Betten, Berufsblock-Suche, Dorf, Iron-Golem-Bedingung), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
-| 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
+| 2g-2 | Ebene 1 – Wesen: Dorfbewohner-Verhalten (Betten, Berufsblock-Suche, Dorf, Iron-Golem-Bedingung), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #20) |
+| 3a | Ebene 2 – Baustein-Paket und Formen: Scheibe/Ring, Zylinder, Kugel, Kuppel, Kegel (maßstabsfrei, Tests für alle Größen bis 257) | **fertig, Status `simuliert`** (PR wartet auf Abnahme) |
+| 3b | Ebene 2 – Gewölbe, Bogen, Dachformen | als Nächstes |
+| 3c | Ebene 2 – Bauelemente: Treppe, Wendeltreppe, Tür, Gang, Fenster, Säule | offen |
+| 3d | Ebene 2 – erste Technikmodule (Nische, Bahnhof, Kurve, Steigungsstück …) mit Testszenario in Ebene 1 | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
 | 6 | Ebene 5 – Oberfläche: Desktop, Kompakt-/Vollmodus, 3D-Ansicht, Schichtpläne, Materialliste, Baubericht, Faithful-Texturen | offen |
@@ -169,6 +172,12 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/dorf.json` (7 Regeln, alle `ungeprüft`). **Annahmen mit Wirkung:** Berufsvergabe nur mit Bett, nächstes Bett zuerst, Liste nach (y, z, x) (Bedrock nennt keine Reihenfolge), Babys zählen als Dorfbewohner, Berufsblock gilt als erreicht, wenn man daneben oder darauf steht.
 - Nicht dabei: Handel, Tagesablauf (Arbeit, Treffen, Schlafen), Alarm/Panik, Zombie-Dörfer, Berufswechsel, Spawnort und Zeitabstand des Golems, Zahl der Golems je Dorfbewohner (nur „unklar“), Dorfgrenze als Würfel statt Zusammenhang der Betten.
 
+## Was Ebene 2, Teil 3a, jetzt kann (`src/ebene2`)
+- `baustein.js`: das **Baustein-Paket** (`definiere`, `param`, `pruefePaket`): Parameter mit Größenart (`geometrie`, `menschenmass`, `technik`) und Bereich, Blöcke als **Rollen** (`wand`, `akzent`, `boden`, `licht`; keine Block-IDs), Anschlüsse, Platzbedarf (Hüllquader + Sperrzonen), Testszenario, Status mit Quelle. `platziere(welt, paket, palette, versatz)` schreibt nur über `welt.setzeBlock` (Ebene 0); `TESTPALETTE` ist nur für Tests und Vorschau, das Material entscheidet später Ebene 3.
+- `formen.js`: fünf Formen als Abstandsbedingung auf der Blockmitte, erst beim Bauen gerastert: `form.scheibe` (Kreis/Ellipse/Ring), `form.zylinder` (Turmrohr, oben und unten offen), `form.kugel` (Ellipsoid), `form.kuppel` (Höhe = 0,5 × Radius als einstellbare Proportion, unten offen), `form.kegel`. Ungerade Breite: Mitte auf einem Block, gerade: zwischen zwei Blöcken. Hohle Formen sind wasserdicht (Wandstärke 1…32, 6er-Nachbarschaft).
+- Regeln: `data/regeln/formen.json` (3 Regeln, `simuliert`, nichts `ungeprüft`, da reine Geometrie nach `docs/ebenen.md` und keine Bedrock-Annahme). Tests für alle Größen von 1 bis 257 (Kugel bis 256): symmetrisch (Spiegelung, Drehung), Rand höchstens ½ Block vom Ideal, hohle Formen lückenlos, Proportionen gleich für r = 12, 20, 100; Mutationen von Rundung, Mittelpunkt und Proportion schlagen an.
+- Nicht dabei: Gewölbe, Bogen, Dachformen (3b), Bauelemente (3c), Technikmodule (3d), Spiegeln/Drehen von Anschlüssen (die Blöcke dreht der Vermesser).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -188,7 +197,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Ebene 1 ist damit inhaltlich vollständig.** Nächster Schritt: **Ebene 2 – Bausteine** (maßstabsfreie Formen mit Rundheits-/Symmetrietests r = 1–128, Bauelemente, erste Technikmodule mit Testszenario). Jonah entscheidet, womit Ebene 2 beginnt.
+**Ebene 2, Teil 3b: Gewölbe, Bogen, Dachformen** (auf den Formen aufbauend, Bogenstich 0,3 × Spannweite). Danach 3c Bauelemente, 3d Technikmodule.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

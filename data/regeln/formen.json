@@ -1,0 +1,36 @@
+{
+  "bereich": "formen",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "formen.rundung",
+      "titel": "Rundung zum nächsten ganzen Block, Mittelpunkt auf Block oder Blockkante",
+      "regel": "Ein Block gehört zur Form, wenn sein Mittelpunkt im Idealkörper liegt. Der Formmittelpunkt liegt bei ungerader Breite auf einem Block und bei gerader zwischen zwei Blöcken, damit keine Seite schief wird. Die Rundung ist symmetrisch; der Rand weicht höchstens einen halben Block vom Ideal ab. Dieselbe Formel gilt für jede Größe.",
+      "parameter": { "aufschlag": 0, "versatz": 0, "toleranz": 0.5 },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Grundregel Maßstabsfreiheit)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/formen.test.js::Formen: Scheibe und Ellipse für alle Größen",
+      "ungeprueft": false
+    },
+    {
+      "id": "formen.proportion",
+      "titel": "Proportionen statt fester Maße",
+      "regel": "Die Kuppelhöhe ist 0,5 × Radius (Standard, einstellbar), nicht ein festes Maß; Höhe und Radius wachsen gemeinsam.",
+      "parameter": { "kuppelhoehe": 0.5 },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Proportionen statt fester Maße)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/formen.test.js::Formen: Kuppel und Proportionen",
+      "ungeprueft": false
+    },
+    {
+      "id": "formen.huelle",
+      "titel": "Hohle Formen sind wasserdicht",
+      "regel": "Eine hohle Form besteht aus allen Blöcken, die an einen Block außerhalb der Form grenzen (6er-Nachbarschaft), bei Wandstärke n aus n solchen Schichten. Von außen kommt weder Wasser noch ein Wesen durch die Hülle. Zylinder und Kuppel sind unten, der Zylinder auch oben offen.",
+      "parameter": { "mindestwandstaerke": 1 },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Formen, lückenlos)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/formen.test.js::Formen: Kugel, Zylinder, Kegel (Hülle und Symmetrie)",
+      "ungeprueft": false
+    }
+  ]
+}

@@ -160,6 +160,9 @@ Kreativ-Testwelt auf Stein; für Dorfbewohner ein Dorfbewohner-Ei oder Handel. A
 5. **Türen:** Holz-, Kupfer-, Eisentür, Falltür, Zauntor mit Dorfbewohner und Spieler. (`bewegung.tueren`)
 6. **Gang 1 Block hoch:** Baby, Spieler (kriechend). (`bewegung.hitbox`)
 
+## Formen: Sichttest (Ebene 2)
+Die Formen sind reine Mathematik und brauchen keinen Spieltest. Wenn du trotzdem schauen willst, ob eine Rundung im Spiel gut aussieht: Baue in der Kreativwelt einen Kreis mit 11 Blöcken Breite und einen mit 12 Blöcken (Mitte bei 11 auf einem Block, bei 12 zwischen zwei Blöcken) nach dem Schichtplan der Seite und prüfe, ob alle vier Seiten gleich aussehen. Dasselbe mit einer Kuppel von 20 Blöcken Breite (Höhe 5 Schichten).
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)

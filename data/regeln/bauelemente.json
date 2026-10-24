@@ -1,0 +1,79 @@
+{
+  "bereich": "bau",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "bau.stufe",
+      "titel": "Stufenhöhe 1 Block",
+      "regel": "Jede Stufe einer Treppe ist genau 1 Block hoch (Menschenmaß bleibt fest, auch bei hohen Treppen). Die Treppe aus Treppenblöcken wird ohne Sprung gegangen.",
+      "parameter": {
+        "hoehe": 1
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Menschenmaß, Treppenstufe 1)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bauelemente.test.js::Bauelemente: Treppe und Wendeltreppe mit Ebene 1",
+      "ungeprueft": false
+    },
+    {
+      "id": "bau.gang",
+      "titel": "Gang mindestens 2 Blöcke hoch",
+      "regel": "Ein Gang ist innen mindestens 2 Blöcke hoch und 1 Block breit; Boden, Wände und Decke haben eine einstellbare Dicke.",
+      "parameter": {
+        "mindesthoehe": 2,
+        "mindestbreite": 1
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Ganghöhe mindestens 2)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bauelemente.test.js::Bauelemente: Gang, Tür und Fenster mit Ebene 1",
+      "ungeprueft": false
+    },
+    {
+      "id": "bau.tuer",
+      "titel": "Tür 2 Blöcke hoch",
+      "regel": "Eine Tür ist 2 Blöcke hoch (unten und oben) und 1 Block breit je Flügel; Doppeltüren haben die Scharniere außen.",
+      "parameter": {
+        "hoehe": 2
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Türhöhe 2)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bauelemente.test.js::Bauelemente: Gang, Tür und Fenster mit Ebene 1",
+      "ungeprueft": false
+    },
+    {
+      "id": "bau.wendeltreppe",
+      "titel": "Wendeltreppe: mehr Stufen je Umdrehung bei größerem Radius",
+      "regel": "Die Stufen liegen auf einem geschlossenen, 4-zusammenhängenden Ring um die Mitte; die Zahl der Stufen pro Umdrehung ist die Zahl der Ringzellen und wächst mit dem Radius, die Stufenhöhe bleibt 1. Mindestens 8 Stufen pro Umdrehung, damit über jeder Stufe 2 Blöcke frei bleiben.",
+      "parameter": {
+        "mindeststufen": 8
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: größere Wendeltreppe = mehr Stufen pro Umdrehung)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bauelemente.test.js::Bauelemente: Treppe und Wendeltreppe mit Ebene 1",
+      "ungeprueft": false
+    },
+    {
+      "id": "bau.saeule",
+      "titel": "Säule: Proportionen statt fester Maße",
+      "regel": "Sockel und Kapitell sind je 0,1 × Höhe hoch (mindestens 1 Block) und ragen 1 Block über den Schaft; der Schaft ist ein Zylinder aus den Formen.",
+      "parameter": {
+        "sockelverhaeltnis": 0.1,
+        "ueberstand": 1
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Proportionen statt fester Maße)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bauelemente.test.js::Bauelemente: Zustände, Fenster und Säule",
+      "ungeprueft": false
+    },
+    {
+      "id": "bau.zustaende",
+      "titel": "Zustände von Treppe und Tür",
+      "regel": "Treppe: weirdo_direction nennt die Seite des Vollblocks, also die Aufstiegsrichtung (0 Ost, 1 West, 2 Süd, 3 Nord, von Jonah geprüft, Drehregeln). Tür: minecraft:cardinal_direction ist die Himmelsrichtung der Tür, Scharnier rechts entspricht door_hinge_bit = true, obere Hälfte upper_block_bit = true. Dass die Tür-Himmelsrichtung die Lage der Türplatte so festlegt, wie hier angenommen, ist nicht belegt.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Stairs",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bauelemente.test.js::Bauelemente: Zustände, Fenster und Säule",
+      "ungeprueft": true,
+      "testanleitung": "Eine Tür mit Richtung Norden und eine Doppeltür in einer Ost-West-Mauer, eine Treppe mit Aufstieg nach Norden bauen: Stimmt die Lage der Türplatte (Scharnier links/rechts) und zeigt die Treppe nach Norden hoch?"
+    }
+  ]
+}

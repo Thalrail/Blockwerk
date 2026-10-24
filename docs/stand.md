@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gebaut: Branch `claude/ebene-2-bogen-dach`. 270 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gebaut: Branch `claude/ebene-2-bauelemente`. 273 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -30,8 +30,8 @@ Zuletzt aktualisiert: 20.10.2026
 | 2g-1 | Ebene 1 – Wesen: Bewegung und Erreichbarkeit (Spieler, Dorfbewohner, Baby): gehen, Stufen, Treppen, springen, fallen, Lücken, Türen, Leitern, Wasser, Prüfer „begehbar“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #19) |
 | 2g-2 | Ebene 1 – Wesen: Dorfbewohner-Verhalten (Betten, Berufsblock-Suche, Dorf, Iron-Golem-Bedingung), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #20) |
 | 3a | Ebene 2 – Baustein-Paket und Formen: Scheibe/Ring, Zylinder, Kugel, Kuppel, Kegel (maßstabsfrei, Tests für alle Größen bis 257) | **fertig, Status `simuliert`** (gemergt, PR #21) |
-| 3b | Ebene 2 – Bogen (Segmentbogen, Stich 0,3 × Spannweite), Tonnengewölbe, Satteldach, Walmdach/Zeltdach (maßstabsfrei, Tests über alle Größen) | **fertig, Status `simuliert`** (PR wartet auf Abnahme) |
-| 3c | Ebene 2 – Bauelemente: Treppe, Wendeltreppe, Tür, Gang, Fenster, Säule | offen |
+| 3b | Ebene 2 – Bogen (Segmentbogen, Stich 0,3 × Spannweite), Tonnengewölbe, Satteldach, Walmdach/Zeltdach (maßstabsfrei, Tests über alle Größen) | **fertig, Status `simuliert`** (gemergt, PR #22) |
+| 3c | Ebene 2 – Bauelemente: Gang, Treppe, Wendeltreppe, Tür, Fenster, Säule (Menschenmaß fest, formgebundene Blöcke mit Richtung) | **fertig, Status `simuliert`** (Zustandsregel `bau.zustaende` `ungeprüft`; PR wartet auf Abnahme) |
 | 3d | Ebene 2 – erste Technikmodule (Nische, Bahnhof, Kurve, Steigungsstück …) mit Testszenario in Ebene 1 | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -185,6 +185,13 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/bogen.json` (2), `dach.json` (1), alle `simuliert`, nichts `ungeprüft`. Tests: Spannweite 1–65, 100, 128 mit Stich 0,15/0,3/0,5, Bogenstärke 1–4; Rand höchstens ½ Block vom Ideal; Öffnung lückenlos (Flutfüllung) und genau die Idealöffnung; **Durchgang mit Ebene 1** (Spieler, Dorfbewohner, Baby gehen hindurch, geschlossene Mauer hält); Dächer Breite 1–65, 100–256, Neigung 0,5/1/2; Mutationen von Stich, Pfeilerhöhe, Neigung, Rundung und Mittelpunkt schlagen an.
 - Nicht dabei: Kreuzgewölbe und Rippen, Spitz-/Hufeisenbogen, Pult- und Mansarddach, Gauben, Glätten mit Treppen (Ebene 3).
 
+## Was Ebene 2, Teil 3c, jetzt kann (`src/ebene2/bauelemente.js`)
+- **Formbindung im Paket:** ein Block kann `form` (`treppe`, `tuer`, `scheibe`, sonst `voll`) mit `richtung` (Treppe: Aufstiegsrichtung = Seite des Vollblocks; Tür: Himmelsrichtung) tragen; neue Rolle `glas`. `ebene2.platziere(welt, paket, palette, versatz)` wählt den Block je Rolle und Form aus der Palette und berechnet die Zustände (`weirdo_direction`, `minecraft:cardinal_direction`, `door_hinge_bit`, `upper_block_bit`) über die Drehregeln aus Ebene 0; der Vermesser dreht platzierte Treppen und Türen richtig mit.
+- `bau.gang` (Länge, lichte Breite ≥ 1, lichte Höhe ≥ 2, Wandstärke; Gehhöhe ist y = 0, Boden darunter), `bau.treppe` (gerade, Stufenhöhe 1, Aufstieg nach Norden), `bau.wendeltreppe` (Stufen auf einem geschlossenen 4-zusammenhängenden Ring aus dem Rand der Kreisscheibe; **Stufen pro Umdrehung = Ringlänge, wächst mit dem Radius**, mindestens 8, Drehsinn wählbar, über jeder Stufe 2 Blöcke frei), `bau.tuer` (1 oder 2 Flügel, 2 Blöcke hoch), `bau.fenster` (Scheiben im Rahmen), `bau.saeule` (Schaft als Zylinder aus 3a, Sockel und Kapitell je 0,1 × Höhe, mindestens 1 Block, 1 Block Überstand).
+- Regeln: `data/regeln/bauelemente.json` (6 Regeln, 5 `simuliert`, `bau.zustaende` `ungeprüft`). Tests mit Ebene 1: Spieler, Dorfbewohner und Baby gehen Gang, Treppe (bis 64 Stufen) und Wendeltreppe (Radius 1–12, beide Drehsinne, ohne Sprung) und die Tür (Holz ja, Eisen nein); Mutationen von Stufenhöhe, Ganghöhe, Türhöhe, Mindeststufen und Säulenproportion schlagen an.
+- **Annahmen:** Tür-Himmelsrichtung legt die Lage der Türplatte so fest wie angenommen (Testanleitung in `docs/spieltests.md`); Scharnier rechts = `door_hinge_bit` true; Scheiben bekommen keine Verbindungszustände (das Spiel rechnet sie beim Bauen). Ebene 1 sucht Wege standardmäßig nur 64 Blöcke weit: für lange Treppen `{ radius: 200 }` übergeben.
+- Nicht dabei: Rampen, Leitern, Falltüren, Zauntore, Halbstufen als Form, Balkone, Mauerwerk-Muster, Material/Stil (Ebene 3).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -204,7 +211,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Ebene 2, Teil 3c: Bauelemente** (Treppe, Wendeltreppe, Tür, Gang, Fenster, Säule; Menschenmaß fest, Wendeltreppe mit mehr Stufen pro Umdrehung statt höherer Stufen). Danach 3d Technikmodule.
+**Ebene 2, Teil 3d: erste Technikmodule** (Nische, Bahnhof, Kurve, Steigungsstück … mit Testszenario in Ebene 1; Technik skaliert über Anzahl, nie über Größe). Danach Ebene 3 (Planung).
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

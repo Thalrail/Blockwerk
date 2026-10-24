@@ -157,3 +157,56 @@ test('Antrieb: Schienen außerhalb des Tickbereichs schalten nicht', () => {
   t2.laufe(2);
   assert.equal(sk2.welt.leseBlock(19, 1, 0).zustand.rail_data_bit, true);
 });
+
+test('Antrieb: Redstonefackel und Hebel versorgen die Schiene', () => {
+  const mit = (x, y, z, id, zustand = {}) => {
+    const w = boden(); e1.schienen.platziere(w, { x: 0, y: 1, z: 0 }, GOLD);
+    w.setzeBlock(x, y, z, id, zustand);
+    return A.aktive(w).size;
+  };
+  const fackel = (richtung) => ({ torch_facing_direction: richtung });
+  // Fackel links und rechts neben der Schiene (Spieltest Jonah): stehend von unten oder an einem Nachbarblock hängend
+  assert.equal(mit(1, 1, 0, 'minecraft:redstone_torch', fackel('top')), 1, 'rechts');
+  assert.equal(mit(-1, 1, 0, 'minecraft:redstone_torch', fackel('top')), 1, 'links');
+  assert.equal(mit(0, 1, 1, 'minecraft:redstone_torch', fackel('west')), 1, 'seitlich, an einem Nachbarblock hängend');
+  // ausgebrannte Fackel und Fackel über/unter der Schiene versorgen nichts (nicht getestet, nicht angenommen)
+  assert.equal(mit(1, 1, 0, 'minecraft:unlit_redstone_torch', fackel('top')), 0);
+  assert.equal(mit(0, 2, 0, 'minecraft:redstone_torch', fackel('west')), 0, 'über der Schiene: nicht angenommen');
+  assert.equal(mit(0, 0, 0, 'minecraft:redstone_torch', fackel('top')), 0, 'unter der Schiene: nicht angenommen');
+  // Hebel (Jonah, 24.10.2026): auf der Oberseite der vier Nachbarblöcke, oder irgendwo an den vier Blöcken eine Ebene höher / dem Block zwei Ebenen darüber
+  const hebelBei = (block, stelle, richtung, ein = true) => {
+    const w = boden(); e1.schienen.platziere(w, { x: 0, y: 1, z: 0 }, GOLD);
+    w.setzeBlock(...block, 'minecraft:stone');
+    w.setzeBlock(...stelle, 'minecraft:lever', { lever_direction: richtung, open_bit: ein });
+    return A.aktive(w).size;
+  };
+  for (const [x, z] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    assert.equal(hebelBei([x, 1, z], [x, 2, z], 'up_north_south'), 1, `Oberseite Nachbarblock ${x},${z}`);
+    assert.equal(hebelBei([x, 1, z], [x, 2, z], 'up_north_south', false), 0, 'ausgeschaltet');
+    assert.equal(hebelBei([x, 1, z], [x, 0, z], 'down_east_west'), 0, 'Unterseite eines Nachbarblocks auf Schienenhöhe: nicht');
+    assert.equal(hebelBei([x, 1, z], [2 * x, 1, 2 * z], x !== 0 ? (x > 0 ? 'east' : 'west') : (z > 0 ? 'south' : 'north')), 0, 'Seite eines Nachbarblocks auf Schienenhöhe: nicht');
+    assert.equal(hebelBei([x, 2, z], [x, 3, z], 'up_east_west'), 1, 'Oberseite, eine Ebene höher');
+    assert.equal(hebelBei([x, 2, z], [x, 1, z], 'down_east_west'), 1, 'Unterseite, eine Ebene höher');
+  }
+  // Seite eines Blocks eine Ebene höher: Hebel direkt über der Schiene, am Block im Osten (Hebel zeigt nach Westen, Annahme)
+  assert.equal(hebelBei([1, 2, 0], [0, 2, 0], 'west'), 1, 'Seite, Block im Osten');
+  assert.equal(hebelBei([-1, 2, 0], [0, 2, 0], 'east'), 1, 'Seite, Block im Westen');
+  assert.equal(hebelBei([0, 3, 0], [0, 4, 0], 'up_north_south'), 1, 'Oberseite des Blocks zwei Ebenen darüber');
+  assert.equal(hebelBei([0, 3, 0], [0, 2, 0], 'down_north_south'), 1, 'Unterseite des Blocks zwei Ebenen darüber');
+  assert.equal(hebelBei([0, 3, 0], [1, 3, 0], 'east'), 1, 'Seite des Blocks zwei Ebenen darüber');
+  assert.equal(hebelBei([3, 1, 0], [3, 2, 0], 'up_north_south'), 0, 'zu weit weg');
+  assert.equal(hebelBei([1, 3, 0], [1, 4, 0], 'up_north_south'), 0, 'zwei Ebenen höher daneben: nicht genannt');
+  // Der Strom läuft durch die Kette: Fackel an der ersten Schiene versorgt 9
+  const w = boden(); reihe(w, 0, 12); w.setzeBlock(0, 1, 1, 'minecraft:redstone_torch', { torch_facing_direction: 'top' });
+  assert.equal(A.aktive(w).size, 9);
+});
+
+test('Antrieb: von Jonah geprüfte Regeln tragen Datum und Beobachtung', () => {
+  for (const id of ['antrieb.reichweite', 'antrieb.nur-verbundene', 'antrieb.stromblock']) {
+    const r = e1.regelwerk.regel(id);
+    assert.equal(r.status, 'geprüft', id);
+    assert.match(r.beobachtung, /^Jonah/, id);
+    assert.equal(r.ungeprueft, false);
+  }
+  assert.equal(e1.regelwerk.regel('antrieb.redstonefackel').ungeprueft, true, 'vorn/hinten/über/unter bleiben offen');
+});

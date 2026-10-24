@@ -50,11 +50,17 @@ Eingetragen in Ebene 0 (`fackelOben`, `fackelSeiten`, `schiene`). Halbstufe (von
 | 3 | Rampe mit zwei Möglichkeiten | Bei Ost-West steigt sie nach Westen, bei Nord-Süd nach Süden → eingetragen (`schiene.bevorzugung`) |
 | 4 | Antriebsschiene an der Ecke | Die Antriebsschiene bleibt gerade, die normale Schiene daneben dreht sich zu ihr → **geprüft** (`schiene.antriebsschiene-gerade`). Detektor- und Aktivierungsschiene sind damit noch nicht getestet |
 
-## Antrieb: die wichtigsten Tests (Ebene 1)
-1. **Reichweite:** 20 Antriebsschienen in einer Reihe, Redstone-Block seitlich neben der ersten: wie viele sind aktiv (leuchten)? Blockwerk erwartet 9. Dann den Block neben die zehnte: Blockwerk erwartet 17. (`antrieb.reichweite`)
-2. **Normale Schiene dazwischen** (statt einer Antriebsschiene) und **Lücke**: geht der Strom dahinter weiter? Blockwerk erwartet nein. (`antrieb.nur-verbundene`)
-3. **Wo darf der Redstone-Block stehen?** Links, rechts, vorn, hinten, unter und über der Schiene. (`antrieb.stromblock`)
-4. Lorenphysik: Messungen A–F in `docs/messungen-lore.md` (kein Muss, aber ohne sie gibt es kein Lorenmodell).
+## Ergebnisse Antrieb (Jonah, 24.10.2026)
+| Nr. | Test | Ergebnis | Status |
+|---|---|---|---|
+| 1 | Reichweite | Von der gepowerten Schiene werden nach rechts wie nach links 8 Schienen mitgepowert, insgesamt 17 | **geprüft** (`antrieb.reichweite`) |
+| 2 | Normale Schiene dazwischen | Sobald eine andere Schiene kommt, muss der nächste Abschnitt danach an Antriebsschienen neu gepowert werden | **geprüft** (`antrieb.nur-verbundene`) |
+| 3a | Redstone-Block | Rechts und links neben der Schiene, über der Schiene, am Anfang und am Ende; von unten, wenn die Schiene direkt über dem Block liegt | **geprüft** (`antrieb.stromblock`) |
+| 3b | Redstonefackel | Links und rechts neben der Schiene; darf von unten stehen oder an einem Nachbarblock hängen (Fotos 1 und 2) | eingetragen (links/rechts geprüft, Rest offen) |
+| 3c | Hebel | An allen Seiten der Schiene; auch an einem angrenzenden Block befestigt (Foto 3), dann wird die Schiene immer aktiviert | eingetragen, Lage „angrenzender Block“ noch zu klären |
+| 4 | Lorenphysik | Messungen A–F in `docs/messungen-lore.md` – macht Jonah als Nächstes | offen |
+
+**Offen für die Fackel:** vorn und hinten (Anfang/Ende), über und unter der Schiene. **Offen für den Hebel:** Wie genau liegt der Hebel bei „an einem angrenzenden Block befestigt“ (steht er selbst neben der Schiene oder weiter weg)?
 
 ## Wasser und Lava: die wichtigsten Tests (Ebene 1)
 Alle in der Kreativ-Testwelt auf ebenem Steinboden, mit Video (Zeiten) und Koordinaten.
@@ -84,9 +90,8 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 
 | Regel | Was testen |
 |---|---|
-| `antrieb.reichweite` – Reichweite: 8 Schienen weit | Kreativ-Testwelt auf ebenem Boden: 20 Antriebsschienen in einer Reihe, einen Redstone-Block seitlich neben die erste setzen: Wie viele Schienen leuchten (aktiviert)? Erwartung: 9 (die erste und 8 weitere). Dann den Redstone-Block neben die zehnte setzen: Erwartung 17 (8 links, 8 rechts, die zehnte). Ergebnis melden. |
-| `antrieb.nur-verbundene` – Strom geben nur verbundene Antriebsschienen weiter | Fünf Antriebsschienen in einer Reihe, in der Mitte (dritte) eine normale Schiene statt einer Antriebsschiene, Redstone-Block neben die erste: Leuchten Schiene 4 und 5? Dann die Reihe mit einer Lücke (ein Feld ohne Schiene) wiederholen. Ergebnis melden. |
-| `antrieb.stromblock` – Redstone-Block neben der Schiene versorgt sie | Einzelne Antriebsschiene, Redstone-Block nacheinander links, rechts, vor, hinter, unter und über (soweit möglich) der Schiene: In welchen Lagen leuchtet sie? Ergebnis je Lage melden. |
+| `antrieb.redstonefackel` – Redstonefackel neben der Schiene versorgt sie | Redstonefackel vor und hinter dem Ende einer einzelnen Antriebsschiene (in der Verlängerung der Schiene), außerdem über und unter der Schiene (soweit möglich): Wird die Schiene bestromt? Ergebnis je Lage melden. (Links und rechts hat Jonah bestätigt.) |
+| `antrieb.hebel` – Eingeschalteter Hebel an bestimmten Blöcken versorgt die Schiene | Hebel (eingeschaltet) an den genannten Blöcken wie in der Regel beschrieben: Prüfen, ob die Schiene bestromt wird, und besonders, ob Seiten-Hebel (east/west/south/north) an dem Block sitzen, an dem du ihn setzt (Blockwerk nimmt an: der Hebel zeigt von seinem Block weg). Auch Hebel an der Unterseite eines Blocks (Hebel an der Decke) prüfen. Ergebnis melden. |
 | `fluessigkeit.lava-oberwelt` – Lava (Oberwelt, Ende): 3 Blöcke weit, ein Block alle 30 Ticks | Kreativ-Testwelt: Lava-Quelle auf ebenem Stein setzen, mit Video messen: Wie weit kommt die Lava (erwartet 3 Blöcke) und wie lange braucht jeder Block (erwartet 1,5 s)? Im Nether: 7 Blöcke, 0,5 s je Block. |
 | `fluessigkeit.lava-nether` – Lava (Nether): 7 Blöcke weit, ein Block alle 10 Ticks | Siehe fluessigkeit.lava-oberwelt (Nether-Teil). |
 | `fluessigkeit.fallen` – Fließen nach unten ohne Grenze | Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus? Außerdem: eine Wasserquelle in die Luft setzen (an eine Wand lehnen und dann die Wand entfernen oder mit Blöcken eine Plattform bauen und wegnehmen): Fällt nur eine Säule, oder entsteht eine Plus-Form aus fünf Säulen? Blockwerk erwartet bei der freien Quelle ein Plus. |
@@ -126,3 +131,6 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `takt.zufallsticks` – Zufallsticks | Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen). |
 | `takt.tickbereich` – Tickbereich | Kreativ-Testwelt: Wasserfall- oder Pflanzenfarm bauen, dich 10 Chunks entfernen und zurückkehren: Hat sie sich währenddessen weiterbewegt (z. B. Weizen gewachsen)? Dazu die Simulationsdistanz deines Aternos-Servers nennen. |
 | `takt.arbeitsreihenfolge` – Arbeitsreihenfolge innerhalb eines Spielticks | Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden. |
+
+## Hebel an der Antriebsschiene (Jonah, 24.10.2026)
+Schiene bei 96,-60,-4. Der Hebel versorgt sie, wenn er irgendwo an einem dieser Blöcke sitzt: 96,-60,-4; 97,-60,-4; 96,-60,-5; 95,-60,-4; 96,-60,-3; 97,-59,-4; 96,-59,-5; 95,-59,-4; 96,-59,-3; 96,-58,-4. Seit dem Update im Code (antrieb.hebel). Gemeint: „auf“ = Oberseite, „irgendwo an“ = jede Seite (oben, unten, seitlich), solange Platz ist.

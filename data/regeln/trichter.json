@@ -17,6 +17,20 @@
       "testanleitung": "Kiste mit 64 Gegenständen, darunter ein Trichter, der in eine zweite Kiste zeigt. Mit Video (60 fps) die Zeit für 64 Gegenstände messen: Blockwerk erwartet etwa 8 Ticks je Gegenstand (rund 25,6 s). Ergebnis melden."
     },
     {
+      "id": "trichter.empfang",
+      "titel": "Wartezeit des Empfänger-Trichters",
+      "regel": "Schiebt ein Trichter einen Gegenstand in einen leeren Trichter, startet dort eine Wartezeit von 8 Ticks: der Empfänger kann den Gegenstand frühestens 8 Ticks später weiterschieben. Von Hand eingelegte Gegenstände zählen nicht. Was in Bedrock beim Einlegen in einen nicht leeren Trichter passiert, ist nicht belegt; Blockwerk rechnet dort keine Wartezeit (Java-Platzhalter).",
+      "parameter": {
+        "ticks": 8,
+        "nurLeer": true
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper („Pushing an item into an empty hopper starts an 8-game-tick cooldown“, Bedrock; Java 7 Ticks)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter.test.js::Trichter: Wartezeit des Empfängers",
+      "ungeprueft": true,
+      "testanleitung": "Kiste → Trichter A → Trichter B → Kiste, Stoppuhr: Wie lange braucht der erste Gegenstand bis in die letzte Kiste? Kommt er bei zwei Trichtern nach etwa 16 Ticks (0,8 s) statt nach 8? Dann Trichter B schon mit einem Gegenstand füllen und einen zweiten von A einlegen lassen: Gibt es eine zusätzliche Wartezeit?"
+    },
+    {
       "id": "trichter.reihenfolge",
       "titel": "Erst schieben, dann ziehen",
       "regel": "Je Trichter und Vorgang wird zuerst geschoben, dann gezogen; nach einem von beiden gilt die Wartezeit. Die Reihenfolge mehrerer Trichter im selben Tick folgt den Koordinaten (y, z, x) und ist in Bedrock nicht dokumentiert.",

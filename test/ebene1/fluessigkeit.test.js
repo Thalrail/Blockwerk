@@ -282,3 +282,32 @@ test('Prüfer: Wasser zerstört Schiene und Fackel', () => {
   // Original unverändert
   assert.equal(w.leseBlock(3, 1, 0).id, 'minecraft:rail');
 });
+
+test('Wasser: spült die von Jonah getesteten Pflanzen weg', () => {
+  // Jonah, 24.10.2026: Fackeln, Redstone-Staub, Samen, Seegurken, Ranken, Setzlinge, Bodendecker, Korallen, Blumen
+  const familien = {
+    fackeln: ['minecraft:torch', 'minecraft:redstone_torch'],
+    'redstone-staub': ['minecraft:redstone_wire'],
+    samen: ['minecraft:wheat', 'minecraft:carrots', 'minecraft:potatoes', 'minecraft:beetroot', 'minecraft:melon_stem', 'minecraft:pumpkin_stem', 'minecraft:torchflower_crop', 'minecraft:pitcher_crop'],
+    seegurke: ['minecraft:sea_pickle'],
+    ranken: ['minecraft:vine', 'minecraft:cave_vines', 'minecraft:weeping_vines', 'minecraft:twisting_vines'],
+    setzlinge: ['minecraft:oak_sapling', 'minecraft:spruce_sapling', 'minecraft:cherry_sapling', 'minecraft:bamboo_sapling', 'minecraft:mangrove_propagule'],
+    bodendecker: ['minecraft:leaf_litter', 'minecraft:pink_petals', 'minecraft:wildflowers', 'minecraft:moss_carpet'],
+    korallen: ['minecraft:tube_coral', 'minecraft:brain_coral_fan', 'minecraft:dead_horn_coral', 'minecraft:fire_coral_wall_fan'],
+    blumen: ['minecraft:dandelion', 'minecraft:poppy', 'minecraft:blue_orchid', 'minecraft:oxeye_daisy', 'minecraft:cornflower', 'minecraft:torchflower', 'minecraft:sunflower', 'minecraft:rose_bush'],
+  };
+  const gruppen = e1.regelwerk.parameter('fluessigkeit.wegspuelen-getestet', 'familien');
+  assert.deepEqual(Object.keys(familien).sort(), [...gruppen].sort(), 'die Regel nennt genau diese Gruppen');
+  const ids = Object.values(familien).flat();
+  for (const id of ids) {
+    const w = boden(3); quelle(w, 0, 1, 0); w.setzeBlock(2, 1, 0, id, {});
+    const r = lauf(w);
+    assert.deepEqual(r.m.ereignisse.filter((e) => e.was === 'weggespuelt').map((e) => e.von), [id], id);
+    assert.ok(stufe(r.welt, 2, 1, 0) !== null, id + ' ist durch Wasser ersetzt');
+  }
+  // Korallenblöcke bleiben, Wasserpflanzen im Wasser nicht gemeint
+  const w2 = boden(); quelle(w2, 0, 1, 0); w2.setzeBlock(1, 1, 0, 'minecraft:tube_coral_block'); w2.setzeBlock(2, 1, 0, 'minecraft:kelp');
+  const r2 = lauf(w2);
+  assert.equal(r2.welt.leseBlock(1, 1, 0).id, 'minecraft:tube_coral_block');
+  assert.equal(r2.m.ereignisse.filter((e) => e.was === 'weggespuelt').length, 0);
+});

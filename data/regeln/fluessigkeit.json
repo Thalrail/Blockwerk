@@ -12,10 +12,12 @@
         "schritt": 1,
         "verzoegerung": 5
       },
-      "quelle": "https://minecraft.wiki/w/Water (Wiki: gilt für beide Editionen, sofern nicht anders gekennzeichnet)",
-      "status": "simuliert",
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Weite 7 Blöcke und Tempo 5 Ticks",
-      "ungeprueft": false
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Wasser breitet sich in jede Richtung 7 Blöcke vom Zentrum aus; nach dem Setzen der Quelle 2,20 s, bis alles ausgebreitet ist (berechnet 35 Ticks = 1,75 s, Stoppuhr-Ungenauigkeit etwa ±0,5 s); nach dem Entfernen der Quelle 1,9 s, bis alles weg ist."
     },
     {
       "id": "fluessigkeit.lava-oberwelt",
@@ -27,11 +29,12 @@
         "schritt": 2,
         "verzoegerung": 30
       },
-      "quelle": "https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet; das Wiki nennt im Text 3 Blöcke, im Infokasten 4 – Blockwerk nimmt 3, passend zu den Stufen 2, 4, 6 von liquid_depth)",
-      "status": "simuliert",
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Lava",
+      "status": "geprüft",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Lava: Weite 3 (Oberwelt) und 7 (Nether), Tempo 30 und 10 Ticks",
-      "ungeprueft": true,
-      "testanleitung": "Kreativ-Testwelt: Lava-Quelle auf ebenem Stein setzen, mit Video messen: Wie weit kommt die Lava (erwartet 3 Blöcke) und wie lange braucht jeder Block (erwartet 1,5 s)? Im Nether: 7 Blöcke, 0,5 s je Block."
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Lava (Oberwelt) breitet sich in jede Richtung 3 Blöcke vom Zentrum aus; 5 s bis ausgebreitet (berechnet 90 Ticks = 4,5 s, Stoppuhr ±0,5 s); 5,06 s, bis sie nach dem Entfernen der Quelle weg ist."
     },
     {
       "id": "fluessigkeit.lava-nether",
@@ -52,28 +55,29 @@
     {
       "id": "fluessigkeit.fallen",
       "titel": "Fließen nach unten ohne Grenze",
-      "regel": "Flüssigkeit fließt senkrecht nach unten, bis ein Block sie aufhält, und breitet sich dort wie von einer Quelle aus (der Aufprallpunkt zählt als Stufe 0). Eine Quelle über bereits fließender Flüssigkeit breitet sich zusätzlich zur Seite aus; so entsteht um eine Quelle in der Luft eine Plus-Form aus vier Nachbarsäulen (Annahme aus der bekannten Fluss-Logik).",
+      "regel": "Flüssigkeit fließt senkrecht nach unten, bis ein Block sie aufhält, und breitet sich dort wie von einer Quelle aus (der Aufprallpunkt zählt als Stufe 0). Die Plus-Form einer Quelle in der Luft: siehe fluessigkeit.plus-form (geprüft).",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Water (Aufprallpunkt als Quelle und Plus-Form um eine Quelle in der Luft: Bedrock dokumentiert dazu nichts; die Logik entspricht der Java-Implementierung, und Jonah bestätigt aus Erfahrung, dass Bedrock sich gleich verhält)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: fällt unbegrenzt und breitet sich unten aus",
       "ungeprueft": true,
-      "testanleitung": "Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus? Außerdem: eine Wasserquelle in die Luft setzen (an eine Wand lehnen und dann die Wand entfernen oder mit Blöcken eine Plattform bauen und wegnehmen): Fällt nur eine Säule, oder entsteht eine Plus-Form aus fünf Säulen? Blockwerk erwartet bei der freien Quelle ein Plus.",
+      "testanleitung": "Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus (Blockwerk erwartet 7 Blöcke ab dem Aufprallpunkt)? Ergebnis melden.",
       "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“)."
     },
     {
       "id": "fluessigkeit.gefaelle",
       "titel": "Gefälle in höchstens 4 Blöcken wird bevorzugt",
-      "regel": "Findet das Wasser ein Gefälle (Loch) in der Nähe, fließt es in diese Richtung(en); sonst in alle. Gezählt wird so: ein Loch im ersten bis zum 5. Block neben der Quelle wird gefunden (also nach höchstens 4 Blöcken Weg bis vor das Loch); im 6. Block nicht mehr.",
+      "regel": "Findet das Wasser in gerader Richtung (Ost, West, Nord, Süd) ein Gefälle (Loch) im ersten bis zum 5. Block neben der Quelle, fließt es in diese Richtung(en); ab dem 6. Block nicht mehr, dann breitet es sich in alle Richtungen aus. (Diagonalen: siehe fluessigkeit.gefaelle-diagonal.)",
       "parameter": {
         "suchweite": 4
       },
-      "quelle": "https://minecraft.wiki/w/Water („Gefälle in höchstens 4 Blöcken“, Edition nicht gekennzeichnet; Zählweise nach der Java-Implementierung – Bedrock dokumentiert dazu nichts; die Logik entspricht der Java-Implementierung, und Jonah bestätigt aus Erfahrung, dass Bedrock sich gleich verhält)",
-      "status": "simuliert",
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
-      "ungeprueft": true,
-      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) im 3. Block östlich und ein Loch im 6. Block westlich: Fließt das Wasser nur nach Osten zum Loch und nicht nach Westen? Dann mit dem Loch im 4., 5. und 6. Block östlich wiederholen: Bis zu welchem Block bevorzugt das Wasser die Richtung? Blockwerk erwartet bis zum 5. Block.",
-      "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“)."
+      "ungeprueft": false,
+      "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“).",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Loch im 5. Block neben der Quelle wird gefunden; erst ab dem 6. Block breitet sich das Wasser wieder in alle Richtungen aus."
     },
     {
       "id": "fluessigkeit.unten-vor-seitlich",
@@ -115,7 +119,7 @@
     {
       "id": "fluessigkeit.wegspuelen",
       "titel": "Wasser spült bestimmte Blöcke weg",
-      "regel": "Fließendes Wasser ersetzt Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe und Blumentöpfe (sie gehen verloren). Schienen: in Bedrock seit 1.7.0 wieder.",
+      "regel": "Fließendes Wasser ersetzt außerdem Schienen, Teppiche, Schnee, Spinnweben, Endstäbe, Köpfe und Blumentöpfe (sie gehen verloren; nach dem Wiki, nicht von Jonah getestet). Schienen: in Bedrock seit 1.7.0 wieder. Die von Jonah getesteten Gruppen: siehe fluessigkeit.wegspuelen-getestet.",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Water (Liste „einige Redstone-Bauteile“ nicht vollständig)",
       "status": "simuliert",
@@ -138,13 +142,83 @@
     {
       "id": "fluessigkeit.hindernisse",
       "titel": "Nur feste Blöcke halten Flüssigkeit auf",
-      "regel": "Vollblöcke halten Flüssigkeit auf. Luft und wegspülbare Blöcke lassen sie durch. Alles andere (Treppen, Halbstufen, Zäune, Glasscheiben …) behandelt Blockwerk wie fest, bis Jonah es getestet hat.",
+      "regel": "Luft und wegspülbare Blöcke lassen Flüssigkeit durch. Alles andere, das kein Vollblock ist (Treppen, Halbstufen, Zäune, Glasscheiben …), behandelt Blockwerk wie fest, bis Jonah es getestet hat. (Vollblöcke: siehe fluessigkeit.vollbloecke-halten.)",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Water (Annahme)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: nur feste Blöcke halten Wasser auf",
       "ungeprueft": true,
       "testanleitung": "Wasser neben Treppe (Vorder- und Rückseite), Halbstufe (oben/unten), Zaun, Glasscheibe, Leiter, Schild, Tür, Falltür, Mauer: Fließt es hinein, vorbei oder hält der Block es auf? Ergebnis je Block melden."
+    },
+    {
+      "id": "fluessigkeit.gefaelle-diagonal",
+      "titel": "Gefälle auf der Diagonale",
+      "regel": "Jonah meldet: Bei einem Loch auf der Diagonalen ist es der 4. Block. Blockwerk rechnet Diagonalen bisher als Weg über zwei gerade Schritte (Betragssumme) und findet ein diagonales Loch deshalb nur bis (2, 2). Ob „4. Block“ den Punkt (4, 4) oder einen anderen Abstand meint, ist offen.",
+      "parameter": {},
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt) – Messung unklar; https://minecraft.wiki/w/Water",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
+      "ungeprueft": true,
+      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) schräg: bei (n, n) für n = 1, 2, 3, 4, 5 (jeweils einzeln): Fließt das Wasser nur in Richtung des Lochs oder in alle Richtungen? Melde die Koordinaten (Quelle bei 0,0), bis zu welchem n es bevorzugt wird."
+    },
+    {
+      "id": "fluessigkeit.form",
+      "titel": "Form der Ausbreitung (Raute oder Quadrat)",
+      "regel": "Blockwerk breitet Wasser und Lava auf ebenem Boden als Raute aus (Betragssumme der Abstände ≤ Reichweite). Jonah sah in beiden Fällen ein „optisches Quadrat“ mit Reichweite 7 (Wasser) bzw. 3 (Lava) in jede Himmelsrichtung. Ob die Ecken (z. B. 7, 7) gefüllt werden, ist offen; solange gilt die Raute, und die Planung rechnet damit eher zu wenig Wasser an den Ecken.",
+      "parameter": {},
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt) – Form unklar; https://minecraft.wiki/w/Water",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Weite 7 Blöcke und Tempo 5 Ticks",
+      "ungeprueft": true,
+      "testanleitung": "Wasserquelle auf ebenem Stein setzen, Bereich ausbreiten lassen, dann zählen: Liegt Wasser bei (7, 0)? bei (4, 3)? bei (5, 5)? bei (7, 7)? Für Lava (Oberwelt) entsprechend (3, 0), (2, 1), (2, 2), (3, 3). Melde die Koordinaten relativ zur Quelle, am besten mit Foto von oben."
+    },
+    {
+      "id": "fluessigkeit.plus-form",
+      "titel": "Eine Quelle in der Luft ergibt eine Plus-Form",
+      "regel": "Eine Wasserquelle in der Luft bildet eine Plus-Form (die Quelle und vier Nachbarsäulen) und fließt dort nach unten.",
+      "parameter": {},
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Bei einer Wasserquelle in der Luft entsteht ein Plus.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: fällt unbegrenzt und breitet sich unten aus"
+    },
+    {
+      "id": "fluessigkeit.vollbloecke-halten",
+      "titel": "Feste Vollblöcke halten Wasser auf",
+      "regel": "Jeder feste Vollblock hält Wasser auf.",
+      "parameter": {},
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Wasser wird von jedem soliden Block aufgehalten.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: nur feste Blöcke halten Wasser auf"
+    },
+    {
+      "id": "fluessigkeit.wegspuelen-getestet",
+      "titel": "Wasser spült diese Pflanzen und Teile weg",
+      "regel": "Fließendes Wasser spült weg: Fackeln, Redstone-Staub, alle gepflanzten Samen (Nutzpflanzen und Stängel), Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker, alle Korallen (keine Korallenblöcke) und alle Blumen. Jonah schätzt, dass noch mehr dazugehört; nicht getestet ist alles andere.",
+      "parameter": {
+        "familien": [
+          "fackeln",
+          "redstone-staub",
+          "samen",
+          "seegurke",
+          "ranken",
+          "setzlinge",
+          "bodendecker",
+          "korallen",
+          "blumen"
+        ]
+      },
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Weggespült werden Fackeln, Redstone-Staub, jegliche gepflanzten Samen, Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker, alle Korallen, alle Blumen (und „Laub“ – Bedeutung offen) und wahrscheinlich noch mehr.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: spült die von Jonah getesteten Pflanzen weg"
     }
   ]
 }

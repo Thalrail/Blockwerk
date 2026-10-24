@@ -1,0 +1,113 @@
+{
+  "bereich": "mech",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "mech.bestromung",
+      "titel": "Wann ein Mechanismus bestromt wird",
+      "regel": "Lampen, Türen und andere Mechanismen sind bestromt bei: Staub daneben, der auf sie zeigt, auf ihnen liegt oder keine Richtung hat; einer eingeschalteten Quelle daneben (auch oben und unten); einer brennenden Fackel daneben (nicht an ihrem eigenen Befestigungsblock); einem bestromten leitenden Block daneben (stark oder schwach); einem Repeater, Komparator, Beobachter oder Tagessensor, der in sie hineinwirkt. Mechanismen schalten in Bedrock im C-Tick.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_Lamp (Abschnitt Activation; „A torch does not power the lamp it is attached to“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Bestromung und Lampen",
+      "ungeprueft": true,
+      "testanleitung": "Lampe mit: Hebel an der Seite, Staub zeigend / wegzeigend / Punkt, Fackel am Block daneben, Fackel direkt an der Lampe befestigt (Lampe ist kein Befestigungsblock, daher nur ein Test mit Block), Redstone-Block oben und unten, Repeater davor. Welche Lagen schalten sie?"
+    },
+    {
+      "id": "mech.lampe",
+      "titel": "Redstone-Lampe",
+      "regel": "Die Lampe geht im C-Tick sofort an, sobald sie bestromt ist; ohne Strom bleibt sie noch 6 Ticks an (Bedrock; Java 4) und geht dann aus. Wird sie in dieser Zeit wieder bestromt, bleibt sie an.",
+      "parameter": {
+        "ids": [
+          "minecraft:redstone_lamp",
+          "minecraft:lit_redstone_lamp"
+        ],
+        "ausTicks": 6
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Lamp („turns on instantly … 6 ticks to turn off in Bedrock“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Bestromung und Lampen",
+      "ungeprueft": true,
+      "testanleitung": "Hebel – Staub – Lampe: Wie viele Ticks (mit Video 60 fps) dauert es nach dem Ausschalten, bis die Lampe aus ist? Erwartet 6 Ticks (0,3 s). Hebel kurz an und aus: Bleibt die Lampe länger an?"
+    },
+    {
+      "id": "mech.tueren",
+      "titel": "Türen, Falltüren, Zauntore",
+      "regel": "Türen, Falltüren und Zauntore öffnen sich im C-Tick, solange sie bestromt sind, und schließen sich ohne Strom. Bei Türen genügt es, wenn eine der beiden Hälften bestromt ist; beide Hälften wechseln gemeinsam.",
+      "parameter": {
+        "muster": "_door$|_trapdoor$|_fence_gate$|^minecraft:(trapdoor|fence_gate)$"
+      },
+      "quelle": "https://minecraft.wiki/w/Door (Redstone) – Java-Platzhalter, Bedrock nicht gekennzeichnet",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Türen",
+      "ungeprueft": true,
+      "testanleitung": "Tür mit Hebel an der Seite, mit Strom nur oben (Redstone-Block über der Tür), Falltür und Zauntor: Öffnen sie sich? Schließen sie sich sofort ohne Strom?"
+    },
+    {
+      "id": "mech.beobachter",
+      "titel": "Beobachter",
+      "regel": "Ein Beobachter erkennt in ungeraden Ticks (P-Tick), wenn sich Block oder Zustand der Zelle vor ihm geändert hat, und gibt dann 2 Ticks lang Stärke 15 an den Block hinter sich ab (stark).",
+      "parameter": {
+        "block": "minecraft:observer",
+        "impulsTicks": 2
+      },
+      "quelle": "https://minecraft.wiki/w/Observer (Bedrock: Block-Update-Detektor, nur P-Tick, Impuls 2 Spielticks, stark nach hinten)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Beobachter",
+      "ungeprueft": true,
+      "testanleitung": "Beobachter schaut auf eine Fläche: Block setzen und wegnehmen, Pflanze wachsen lassen, Staub daneben ändern: Gibt er jedes Mal einen Impuls ab? Wie lange (erwartet 2 Ticks)? Mit Staub und Lampe hinter dem Beobachter prüfen."
+    },
+    {
+      "id": "mech.beobachter-richtung",
+      "titel": "Beobachter: Richtung",
+      "regel": "minecraft:facing_direction nennt die Seite, die der Beobachter anschaut; der Ausgang liegt auf der gegenüberliegenden Seite (Annahme wie Java).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Observer (Beobachter schaut in Blickrichtung, Ausgang = roter Punkt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Beobachter",
+      "ungeprueft": true,
+      "testanleitung": "Beobachter in alle sechs Richtungen setzen: Auf welcher Seite kommt der Impuls heraus, und welche Seite beobachtet er?"
+    },
+    {
+      "id": "mech.tagessensor",
+      "titel": "Tagessensor",
+      "regel": "Ein Tagessensor rechnet alle 20 Ticks: Himmelslicht minus Verdunkelung (Tageszeit und Wetter), dann bei normalem Sensor Stärke = round(Licht × cos(Sonnenwinkel, zur Nacht hin verschoben)), bei invertiertem 15 − Licht; 0 bis 15. Er bestromt alle sechs Nachbarn schwach. Formeln aus Java (Bedrock nennt keine); Tageszeit 0 = Sonnenaufgang, 6000 = Mittag.",
+      "parameter": {
+        "ids": [
+          "minecraft:daylight_detector",
+          "minecraft:daylight_detector_inverted"
+        ],
+        "intervallTicks": 20,
+        "regenFaktor": 0.3125,
+        "ticksProTag": 24000
+      },
+      "quelle": "https://minecraft.wiki/w/Daylight_Detector (alle 20 Ticks, Tageszeit, Wetter, Himmelslicht)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Tagessensor",
+      "ungeprueft": true,
+      "testanleitung": "Tagessensor unter freiem Himmel: Signalstärke (Komparator oder Lampe mit Komparator) um 6:00, 9:00, 12:00, 15:00, 18:00, 20:00, 24:00 ablesen; bei Regen und Gewitter wiederholen; mit Dach darüber. Blockwerk erwartet mittags 15, nachts 0."
+    },
+    {
+      "id": "mech.tagessensor-invertiert",
+      "titel": "Tagessensor invertiert",
+      "regel": "Der invertierte Tagessensor (daylight_detector_inverted) gibt 15 − (Himmelslicht − Verdunkelung): nachts mit freiem Himmel 11, unter einem Dach 15.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Daylight_Detector („Output equals 15 minus the internal sky light level“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Tagessensor",
+      "ungeprueft": true,
+      "testanleitung": "Invertierten Tagessensor um 12:00 und um 24:00 messen (erwartet 0 bzw. 11) und unter einem Dach (erwartet 15)."
+    },
+    {
+      "id": "mech.tagessensor-dimension",
+      "titel": "Tagessensor im Nether und Ende",
+      "regel": "In Bedrock gibt der Tagessensor im Nether und im Ende kein Signal (auch invertiert nicht). Blockwerk kennt die Dimension nicht und rechnet Oberwelt.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Daylight_Detector (Bedrock: inverted detectors produce no signal in the Nether or End)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Mechanismen: Tagessensor",
+      "ungeprueft": true,
+      "testanleitung": "Tagessensor im Nether und im Ende (normal und invertiert): Signal?"
+    }
+  ]
+}

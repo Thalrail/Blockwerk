@@ -18,7 +18,7 @@ const SEITEN_VON = { north: ['east', 'west'], south: ['east', 'west'], east: ['n
 /**
  * @param {{regelwerk: import('./regelwerk.js').Regelwerk, register: object, richtungVon: Function, redstone: ReturnType<typeof import('./redstone.js').erzeugeRedstone>, trichter: ReturnType<typeof import('./trichter.js').erzeugeTrichter>}} quellen
  */
-export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone, trichter }) {
+export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone, trichter, licht }) {
   const P = (id, name) => regelwerk.parameter(id, name);
   const staubId = P('redstone.staub-verbindung', 'staub');
   const fackelAn = P('redstone.fackel-invertiert', 'an');
@@ -34,6 +34,15 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
   const knopf = new RegExp(P('redstone.knopf', 'muster'));
   const redstoneBlock = P('redstone.quelle-block', 'block');
   const ruhe = P('zeit.staub-sofort', 'ruheTicks');
+  const lampeIds = P('mech.lampe', 'ids');
+  const lampeAusTicks = P('mech.lampe', 'ausTicks');
+  const tuerMuster = new RegExp(P('mech.tueren', 'muster'));
+  const beobachterId = P('mech.beobachter', 'block');
+  const beobachterImpuls = P('mech.beobachter', 'impulsTicks');
+  const tagIds = P('mech.tagessensor', 'ids');
+  const tagIntervall = P('mech.tagessensor', 'intervallTicks');
+  const regenFaktor = P('mech.tagessensor', 'regenFaktor');
+  const tagTicks = P('mech.tagessensor', 'ticksProTag');
   const istRepeater = (id) => repeaterIds.includes(id);
   const istKomparator = (id) => komparatorIds.includes(id);
 
@@ -44,12 +53,40 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
     return { eingang, front: GEGEN[eingang] };
   }
 
+  /** Himmelsverdunkelung 0–11 aus Tageszeit und Wetter (Java-Formel, Bedrock nicht belegt). */
+  const zeitwert = (dayTime) => {
+    const d = ((((dayTime / tagTicks) - 0.25) % 1) + 1) % 1;
+    const e = 0.5 - Math.cos(d * Math.PI) / 2;
+    return (d * 2 + e) / 3; // 0 = Mittag, 0,5 = Mitternacht
+  };
+  function verdunkelung(dayTime, wetter) {
+    const f = zeitwert(dayTime);
+    let f1 = Math.min(1, Math.max(0, 1 - (Math.cos(f * 2 * Math.PI) * 2 + 0.2)));
+    f1 = 1 - f1;
+    if (wetter !== 'klar') f1 *= 1 - regenFaktor;
+    if (wetter === 'gewitter') f1 *= 1 - regenFaktor;
+    return Math.floor((1 - f1) * 11);
+  }
+  /** Signalstärke eines Tagessensors bei gegebenem rohem Himmelslicht (0–15). */
+  function tagessensorStaerke({ dayTime, wetter, himmel, invertiert }) {
+    let i = himmel - verdunkelung(dayTime, wetter);
+    if (invertiert) i = 15 - i;
+    else if (i > 0) {
+      let winkel = zeitwert(dayTime) * 2 * Math.PI;
+      const ziel = winkel < Math.PI ? 0 : 2 * Math.PI;
+      winkel += (ziel - winkel) * 0.2;
+      i = Math.round(i * Math.cos(winkel));
+    }
+    return Math.max(0, Math.min(15, i));
+  }
+
   /**
    * Baut die Mechaniken für eine Welt (im Sandkasten) und gibt Steuerung zurück.
    * @param {import('../ebene0/welt.js').Welt} welt
-   * @param {{loren?: {x:number,y:number,z:number}[], seed?: number}} [optionen]
+   * @param {{loren?: {x:number,y:number,z:number}[], seed?: number, wetter?: 'klar'|'regen'|'gewitter', startzeit?: number}} [optionen]
+   *   startzeit: Tageszeit in Ticks beim ersten Tick (0 = Sonnenaufgang, 6000 = Mittag, 18000 = Mitternacht)
    */
-  function erzeuge(welt, { loren = [], seed = 1 } = {}) {
+  function erzeuge(welt, { loren = [], seed = 1, wetter = 'klar', startzeit = 0 } = {}) {
     const sk = new Sandkasten(welt);
     const t = new Taktgeber(sk, { seed });
     const ereignisse = [];
@@ -58,16 +95,23 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
     const lies = (p) => w.leseBlock(p.x, p.y, p.z);
 
     // Bauteile der Welt einsammeln
-    const fackeln = [], repeater = [], komparatoren = [], knoepfe = [];
+    const fackeln = [], repeater = [], komparatoren = [], knoepfe = [], lampen = [], tueren = [], beobachter = [], tagesSensoren = [];
     for (const b of w.alleBloecke()) {
       const pos = { x: b.x, y: b.y, z: b.z };
       if (b.id === fackelAn || b.id === fackelAus) fackeln.push(pos);
       else if (istRepeater(b.id)) repeater.push(pos);
       else if (istKomparator(b.id)) komparatoren.push(pos);
       else if (knopf.test(b.id)) knoepfe.push(pos);
+      else if (lampeIds.includes(b.id)) lampen.push(pos);
+      else if (tuerMuster.test(b.id)) tueren.push(pos);
+      else if (b.id === beobachterId) beobachter.push(pos);
+      else if (tagIds.includes(b.id)) tagesSensoren.push(pos);
     }
     // Gedächtnis (nicht in der Welt gespeichert)
     const komparatorStufe = new Map(komparatoren.map((p) => [key(p), lies(p).zustand.output_lit_bit ? 15 : 0]));
+
+    const impuls = new Map(beobachter.map((p) => [key(p), lies(p).zustand.powered_bit === true]));
+    const sensorStufe = new Map(tagesSensoren.map((p) => [key(p), lies(p).zustand.redstone_signal ?? 0]));
 
     // Stromkarte je Tick (einmal rechnen, von allen Bauteilen im selben Tick benutzt)
     let karteTick = -1, karteWert = null;
@@ -82,6 +126,15 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
       for (const p of komparatoren) {
         const stufe = komparatorStufe.get(key(p)) ?? 0;
         if (stufe > 0) fest.ausgaben.push({ von: p, zelle: plus(p, seiten(lies(p).zustand).front), stufe });
+      }
+      for (const p of beobachter) {
+        if (!impuls.get(key(p))) continue;
+        const hinten = GEGEN[lies(p).zustand['minecraft:facing_direction']];
+        if (hinten) fest.ausgaben.push({ von: p, zelle: plus(p, hinten), stufe: 15 });
+      }
+      for (const p of tagesSensoren) {
+        const stufe = sensorStufe.get(key(p)) ?? 0;
+        if (stufe > 0) for (const r of ['north', 'east', 'south', 'west', 'up', 'down']) fest.ausgaben.push({ von: p, zelle: plus(p, r), stufe, schwach: true });
       }
       karteWert = redstone.stromkarte(w, { loren, fest });
       karteTick = ktx.tick;
@@ -241,9 +294,91 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
       };
     });
 
+    // ---- Lampen (nur im C-Tick): sofort an, nach lampeAusTicks Ticks ohne Strom aus ----
+    const lampeAus = new Map();
+    const lampenMechanik = {
+      id: 'mech-lampen', tickart: 'mechanismus',
+      schritt(ktx) {
+        const km = karte(ktx);
+        for (const p of lampen) {
+          const b = lies(p), k = key(p);
+          const an = b.id === lampeIds[1];
+          if (km.bestromtAn(p.x, p.y, p.z)) {
+            lampeAus.delete(k);
+            if (!an) { w.setzeBlock(p.x, p.y, p.z, lampeIds[1]); merke(ktx, 'lampe-an', p); }
+          } else if (an) {
+            if (!lampeAus.has(k)) lampeAus.set(k, ktx.tick + lampeAusTicks);
+            if (ktx.tick >= lampeAus.get(k)) { lampeAus.delete(k); w.setzeBlock(p.x, p.y, p.z, lampeIds[0]); merke(ktx, 'lampe-aus', p); }
+          }
+        }
+      },
+    };
+    // ---- Türen, Falltüren, Zauntore (nur im C-Tick): offen, solange bestromt ----
+    const tuerenMechanik = {
+      id: 'mech-tueren', tickart: 'mechanismus',
+      schritt(ktx) {
+        const km = karte(ktx);
+        for (const p of tueren) {
+          const b = lies(p);
+          if (!tuerMuster.test(b.id)) continue;
+          if (b.zustand.upper_block_bit === true) continue; // obere Türhälfte folgt der unteren
+          const zelle = b.zustand.upper_block_bit === false;
+          const oben = plus(p, 'up');
+          const bestromt = km.bestromtAn(p.x, p.y, p.z) || (zelle && km.bestromtAn(oben.x, oben.y, oben.z));
+          if ((b.zustand.open_bit === true) === bestromt) continue;
+          w.setzeBlock(p.x, p.y, p.z, b.id, { ...b.zustand, open_bit: bestromt });
+          if (zelle) { const ob = lies(oben); if (tuerMuster.test(ob.id)) w.setzeBlock(oben.x, oben.y, oben.z, ob.id, { ...ob.zustand, open_bit: bestromt }); }
+          merke(ktx, bestromt ? 'tuer-auf' : 'tuer-zu', p);
+        }
+      },
+    };
+    // ---- Beobachter (P-Tick lesen, C-Tick schreiben): Impuls von beobachterImpuls Ticks bei einer Änderung der Zelle davor ----
+    const beobachterMechaniken = beobachter.map((pos) => {
+      const k = key(pos);
+      let letzte = null;
+      const davor = () => plus(pos, lies(pos).zustand['minecraft:facing_direction']);
+      const signatur = (p) => { const b = lies(p); return b.id + JSON.stringify(b.zustand); };
+      return {
+        id: `mech-beobachter:${k}`, tickart: 'uebertrager',
+        lesen(ktx) {
+          const jetzt = signatur(davor());
+          const geaendert = letzte !== null && jetzt !== letzte;
+          letzte = jetzt;
+          if (impuls.get(k)) return { verzoegerung: beobachterImpuls / 2, wert: false };
+          return geaendert ? { verzoegerung: 1, wert: true } : null;
+        },
+        schreiben(ktx, wert) {
+          impuls.set(k, wert);
+          const b = lies(pos);
+          w.setzeBlock(pos.x, pos.y, pos.z, b.id, { ...b.zustand, powered_bit: wert });
+          letzte = signatur(davor());
+          if (wert) merke(ktx, 'beobachter-impuls', pos);
+        },
+      };
+    });
+    // ---- Tagessensoren: alle tagIntervall Ticks neu rechnen ----
+    const sensorMechanik = {
+      id: 'mech-tagessensor', tickart: 'spieltick',
+      schritt(ktx) {
+        if (ktx.tick !== 1 && ktx.tick % tagIntervall !== 0) return;
+        for (const p of tagesSensoren) {
+          const b = lies(p);
+          // Der Sensor liest das Himmelslicht der Zelle über sich (er selbst ist ein flacher Block mit unbekanntem Lichtfilter)
+          const lk = licht.lichtkarte(w, { von: p, bis: { x: p.x, y: p.y + 1, z: p.z } }, { himmel: 'tag' }).himmelRoh(p.x, p.y + 1, p.z);
+          if (lk.min !== lk.max) merke(ktx, 'tagessensor-unklar', p, { himmel: lk });
+          const stufe = tagessensorStaerke({ dayTime: startzeit + ktx.tick, wetter, himmel: lk.min, invertiert: b.id === tagIds[1] });
+          sensorStufe.set(key(p), stufe);
+          if (b.zustand.redstone_signal !== stufe) { w.setzeBlock(p.x, p.y, p.z, b.id, { ...b.zustand, redstone_signal: stufe }); merke(ktx, 'tagessensor', p, { stufe }); }
+        }
+      },
+    };
+
     t.registriere(knopfMechanik);
+    t.registriere(sensorMechanik);
     t.registriere(staubMechanik);
-    for (const m of [...fackelMechaniken, ...repeaterMechaniken, ...komparatorMechaniken]) t.registriere(m);
+    for (const m of [...fackelMechaniken, ...repeaterMechaniken, ...komparatorMechaniken, ...beobachterMechaniken]) t.registriere(m);
+    t.registriere(lampenMechanik);
+    t.registriere(tuerenMechanik);
 
     const zustandsabdruck = () => {
       const teile = [];
@@ -273,7 +408,7 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
     };
   }
 
-  const enthaeltZeitbauteile = (welt) => welt.alleBloecke().some((b) => b.id === fackelAn || b.id === fackelAus || istRepeater(b.id) || istKomparator(b.id) || knopf.test(b.id));
+  const enthaeltZeitbauteile = (welt) => welt.alleBloecke().some((b) => b.id === fackelAn || b.id === fackelAus || istRepeater(b.id) || istKomparator(b.id) || knopf.test(b.id) || lampeIds.includes(b.id) || tuerMuster.test(b.id) || b.id === beobachterId || tagIds.includes(b.id));
 
-  return { erzeuge, enthaeltZeitbauteile };
+  return { erzeuge, enthaeltZeitbauteile, tagessensorStaerke, verdunkelung };
 }

@@ -177,6 +177,17 @@
       "simulationstest": "test/ebene1/redstone-zeit.test.js::Prüfer: Redstone läuft ab",
       "ungeprueft": true,
       "testanleitung": "Siehe zeit.fackel-brennen."
+    },
+    {
+      "id": "pruefer.mechanismus",
+      "titel": "Prüfer: Mechanismen ohne Strom",
+      "regel": "Lampe oder Tür/Falltür/Zauntor, die im Sandkasten nie bestromt wird (Hinweis), und Tagessensor ohne Himmelssicht (Hinweis).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_Lamp (folgt aus den Regeln mech.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/mechanismen.test.js::Prüfer: Mechanismen",
+      "ungeprueft": true,
+      "testanleitung": "Siehe mech.bestromung und mech.tagessensor."
     }
   ]
 }

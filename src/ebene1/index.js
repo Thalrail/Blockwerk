@@ -52,7 +52,7 @@ export function erzeugeEbene1({ ebene0, regeln }) {
   const redstone = erzeugeRedstone({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon });
   const aktivierung = erzeugeAntrieb({ regelwerk, schienen, ids: regelwerk.parameter('redstone.aktivierungsschiene', 'ids') });
   const trichter = erzeugeTrichter({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon });
-  const redstoneZeit = erzeugeRedstoneZeit({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, redstone, trichter });
+  const redstoneZeit = erzeugeRedstoneZeit({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, redstone, trichter, licht });
   return {
     regelwerk,
     schienen,

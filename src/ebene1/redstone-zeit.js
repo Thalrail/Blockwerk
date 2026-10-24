@@ -87,9 +87,10 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
    * @param {import('../ebene0/welt.js').Welt} welt
    * @param {{loren?: {x:number,y:number,z:number}[], seed?: number, wetter?: 'klar'|'regen'|'gewitter', startzeit?: number, trichter?: boolean}} [optionen]
    *   startzeit: Tageszeit in Ticks beim ersten Tick (0 = Sonnenaufgang, 6000 = Mittag, 18000 = Mitternacht)
+   *   trichterReihenfolge: 'aufsteigend' (y, z, x) oder 'absteigend' (nur mit trichter)
    *   trichter: Trichter bewegen Gegenstände mit und werden im C-Tick durch Strom gesperrt (Regel zeit.trichter-sperre); ohne Angabe bewegt sich nichts
    */
-  function erzeuge(welt, { loren = [], seed = 1, wetter = 'klar', startzeit = 0, trichter: mitTrichter = false } = {}) {
+  function erzeuge(welt, { loren = [], seed = 1, wetter = 'klar', startzeit = 0, trichter: mitTrichter = false, trichterReihenfolge = 'aufsteigend' } = {}) {
     const sk = new Sandkasten(welt);
     const t = new Taktgeber(sk, { seed });
     const ereignisse = [];
@@ -435,7 +436,7 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
 
     // ---- Trichter (nur mit Option): bewegen jeden Tick, werden im C-Tick durch Strom gesperrt (toggle_bit folgt der Bestromung) ----
     const trichterPos = mitTrichter ? w.alleBloecke().filter((b) => b.id === trichter.hopperId).map((b) => ({ x: b.x, y: b.y, z: b.z })) : [];
-    const trichterMechanik = mitTrichter ? trichter.mechanik() : null;
+    const trichterMechanik = mitTrichter ? trichter.mechanik({ reihenfolge: trichterReihenfolge }) : null;
     if (trichterMechanik) {
       const gleiche = (ktx) => {
         const km = karte(ktx);

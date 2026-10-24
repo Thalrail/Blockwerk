@@ -193,6 +193,13 @@ Kreativwelt, Stoppuhr:
 1. **Waagerechte Kette:** Kiste → Trichter A → Trichter B → Trichter C → Kiste, alle nach Osten. Wann kommt der erste Gegenstand in der letzten Kiste an? Erwartet etwa 24 Ticks (1,2 s) nach dem ersten Zug statt 8. (`trichter.empfang`)
 2. **Empfänger nicht leer:** Trichter B mit einem Gegenstand füllen, hinter B eine volle Kiste, dann Platz schaffen: Schiebt B sofort oder erst nach der Wartezeit? (`trichter.empfang`)
 
+## Sortiereinheit: Tests (Ebene 2)
+Kreativwelt. Die Anordnung ist ein Blockwerk-Entwurf nach dem Wiki-Text; sie stimmt nur in der Simulation. Füller: vier Gegenstände, die nie im Strom vorkommen (umbenannt oder per Befehl, zum Beispiel Barriere, Strukturleere, Lichtblock, Erlauben-Block).
+1. **Eine Einheit:** nach dem Plan bauen (Filtertrichter mit 18 Stein und 4 Füllern, Fass mit 1 Stein). Zeigt der Komparator hinter dem Filtertrichter im Ruhezustand nichts, ist die Fackel am Ausgabetrichter an? (`lager.sperre`)
+2. **Gemisch:** Stein, Erde, Bruchstein, Eichenbretter wild gemischt einlaufen lassen, **höchstens ein Stück alle 10 Ticks** (zum Beispiel von Hand einwerfen). Landet alles Gewünschte in der Lagerkiste, nichts Fremdes, und bleibt der Filtertrichter bei etwa 18 Stein mit allen Füllern? (`lager.sperre`)
+3. **Volle Geschwindigkeit:** dasselbe mit einer Trichterkette direkt vor dem Rohr. Kommt Stein am Rohrende an? (`lager.eingang`)
+4. **Enderperlen** (Stapel 16): Haltemenge 4 statt 18, gleiches Verhalten? (`lager.filter`)
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
@@ -252,6 +259,9 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `kolben.behaelter` – Behälter | Kolben vor einer Truhe (einzeln und doppelt), einem Fass, Ofen, Trichter, Werfer, Shulkerkiste: Wird der Block geschoben? Mit Inhalt? |
 | `kolben.klebrig` – Klebriger Kolben zieht 1 Block | Klebrigen Kolben ausfahren lassen, dann einfahren, mit einem Stein, einem Obsidian, einer Fackel und zwei Steinen hintereinander vor dem Kopf: Was wird zurückgezogen? |
 | `kolben.blockiert` – Blockierter Kolben fährt nicht aus | Kolben vor Obsidian bestromen: Passiert etwas (Geräusch, Kopf)? Bleibt er danach bestromt blockiert? |
+| `lager.filter` – Filtertrichter mit Haltemenge und Füllern | Einen Trichter mit 18 Stück der Sorte und vier verschiedenen, nie im Strom vorkommenden Füllern (je 1) bauen, einen Komparator dahinter: zeigt er Signal 1? Mit 19 Stück Signal 2? Bei einer 16er-Sorte (Enderperle) mit 4 und 5 Stück? |
+| `lager.sperre` – Ausgabetrichter gesperrt, solange der Filtertrichter nicht übervoll ist | Sortiereinheit mit zwei Sorten nach Plan bauen und aus einem Gemisch aus drei Sorten durchlaufen lassen (Eingangsabstand mindestens 9 Ticks): Liegt alles Gewünschte in der Lagerkiste, nichts Fremdes? Bleibt der Filtertrichter bei Haltemenge, bleiben die Füller drin, und bleibt der Ausgabetrichter sonst gesperrt? |
+| `lager.eingang` – Eingangsabstand mindestens 9 Ticks | Gemisch einmal mit voller Geschwindigkeit (Trichterkette direkt vor dem Rohr) und einmal gedrosselt (alle 10 Ticks) durchlaufen lassen: Kommt bei voller Geschwindigkeit etwas von der Sorte am Rohrende an? |
 | `licht.blocklicht` – Blocklicht nimmt um 1 je Block ab | Kreativ-Testwelt, dunkle Höhle oder Raum ohne Himmel: Eine Fackel (Stärke 14) in der Mitte eines großen Raums. Mit einem Lichtblock (/give @s light_block ["block_light_level"=…]) oder Beobachtung der Monsterspawns prüfen, wie weit das Licht reicht. Erwartung: 13 Blöcke Entfernung noch Licht 1, ab 14 Blöcken dunkel. |
 | `licht.himmelslicht` – Himmelslicht: senkrecht ungeschwächt, seitlich minus 1 | Tagsüber: ein 1×1-Schacht, 20 Blöcke tief, mit Dach daneben. Ganz unten im Schacht ist es hell (Himmelslicht 15). Zeigt der waagerechte Gang vom Schachtboden aus, nach wie vielen Blöcken er dunkel wird (erwartet 15)? Mit Spawn-Beobachtung oder Lichtblock-Vergleich. |
 | `licht.filter` – Lichtfilter von Laub, Wasser und Halbstufen | Fackel hinter einer 1-Block-Wand aus Laub, dann aus Wasser (Eimer in einem 1-Block-Loch): Wie viel dunkler ist es dahinter als durch Luft (eine Stufe weniger = Wiki-Filterwert, zwei Stufen weniger = „plus 1“)? Mit Lichtblöcken vergleichen und die Differenz melden. |

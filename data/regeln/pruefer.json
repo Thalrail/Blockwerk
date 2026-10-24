@@ -120,6 +120,17 @@
       "simulationstest": "test/ebene1/spawn.test.js::Prüfer: Spawn möglich in Innenräumen",
       "ungeprueft": true,
       "testanleitung": "Siehe spawn.platz und spawn.boden-unklar."
+    },
+    {
+      "id": "pruefer.lore-stillstand",
+      "titel": "Prüfer: Lore bleibt stehen",
+      "regel": "Für eine übergebene Startschiene und Fahrtrichtung läuft der Prüfer die Bahn ab und urteilt mit Jonahs Messtabellen (lore.*): Verstoß mit Koordinate, wo die Lore sicher stehen bleibt (ebene Lücke, Rampe ohne passenden Antrieb), Hinweis bei nicht gemessenen Fällen (Abstand 9, Rampe über 5 Blöcke, Bahn ohne Antrieb am Anfang).",
+      "parameter": {},
+      "quelle": "Messung Jonah (24.10.2026); https://minecraft.wiki/w/Minecart",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/lore.test.js::Prüfer: Lore bleibt stehen",
+      "ungeprueft": true,
+      "testanleitung": "Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb."
     }
   ]
 }

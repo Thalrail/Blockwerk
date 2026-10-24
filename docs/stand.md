@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2d-2, Spawnstellen, ist gebaut: Branch `claude/ebene-1-spawn`. 184 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gebaut: Branch `claude/ebene-1-spawn`. 194 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -19,7 +19,8 @@ Zuletzt aktualisiert: 20.10.2026
 | 2c | Ebene 1 – Wasser und Lava: Weite, Tempo, Fallen, Gefälle, Quellenbildung, Mischen, Wegspülen, Prüfer „Wasser zerstört“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #5/#6) |
 | 2d-1 | Ebene 1 – Licht: Blocklicht und Himmelslicht mit Minimum/Maximum bei unbekannten Filtern | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #7) |
 | 2d-2 | Ebene 1 – Spawnstellen: wo können Monster spawnen (Licht, Boden, Platz), Prüfer „Spawn möglich“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; PR wartet auf Abnahme) |
-| 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Lorenbewegung (braucht Jonahs Messungen, `docs/messungen-lore.md`), fallende Blöcke, Trichter & Blockinhalte, Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
+| 2e-1 | Ebene 1 – Lorenbewegung aus Messtabellen (keine Physik): Auslauf, Abstand der Antriebsschienen, Steighöhe, Fahrzeit, Prüfer „Lore bleibt stehen“ | **fertig**: Messwerte `geprüft` (Jonah, 24.10.2026), Lücken `ungeprüft`; gemergt, PR #10 |
+| 2e… | Ebene 1 – weitere Mechaniken, je ein PR: fallende Blöcke, Trichter & Blockinhalte, Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -52,7 +53,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/schiene.json` (11 Regeln, 3 geprüft, 7 mit Annahmen und Testanleitung).
 - Schiene auf Halbstufe/Treppe: normale Lage trägt nicht (Verstoß), obere Halbstufe und kopfstehende Treppe tragen (Jonah, 21.10.2026).
 - Schienen-Spieltests 21.10.2026 (Jonah): T-Stelle = Ost-Süd vor Ost-Nord, gerade nur ohne weitere Nachbarn (**geprüft**); Rampen: West vor Ost, Süd vor Nord. Antriebsschiene bleibt an der Ecke gerade, die normale Schiene dreht sich zu ihr (**geprüft**). Offen: Detektor-/Aktivierungsschiene, Kurven ohne Ost-Nachbar, Kreuzung.
-- Noch **nicht** da: Antrieb (8 Schienen weit, nur C-Tick), Lorenbewegung, Geschwindigkeit.
+- Lorenbewegung: siehe Abschnitt „Lorenbewegung (Teil 2e-1)“.
 
 ## Was der Schienen-Antrieb (Teil 2b-2) jetzt kann (`src/ebene1/antrieb.js`)
 - `aktive(welt, stromQuellen)`: welche Antriebsschienen sind aktiv? Direkt versorgt durch einen angrenzenden Redstone-Block (oder eine von außen übergebene Stromquelle), dazu verbundene Antriebsschienen bis 8 Schienen weit (17 bei Quelle in der Mitte); normale Schienen und Lücken unterbrechen.
@@ -90,6 +91,13 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/spawn.json` (7 Regeln, 3 belegt oder nur Information, 4 mit Annahmen und Testanleitung).
 - Nicht dabei: Tiere (Licht ≥ 7), Wasser-/Höhlen-/Sonderspawns, Spawner, Phantome, Spawn-Entfernung und Mob-Caps (nur als Information in `spawn.entfernung`), Zufall der Spawnwahl.
 
+## Was die Lorenbewegung (Teil 2e-1) jetzt kann (`src/ebene1/lore.js`)
+- **Keine Physik, nur Jonahs Messtabellen** (`data/regeln/lore.json`, 6 Regeln `geprüft` am 24.10.2026, 2 Lücken `ungeprüft`): `auslauf(n)` (Strecke nach n Antriebsschienen am Stück, linear zwischen den Messpunkten, Sättigung 23), `steighoehe(n)`, `abstandEben(k)` und `abstandSteigung(k, ersteAngetrieben, hoehe)` mit `ja`/`nein`/`unklar`, `luecke(normale, davor)`, `fahrzeit(laenge)` (Richtwert 0,16 s je Block).
+- `bahn(welt, start, richtung)` läuft die Schienenverbindung ab (Linie, Kurve, Rampe, Ring ohne Endlosschleife, Ende bei Sackgasse oder einseitiger Verbindung); `analysiere(bahn)` urteilt über ebene Lücken, Rampen und fehlenden Antrieb am Start.
+- Prüfer `pruefer.lore-stillstand` (nur mit `loreStart` {pos, richtung}): **Verstoß** mit Koordinate, wo die Lore stehen bleibt; **Hinweis** bei Abstand 9, Rampen über 5 Blöcken, Start ohne Antrieb.
+- Konservativ: alle Messungen starten aus dem Stand, eine schon fahrende Lore wird wie aus dem Stand gerechnet (Prüfung eher zu streng, nie zu großzügig).
+- Nicht dabei: Tick-Simulation der Lore, Beschleunigungskurve, Trichter-/TNT-Lore, Mob-Einsteigen, Kollisionen, Detektor-/Aktivierungsschiene.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -110,7 +118,7 @@ Zuletzt aktualisiert: 20.10.2026
 
 ## Nächster Schritt
 **Schritt 2e: nächste Mechanik – Jonah entscheidet:** fallende Blöcke (Sand/Kies), Trichter & Blockinhalte oder Redstone (Signalstärke, Fackeln, Hebel; damit auch Detektor-/Aktivierungsschiene). Lorenbewegung erst nach Jonahs Messungen (`docs/messungen-lore.md`).
-Nebenbei: Jonah macht die Antriebs-Tests und Messungen aus `docs/spieltests.md` und `docs/messungen-lore.md`.
+Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 
 ## Offene Entscheidungen

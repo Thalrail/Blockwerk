@@ -1,0 +1,30 @@
+{
+  "bereich": "bogen",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "bogen.stich",
+      "titel": "Bogenstich = 0,3 × Spannweite",
+      "regel": "Der Stich (Höhe des Bogens über dem Ansatz) ist als Proportion der Spannweite festgelegt, Standard 0,3 (0,5 = Halbkreis). Der Bogen ist ein Segmentbogen durch die beiden Ansatzpunkte; dieselbe Formel gilt für jede Spannweite.",
+      "parameter": {
+        "verhaeltnis": 0.3
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Proportionen statt fester Maße, Bogenstich 0,3 × Spannweite)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bogen.test.js::Bogen: Form für alle Spannweiten",
+      "ungeprueft": false
+    },
+    {
+      "id": "bogen.durchgang",
+      "titel": "Durchgang mindestens 2 Blöcke hoch",
+      "regel": "Die geraden Pfeiler eines Bogens sind mindestens so hoch wie eine Tür (2 Blöcke), damit Spieler und Dorfbewohner hindurchgehen. Das Menschenmaß skaliert nicht mit der Größe.",
+      "parameter": {
+        "mindesthoehe": 2
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Menschenmaß bleibt fest, Türhöhe 2)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/bogen.test.js::Bogen: Durchgang und Tonnengewölbe mit Ebene 1",
+      "ungeprueft": false
+    }
+  ]
+}

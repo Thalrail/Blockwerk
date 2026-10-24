@@ -175,6 +175,13 @@ Kreativwelt. Gebaut wird nach den Plänen der Seite; geprüft wird nur die Lage 
 ## Bahn-Module: Sichttest (Ebene 2)
 Die Abstände stammen aus deinen Messungen (`lore.*`, geprüft). Zum Anschauen: eine Antriebsstrecke mit 4 Abschnitten à 4 normalen Schienen und einer Antriebsschiene mit Redstone-Block darunter nach Norden bauen und eine Lore starten; ebenso eine Rampe 3 Blöcke hoch und eine Kurve mit 3 Schienen je Schenkel. Fährt die Lore durch?
 
+## Handelsnische und Bett: Tests (Ebene 2)
+Kreativwelt. Die Nische ist eine Reihe von Zellen (Plan in der Oberfläche später; bis dahin nach den Querschnitten der Tests):
+1. **Zelle dicht:** Dorfbewohner (Ei) in eine Zelle setzen, Bett dahinter, Berufsblock davor, darüber Scheiben. Bleibt er drin, bekommt er den Beruf des Blocks? (`tech.nische`)
+2. **Handeln durch die Scheibe:** Kann man durch die Scheiben mit ihm handeln? Wenn nicht: welche Blockart vorn funktioniert (Eisenstäbe, Falltür, Zaun)? (`tech.nische`)
+3. **Reihenfolge:** Drei Nischen nebeneinander. Berufsblöcke und Dorfbewohner einmal von links nach rechts, einmal in umgekehrter Reihenfolge setzen: Nimmt jeder den Beruf seines eigenen Blocks? Bedrock vergibt den ersten Block der Liste, egal wie weit; welche Reihenfolge ist die „Liste“ im Spiel? (`dorf.zuordnung`)
+4. **Bett drehen:** Vier Betten mit dem Kopf nach Süden, Westen, Norden, Osten bauen, als Struktur speichern und um 90° gedreht laden: Zeigt der Kopf in die erwartete Richtung? (Drehregel `minecraft:bed` / `direction`)
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
@@ -307,6 +314,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `takt.zufallsticks` – Zufallsticks | Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen). |
 | `takt.tickbereich` – Tickbereich | Kreativ-Testwelt: Wasserfall- oder Pflanzenfarm bauen, dich 10 Chunks entfernen und zurückkehren: Hat sie sich währenddessen weiterbewegt (z. B. Weizen gewachsen)? Dazu die Simulationsdistanz deines Aternos-Servers nennen. |
 | `takt.arbeitsreihenfolge` – Arbeitsreihenfolge innerhalb eines Spielticks | Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden. |
+| `tech.nische` – Handelsnische: geschlossene Zelle mit Berufsblock und Bett | Eine Handelsnische nach dem Plan bauen (Dorfbewohner per Boot oder Ei hineinsetzen): Bleibt er in der Zelle, nimmt er den Beruf seines Berufsblocks an, und kann man durch die Scheiben mit ihm handeln? Bei mehreren Nischen nebeneinander: Nimmt jeder den Berufsblock seiner eigenen Zelle? |
 | `trichter.cooldown` – Wartezeit nach einem Vorgang | Kiste mit 64 Gegenständen, darunter ein Trichter, der in eine zweite Kiste zeigt. Mit Video (60 fps) die Zeit für 64 Gegenstände messen: Blockwerk erwartet etwa 8 Ticks je Gegenstand (rund 25,6 s). Ergebnis melden. |
 | `trichter.reihenfolge` – Erst schieben, dann ziehen | Zwei Trichter nebeneinander, die einander füttern (Kette A → B), mit Gegenständen füllen und beobachten, ob die Gegenstände ohne Stau weiterlaufen. Außerdem: Zwei Trichter in einer senkrechten Säule zwischen zwei Kisten: Wie viele Gegenstände je Sekunde laufen durch? |
 | `trichter.slots` – Slots und ein Gegenstand je Vorgang | Kiste mit Gegenständen in verschiedenen Slots (z. B. Slot 3 Kohle, Slot 5 Eisen), Trichter darunter: In welcher Reihenfolge landen sie in der Zielkiste und in welchem Slot? |

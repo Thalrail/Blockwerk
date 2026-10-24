@@ -245,3 +245,28 @@ test('Glow-Lichen-Bits (Wiki: 1 unten, 2 oben, 4 Süd, 8 West, 16 Nord, 32 Ost) 
   assert.deepEqual(z1('', { coral_direction: 0 }, DREH), { coral_direction: 2 }, 'West → Nord');
   assert.deepEqual(z1('', { coral_direction: 3 }, sp('x')), { coral_direction: 3 }, 'Süd bleibt beim Spiegeln an x');
 });
+
+test('Ausnahmeregel je Block: direction beim Bett (0 Süd, 1 West, 2 Nord, 3 Ost, ungeprüft), bei anderen Blöcken unverändert', () => {
+  const bett = (n, op = DREH, k = 1) => v.transformiereZustand({ direction: n }, op, k, 'minecraft:bed');
+  assert.deepEqual([0, 1, 2, 3].map((n) => bett(n).direction), [1, 2, 3, 0], 'Süd → West → Nord → Ost → Süd');
+  for (const n of [0, 1, 2, 3]) assert.deepEqual(bett(n, DREH, 4), { direction: n }, '4× drehen = Identität');
+  assert.deepEqual([0, 1, 2, 3].map((n) => bett(n, sp('x'), 1).direction), [0, 3, 2, 1], 'Spiegeln an x: West ↔ Ost');
+  assert.deepEqual([0, 1, 2, 3].map((n) => bett(n, sp('z'), 1).direction), [2, 1, 0, 3], 'Spiegeln an z: Süd ↔ Nord');
+  // richtungVon kennt die Ausnahme nur mit Block-ID
+  assert.equal(v.richtungVon('direction', 2, 'minecraft:bed'), 'north');
+  assert.equal(v.richtungVon('direction', 2), null);
+  assert.equal(v.richtungVon('direction', 2, 'minecraft:trapdoor'), null);
+  // andere Blöcke mit „direction“ bleiben unberührt (Bedeutung unbelegt)
+  assert.deepEqual(v.transformiereZustand({ direction: 1 }, DREH, 1, 'minecraft:trapdoor'), { direction: 1 });
+  assert.deepEqual(v.transformiereZustand({ direction: 1 }, DREH, 1), { direction: 1 });
+  // Block mit Bett ohne direction lässt sich nicht drehen (statt still falsch zu drehen)
+  const teilBett = (zustand) => ({ bloecke: [{ x: 0, y: 0, z: 0, id: 'minecraft:bed', zustand }], wesen: [] });
+  assert.throws(() => v.drehe(teilBett({ head_piece_bit: true }), 1), /direction/);
+  assert.equal(v.drehe(teilBett({ head_piece_bit: true, direction: 0 }), 1).bloecke[0].zustand.direction, 1);
+  // Status und Quelle
+  const regel = drehregeln.ausnahmen['minecraft:bed'].direction;
+  assert.equal(regel.status, 'ungeprüft');
+  assert.ok(regel.quelle.startsWith('https://') && regel.testanleitung.length > 20);
+  // jeder Eintrag der Ausnahmen verweist auf einen echten Block mit diesem Zustand
+  for (const [id, zustaende] of Object.entries(drehregeln.ausnahmen)) for (const name of Object.keys(zustaende)) assert.ok(Object.hasOwn(register.bloecke.block(id).zustaende, name), `${id}.${name}`);
+});

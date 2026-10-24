@@ -22,12 +22,19 @@ export function erzeugeVermesser({ regeln, register }) {
   for (const name of Object.keys(regeln.zustaende)) register.zustandsart(name);
   for (const f of regeln.familien) for (const n of Object.values(f.seiten)) register.zustandsart(n);
   for (const name of Object.keys(regeln.unbehandelt)) register.zustandsart(name);
+  // Ausnahmen je Block: dieselbe Zustandsart kann bei einem Block etwas anderes bedeuten (z. B. direction beim Bett) und hat dann eine eigene Regel
+  const ausnahmen = regeln.ausnahmen ?? {};
+  for (const [id, zustaende] of Object.entries(ausnahmen)) {
+    const definiert = register.block(id).zustaende;
+    for (const name of Object.keys(zustaende)) if (!Object.hasOwn(definiert, name)) throw new Error(`Ausnahmeregel: ${id} hat keinen Zustand ${name}`);
+  }
+  /** Regel für einen Zustand; eine Ausnahme für den Block hat Vorrang vor der allgemeinen Regel. */
+  const regelFuer = (name, blockId) => (blockId && ausnahmen[blockId]?.[name]) || regeln.zustaende[name];
 
   const richtungOp = (op, label) => (op.typ === 'drehen' ? dreheRichtung(label, 1) : spiegleRichtung(label, op.achse));
 
   /** Einzelner Zustandswert nach einem Schritt (Drehung um 90° oder Spiegelung). */
-  function wert(name, w, op) {
-    const regel = regeln.zustaende[name];
+  function wert(name, w, op, regel) {
     switch (regel.art) {
       case 'richtung': {
         const label = regel.abbildung[String(w)];
@@ -77,7 +84,7 @@ export function erzeugeVermesser({ regeln, register }) {
   }
 
   /** Zustand einmal drehen/spiegeln. */
-  function zustandSchritt(zustand, op) {
+  function zustandSchritt(zustand, op, blockId) {
     const neu = {};
     const verarbeitet = new Set();
     for (const f of regeln.familien) {
@@ -88,14 +95,15 @@ export function erzeugeVermesser({ regeln, register }) {
     }
     for (const [name, w] of Object.entries(zustand)) {
       if (verarbeitet.has(name)) continue;
-      neu[name] = regeln.zustaende[name] ? wert(name, w, op) : w;
+      const regel = regelFuer(name, blockId);
+      neu[name] = regel ? wert(name, w, op, regel) : w;
     }
     return Object.fromEntries(Object.entries(neu).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
   }
 
-  function transformiereZustand(zustand, op, anzahl = 1) {
+  function transformiereZustand(zustand, op, anzahl = 1, blockId = null) {
     let z = zustand;
-    for (let i = 0; i < anzahl; i++) z = zustandSchritt(z, op);
+    for (let i = 0; i < anzahl; i++) z = zustandSchritt(z, op, blockId);
     return z;
   }
 
@@ -106,7 +114,7 @@ export function erzeugeVermesser({ regeln, register }) {
   function pruefeVollstaendig(b, op) {
     const definiert = register.block(b.id).zustaende;
     for (const name of Object.keys(definiert)) {
-      const regel = regeln.zustaende[name];
+      const regel = regelFuer(name, b.id);
       if (!regel || Object.hasOwn(b.zustand, name)) continue;
       const wirkungslos = (op.typ === 'drehen' && (regel.art === 'ecke' || regel.art === 'umschalten-beim-spiegeln'))
         || (op.typ === 'spiegeln' && regel.art === 'achse');
@@ -136,7 +144,7 @@ export function erzeugeVermesser({ regeln, register }) {
       if (k > 0) pruefeVollstaendig(b, op);
       let { x, z } = b;
       for (let i = 0; i < k; i++) [x, z] = [-z, x];
-      return { ...b, x: nullFrei(x), z: nullFrei(z), zustand: transformiereZustand(b.zustand, op, k) };
+      return { ...b, x: nullFrei(x), z: nullFrei(z), zustand: transformiereZustand(b.zustand, op, k, b.id) };
     });
     const wesen = bauteil.wesen.map((w) => {
       let { x, z } = w;
@@ -152,7 +160,7 @@ export function erzeugeVermesser({ regeln, register }) {
     const bloecke = bauteil.bloecke.map((b) => (pruefeVollstaendig(b, op), {
       ...b,
       ...(achse === 'x' ? { x: nullFrei(-b.x) } : { z: nullFrei(-b.z) }),
-      zustand: transformiereZustand(b.zustand, op),
+      zustand: transformiereZustand(b.zustand, op, 1, b.id),
     }));
     const wesen = bauteil.wesen.map((w) => ({
       ...w,
@@ -166,8 +174,8 @@ export function erzeugeVermesser({ regeln, register }) {
    * Himmelsrichtung, für die ein Zahlen-/Textwert eines Richtungszustands steht (z. B. weirdo_direction 0 → 'east'),
    * oder null, wenn der Zustand keine Richtung beschreibt oder der Wert keine hat.
    */
-  function richtungVon(zustandName, wert) {
-    const regel = regeln.zustaende[zustandName];
+  function richtungVon(zustandName, wert, blockId = null) {
+    const regel = regelFuer(zustandName, blockId);
     if (regel?.art !== 'richtung') return null;
     return regel.abbildung[String(wert)] ?? null;
   }

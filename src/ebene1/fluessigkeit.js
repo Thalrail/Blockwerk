@@ -2,17 +2,21 @@
 // Regeln: data/regeln/fluessigkeit.json (Quelle und Status je Regel; vieles ist im Wiki nicht als Bedrock gekennzeichnet → ungeprüft).
 // Darstellung (Bedrock): `water`/`lava` mit liquid_depth 0 = Quelle, `flowing_water`/`flowing_lava` mit Stufe 1–7,
 // Stufe ab 8 = fallend. Die Ausbreitung läuft über geplante Ticks des Taktgebers (Wasser alle 5 Ticks, Lava 30 bzw. 10).
-// Hinweis: Bedrock dokumentiert die Fließ-Logik nicht. Das Verfahren entspricht der Java-Implementierung; Jonah bestätigt aus Erfahrung,
-// dass Bedrock sich gleich verhält (21.10.2026, noch kein gezielter Spieltest → Regeln bleiben `ungeprüft`): unten frei → fallen (seitlich nur bei 3 Quellen-Nachbarn), sonst seitlich in
-// die Richtungen mit dem nächsten Gefälle (höchstens 4 Blöcke), Fließblöcke ohne Nachschub rücken stufenweise ab, bis sie verschwinden.
+// Hinweis: Bedrock dokumentiert die Fließ-Logik nicht. Verfahren: die Grundlogik der Java-Implementierung (von Jonah aus Erfahrung bestätigt), angepasst an Jonahs Spieltests vom
+// 24.10.2026: Ausbreitung als Quadrat (8 Nachbarn, Stufe = größter Abstand), Gefälle über Wegkosten (gerade 2, diagonal 3, Grenze 10 → gerade bis zum 5. Block, diagonal bis (3,3)),
+// unten frei → fallen (seitlich nur bei 3 Quellen-Nachbarn), Fließblöcke ohne Nachschub rücken stufenweise ab, bis sie verschwinden.
 // Die Welt wird nur über Ebene 0 gelesen und geschrieben.
 import { VEKTOR } from '../ebene0/richtungen.js';
 import { Sandkasten } from './sandkasten.js';
 import { Taktgeber } from './taktgeber.js';
 
 const SEITEN = ['north', 'east', 'south', 'west'];
+// Alle waagerechten Schritte: gerade und diagonal (Jonah, 24.10.2026: Wasser und Lava breiten sich als Quadrat aus)
+const SCHRITTE8 = [[0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]];
+const diagonal = (d) => d[0] !== 0 && d[1] !== 0;
 const key = (p) => `${p.x},${p.y},${p.z}`;
 const plus = (p, r) => ({ x: p.x + VEKTOR[r].x, y: p.y + VEKTOR[r].y, z: p.z + VEKTOR[r].z });
+const plusD = (p, d) => ({ x: p.x + d[0], y: p.y, z: p.z + d[1] });
 const FALLEND = 8;
 
 /**
@@ -25,7 +29,9 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
     lava: { quelle: 'minecraft:lava', fluss: 'minecraft:flowing_lava' },
   };
   const lavaWerte = { oberwelt: regelwerk.regel('fluessigkeit.lava-oberwelt').parameter, nether: regelwerk.regel('fluessigkeit.lava-nether').parameter };
-  const gefaelleSuche = P('fluessigkeit.gefaelle', 'suchweite');
+  const kostenGrenze = P('fluessigkeit.gefaelle', 'kostenGrenze');
+  const kostenGerade = P('fluessigkeit.gefaelle', 'kostenGerade');
+  const kostenDiagonal = P('fluessigkeit.gefaelle', 'kostenDiagonal');
   const stromIds = new Map([[arten.wasser.quelle, 'wasser'], [arten.wasser.fluss, 'wasser'], [arten.lava.quelle, 'lava'], [arten.lava.fluss, 'lava']]);
   const artVon = (id) => stromIds.get(id) ?? null;
   const eigenschaft = (id) => register.bloecke.block(id).eigenschaften.fluessigkeit;
@@ -70,8 +76,8 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
     }
     const planeNachbarn = (ktx, art, p, w) => {
       plane(ktx, art, p, w.verzoegerung);
-      for (const r of [...SEITEN, 'down', 'up']) {
-        const n = plus(p, r);
+      const nachbarn = [...SEITEN.map((r) => plus(p, r)), ...SCHRITTE8.filter(diagonal).map((d) => plusD(p, d)), plus(p, 'down'), plus(p, 'up')];
+      for (const n of nachbarn) {
         if (n.y < -64 || n.y > 319) continue;
         if (artVon(ktx.welt.leseBlock(n.x, n.y, n.z).id) === art) plane(ktx, art, n, w.verzoegerung);
       }
@@ -126,39 +132,58 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
       return false;
     }
 
-    /** Entfernung bis zu einem Gefälle ab Zelle n (Zählweise der Java-Implementierung als Platzhalter, siehe Regel fluessigkeit.gefaelle; 1000 = keins in Reichweite). */
-    function gefaelle(welt, art, n, tiefeSchritt, herkunft) {
+    /** Kann die Flüssigkeit `art` in diese Zelle fließen (frei oder dieselbe Flüssigkeit, keine Quelle)? */
+    const durchlaessig = (welt, art, n) => { const z = lese(welt, n); return frei(z) || (z.art === art && !z.quelle); };
+    /** Liegt unter n ein Gefälle (freie Zelle oder Fließblock derselben Art)? */
+    const hatGefaelle = (welt, art, n) => durchlaessig(welt, art, plus(n, 'down'));
+    /** Darf von p aus ein Schritt d getan werden? Diagonal nur, wenn beide angrenzenden geraden Zellen durchlässig sind (kein Durchschneiden von Ecken, Annahme). */
+    function schrittMoeglich(welt, art, p, d) {
+      if (!durchlaessig(welt, art, plusD(p, d))) return false;
+      if (!diagonal(d)) return true;
+      return durchlaessig(welt, art, plusD(p, [d[0], 0])) && durchlaessig(welt, art, plusD(p, [0, d[1]]));
+    }
+    /**
+     * Kosten bis zum nächsten Gefälle für den ersten Schritt d (Gewichte: gerade 2, diagonal 3, Grenze 10 – damit ein gerades Loch bis zum
+     * 5. Block und ein diagonales bis (3,3) gefunden wird, Jonah 24.10.2026). 1000 = keins in Reichweite.
+     */
+    function gefaelleKosten(welt, art, p, d) {
+      const kosten = (schritt) => (diagonal(schritt) ? kostenDiagonal : kostenGerade);
+      const erster = plusD(p, d);
+      const start = kosten(d);
+      if (!schrittMoeglich(welt, art, p, d)) return null;
+      const beste = new Map([[key(erster), start]]);
+      const offen = [{ pos: erster, k: start }];
       let best = 1000;
-      for (const r of SEITEN) {
-        if (r === herkunft) continue;
-        const m = plus(n, r);
-        const zm = lese(welt, m);
-        const durchlaessig = frei(zm) || (zm.art === art && !zm.quelle);
-        if (!durchlaessig) continue;
-        const unten = lese(welt, plus(m, 'down'));
-        if (frei(unten) || (unten.art === art && !unten.quelle)) return tiefeSchritt;
-        if (tiefeSchritt < gefaelleSuche) {
-          const d = gefaelle(welt, art, m, tiefeSchritt + 1, { north: 'south', south: 'north', east: 'west', west: 'east' }[r]);
-          best = Math.min(best, d);
+      while (offen.length) {
+        offen.sort((x, y) => x.k - y.k);
+        const { pos, k } = offen.shift();
+        if (k > beste.get(key(pos))) continue;
+        if (hatGefaelle(welt, art, pos)) { best = k; break; }
+        for (const schritt of SCHRITTE8) {
+          const n = plusD(pos, schritt);
+          const nk = k + kosten(schritt);
+          if (nk > kostenGrenze || (n.x === p.x && n.z === p.z)) continue;
+          if (!schrittMoeglich(welt, art, pos, schritt)) continue;
+          if (nk < (beste.get(key(n)) ?? Infinity)) { beste.set(key(n), nk); offen.push({ pos: n, k: nk }); }
         }
       }
       return best;
     }
+    /** Richtungen, in die sich die Flüssigkeit von p aus seitlich ausbreitet: die mit dem nächsten Gefälle, sonst alle möglichen (Quadrat). */
     function richtungen(welt, art, p) {
       const kandidaten = [];
       let min = 1000;
-      for (const r of SEITEN) {
-        const n = plus(p, r);
-        const zn = lese(welt, n);
-        const durchlaessig = frei(zn) || (zn.art === art && !zn.quelle);
-        if (!durchlaessig) continue;
-        const unten = lese(welt, plus(n, 'down'));
-        const d = frei(unten) || (unten.art === art && !unten.quelle) ? 0 : gefaelle(welt, art, n, 1, { north: 'south', south: 'north', east: 'west', west: 'east' }[r]);
-        if (d < min) { min = d; kandidaten.length = 0; }
-        if (d === min) kandidaten.push(r);
+      for (const d of SCHRITTE8) {
+        const kosten = gefaelleKosten(welt, art, p, d);
+        if (kosten === null) continue;
+        if (kosten < min) { min = kosten; kandidaten.length = 0; }
+        if (kosten === min) kandidaten.push(d);
       }
       return kandidaten;
     }
+
+    /** Zelle, durch die Flüssigkeit diagonal hindurchfließen kann (Flüssigkeit, frei oder wegspülbar). */
+    const versorgt = (welt, n) => { const z = lese(welt, n); return z.art !== null || frei(z); };
 
     function verarbeite(ktx, art, p) {
       const welt = ktx.welt;
@@ -174,9 +199,11 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
         if (darueber.art === art) neu = FALLEND;
         else {
           let best = Infinity;
-          for (const r of SEITEN) {
-            const nz = lese(welt, plus(p, r));
-            if (nz.art === art) best = Math.min(best, nz.stufe + w.schritt);
+          for (const d of SCHRITTE8) {
+            const nz = lese(welt, plusD(p, d));
+            if (nz.art !== art) continue;
+            if (diagonal(d) && !(versorgt(welt, plusD(p, [d[0], 0])) && versorgt(welt, plusD(p, [0, d[1]])))) continue;
+            best = Math.min(best, nz.stufe + w.schritt);
           }
           if (best <= w.max) neu = best;
         }
@@ -219,7 +246,7 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
       }
       if (seitlich) {
         const kind = z.stufe + w.schritt;
-        if (kind <= w.max) for (const r of richtungen(welt, art, p)) fliesseEin(ktx, art, plus(p, r), kind, w, false);
+        if (kind <= w.max) for (const d of richtungen(welt, art, p)) fliesseEin(ktx, art, plusD(p, d), kind, w, false);
       }
     }
 
@@ -243,8 +270,8 @@ export function erzeugeFluessigkeit({ regelwerk, register }) {
       /** Meldet eine Änderung von außen bei p (z. B. Quelle entfernt) und plant die betroffenen Nachbarn. */
       aenderung(taktgeber, p) {
         const ktx = { tick: taktgeber.tick, plane: (x) => taktgeber.geplant.plane(x), welt: taktgeber.sandkasten.welt };
-        for (const r of [null, ...SEITEN, 'down', 'up']) {
-          const n = r ? plus(p, r) : p;
+        const umgebung = [p, ...SEITEN.map((r) => plus(p, r)), ...SCHRITTE8.filter(diagonal).map((d) => plusD(p, d)), plus(p, 'down'), plus(p, 'up')];
+        for (const n of umgebung) {
           const art = artVon(ktx.welt.leseBlock(n.x, n.y, n.z).id);
           if (art) plane(ktx, art, n, werte(art, dimension).verzoegerung);
         }

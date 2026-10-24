@@ -34,26 +34,33 @@ test('Wasser: Weite 7 Blöcke und Tempo 5 Ticks', () => {
   const w = boden(); quelle(w, 0, 1, 0);
   const r = lauf(w);
   assert.equal(zeile(r.welt, 9), '··765432101234567··', 'genau 7 Blöcke, Stufen 1–7');
-  // Raute: alle Zellen mit Abstand ≤ 7 (Betragssumme), sonst nichts
+  // Quadrat (Jonah, 24.10.2026): alle Zellen mit größtem Abstand ≤ 7, Stufe = größter Abstand (Ringe), sonst nichts
   let anzahl = 0;
   for (let x = -9; x <= 9; x++) for (let z = -9; z <= 9; z++) {
-    const innen = Math.abs(x) + Math.abs(z) <= 7;
-    assert.equal(stufe(r.welt, x, 1, z) !== null, innen, `(${x},${z})`);
-    if (innen) { assert.equal(stufe(r.welt, x, 1, z), Math.abs(x) + Math.abs(z)); anzahl += 1; }
+    const ring = Math.max(Math.abs(x), Math.abs(z));
+    assert.equal(stufe(r.welt, x, 1, z) !== null, ring <= 7, `(${x},${z})`);
+    if (ring <= 7) { assert.equal(stufe(r.welt, x, 1, z), ring, `Stufe bei (${x},${z})`); anzahl += 1; }
   }
-  assert.equal(anzahl, 113);
-  // Tempo: Zelle k erscheint im Tick 5·k, nicht früher
+  assert.equal(anzahl, 225);
+  // Tempo: Zelle k erscheint im Tick 5·k, nicht früher (Ecke (k,k) im selben Tick wie (k,0))
   const sk = e1.neuerSandkasten((() => { const b = boden(); quelle(b, 0, 1, 0); return b; })());
   const t = e1.neuerTaktgeber(sk); const m = F.mechanik(); t.registriere(m); m.anstossen(t);
   for (let tick = 1; tick <= 40; tick++) {
     t.schritt();
-    for (let k = 1; k <= 7; k++) assert.equal(stufe(sk.welt, k, 1, 0) !== null, tick >= 5 * k, `Zelle ${k} im Tick ${tick}`);
+    for (let k = 1; k <= 7; k++) {
+      assert.equal(stufe(sk.welt, k, 1, 0) !== null, tick >= 5 * k, `Zelle ${k} im Tick ${tick}`);
+      assert.equal(stufe(sk.welt, k, 1, k) !== null, tick >= 5 * k, `Ecke ${k},${k} im Tick ${tick}`);
+    }
   }
 });
 
 test('Lava: Weite 3 (Oberwelt) und 7 (Nether), Tempo 30 und 10 Ticks', () => {
   const w = boden(); quelle(w, 0, 1, 0, LAVA);
-  assert.equal(zeile(lauf(w).welt, 9), '······6420246······', 'Oberwelt: 3 Blöcke, Stufen 2, 4, 6');
+  const lw = lauf(w).welt;
+  assert.equal(zeile(lw, 9), '······6420246······', 'Oberwelt: 3 Blöcke, Stufen 2, 4, 6');
+  assert.equal(stufe(lw, 3, 1, 3), 6, 'Ecke des Quadrats');
+  assert.equal(stufe(lw, 4, 1, 4), null);
+  assert.equal(lw.alleBloecke().filter((b) => /lava/.test(b.id)).length, 49, '7 × 7');
   const n = boden(); quelle(n, 0, 1, 0, LAVA);
   assert.equal(zeile(lauf(n, { dimension: 'nether' }).welt, 9), '··765432101234567··', 'Nether: 7 Blöcke');
   for (const [dimension, takt, weite] of [['oberwelt', 30, 3], ['nether', 10, 7]]) {
@@ -114,6 +121,39 @@ test('Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt', () => {
   quelle(w, 0, 1, 0);
   const um = lauf(w).welt;
   assert.ok(stufe(um, 3, 0, 0) !== null, 'Wasser kommt trotz Wand zum Loch');
+});
+
+test('Flüssigkeit: Gefälle auf der Diagonalen bis (3,3), gerade bis zum 5. Block', () => {
+  const mitLoch = (x, z) => { const w = boden(); w.setzeBlock(x, 0, z, 'minecraft:air'); quelle(w, 0, 1, 0); return lauf(w).welt; };
+  const nurRichtung = (r) => luft(r, -1, 1, 0) && luft(r, 0, 1, -1) && luft(r, -1, 1, -1);
+  // Jonah, 24.10.2026: diagonales Loch bis (3,3) gefunden, bei (4,4) breitet sich das Wasser wieder in alle Richtungen aus
+  for (const n of [1, 2, 3]) {
+    const r = mitLoch(n, n);
+    assert.ok(nurRichtung(r), `Loch bei (${n},${n}): nur Richtung Loch`);
+    assert.ok(stufe(r, n, 0, n) !== null, `Loch bei (${n},${n}) gefüllt`);
+  }
+  const fern = mitLoch(4, 4);
+  assert.ok(stufe(fern, -1, 1, 0) !== null && stufe(fern, 0, 1, -1) !== null && stufe(fern, -1, 1, -1) !== null, 'Loch bei (4,4) zu weit: alle Richtungen');
+  // gerade: 5 ja, 6 nein (wie bisher), in jede der vier Himmelsrichtungen
+  for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const nah = mitLoch(5 * dx, 5 * dz), weit = mitLoch(6 * dx, 6 * dz);
+    assert.ok(stufe(nah, -dx, 1, -dz) === null, `5. Block Richtung (${dx},${dz}) gefunden`);
+    assert.ok(stufe(weit, -dx, 1, -dz) !== null, `6. Block Richtung (${dx},${dz}) zu weit`);
+  }
+  // Mischweg nach den Kosten 2 (gerade) und 3 (diagonal): (3,1) = 3 + 2 + 2 = 7 gefunden, (4,2) = 3 + 3 + 2 + 2 = 10 gefunden, (4,3) = 3·3 + 2 = 11 nicht
+  assert.ok(stufe(mitLoch(3, 1), -1, 1, 0) === null, '(3,1) gefunden');
+  assert.ok(stufe(mitLoch(4, 2), -1, 1, 0) === null, '(4,2) gerade noch gefunden');
+  assert.ok(stufe(mitLoch(4, 3), -1, 1, 0) !== null, '(4,3) zu weit');
+});
+
+test('Flüssigkeit: diagonale Lücken zwischen festen Blöcken lassen kein Wasser durch', () => {
+  const w = boden();
+  // Ring aus Steinen um die Quelle, nur diagonal zwischen (1,0) und (0,1) offen
+  for (const [x, z] of [[1, 0], [0, 1], [-1, 0], [0, -1], [-1, -1], [1, -1], [-1, 1]]) w.setzeBlock(x, 1, z, 'minecraft:stone');
+  quelle(w, 0, 1, 0);
+  const r = lauf(w).welt;
+  assert.ok(luft(r, 1, 1, 1), 'durch die diagonale Lücke fließt nichts');
+  assert.equal(r.alleBloecke().filter((b) => /water/.test(b.id)).length, 1);
 });
 
 test('Flüssigkeit: unten vor seitlich', () => {
@@ -193,7 +233,7 @@ test('Wasser: Abklingen ohne Nachschub', () => {
   const sk = e1.neuerSandkasten(w);
   const t = e1.neuerTaktgeber(sk); const m = F.mechanik(); t.registriere(m); m.anstossen(t);
   while (t.geplant.anzahl() > 0) t.schritt();
-  assert.equal(sk.welt.alleBloecke().filter((b) => /water/.test(b.id)).length, 113);
+  assert.equal(sk.welt.alleBloecke().filter((b) => /water/.test(b.id)).length, 225);
   sk.welt.loescheBlock(0, 1, 0);
   m.aenderung(t, { x: 0, y: 1, z: 0 });
   const start = t.tick;
@@ -205,7 +245,7 @@ test('Wasser: Abklingen ohne Nachschub', () => {
   assert.equal(sk.welt.alleBloecke().filter((b) => /water/.test(b.id)).length, 0, 'alles Wasser ist weg');
   assert.ok(t.tick - start >= 5, 'dauert mindestens einen Verzögerungsschritt');
   assert.ok(hoechste <= 7);
-  assert.ok(m.ereignisse.filter((e) => e.was === 'verschwunden').length === 113);
+  assert.ok(m.ereignisse.filter((e) => e.was === 'verschwunden').length === 225);
 });
 
 test('Flüssigkeit: nur feste Blöcke halten Wasser auf', () => {
@@ -267,9 +307,10 @@ test('Prüfer: Wasser zerstört Schiene und Fackel', () => {
   const w = boden(); quelle(w, 0, 1, 0);
   w.setzeBlock(3, 1, 0, 'minecraft:rail', { rail_direction: 0 });
   w.setzeBlock(0, 1, 5, 'minecraft:torch', { torch_facing_direction: 'top' });
+  w.setzeBlock(7, 1, 7, 'minecraft:torch', { torch_facing_direction: 'top' }); // Ecke des Quadrats (Jonah: Ecken sind nass)
   w.setzeBlock(9, 1, 9, 'minecraft:torch', { torch_facing_direction: 'top' }); // außerhalb der Reichweite
   const m = e1.pruefe(w, { schienen: null }).filter((x) => x.regel === 'pruefer.wasser-zerstoert');
-  assert.deepEqual(m.map((x) => [x.schwere, x.ort.x, x.ort.z]).sort(), [['verstoss', 0, 5], ['verstoss', 3, 0]]);
+  assert.deepEqual(m.map((x) => [x.schwere, x.ort.x, x.ort.z]).sort(), [['verstoss', 0, 5], ['verstoss', 3, 0], ['verstoss', 7, 7]]);
   assert.match(m[0].meldung, /weggespült/);
   // sauberer Aufbau: nichts zu melden; ohne Flüssigkeit läuft keine Simulation
   const sauber = boden(); quelle(sauber, 0, 1, 0);
@@ -301,7 +342,7 @@ test('Wasser: spült die von Jonah getesteten Pflanzen weg', () => {
   const ids = Object.values(familien).flat();
   for (const id of ids) {
     const w = boden(3); quelle(w, 0, 1, 0); w.setzeBlock(2, 1, 0, id, {});
-    const r = lauf(w);
+    const r = lauf(w, { maxTicks: 30 });
     assert.deepEqual(r.m.ereignisse.filter((e) => e.was === 'weggespuelt').map((e) => e.von), [id], id);
     assert.ok(stufe(r.welt, 2, 1, 0) !== null, id + ' ist durch Wasser ersetzt');
   }

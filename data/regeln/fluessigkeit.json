@@ -67,13 +67,15 @@
     {
       "id": "fluessigkeit.gefaelle",
       "titel": "Gefälle in höchstens 4 Blöcken wird bevorzugt",
-      "regel": "Findet das Wasser in gerader Richtung (Ost, West, Nord, Süd) ein Gefälle (Loch) im ersten bis zum 5. Block neben der Quelle, fließt es in diese Richtung(en); ab dem 6. Block nicht mehr, dann breitet es sich in alle Richtungen aus. (Diagonalen: siehe fluessigkeit.gefaelle-diagonal.)",
+      "regel": "Findet das Wasser ein Gefälle (Loch), fließt es in die Richtung(en) mit dem kürzesten Weg dorthin; sonst in alle Richtungen (Quadrat). Gerade Richtung: ein Loch bis zum 5. Block wird gefunden, im 6. nicht mehr. Diagonal: ein Loch genau diagonal bis (3, 3), bei (4, 4) nicht mehr (fluessigkeit.gefaelle-diagonal). Blockwerk rechnet mit Wegkosten: gerader Schritt 2, diagonaler Schritt 3, Grenze 10.",
       "parameter": {
-        "suchweite": 4
+        "kostenGerade": 2,
+        "kostenDiagonal": 3,
+        "kostenGrenze": 10
       },
       "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
       "status": "geprüft",
-      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle auf der Diagonalen bis (3,3), gerade bis zum 5. Block",
       "ungeprueft": false,
       "bestaetigung": "Jonah, 21.10.2026: „Das passt 1 zu 1, so funktioniert es auch in Bedrock“ (aus Erfahrung, kein gezielter Spieltest – darum noch nicht „geprüft“).",
       "geprueftAm": "2026-10-24",
@@ -152,27 +154,29 @@
     },
     {
       "id": "fluessigkeit.gefaelle-diagonal",
-      "titel": "Gefälle auf der Diagonale",
-      "regel": "Jonah (24.10.2026): Liegt ein Loch diagonal zur Quelle, wird es bis zum 4. Block auf der Diagonalen gefunden, also bei (4, 4); in gerader Richtung bis zum 5. Block (siehe fluessigkeit.gefaelle). Blockwerk rechnet Diagonalen als Weg über zwei gerade Schritte und findet ein diagonales Loch deshalb nur bis (2, 2). Das passt erst zusammen, wenn die Simulation auf die Quadratform umgestellt ist (siehe fluessigkeit.form).",
+      "titel": "Gefälle auf der Diagonalen bis (3,3)",
+      "regel": "Liegt ein Loch genau diagonal zur Quelle, wird es bis (3, 3) gefunden; bei (4, 4) breitet sich das Wasser wieder in alle Richtungen aus.",
       "parameter": {
-        "diagonaleBisN": 4
+        "diagonaleBisN": 3
       },
-      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt) – Messung unklar; https://minecraft.wiki/w/Water",
-      "status": "simuliert",
-      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
-      "ungeprueft": true,
-      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) bei (n, n) für n = 3, 4, 5 (jeweils einzeln): Fließt das Wasser gezielt zum Loch? Schon bei n = 4 und 5 prüfen, ob es sich auch in die anderen Richtungen ausbreitet."
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle auf der Diagonalen bis (3,3), gerade bis zum 5. Block",
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Beim diagonalen Loch ist es der 4. Block, ab dem sich das Wasser wieder in alle Richtungen ausbreitet, das Loch bei (3, 3) wird noch gefunden (Rückfrage am 24.10.2026 beantwortet)."
     },
     {
       "id": "fluessigkeit.form",
-      "titel": "Form der Ausbreitung: Quadrat (Blockwerk rechnet noch eine Raute)",
-      "regel": "Jonah (24.10.2026): Wasser und Lava breiten sich auf ebenem Boden als Quadrat aus (7 bzw. 3 Blöcke in jede Himmelsrichtung, Ecken mit). Blockwerk rechnet bisher eine Raute (Betragssumme der Abstände ≤ Reichweite); die Ecken fehlen deshalb in der Simulation. Der Prüfer „Wasser zerstört“ meldet an den Ecken also zu wenig. Die Umstellung der Simulation auf ein Quadrat ist noch nicht gemacht (offen: Stufen an den Ecken, Verhalten an Hindernissen).",
+      "titel": "Form der Ausbreitung ist ein Quadrat",
+      "regel": "Wasser und Lava breiten sich auf ebenem Boden als Quadrat aus: Reichweite (7 bzw. 3 Blöcke) in jeder Himmelsrichtung, die Ecken sind gefüllt. Die Stufe einer Zelle ist der größte ihrer beiden Abstände zur Quelle (Ringe), z. B. (7, 7) hat Stufe 7.",
       "parameter": {},
-      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt) – Form unklar; https://minecraft.wiki/w/Water",
-      "status": "simuliert",
+      "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
+      "status": "geprüft",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Weite 7 Blöcke und Tempo 5 Ticks",
-      "ungeprueft": true,
-      "testanleitung": "Wasserquelle auf ebenem Stein: Welche Stufe hat das Wasser bei (7, 0), (7, 7), (4, 4)? (Stufe = Höhe der Wasserfläche: 1 hoch … 7 niedrig.) Ein Foto von oben mit F3/Koordinaten reicht. Dann eine Wand aus 3 Blöcken um die Quelle (nur diagonal offen lassen): Fließt das Wasser durch die diagonale Lücke?"
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah: Das Wasser breitet sich 7 Blöcke in alle Richtungen aus, am Ende sieht es aus wie ein Quadrat (Rechteck); bei Lava 3 Blöcke, ebenfalls ein Quadrat. Die Stufen an den Ecken sind nicht gemessen (siehe fluessigkeit.ecken)."
     },
     {
       "id": "fluessigkeit.plus-form",
@@ -221,6 +225,32 @@
       "beobachtung": "Jonah: Weggespült werden Fackeln, Redstone-Staub, jegliche gepflanzten Samen, Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker, alle Korallen, alle Blumen (und „Laub“ = Laubstreu, ein Dekoelement) und wahrscheinlich noch mehr.",
       "ungeprueft": false,
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: spült die von Jonah getesteten Pflanzen weg"
+    },
+    {
+      "id": "fluessigkeit.gefaelle-mischwege",
+      "titel": "Gefälle bei Wegen aus geraden und diagonalen Schritten",
+      "regel": "Für Löcher, die weder gerade noch genau diagonal liegen (z. B. bei (4, 2)), rechnet Blockwerk mit den Wegkosten gerade 2, diagonal 3, Grenze 10. Gemessen sind nur die gerade Linie (bis 5) und die Diagonale (bis (3, 3)); Zwischenwerte sind daraus abgeleitet.",
+      "parameter": {
+        "kostenGerade": 2,
+        "kostenDiagonal": 3,
+        "kostenGrenze": 10
+      },
+      "quelle": "Abgeleitet aus Jonahs Messungen (2026-10-24); https://minecraft.wiki/w/Water",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle auf der Diagonalen bis (3,3), gerade bis zum 5. Block",
+      "ungeprueft": true,
+      "testanleitung": "Quelle auf ebenem Stein, ein Loch bei (4, 2), bei (4, 3) und bei (3, 1): Fließt das Wasser gezielt zum Loch oder breitet es sich in alle Richtungen aus? Blockwerk erwartet: (3, 1) und (4, 2) gezielt, (4, 3) nicht."
+    },
+    {
+      "id": "fluessigkeit.ecken",
+      "titel": "Ecken des Quadrats und diagonale Lücken",
+      "regel": "Annahmen zur Quadratform: (1) Die Stufe an den Ecken ist der größte Abstand (Ring), nicht die Summe. (2) Wasser fließt nicht diagonal durch eine Lücke zwischen zwei festen Blöcken, die sich nur an der Ecke berühren (runde Becken bleiben dicht).",
+      "parameter": {},
+      "quelle": "Annahme zu Jonahs Messung (2026-10-24); https://minecraft.wiki/w/Water",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: diagonale Lücken zwischen festen Blöcken lassen kein Wasser durch",
+      "ungeprueft": true,
+      "testanleitung": "Wasserquelle auf ebenem Stein: Welche Stufe hat das Wasser bei (7, 7) und (4, 4) (Höhe der Wasserfläche, 1 hoch … 7 niedrig)? Dann Steine auf (1, 0), (0, 1) und (-1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1) um die Quelle legen, nur die Ecke (1, 1) frei: Fließt das Wasser diagonal nach (1, 1)? Ergebnis melden."
     }
   ]
 }

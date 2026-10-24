@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gebaut: Branch `claude/ebene-1-spawn`. 194 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gebaut: Branch `claude/ebene-1-spawn`. 196 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -59,11 +59,12 @@ Zuletzt aktualisiert: 20.10.2026
 - `aktive(welt, stromQuellen)`: welche Antriebsschienen sind aktiv? Direkt versorgt durch einen angrenzenden Redstone-Block (oder eine von außen übergebene Stromquelle), dazu verbundene Antriebsschienen bis 8 Schienen weit (17 bei Quelle in der Mitte); normale Schienen und Lücken unterbrechen.
 - `aktiviere(welt, …)` setzt `rail_data_bit`; `mechanik()` ist eine Taktgeber-Mechanik der Tickart `mechanismus` und schaltet damit **nur im C-Tick** (Bedrock-dokumentiert).
 - Prüfer-Hinweis `pruefer.antrieb-ohne-quelle` (nur wenn die Stromquellen übergeben werden).
+- **Von Jonah geprüft (24.10.2026):** Reichweite 8 nach links und rechts (17 insgesamt), normale Schiene unterbricht den Strom, Redstone-Block versorgt von allen Seiten. Stromquellen: Redstonefackel seitlich und eingeschalteter Hebel versorgen die Schiene (eingetragen; Fackel vorn/hinten/über/unter und die Lage des Hebels „an angrenzendem Block“ noch offen).
 - Schienen in Chunks außerhalb des Tickbereichs schalten nicht (der Taktgeber gibt den Tickbereich an die Mechanik weiter).
 - **Wasser/Lava-Logik entspricht Java (Gefälle-Zählung, Abklingen, „unten vor seitlich“, Plus-Form):** Jonah bestätigt am 21.10.2026 aus Erfahrung, dass Bedrock sich gleich verhält (kein gezielter Spieltest, deshalb weiter `ungeprüft`).
 - `pruefe()` läuft bei jeder Welt mit Wasser/Lava bis zu 400 Simulationsticks (Kosten wachsen mit der Wassermenge).
 - Bekanntes Limit: `aktive()`/`aktiviere()` gehen bei jedem C-Tick über alle Blöcke der Welt (sortiert). Für Zitadelle-Größe (ca. 3,9 Mio. Blöcke) später Schienen je Chunk indexieren.
-- Regeln: `data/regeln/antrieb.json` (4 Regeln, 3 mit Annahmen und Testanleitung). Reichweite 8 und „nur verbundene geben Strom weiter“ sind nicht als Bedrock belegt.
+- Regeln: `data/regeln/antrieb.json` (6 Regeln, 3 geprüft, 2 mit Annahmen und Testanleitung: Fackel, Hebel; `antrieb.c-tick` belegt).
 - **Keine Lorenphysik:** Bedrock nennt dazu keine Zahlen. Jonahs Messungen A–F (`docs/messungen-lore.md`) sind die Grundlage für Schritt 2b-3.
 
 ## Was Wasser und Lava (Teil 2c) jetzt können (`src/ebene1/fluessigkeit.js`)

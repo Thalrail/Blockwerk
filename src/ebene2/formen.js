@@ -11,10 +11,10 @@ const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (
 const MAX = 512;
 
 /**
- * Rastert einen Körper. `innen(x, j, z)` bekommt die auf den Mittelpunkt bezogenen waagerechten Blockmitten und die Schicht j.
+ * Rastert einen Körper. `offenX`/`offenZ`: die Enden in x bzw. z gelten als offen (kein Abschluss, z. B. Giebel). `innen(x, j, z)` bekommt die auf den Mittelpunkt bezogenen waagerechten Blockmitten und die Schicht j.
  * @returns {{x:number,y:number,z:number,rolle:string}[]}
  */
-function raster({ B, H, T, innen, versatz, dicke, offenUnten, offenOben, rolle }) {
+export function raster({ B, H, T, innen, versatz, dicke, offenUnten, offenOben, offenX = false, offenZ = false, rolle }) {
   const idx = (i, j, k) => (j * T + k) * B + i;
   const f = new Uint8Array(B * H * T);
   for (let j = 0; j < H; j++) for (let k = 0; k < T; k++) {
@@ -26,7 +26,8 @@ function raster({ B, H, T, innen, versatz, dicke, offenUnten, offenOben, rolle }
     schale = new Uint8Array(f.length);
     const rest = f.slice();
     const drin = (i, j, k) => {
-      if (i < 0 || i >= B || k < 0 || k >= T) return false;
+      if (i < 0 || i >= B) return offenX;
+      if (k < 0 || k >= T) return offenZ;
       if (j < 0) return offenUnten;
       if (j >= H) return offenOben;
       return rest[idx(i, j, k)] === 1;

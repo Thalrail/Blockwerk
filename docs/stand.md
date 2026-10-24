@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gebaut: Branch `claude/ebene-2-formen`. 265 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gebaut: Branch `claude/ebene-2-bogen-dach`. 270 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -29,8 +29,8 @@ Zuletzt aktualisiert: 20.10.2026
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 2g-1 | Ebene 1 – Wesen: Bewegung und Erreichbarkeit (Spieler, Dorfbewohner, Baby): gehen, Stufen, Treppen, springen, fallen, Lücken, Türen, Leitern, Wasser, Prüfer „begehbar“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #19) |
 | 2g-2 | Ebene 1 – Wesen: Dorfbewohner-Verhalten (Betten, Berufsblock-Suche, Dorf, Iron-Golem-Bedingung), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #20) |
-| 3a | Ebene 2 – Baustein-Paket und Formen: Scheibe/Ring, Zylinder, Kugel, Kuppel, Kegel (maßstabsfrei, Tests für alle Größen bis 257) | **fertig, Status `simuliert`** (PR wartet auf Abnahme) |
-| 3b | Ebene 2 – Gewölbe, Bogen, Dachformen | als Nächstes |
+| 3a | Ebene 2 – Baustein-Paket und Formen: Scheibe/Ring, Zylinder, Kugel, Kuppel, Kegel (maßstabsfrei, Tests für alle Größen bis 257) | **fertig, Status `simuliert`** (gemergt, PR #21) |
+| 3b | Ebene 2 – Bogen (Segmentbogen, Stich 0,3 × Spannweite), Tonnengewölbe, Satteldach, Walmdach/Zeltdach (maßstabsfrei, Tests über alle Größen) | **fertig, Status `simuliert`** (PR wartet auf Abnahme) |
 | 3c | Ebene 2 – Bauelemente: Treppe, Wendeltreppe, Tür, Gang, Fenster, Säule | offen |
 | 3d | Ebene 2 – erste Technikmodule (Nische, Bahnhof, Kurve, Steigungsstück …) mit Testszenario in Ebene 1 | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -178,6 +178,13 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/formen.json` (3 Regeln, `simuliert`, nichts `ungeprüft`, da reine Geometrie nach `docs/ebenen.md` und keine Bedrock-Annahme). Tests für alle Größen von 1 bis 257 (Kugel bis 256): symmetrisch (Spiegelung, Drehung), Rand höchstens ½ Block vom Ideal, hohle Formen lückenlos, Proportionen gleich für r = 12, 20, 100; Mutationen von Rundung, Mittelpunkt und Proportion schlagen an.
 - Nicht dabei: Gewölbe, Bogen, Dachformen (3b), Bauelemente (3c), Technikmodule (3d), Spiegeln/Drehen von Anschlüssen (die Blöcke dreht der Vermesser).
 
+## Was Ebene 2, Teil 3b, jetzt kann (`src/ebene2/bogen.js`, `dach.js`)
+- `form.bogen`: Segmentbogen in einer Mauer; lichte Weite `spannweite`, Stich = `stichverhaeltnis` × Spannweite (Standard 0,3, höchstens 0,5 = Halbkreis), Pfeiler bis zum Ansatz (`pfeilerhoehe`, **mindestens 2 = Menschenmaß**), Bogenstärke, Mauerdicke `tiefe`. Körper = Außenform (Radius R + Stärke) minus Öffnung, Blockmitte entscheidet; gerade/ungerade Weite ohne schiefe Seite. Anschluss `durchgang` mit lichter Breite und Höhe. `form.tonnengewoelbe`: derselbe Querschnitt über `laenge`, zwei Anschlüsse.
+- `form.satteldach` (Giebel offen) und `form.walmdach` (Zeltdach bei quadratischem Grundriss): Höhenfeld mit `neigung` (Höhe ÷ halbe Breite, Standard 1,0 = 45 Grad); hohle Hülle der Dicke `dachstaerke`, wasserdicht, unten offen, aus Vollblöcken gestuft (Glätten mit Treppen/Halbstufen ist Sache von Ebene 3); Rolle `akzent`.
+- `raster()` in `formen.js` kann jetzt offene Enden (`offenX`, `offenZ`).
+- Regeln: `data/regeln/bogen.json` (2), `dach.json` (1), alle `simuliert`, nichts `ungeprüft`. Tests: Spannweite 1–65, 100, 128 mit Stich 0,15/0,3/0,5, Bogenstärke 1–4; Rand höchstens ½ Block vom Ideal; Öffnung lückenlos (Flutfüllung) und genau die Idealöffnung; **Durchgang mit Ebene 1** (Spieler, Dorfbewohner, Baby gehen hindurch, geschlossene Mauer hält); Dächer Breite 1–65, 100–256, Neigung 0,5/1/2; Mutationen von Stich, Pfeilerhöhe, Neigung, Rundung und Mittelpunkt schlagen an.
+- Nicht dabei: Kreuzgewölbe und Rippen, Spitz-/Hufeisenbogen, Pult- und Mansarddach, Gauben, Glätten mit Treppen (Ebene 3).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -197,7 +204,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Ebene 2, Teil 3b: Gewölbe, Bogen, Dachformen** (auf den Formen aufbauend, Bogenstich 0,3 × Spannweite). Danach 3c Bauelemente, 3d Technikmodule.
+**Ebene 2, Teil 3c: Bauelemente** (Treppe, Wendeltreppe, Tür, Gang, Fenster, Säule; Menschenmaß fest, Wendeltreppe mit mehr Stufen pro Umdrehung statt höherer Stufen). Danach 3d Technikmodule.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

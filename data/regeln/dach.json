@@ -1,0 +1,18 @@
+{
+  "bereich": "dach",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "dach.neigung",
+      "titel": "Dachneigung als Proportion",
+      "regel": "Die Dachhöhe ist ein Vielfaches der halben Breite (Neigung 1,0 = 45 Grad, einstellbar). Satteldach und Walmdach folgen demselben Höhenfeld; die Hülle ist wasserdicht, unten offen.",
+      "parameter": {
+        "verhaeltnis": 1
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Dachformen, Proportionen statt fester Maße)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/dach.test.js::Dach: Satteldach für alle Breiten",
+      "ungeprueft": false
+    }
+  ]
+}

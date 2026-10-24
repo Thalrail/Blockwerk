@@ -177,3 +177,37 @@ test('Prüfer: Spawn möglich in Innenräumen', () => {
   assert.deepEqual(e1.pruefe(frei, { schienen: null, spawnBereich: bereich(3), himmel: 'tag' }).filter((x) => x.regel === 'pruefer.spawn-moeglich'), []);
   assert.equal(e1.pruefe(frei, { schienen: null, spawnBereich: bereich(3), himmel: 'nacht' }).filter((x) => x.regel === 'pruefer.spawn-moeglich').length, 49);
 });
+
+test('Spawn: Fuß-Zelle ist dreiwertig (Luft, Pflanze, Teppich, Unbekanntes)', () => {
+  const fuss = (id, zustand = {}) => {
+    const w = raum(); w.setzeBlock(0, 1, 0, id, zustand);
+    return hat(S.spawnstellen(w, bereich(2)), 0, 1, 0);
+  };
+  assert.equal(fuss('minecraft:short_grass')?.urteil, 'moeglich', 'Gras in der Fuß-Zelle');
+  assert.equal(fuss('minecraft:poppy')?.urteil, 'moeglich', 'Blume in der Fuß-Zelle');
+  for (const [id, zustand] of [['minecraft:rail', { rail_direction: 0 }], ['minecraft:stone_pressure_plate', {}], ['minecraft:oak_sapling', {}]]) {
+    const s = fuss(id, zustand);
+    assert.equal(s?.urteil, 'unklar', `${id}: nicht eingeordnet → unklar, nicht still weggelassen`);
+    assert.ok(s.gruende.includes('fuesse'), id);
+  }
+  assert.equal(fuss('minecraft:white_carpet'), undefined, 'Teppich blockiert den Spawn');
+  assert.equal(fuss('minecraft:stone'), undefined, 'fester Block in der Fuß-Zelle');
+  assert.equal(S.fuesse(raum(), 0, 1, 0), 'ja');
+});
+
+test('Spawn: Himmelslicht genau 7 ist unklar', () => {
+  const w = e0.neueWelt();
+  for (let x = -30; x <= 30; x++) for (let z = -30; z <= 30; z++) { w.setzeBlock(x, 0, z, STEIN); if (x !== 0 || z !== 0) w.setzeBlock(x, 5, z, STEIN); }
+  const b = { von: { x: 0, y: 1, z: 0 }, bis: { x: 9, y: 1, z: 0 } };
+  // Rohlicht an der Stelle x: 15 − x (unter dem Dach, seitlich von der Öffnung bei x = 0)
+  const regen = S.spawnstellen(w, b, { himmel: 'regen' }); // inneres Himmelslicht = Rohlicht − 3
+  assert.equal(hat(regen, 3, 1, 0), undefined, 'Rohlicht 12 → innen 9: sicher nein');
+  assert.equal(hat(regen, 4, 1, 0), undefined, 'Rohlicht 11 → innen 8: sicher nein (ab 8)');
+  assert.equal(hat(regen, 5, 1, 0)?.urteil, 'unklar', 'Rohlicht 10 → innen genau 7: unklar');
+  assert.deepEqual(hat(regen, 5, 1, 0).gruende, ['himmel']);
+  assert.equal(hat(regen, 6, 1, 0)?.urteil, 'moeglich', 'Rohlicht 9 → innen 6: sicher ja');
+  const gewitter = S.spawnstellen(w, b, { himmel: 'gewitter' }); // Rohlicht − 5
+  assert.equal(hat(gewitter, 5, 1, 0)?.urteil, 'moeglich', 'Rohlicht 10 → innen 5');
+  assert.equal(hat(gewitter, 3, 1, 0)?.urteil, 'unklar', 'Rohlicht 12 → innen genau 7');
+  assert.equal(S.spawnstellen(w, b, { himmel: 'tag' }).find((s) => s.x === 5), undefined, 'Tag: Rohlicht 10 bleibt 10 → nein');
+});

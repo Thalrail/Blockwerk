@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2d-2, Spawnstellen, ist gebaut: Branch `claude/ebene-1-spawn`. 182 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gebaut (PR #4). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2d-2, Spawnstellen, ist gebaut: Branch `claude/ebene-1-spawn`. 184 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -86,7 +86,8 @@ Zuletzt aktualisiert: 20.10.2026
 - `spawnstellen(welt, bereich, { himmel, monster })`: für jede Fuß-Zelle im Bereich das Urteil **möglich** oder **unklar** (sicher unmögliche Zellen werden weggelassen). Bedingungen: Blocklicht 0, inneres Himmelslicht unter 7, Boden mit voller fester Oberseite, Platz für die Hitbox des Monsters (aus dem Wesenregister: Zombie 0,6 × 1,9 → 2 Blöcke hoch, Spinne 1,4 × 0,9 → 1 hoch und 3 breit). Unbekanntes (Lichtfilter, Böden, Pflanzen im Weg) ergibt „unklar“ mit Grund (`boden`, `platz`, `blocklicht`, `himmel`).
 - Ebene 0: neue Eigenschaft `spawnBoden` (true: undurchsichtige Vollblöcke und doppelte Halbstufen; false: Teppich, Zaun, Treppe, Verstärker, Truhe; „halbstufe“: untere nein, obere unbekannt; null: Glas, Laub, Seelensand u. a.).
 - Prüfer `pruefer.spawn-moeglich` (nur mit übergebenem `spawnBereich`, z. B. den Innenräumen der Zitadelle): Verstoß mit Koordinate, wo Monster sicher spawnen können, Hinweis bei „unklar“.
-- Regeln: `data/regeln/spawn.json` (6 Regeln, 4 belegt, 2 mit Annahmen und Testanleitung).
+- Fuß-Zelle: Luft, Gras und Blumen ja, Teppich nein, alle anderen dünnen Blöcke (Schienen, Platten, Schilder, Setzlinge) „unklar“ statt still weggelassen. Himmelslicht: bis 6 sicher ja, ab 8 sicher nein, genau 7 „unklar“ (zwei Wiki-Seiten widersprechen sich).
+- Regeln: `data/regeln/spawn.json` (7 Regeln, 3 belegt oder nur Information, 4 mit Annahmen und Testanleitung).
 - Nicht dabei: Tiere (Licht ≥ 7), Wasser-/Höhlen-/Sonderspawns, Spawner, Phantome, Spawn-Entfernung und Mob-Caps (nur als Information in `spawn.entfernung`), Zufall der Spawnwahl.
 
 ## Bekannte Lücken / Annahmen in Ebene 1

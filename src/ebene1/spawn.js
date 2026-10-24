@@ -14,7 +14,9 @@ const EPS = 1e-9;
  * @param {{regelwerk: import('./regelwerk.js').Regelwerk, register: {bloecke: import('../ebene0/blockregister.js').Blockregister, wesen: import('../ebene0/wesenregister.js').Wesenregister}, licht: ReturnType<typeof import('./licht.js').erzeugeLicht>}} quellen
  */
 export function erzeugeSpawn({ regelwerk, register, licht }) {
-  const maxHimmel = regelwerk.parameter('spawn.himmelslicht', 'hoechstensInnen');
+  const himmelJa = regelwerk.parameter('spawn.himmelslicht', 'sicherJaBis');
+  const himmelNein = regelwerk.parameter('spawn.himmelslicht', 'sicherNeinAb');
+  const pflanzen = new Set(regelwerk.parameter('spawn.fuesse', 'pflanzen'));
   const maxBlock = regelwerk.parameter('spawn.blocklicht', 'hoechstens');
   const standardMonster = regelwerk.parameter('spawn.platz', 'standardMonster');
   const eigenschaften = (id) => register.bloecke.block(id).eigenschaften;
@@ -27,6 +29,14 @@ export function erzeugeSpawn({ regelwerk, register, licht }) {
     if (/^minecraft:(flowing_)?(water|lava)$/.test(b.id)) return 'fest';
     if (e.vollblock === true && e.durchsichtig === false) return 'fest';
     return 'unklar';
+  }
+
+  /** Fuß-Zelle: 'ja' (Luft, Gras, Blumen), 'nein' (fest, Flüssigkeit, Teppich), sonst 'unklar'. */
+  function fuesse(welt, x, y, z) {
+    const b = welt.leseBlock(x, y, z);
+    if (b.id === LUFT || pflanzen.has(b.id)) return 'ja';
+    if (/_carpet$/.test(b.id)) return 'nein';
+    return zelle(welt, x, y, z) === 'fest' ? 'nein' : 'unklar';
   }
 
   /** Urteil über den Boden unter den Füßen: 'ja' | 'nein' | 'unklar'. */
@@ -50,6 +60,7 @@ export function erzeugeSpawn({ regelwerk, register, licht }) {
     for (let yy = y; yy < y + hoch; yy++) {
       for (let xx = x0; xx <= x1; xx++) {
         for (let zz = z0; zz <= z1; zz++) {
+          if (xx === x && yy === y && zz === z) continue; // die Fuß-Zelle selbst beurteilt fuesse()
           const k = zelle(welt, xx, yy, zz);
           if (k === 'fest') return 'nein';
           if (k === 'unklar') unklar = true;
@@ -74,8 +85,9 @@ export function erzeugeSpawn({ regelwerk, register, licht }) {
     for (let y = von.y; y <= bis.y; y++) {
       for (let z = von.z; z <= bis.z; z++) {
         for (let x = von.x; x <= bis.x; x++) {
-          if (welt.leseBlock(x, y, z).id !== LUFT) continue;
           const urteile = {};
+          urteile.fuesse = fuesse(welt, x, y, z);
+          if (urteile.fuesse === 'nein') continue;
           urteile.boden = boden(welt, x, y, z);
           if (urteile.boden === 'nein') continue;
           urteile.platz = platz(welt, hitbox, x, y, z);
@@ -84,7 +96,8 @@ export function erzeugeSpawn({ regelwerk, register, licht }) {
           urteile.blocklicht = bl.max <= maxBlock ? 'ja' : bl.min > maxBlock ? 'nein' : 'unklar';
           if (urteile.blocklicht === 'nein') continue;
           const hi = karte.himmelInnen(x, y, z);
-          urteile.himmel = hi.max <= maxHimmel ? 'ja' : hi.min > maxHimmel ? 'nein' : 'unklar';
+          // bis 6 sicher ja, ab 8 sicher nein, genau 7 (Quellen widersprechen sich) und jede Spanne dazwischen: unklar
+          urteile.himmel = hi.max <= himmelJa ? 'ja' : hi.min >= himmelNein ? 'nein' : 'unklar';
           if (urteile.himmel === 'nein') continue;
           const gruende = Object.entries(urteile).filter(([, u]) => u === 'unklar').map(([name]) => name);
           ergebnis.push({ x, y, z, urteil: gruende.length ? 'unklar' : 'moeglich', gruende });
@@ -94,5 +107,5 @@ export function erzeugeSpawn({ regelwerk, register, licht }) {
     return ergebnis;
   }
 
-  return { spawnstellen, boden, platz, zelle };
+  return { spawnstellen, boden, platz, zelle, fuesse };
 }

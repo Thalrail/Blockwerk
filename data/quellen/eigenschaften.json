@@ -72,6 +72,27 @@
       "grund": "Halbstufe: untere Halbstufe blockiert über die Unterseite, obere über die Oberseite, die Seiten sind nur halb gefüllt. Java-Kategorie „lichtblockierende Form“ (Wiki „Opacity“); Jonah, 24.10.2026. Status ungeprüft"
     },
     {
+      "muster": "^minecraft:(barrier|beacon|bedrock|calibrated_sculk_sensor|command_block|chain_command_block|repeating_command_block|creaking_heart|crying_obsidian|enchanting_table|end_gateway|end_portal|end_portal_frame|ender_chest|grindstone|jigsaw|jukebox|light_block_[0-9]+|lodestone|mob_spawner|moving_block|obsidian|piston_arm_collision|sticky_piston_arm_collision|portal|reinforced_deepslate|respawn_anchor|sculk_catalyst|sculk_sensor|sculk_shrieker|structure_block|trial_spawner|vault)$",
+      "setze": {
+        "schiebung": "unbeweglich"
+      },
+      "grund": "Kolben können diese Blöcke nicht schieben oder ziehen (Wiki „Piston“, Tabelle Limitations; Edition nicht immer gekennzeichnet). Status ungeprüft"
+    },
+    {
+      "muster": "^minecraft:(lever|tripwire|tripwire_hook|ladder)$|_button$|_pressure_plate$|_sign$|_door$|banner$|^minecraft:(standing_banner|wall_banner)$",
+      "setze": {
+        "schiebung": "zerstoert"
+      },
+      "grund": "Diese Bauteile gehen beim Schieben kaputt (Java-Schiebeverhalten „zerstören“, Wiki „Piston“). Status ungeprüft"
+    },
+    {
+      "muster": "^minecraft:(piston|sticky_piston|slime|honey_block)$",
+      "setze": {
+        "schiebung": "beweglich"
+      },
+      "grund": "Eingefahrene Kolben und Schleim-/Honigblöcke sind beweglich (ausgefahrene Kolben erkennt Ebene 1 am Kolbenkopf). Status ungeprüft"
+    },
+    {
       "muster": "^minecraft:ice$",
       "setze": {
         "vollblock": true,

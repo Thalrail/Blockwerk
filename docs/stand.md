@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gebaut: Branch `claude/ebene-1-redstone-mechanismen`. 240 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gebaut: Branch `claude/ebene-1-kolben`. 246 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -24,8 +24,8 @@ Zuletzt aktualisiert: 20.10.2026
 | 2e-3 | Ebene 1 – Trichter & Blockinhalte: Cooldown 8 Ticks, Schieben/Ziehen, Redstone-Sperre, Stapelgrößen (Ebene 0), Komparator-Lesewert, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #14) |
 | 2f-1 | Ebene 1 – Redstone-Strom (Gleichgewicht): Staub, Quellen (Block, Hebel, Knopf, Fackel, Detektorschiene), starke/schwache Bestromung, Fackel-Inversion, Aktivierungsschiene, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #15) |
 | 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater (Sperre, Impulse), Komparator, Knopfdauer, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #16) |
-| 2f-3 | Ebene 1 – Redstone-Mechanismen: Lampen, Türen/Falltüren/Zauntore, Beobachter, Tagessensor, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
-| 2f-4 | Ebene 1 – Kolben (Schieben bis 12 Blöcke, Ziehen, unbewegliche Blöcke) | als Nächstes |
+| 2f-3 | Ebene 1 – Redstone-Mechanismen: Lampen, Türen/Falltüren/Zauntore, Beobachter, Tagessensor, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #17) |
+| 2f-4 | Ebene 1 – Kolben (Schieben bis 12 Blöcke, klebriger Kolben, unbewegliche und zerstörbare Blöcke, Zeit 2 + 2 Ticks im C-Tick), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -146,6 +146,13 @@ Zuletzt aktualisiert: 20.10.2026
 - Prüfer `pruefer.mechanismus` (Option `redstoneZeit`): Hinweis bei Lampe/Tür, die in der Simulation nie bestromt wird, und bei Tagessensor mit teilweise unbekanntem Himmelslicht.
 - Regeln: `data/regeln/mechanismen.json` (8 Regeln, alle `ungeprüft` mit Testanleitung). Nicht dabei: Kolben (2f-4), Zielblock, Druckplatten, Stolperdraht, Dimensionen (Nether/Ende geben in Bedrock kein Tagessensor-Signal; Blockwerk rechnet Oberwelt).
 
+## Was die Kolben (Teil 2f-4) jetzt können (`src/ebene1/kolben.js`)
+- Ebene 0: neue Eigenschaft `schiebung` je Block: `beweglich` (alles Übrige, auch Treppen, Halbstufen, Teppiche, Schienen, eingefahrene Kolben, Schleim/Honig), `zerstoert` (Fackeln, Pflanzen, Staub, Hebel, Knöpfe, Druckplatten, Schilder, Türen, Leitern, Banner, Schnee …), `unbeweglich` (Obsidian, Bedrock, Befehlsblöcke, Plattenspieler, Schleifstein, Leitstein, Spawner, Portale, Respawn-Anker …), `behaelter` (Blockentität, unklar), `null` (Luft, Flüssigkeiten, Feuer).
+- `schiebeplan(welt, pos)`: sammelt ab der Kopfzelle die Kette (höchstens 12 Blöcke); Abbruch bei unbeweglichem, Behälter/unbekanntem Block, ausgefahrenem Kolben oder Kopf, Weltgrenze; Luft und Flüssigkeit machen Platz, ein zerstörbarer Block am Ende wird entfernt. `fahreAus`/`fahreEin`: Kette um eins schieben (Block-ID und Zustand erhalten), Armblock (`piston_arm_collision`) setzen/entfernen; klebrig zieht beim Einfahren einen beweglichen Block nach.
+- Zeit (`redstone-zeit.js`, Tickart `mechanismus` = nur C-Tick): erster C-Tick mit Strom (von jeder Seite außer dem Kopf, keine Quasi-Konnektivität) + 2 Ticks Start + 2 Ticks Dauer, also Ausfahren/Einfahren im Tick 6 nach einem Start im Tick 0 (Test). Blockiert: einmal `kolben-blockiert` mit Grund, bis der Strom wegfällt. Beobachter reagieren auf das Ausfahren.
+- Prüfer `pruefer.kolben` (Option `kolben`): Hinweis „Kolben kann nicht ausfahren: …“ oder „zerstört beim Ausfahren …“ mit Koordinate.
+- Regeln: `data/regeln/kolben.json` (8 Regeln, alle `ungeprüft` mit Testanleitung). **Annahmen mit Wirkung:** Behälter werden nicht geschoben (Bedrock nicht eindeutig), Türen/Schilder/Leitern/Banner gelten als zerstörbar (Java), alle anderen Blöcke als beweglich (Java-Standard). Nicht dabei: Schleim-/Honigblöcke kleben nicht an Nachbarn, Wesen auf dem Kolben, Null-Tick-Impulse, weiche Inversion, Staub dreht sich zum Kolben (Bedrock).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -165,7 +172,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2f-4: Kolben** (Schieben bis 12 Blöcke, Ziehen beim klebrigen Kolben, unbewegliche Blöcke, Startverzögerung 2 Ticks, nur im C-Tick). Alternativ Wesen (Spieler und Dorfbewohner: Bewegung, Erreichbarkeit, Berufssuche, Betten, Golems) – Jonah entscheidet.
+**Nächste Mechanik – Jonah entscheidet:** Wesen (Spieler und Dorfbewohner: Bewegung, Erreichbarkeit, Berufssuche, Betten, Golems) oder Schleim-/Honigblöcke und Druckplatten (brauchen Wesen). Danach Ebene 2 (Bausteine).
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

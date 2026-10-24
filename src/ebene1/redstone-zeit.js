@@ -18,7 +18,7 @@ const SEITEN_VON = { north: ['east', 'west'], south: ['east', 'west'], east: ['n
 /**
  * @param {{regelwerk: import('./regelwerk.js').Regelwerk, register: object, richtungVon: Function, redstone: ReturnType<typeof import('./redstone.js').erzeugeRedstone>, trichter: ReturnType<typeof import('./trichter.js').erzeugeTrichter>}} quellen
  */
-export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone, trichter, licht }) {
+export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone, trichter, licht, kolben }) {
   const P = (id, name) => regelwerk.parameter(id, name);
   const staubId = P('redstone.staub-verbindung', 'staub');
   const fackelAn = P('redstone.fackel-invertiert', 'an');
@@ -34,6 +34,8 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
   const knopf = new RegExp(P('redstone.knopf', 'muster'));
   const redstoneBlock = P('redstone.quelle-block', 'block');
   const ruhe = P('zeit.staub-sofort', 'ruheTicks');
+  const kolbenStart = P('kolben.start', 'startTicks');
+  const kolbenDauer = P('kolben.dauer', 'ticks');
   const lampeIds = P('mech.lampe', 'ids');
   const lampeAusTicks = P('mech.lampe', 'ausTicks');
   const tuerMuster = new RegExp(P('mech.tueren', 'muster'));
@@ -332,6 +334,55 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
         }
       },
     };
+    // ---- Kolben (nur im C-Tick): bestromt → nach kolbenStart Ticks prüfen, nach weiteren kolbenDauer Ticks ausgefahren (und umgekehrt) ----
+    const kolbenBlockiert = new Set();
+    const aktionen = new Map(); // Schlüssel → { art, startAb, fertigAb, plan? }
+    const kolbenMechanik = {
+      id: 'mech-kolben', tickart: 'mechanismus',
+      schritt(ktx) {
+        const km = karte(ktx);
+        // laufende Aktionen weiterführen
+        for (const [k, a] of [...aktionen]) {
+          const pos = a.pos;
+          const b = lies(pos);
+          if (!kolben.istKolbenId(b.id)) { aktionen.delete(k); continue; }
+          if (!a.gestartet && ktx.tick >= a.startAb) {
+            a.gestartet = true;
+            if (a.art === 'aus') {
+              a.plan = kolben.schiebeplan(w, pos);
+              if (!a.plan.ok) { merke(ktx, 'kolben-blockiert', pos, { grund: a.plan.grund }); kolbenBlockiert.add(k); aktionen.delete(k); continue; }
+            }
+          }
+          if (a.gestartet && ktx.tick >= a.fertigAb) {
+            aktionen.delete(k);
+            if (a.art === 'aus') {
+              const plan = kolben.schiebeplan(w, pos); // Zustand zum Abschluss noch einmal prüfen
+              if (!plan.ok) { merke(ktx, 'kolben-blockiert', pos, { grund: plan.grund }); kolbenBlockiert.add(k); continue; }
+              kolben.fahreAus(w, pos, plan);
+              merke(ktx, 'kolben-aus', pos, { bloecke: plan.bloecke.length, zerstoert: plan.zerstoert ? plan.zerstoert.id : null });
+            } else {
+              const gezogen = kolben.fahreEin(w, pos);
+              merke(ktx, 'kolben-ein', pos, { gezogen: gezogen ? gezogen.id : null });
+            }
+          }
+        }
+        // neue Aktionen erkennen
+        for (const bl of w.alleBloecke()) {
+          if (!kolben.istKolbenId(bl.id)) continue;
+          const pos = { x: bl.x, y: bl.y, z: bl.z };
+          const k = key(pos);
+          if (aktionen.has(k)) continue;
+          const r = kolben.richtungVonBlock(bl);
+          if (!r) continue;
+          const bestromt = km.bestromtAn(pos.x, pos.y, pos.z, r);
+          const aus = kolben.istAusgefahren(w, pos);
+          if (!bestromt) kolbenBlockiert.delete(k);
+          if (bestromt && !aus && kolbenBlockiert.has(k)) continue; // schon gemeldet: bleibt blockiert, bis der Strom wegfällt
+          if (bestromt && !aus) aktionen.set(k, { art: 'aus', pos, startAb: ktx.tick + kolbenStart, fertigAb: ktx.tick + kolbenStart + kolbenDauer, gestartet: false });
+          else if (!bestromt && aus) aktionen.set(k, { art: 'ein', pos, startAb: ktx.tick + kolbenStart, fertigAb: ktx.tick + kolbenStart + kolbenDauer, gestartet: false });
+        }
+      },
+    };
     // ---- Beobachter (P-Tick lesen, C-Tick schreiben): Impuls von beobachterImpuls Ticks bei einer Änderung der Zelle davor ----
     const beobachterMechaniken = beobachter.map((pos) => {
       const k = key(pos);
@@ -379,6 +430,7 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
     for (const m of [...fackelMechaniken, ...repeaterMechaniken, ...komparatorMechaniken, ...beobachterMechaniken]) t.registriere(m);
     t.registriere(lampenMechanik);
     t.registriere(tuerenMechanik);
+    t.registriere(kolbenMechanik);
 
     const zustandsabdruck = () => {
       const teile = [];
@@ -408,7 +460,7 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
     };
   }
 
-  const enthaeltZeitbauteile = (welt) => welt.alleBloecke().some((b) => b.id === fackelAn || b.id === fackelAus || istRepeater(b.id) || istKomparator(b.id) || knopf.test(b.id) || lampeIds.includes(b.id) || tuerMuster.test(b.id) || b.id === beobachterId || tagIds.includes(b.id));
+  const enthaeltZeitbauteile = (welt) => welt.alleBloecke().some((b) => b.id === fackelAn || b.id === fackelAus || istRepeater(b.id) || istKomparator(b.id) || knopf.test(b.id) || lampeIds.includes(b.id) || tuerMuster.test(b.id) || b.id === beobachterId || tagIds.includes(b.id) || kolben.istKolbenId(b.id));
 
   return { erzeuge, enthaeltZeitbauteile, tagessensorStaerke, verdunkelung };
 }

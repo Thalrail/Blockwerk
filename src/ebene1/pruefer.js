@@ -109,6 +109,32 @@ function pruefeFluessigkeit(welt, fluessigkeit, maxTicks) {
   return meldungen;
 }
 
+/** Lässt fallende Blöcke in einer Kopie fallen und meldet jeden, der sich bewegt, zum Gegenstand wird oder auf Unbekanntem liegt. */
+function pruefeFallen(welt, fallen) {
+  if (!fallen.enthaeltFallende(welt)) return [];
+  const lauf = fallen.simuliere(welt);
+  const ursprung = new Map(); // aktuelle Zelle → Ausgangszelle des Blocks
+  const von = (p) => ursprung.get(`${p.x},${p.y},${p.z}`) ?? { x: p.x, y: p.y, z: p.z };
+  const meldungen = [];
+  const ort = (p) => `(${p.x}, ${p.y}, ${p.z})`;
+  for (const e of lauf.ereignisse) {
+    const start = von(e.pos);
+    if (e.was === 'faellt') {
+      ursprung.delete(`${e.pos.x},${e.pos.y},${e.pos.z}`);
+      ursprung.set(`${e.nach.x},${e.nach.y},${e.nach.z}`, start);
+    } else if (e.was === 'gelandet' && (start.x !== e.pos.x || start.y !== e.pos.y || start.z !== e.pos.z)) {
+      meldungen.push({ regel: 'pruefer.faellt', ort: start, schwere: 'verstoss', meldung: `${e.block} fällt und landet bei ${ort(e.pos)}` });
+    } else if (e.was === 'zu-gegenstand') {
+      meldungen.push({ regel: 'pruefer.faellt', ort: start, schwere: 'verstoss', meldung: `${e.block} fällt und wird bei ${ort(e.pos)} zum Gegenstand (${e.grund})` });
+    } else if (e.was === 'unklar') {
+      meldungen.push({ regel: 'pruefer.faellt', ort: start, schwere: 'hinweis', meldung: `${e.block} liegt bei ${ort(e.pos)} auf ${e.grund}; ob er dort hält, ist nicht belegt` });
+    } else if (e.was === 'zu-beton') {
+      meldungen.push({ regel: 'pruefer.faellt', ort: start, schwere: 'hinweis', meldung: `${e.block} wird bei ${ort(e.pos)} zu ${e.nach}` });
+    }
+  }
+  return meldungen;
+}
+
 /** Stellen im Bereich, an denen Monster spawnen können (Verstoß) oder vielleicht können (Hinweis). */
 function pruefeSpawn(welt, spawn, spawnBereich, himmel) {
   return spawn.spawnstellen(welt, spawnBereich, { himmel }).map((s) => ({
@@ -190,7 +216,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -198,6 +224,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (lore && loreStart) meldungen.push(...pruefeLore(welt, lore, loreStart));
   if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
   if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));
+  if (fallen) meldungen.push(...pruefeFallen(welt, fallen));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);

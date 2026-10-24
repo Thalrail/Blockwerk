@@ -171,7 +171,7 @@
       "grund": "bricht ab, wenn die tragende Fläche / der Befestigungsblock fehlt (Fackel, Schiene, Staub, Knopf, Tür, Pflanze …)"
     },
     {
-      "muster": "^minecraft:(sand|red_sand|gravel|anvil|dragon_egg|scaffolding|suspicious_sand|suspicious_gravel)$|_concrete_powder$",
+      "muster": "^minecraft:(sand|red_sand|gravel|(chipped_|damaged_)?anvil|dragon_egg|scaffolding|suspicious_sand|suspicious_gravel)$|_concrete_powder$",
       "setze": {
         "faellt": true
       },

@@ -102,6 +102,13 @@ Deine Messungen vom 24.10.2026 stehen in `docs/messungen-lore.md` und als `gepr�
 2. **Rampen über 5 Blöcke** (8 und 12 Blöcke hoch, Antriebsschiene alle 3 Blöcke, erste Steigschiene angetrieben): kommt sie ganz hoch? (`lore.rampe-ueber-5`)
 3. **Rampe mitten in einer langen Antriebsstrecke** (Lore schon voll beschleunigt): reicht Abstand 6 noch, ab wann bleibt sie stehen? (`lore.fahrt-im-antrieb`)
 
+## Fallende Blöcke: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt, Koordinaten an, Video (60 fps) für Zeiten. Alles Java-Platzhalter, also nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Tempo:** Sand 10 Blöcke hoch fallen lassen, Fallzeit messen (Blockwerk: 9 Ticks je Block, also 4,5 s). (`fallen.tempo`)
+2. **Fackel, Schiene, Staub, Halbstufe, Seelensand:** Sand von oben darauf: Gegenstand, liegen bleiben oder durchfallen? (`fallen.landen-gegenstand`, `fallen.durch-fackel`)
+3. **Betonpulver im Wasser:** neben, über und in Wasser fallen lassen und liegen lassen. (`fallen.betonpulver`)
+4. **Treppe, Zaun, Falltür, Glasscheibe darunter:** Sand fallen lassen. (`fallen.unbekannt`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -109,6 +116,15 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 |---|---|
 | `antrieb.redstonefackel` – Redstonefackel neben der Schiene versorgt sie | Redstonefackel vor und hinter dem Ende einer einzelnen Antriebsschiene (in der Verlängerung der Schiene), außerdem über und unter der Schiene (soweit möglich): Wird die Schiene bestromt? Ergebnis je Lage melden. (Links und rechts hat Jonah bestätigt.) |
 | `antrieb.hebel` – Eingeschalteter Hebel an bestimmten Blöcken versorgt die Schiene | Hebel (eingeschaltet) an den genannten Blöcken wie in der Regel beschrieben: Prüfen, ob die Schiene bestromt wird, und besonders, ob Seiten-Hebel (east/west/south/north) an dem Block sitzen, an dem du ihn setzt (Blockwerk nimmt an: der Hebel zeigt von seinem Block weg). Auch Hebel an der Unterseite eines Blocks (Hebel an der Decke) prüfen. Ergebnis melden. |
+| `fallen.welche` – Welche Blöcke fallen | Je einen Block (Sand, Kies, roter Sand, Betonpulver, Amboss, Drachenei) 5 Blöcke hoch in die Luft setzen (Stütze wegnehmen): Fallen alle? Was passiert mit Gerüst, Tropfstein und Schneeschicht? |
+| `fallen.start` – Startverzögerung | Sandblock auf einen Block setzen, den Block darunter abbauen und mit Video (60 fps) messen: Wie viele Ticks (1/20 s) dauert es, bis der Sand sich löst? Blockwerk erwartet 2 Ticks. |
+| `fallen.tempo` – Falltempo | Sand 10 Blöcke hoch fallen lassen und mit Video die Fallzeit messen: Blockwerk erwartet 9 Ticks je Block, also 4,5 s für 10 Blöcke. Ergebnis melden. |
+| `fallen.landen-block` – Landen auf festem Block | Drei Sandblöcke übereinander 6 Blöcke hoch, die Stütze wegnehmen: Landen alle drei übereinander auf dem Boden? |
+| `fallen.landen-gegenstand` – Fackel, Schiene, Staub, Halbstufe und Seelensand machen einen Gegenstand | Sand 4 Blöcke hoch über: eine Schiene, Redstone-Staub, eine Halbstufe (unten und oben), Seelensand, eine Fackel auf Stein: Wird der Sand jeweils ein Gegenstand, bleibt er liegen oder fällt er durch? Ergebnis je Fall melden. |
+| `fallen.durch-fackel` – Durch eine Fackel fallen | Eine Fackel an die Seite eines Blocks hängen (Luft darunter) und Sand von oben darauf fallen lassen: Fällt er durch, und bleibt die Fackel stehen? |
+| `fallen.fluessigkeit` – Durch Wasser und Lava | Sand über eine 5 Blöcke tiefe Wasserschicht (und Lava) fallen lassen: Fällt er in derselben Zeit hindurch wie durch Luft? |
+| `fallen.betonpulver` – Betonpulver wird im Wasser zu Beton | Betonpulver neben, über und in Wasser fallen lassen und liegen lassen: Wird es sofort zu Beton? Gilt das für alle Seiten (auch von unten)? |
+| `fallen.unbekannt` – Unbekannte Blöcke darunter | Sand auf Treppe, Zaun, Falltür, Glasscheibe, Trichter, Kessel fallen lassen: Bleibt er liegen, wird er zum Gegenstand oder fällt er daneben? Ergebnis je Block melden. |
 | `fluessigkeit.lava-nether` – Lava (Nether): 7 Blöcke weit, ein Block alle 10 Ticks | Siehe fluessigkeit.lava-oberwelt (Nether-Teil). |
 | `fluessigkeit.fallen` – Fließen nach unten ohne Grenze | Wasserfall aus 10 Blöcken Höhe auf ebenen Stein: Wie weit breitet sich das Wasser unten aus (Blockwerk erwartet 7 Blöcke ab dem Aufprallpunkt)? Ergebnis melden. |
 | `fluessigkeit.unten-vor-seitlich` – Erst nach unten, seitlich nur ohne Weg nach unten | Quelle direkt über einem Loch (2 Blöcke tief) auf ebenem Stein: Breitet sich Wasser auf der Oberfläche seitlich aus, oder fließt es nur in das Loch? Ergebnis melden. |
@@ -137,6 +153,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.licht-unklar` – Prüfer: Lichtquelle mit zustandsabhängiger Stärke | Kerze (1 bis 4 Kerzen, angezündet), Seegurke (1–4, im Wasser), Respawn-Anker (Ladung 0–4): Wie hell ist es jeweils? Mit einem Lichtblock vergleichen und die Stufe melden. |
 | `pruefer.spawn-moeglich` – Prüfer: Monster können hier spawnen | Siehe spawn.platz und spawn.boden-unklar. |
 | `pruefer.lore-stillstand` – Prüfer: Lore bleibt stehen | Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb. |
+| `pruefer.faellt` – Prüfer: Block fällt | Siehe fallen.landen-block und fallen.landen-gegenstand. |
 | `schiene.linie-verlaengern` – Eine Linie wird in derselben Richtung verlängert | Kreativ-Testwelt auf ebenem Boden: eine Schiene setzen, daneben in Ost-West-Richtung eine zweite, dann eine dritte in derselben Reihe. Erwartung: alle drei liegen Ost-West. Dasselbe in Nord-Süd-Richtung. Abweichungen melden. |
 | `schiene.zwei-nachbarn` – Zwei Nachbarn: verbinden, gerade oder als Kurve | Zwei Schienen im rechten Winkel zueinander setzen (z. B. eine im Westen, eine im Norden einer freien Stelle) und dazwischen die Ecke legen: Kurve? Dann die Ecke so legen, dass drei Schienen Nachbarn sind (siehe schiene.t-stelle). |
 | `schiene.nachbar-umstellen` – Nachbarschienen stellen sich auf die neue Schiene ein | Eine Ost-West-Linie aus drei Schienen legen, dann an das Ende der Mittelschiene seitlich (Nord) eine vierte setzen: Bleibt die Linie unverändert, oder dreht sich die Mittelschiene? Ergebnis melden. |

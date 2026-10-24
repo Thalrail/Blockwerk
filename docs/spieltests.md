@@ -109,6 +109,14 @@ Kreativ-Testwelt, Koordinaten an, Video (60 fps) für Zeiten. Alles Java-Platzha
 3. **Betonpulver im Wasser:** neben, über und in Wasser fallen lassen und liegen lassen. (`fallen.betonpulver`)
 4. **Treppe, Zaun, Falltür, Glasscheibe darunter:** Sand fallen lassen. (`fallen.unbekannt`)
 
+## Trichter und Blockinhalte: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt, Video (60 fps) für Zeiten. Alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Tempo:** Kiste mit 64 Gegenständen → Trichter → Kiste. Blockwerk erwartet 8 Ticks je Gegenstand (rund 25,6 s). (`trichter.cooldown`)
+2. **Redstone-Sperre:** Redstone-Block neben den Trichter: Bleibt er stehen? Empfängt er von oben? (`trichter.sperre`)
+3. **Stapelgrößen:** Enderperlen, Eier, Schilder, Tränke, Schwerter, Betten, Kuchen einzeln in eine Kiste: Wie viele passen in einen Slot? (`trichter.stapel`)
+4. **Komparator:** Kiste mit 1, 64, 1728 Steinen und mit 16 Enderperlen je Slot füllen und die Signalstärke ablesen. (`trichter.komparator`)
+5. **Ofen:** Trichter über, neben und unter einem Ofen. (`trichter.unklar`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -154,6 +162,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.spawn-moeglich` – Prüfer: Monster können hier spawnen | Siehe spawn.platz und spawn.boden-unklar. |
 | `pruefer.lore-stillstand` – Prüfer: Lore bleibt stehen | Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb. |
 | `pruefer.faellt` – Prüfer: Block fällt | Siehe fallen.landen-block und fallen.landen-gegenstand. |
+| `pruefer.trichter` – Prüfer: Trichter ohne Ziel, im Kreis oder verstopft | Siehe trichter.ziel und trichter.behaelter. |
 | `schiene.linie-verlaengern` – Eine Linie wird in derselben Richtung verlängert | Kreativ-Testwelt auf ebenem Boden: eine Schiene setzen, daneben in Ost-West-Richtung eine zweite, dann eine dritte in derselben Reihe. Erwartung: alle drei liegen Ost-West. Dasselbe in Nord-Süd-Richtung. Abweichungen melden. |
 | `schiene.zwei-nachbarn` – Zwei Nachbarn: verbinden, gerade oder als Kurve | Zwei Schienen im rechten Winkel zueinander setzen (z. B. eine im Westen, eine im Norden einer freien Stelle) und dazwischen die Ecke legen: Kurve? Dann die Ecke so legen, dass drei Schienen Nachbarn sind (siehe schiene.t-stelle). |
 | `schiene.nachbar-umstellen` – Nachbarschienen stellen sich auf die neue Schiene ein | Eine Ost-West-Linie aus drei Schienen legen, dann an das Ende der Mittelschiene seitlich (Nord) eine vierte setzen: Bleibt die Linie unverändert, oder dreht sich die Mittelschiene? Ergebnis melden. |
@@ -170,6 +179,15 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `takt.zufallsticks` – Zufallsticks | Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen). |
 | `takt.tickbereich` – Tickbereich | Kreativ-Testwelt: Wasserfall- oder Pflanzenfarm bauen, dich 10 Chunks entfernen und zurückkehren: Hat sie sich währenddessen weiterbewegt (z. B. Weizen gewachsen)? Dazu die Simulationsdistanz deines Aternos-Servers nennen. |
 | `takt.arbeitsreihenfolge` – Arbeitsreihenfolge innerhalb eines Spielticks | Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden. |
+| `trichter.cooldown` – Wartezeit nach einem Vorgang | Kiste mit 64 Gegenständen, darunter ein Trichter, der in eine zweite Kiste zeigt. Mit Video (60 fps) die Zeit für 64 Gegenstände messen: Blockwerk erwartet etwa 8 Ticks je Gegenstand (rund 25,6 s). Ergebnis melden. |
+| `trichter.reihenfolge` – Erst schieben, dann ziehen | Zwei Trichter nebeneinander, die einander füttern (Kette A → B), mit Gegenständen füllen und beobachten, ob die Gegenstände ohne Stau weiterlaufen. Außerdem: Zwei Trichter in einer senkrechten Säule zwischen zwei Kisten: Wie viele Gegenstände je Sekunde laufen durch? |
+| `trichter.slots` – Slots und ein Gegenstand je Vorgang | Kiste mit Gegenständen in verschiedenen Slots (z. B. Slot 3 Kohle, Slot 5 Eisen), Trichter darunter: In welcher Reihenfolge landen sie in der Zielkiste und in welchem Slot? |
+| `trichter.ziel` – Trichter schiebt in Blickrichtung und zieht von oben | Je einen Trichter in jede der fünf Richtungen (unten, N, O, S, W) neben eine Kiste setzen und Gegenstände einfüllen: Wohin schiebt er jeweils? |
+| `trichter.sperre` – Bestromter Trichter sperrt | Trichter mit Redstone-Block daneben (bestromt) zwischen zwei Kisten: Bleibt er stehen? Empfängt er trotzdem von einem Trichter darüber? Redstone-Block wegnehmen: Läuft er sofort weiter oder mit Verzögerung? |
+| `trichter.behaelter` – Welche Behälter bewegt werden | Trichter in eine Doppelkiste: Wird zuerst die linke oder die rechte Kiste gefüllt (Reihenfolge der Slots)? Trichter in eine Shulkerkiste mit einer Shulkerkiste im Trichter: Wird sie abgelehnt? |
+| `trichter.komparator` – Komparator-Wert eines Behälters | Kiste (27 Slots) mit 1, 64, 128, 1728 Steinen und mit 16 Enderperlen / 1 Schwert je Slot füllen und den Komparator-Wert (Redstone-Lampe-Stärke oder Signalstärke) ablesen. Dasselbe mit Trichter (5 Slots), Fass, Werfer (9 Slots). |
+| `trichter.stapel` – Stapelgrößen | Je 20 Enderperlen, Eier, Schilder, Tränke, Schwerter einzeln in eine Kiste legen: Wie viele passen in einen Slot? Besonders prüfen: Betten, Kuchen, Wasserbecher (Eimer), Bücher, Boote. |
+| `trichter.unklar` – Sonderbehälter | Trichter über, neben und unter einem Ofen mit Kohle und Eisenerz: Was wandert wohin? Ergebnis je Seite melden. Das schließt die Lücke für den Ofen. |
 
 ## Hebel an der Antriebsschiene (Jonah, 24.10.2026)
 Schiene bei 96,-60,-4. Der Hebel versorgt sie, wenn er irgendwo an einem dieser Blöcke sitzt: 96,-60,-4; 97,-60,-4; 96,-60,-5; 95,-60,-4; 96,-60,-3; 97,-59,-4; 96,-59,-5; 95,-59,-4; 96,-59,-3; 96,-58,-4. Seit dem Update im Code (antrieb.hebel). Gemeint: „auf“ = Oberseite, „irgendwo an“ = jede Seite (oben, unten, seitlich), solange Platz ist.

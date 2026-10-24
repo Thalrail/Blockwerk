@@ -176,5 +176,5 @@ export function erzeugeTrichter({ regelwerk, register, richtungVon }) {
 
   const enthaeltTrichter = (welt) => welt.alleBloecke().some((b) => b.id === hopperId);
 
-  return { mechanik, simuliere, lesewert, trichterListe, enthaeltTrichter, behaelterArt };
+  return { mechanik, simuliere, lesewert, trichterListe, enthaeltTrichter, behaelterArt, hopperId };
 }

@@ -85,10 +85,11 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
   /**
    * Baut die Mechaniken für eine Welt (im Sandkasten) und gibt Steuerung zurück.
    * @param {import('../ebene0/welt.js').Welt} welt
-   * @param {{loren?: {x:number,y:number,z:number}[], seed?: number, wetter?: 'klar'|'regen'|'gewitter', startzeit?: number}} [optionen]
+   * @param {{loren?: {x:number,y:number,z:number}[], seed?: number, wetter?: 'klar'|'regen'|'gewitter', startzeit?: number, trichter?: boolean}} [optionen]
    *   startzeit: Tageszeit in Ticks beim ersten Tick (0 = Sonnenaufgang, 6000 = Mittag, 18000 = Mitternacht)
+   *   trichter: Trichter bewegen Gegenstände mit und werden im C-Tick durch Strom gesperrt (Regel zeit.trichter-sperre); ohne Angabe bewegt sich nichts
    */
-  function erzeuge(welt, { loren = [], seed = 1, wetter = 'klar', startzeit = 0 } = {}) {
+  function erzeuge(welt, { loren = [], seed = 1, wetter = 'klar', startzeit = 0, trichter: mitTrichter = false } = {}) {
     const sk = new Sandkasten(welt);
     const t = new Taktgeber(sk, { seed });
     const ereignisse = [];
@@ -432,13 +433,36 @@ export function erzeugeRedstoneZeit({ regelwerk, register, richtungVon, redstone
     t.registriere(tuerenMechanik);
     t.registriere(kolbenMechanik);
 
+    // ---- Trichter (nur mit Option): bewegen jeden Tick, werden im C-Tick durch Strom gesperrt (toggle_bit folgt der Bestromung) ----
+    const trichterPos = mitTrichter ? w.alleBloecke().filter((b) => b.id === trichter.hopperId).map((b) => ({ x: b.x, y: b.y, z: b.z })) : [];
+    const trichterMechanik = mitTrichter ? trichter.mechanik() : null;
+    if (trichterMechanik) {
+      const gleiche = (ktx) => {
+        const km = karte(ktx);
+        for (const p of trichterPos) {
+          const b = lies(p);
+          const soll = km.bestromtAn(p.x, p.y, p.z);
+          if ((b.zustand.toggle_bit === true) === soll) continue;
+          w.setzeBlock(p.x, p.y, p.z, b.id, { ...b.zustand, toggle_bit: soll }, b.inhalt ?? null); // der Inhalt bleibt erhalten
+          merke(ktx, soll ? 'trichter-gesperrt' : 'trichter-frei', p);
+        }
+      };
+      gleiche({ tick: 0 }); // Anfangszustand: schon bestromte Trichter beginnen gesperrt
+      t.registriere(trichterMechanik);
+      t.registriere({ id: 'mech-trichter-sperre', tickart: 'mechanismus', schritt: gleiche });
+    }
+
     const zustandsabdruck = () => {
       const teile = [];
       for (const b of w.alleBloecke()) if (b.id === staubId || b.id === fackelAn || b.id === fackelAus || istRepeater(b.id) || istKomparator(b.id) || knopf.test(b.id)) teile.push(`${b.x},${b.y},${b.z}:${b.id}:${JSON.stringify(b.zustand)}`);
+      // mit Trichtern zählt auch der Inhalt aller Behälter (ein Gegenstand, der von Kiste zu Kiste wandert, ändert nur diese)
+      if (mitTrichter) for (const b of w.alleBloecke()) if (b.inhalt || b.id === trichter.hopperId) teile.push(`${b.x},${b.y},${b.z}:${b.zustand.toggle_bit === true}:${JSON.stringify(b.inhalt ?? [])}`);
       return teile.join('|') + '|' + [...komparatorStufe].join(',');
     };
     return {
       sandkasten: sk, taktgeber: t, welt: w, ereignisse,
+      /** Ereignisse der Trichter (geschoben, gezogen, gesperrt, unklar); leer ohne Option trichter. */
+      trichterEreignisse: trichterMechanik ? trichterMechanik.ereignisse : [],
       /** n Spielticks laufen lassen. */
       laufe(n) { t.laufe(n); return t.tick; },
       /** Läuft, bis sich `ruheTicks` Ticks lang nichts mehr ändert (oder maxTicks erreicht sind). */

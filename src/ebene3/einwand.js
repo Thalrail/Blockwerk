@@ -15,7 +15,7 @@ const imQuader = (z, q) => z.x >= q.von.x && z.x <= q.bis.x && z.y >= q.von.y &&
 /**
  * @param {{regelwerk: object, fachleute: ReturnType<typeof import('./fachleute.js').erzeugeFachleute>, materialisierung: object}} quellen
  */
-export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung }) {
+export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte = () => [] }) {
   const tabelle = regelwerk.parameter('plan.zustaendigkeit', 'tabelle');
   const standard = regelwerk.parameter('plan.zustaendigkeit', 'standard');
   const maximum = regelwerk.parameter('plan.runden', 'maximum');
@@ -65,6 +65,10 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung }) {
         if (!draussen.length) continue;
         liste.push({ regel: 'plan.geometrie', von: 'grobdesigner', an: fachleute.besitzer(t), ort: zelleVon(kleinste(draussen)), schwere: 'verstoss', ziel: `teil:${t.id}`, abschnitt: t.abschnitt, text: `${t.baustein} (${t.id}) ragt aus der Zone ${z.id} des Abschnitts ${z.abschnitt}`, schluessel: `plan.geometrie|zone|${z.id}|${t.id}` });
       }
+    }
+    // Nähte zwischen fertigen Abschnitten (Konstrukteur)
+    for (const n of naehte(entwurf)) {
+      for (const b of n.befunde) liste.push({ regel: 'plan.naht', von: 'bauleiter', an: 'konstrukteur', ort: b.ort, schwere: 'verstoss', ziel: `abschnitt:${n.abschnitt}`, abschnitt: n.abschnitt, text: b.text, schluessel: `plan.naht|${n.schnittstelle.id}|${b.text}` });
     }
     return liste;
   }

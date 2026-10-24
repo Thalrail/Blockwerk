@@ -109,6 +109,17 @@
       "simulationstest": "test/ebene1/licht.test.js::Prüfer: Lichtquellen mit unklarer Stärke",
       "ungeprueft": true,
       "testanleitung": "Kerze (1 bis 4 Kerzen, angezündet), Seegurke (1–4, im Wasser), Respawn-Anker (Ladung 0–4): Wie hell ist es jeweils? Mit einem Lichtblock vergleichen und die Stufe melden."
+    },
+    {
+      "id": "pruefer.lore-stillstand",
+      "titel": "Prüfer: Lore bleibt stehen",
+      "regel": "Für eine übergebene Startschiene und Fahrtrichtung läuft der Prüfer die Bahn ab und urteilt mit Jonahs Messtabellen (lore.*): Verstoß mit Koordinate, wo die Lore sicher stehen bleibt (ebene Lücke, Rampe ohne passenden Antrieb), Hinweis bei nicht gemessenen Fällen (Abstand 9, Rampe über 5 Blöcke, Bahn ohne Antrieb am Anfang).",
+      "parameter": {},
+      "quelle": "Messung Jonah (24.10.2026); https://minecraft.wiki/w/Minecart",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/lore.test.js::Prüfer: Lore bleibt stehen",
+      "ungeprueft": true,
+      "testanleitung": "Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb."
     }
   ]
 }

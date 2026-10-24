@@ -55,7 +55,7 @@ async function bloecke(eig) {
   const arbeits = new Set(eig.arbeitsbloecke);
   const ergebnis = {};
   for (const b of roh.data_items) {
-    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null, lichtfilter: null, lichtform: null, spawnBoden: null, leitet: null, schiebung: null, kollision: null };
+    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null, lichtfilter: null, lichtform: null, spawnBoden: null, leitet: null, schiebung: null, kollision: null, beruf: eig.berufe[b.name] ?? null, bett: eig.betten.includes(b.name) };
     for (const r of regeln) if (r.re.test(b.name) && !(r.ausser && r.ausser.test(b.name))) Object.assign(e, r.setze);
     if (e.fluessigkeit === null && e.vollblock === true) e.fluessigkeit = 'fest';
     // Verhalten beim Kolben: unbeweglich (Muster), Behälter (Blockentität, unklar), zerstört beim Schieben (wie wegspülbare Pflanzen, außer Teppich und Schiene), alles Übrige beweglich (Java-Standard, ungeprüft); Luft, Flüssigkeiten und Feuer sind keine Blöcke zum Schieben (null)

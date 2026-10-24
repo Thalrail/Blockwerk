@@ -210,6 +210,17 @@
       "simulationstest": "test/ebene1/bewegung.test.js::Prüfer: Begehbarkeit",
       "ungeprueft": true,
       "testanleitung": "Siehe bewegung.sprung und bewegung.fallen."
+    },
+    {
+      "id": "pruefer.dorf",
+      "titel": "Prüfer: Dorfbewohner, Betten, Berufsblöcke, Iron Golem",
+      "regel": "Mit der Option dorfPruefen meldet der Prüfer: Berufsblock, den ein Dorfbewohner beansprucht, aber nicht erreicht (Verstoß); Betten, die nicht zählen; Dorfbewohner ohne Bett; Berufsblöcke ohne Dorfbewohner in Reichweite; mehr Dorfbewohner als Betten; mögliche Iron Golems (Hinweise).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Villager (folgt aus den Regeln dorf.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Prüfer: Dorf",
+      "ungeprueft": true,
+      "testanleitung": "Siehe dorf.berufsblock und dorf.golem."
     }
   ]
 }

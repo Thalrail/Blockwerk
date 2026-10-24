@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gemergt (PR #23). Teil 3d-1 (Bahn-Module) ist gemergt (PR #24). Teil 3d-2 (Handelsnische) ist gemergt (PR #25). Schritt 2h (Trichter-Sperre durch Redstone) ist gebaut: Branch `claude/ebene-1-trichter-sperre`. 283 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gemergt (PR #23). Teil 3d-1 (Bahn-Module) ist gemergt (PR #24). Teil 3d-2 (Handelsnische) ist gemergt (PR #25). Schritt 2h (Trichter-Sperre durch Redstone) ist gemergt (PR #26). Schritt 2i (Empfangs-Wartezeit der Trichter) ist gebaut: Branch `claude/ebene-1-trichter-empfang`. 284 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -34,8 +34,9 @@ Zuletzt aktualisiert: 20.10.2026
 | 3c | Ebene 2 – Bauelemente: Gang, Treppe, Wendeltreppe, Tür, Fenster, Säule (Menschenmaß fest, formgebundene Blöcke mit Richtung) | **fertig, Status `simuliert`** (Zustandsregel `bau.zustaende` `ungeprüft`; gemergt, PR #23) |
 | 3d-1 | Ebene 2 – Technikmodule Bahn: Antriebsstrecke, Steigungsstück, Kurve (nach Jonahs Lorenmessungen, Testszenario in Ebene 1) | **fertig, Status `simuliert`** (nur geprüfte Messwerte; gemergt, PR #24) |
 | 3d-2 | Ebene 2 – Technikmodul Handelsnische (Reihe geschlossener Zellen mit Dorfbewohner, Bett, Berufsblock, Scheiben), Bett-Drehregel in Ebene 0 | **fertig, Status `simuliert`** (Regel `tech.nische` und Drehregel Bett `ungeprüft`; gemergt, PR #25) |
-| 2h | Ebene 1 – Trichter-Sperre durch Redstone (bestromter Trichter sperrt im C-Tick, Kopplung mit Komparator/Fackel/Block) | **fertig, Status `simuliert`** (Regel `zeit.trichter-sperre` `ungeprüft`; PR wartet auf Abnahme) |
-| 3d-3 | Ebene 2 – Technikmodule Lager (Trichterreihe in Fässer) und Sortierer (auf 2h aufbauend) | als Nächstes |
+| 2h | Ebene 1 – Trichter-Sperre durch Redstone (bestromter Trichter sperrt im C-Tick, Kopplung mit Komparator/Fackel/Block) | **fertig, Status `simuliert`** (Regel `zeit.trichter-sperre` `ungeprüft`; gemergt, PR #26) |
+| 2i | Ebene 1 – Empfangs-Wartezeit der Trichter (ein Gegenstand in einen leeren Trichter startet 8 Ticks Wartezeit, Bedrock-Wiki) | **fertig, Status `simuliert`** (Regel `trichter.empfang` `ungeprüft` für den nicht leeren Empfänger; PR wartet auf Abnahme) |
+| 3d-3 | Ebene 2 – Technikmodule Lager (Trichterreihe in Fässer) und Sortierer (auf 2h und 2i aufbauend; braucht einen Schaltplan, siehe unten) | als Nächstes |
 | 3d-4 | Ebene 2 – Technikmodule Bahnhof, Entladestelle, Brüter | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
@@ -219,6 +220,12 @@ Zuletzt aktualisiert: 20.10.2026
 - Regel `zeit.trichter-sperre` (`data/regeln/redstone-zeit.json`, `ungeprüft` mit Testanleitung: Verzögerung nach dem Entsperren und Reihenfolge im Tick nicht belegt). Mutationen von Tickart, Sperrrichtung und Cooldown schlagen an.
 - Nicht dabei: Sortierer und Lager selbst (3d-3), Trichter-Loren, Trichter in Ofen/Braustand.
 
+## Was die Empfangs-Wartezeit (Schritt 2i) jetzt kann (`src/ebene1/trichter.js`)
+- Schiebt ein Trichter einen Gegenstand in einen **leeren** Trichter, startet dort eine Wartezeit von 8 Ticks (Wiki „Hopper“, Bedrock; Java 7). Der Empfänger kann ihn frühestens 8 Ticks später weiterschieben. Von Hand eingelegte Gegenstände zählen nicht; ziehende Trichter haben ihre eigene Wartezeit. Beim Einlegen in einen **nicht leeren** Trichter rechnet Blockwerk keine Wartezeit (Java-Platzhalter, `ungeprüft`).
+- Folge: Eine waagerechte Kette A → B → C braucht 8 Ticks je Trichter bis zum Ausgang (erster Gegenstand im Tick 25 in der Kiste), danach 1 Gegenstand je 8 Ticks (2,5 pro Sekunde). Bei senkrechten Ketten zieht der untere Trichter aus dem oberen (eigener Vorgang): die Regel greift dort nicht.
+- Regel `trichter.empfang` (Parameter `ticks` 8, `nurLeer` true); Mutationen schlagen an. Auch ein gesperrter, leerer Empfänger behält die Wartezeit.
+- **Offen für 3d-3 (Sortierer, Lager):** Das Wiki beschreibt den Bedrock-Sortierer nur in Worten (Filtertrichter mit 41 Zielgegenständen plus 4 Füllern, gesperrter Ausgabetrichter, Signalstärke 3 entsperrt, „Soft Inversion“); die Pläne sind Bilder. Ich brauche von dir einen Schaltplan (Bild oder Beschreibung) oder darf nach dem Wiki-Text entwerfen und mit Zufallsströmen testen.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -238,7 +245,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Ebene 2, Teil 3d-3: Lager (Trichterreihe in Fässer) und Sortierer** auf der Trichter-Sperre (Testszenario mit `redstoneZeit.erzeuge(welt, { trichter: true })`). Danach 3d-4 (Bahnhof, Entladestelle, Brüter) und Ebene 3 (Planung).
+**Ebene 2, Teil 3d-3: Lager (Trichterreihe in Fässer) und Sortierer** auf Trichter-Sperre (2h) und Empfangs-Wartezeit (2i). Vorher Rückfrage an Jonah zum Schaltplan des Sortierers. Danach 3d-4 (Bahnhof, Entladestelle, Brüter) und Ebene 3 (Planung).
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

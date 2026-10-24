@@ -188,6 +188,11 @@ Kreativwelt, Kiste → Trichter → Kiste:
 2. **Fackel neben dem Trichter:** sperrt sie ihn? Wie bei der Lampe?
 3. **Filterkern:** Trichter mit einem Gegenstand (zeigt ins Leere), Komparator dahinter, der in einen Linientrichter zeigt: Sperrt der gefüllte Filter den Linientrichter, und wie schnell? Filter leeren: läuft der Linientrichter wieder?
 
+## Trichterkette: Wartezeit des Empfängers (Ebene 1)
+Kreativwelt, Stoppuhr:
+1. **Waagerechte Kette:** Kiste → Trichter A → Trichter B → Trichter C → Kiste, alle nach Osten. Wann kommt der erste Gegenstand in der letzten Kiste an? Erwartet etwa 24 Ticks (1,2 s) nach dem ersten Zug statt 8. (`trichter.empfang`)
+2. **Empfänger nicht leer:** Trichter B mit einem Gegenstand füllen, hinter B eine volle Kiste, dann Platz schaffen: Schiebt B sofort oder erst nach der Wartezeit? (`trichter.empfang`)
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
@@ -323,6 +328,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `takt.arbeitsreihenfolge` – Arbeitsreihenfolge innerhalb eines Spielticks | Kreativ-Testwelt: zwei gleichzeitige Ereignisse an einem Block (z. B. Kolben schiebt Block, während ein Beobachter ihn sieht) in beiden Spiegelungen bauen und prüfen, ob das Ergebnis gleich bleibt. Abweichungen melden. |
 | `tech.nische` – Handelsnische: geschlossene Zelle mit Berufsblock und Bett | Eine Handelsnische nach dem Plan bauen (Dorfbewohner per Boot oder Ei hineinsetzen): Bleibt er in der Zelle, nimmt er den Beruf seines Berufsblocks an, und kann man durch die Scheiben mit ihm handeln? Bei mehreren Nischen nebeneinander: Nimmt jeder den Berufsblock seiner eigenen Zelle? |
 | `trichter.cooldown` – Wartezeit nach einem Vorgang | Kiste mit 64 Gegenständen, darunter ein Trichter, der in eine zweite Kiste zeigt. Mit Video (60 fps) die Zeit für 64 Gegenstände messen: Blockwerk erwartet etwa 8 Ticks je Gegenstand (rund 25,6 s). Ergebnis melden. |
+| `trichter.empfang` – Wartezeit des Empfänger-Trichters | Kiste → Trichter A → Trichter B → Kiste, Stoppuhr: Wie lange braucht der erste Gegenstand bis in die letzte Kiste? Kommt er bei zwei Trichtern nach etwa 16 Ticks (0,8 s) statt nach 8? Dann Trichter B schon mit einem Gegenstand füllen und einen zweiten von A einlegen lassen: Gibt es eine zusätzliche Wartezeit? |
 | `trichter.reihenfolge` – Erst schieben, dann ziehen | Zwei Trichter nebeneinander, die einander füttern (Kette A → B), mit Gegenständen füllen und beobachten, ob die Gegenstände ohne Stau weiterlaufen. Außerdem: Zwei Trichter in einer senkrechten Säule zwischen zwei Kisten: Wie viele Gegenstände je Sekunde laufen durch? |
 | `trichter.slots` – Slots und ein Gegenstand je Vorgang | Kiste mit Gegenständen in verschiedenen Slots (z. B. Slot 3 Kohle, Slot 5 Eisen), Trichter darunter: In welcher Reihenfolge landen sie in der Zielkiste und in welchem Slot? |
 | `trichter.ziel` – Trichter schiebt in Blickrichtung und zieht von oben | Je einen Trichter in jede der fünf Richtungen (unten, N, O, S, W) neben eine Kiste setzen und Gegenstände einfüllen: Wohin schiebt er jeweils? |

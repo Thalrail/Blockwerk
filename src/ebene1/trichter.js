@@ -25,6 +25,8 @@ export function erzeugeTrichter({ regelwerk, register, richtungVon }) {
   const komparatorFaktor = P('trichter.komparator', 'faktor');
   const leerzeit = P('trichter.cooldown', 'ruheTicks');
   const sperrZustand = P('trichter.sperre', 'zustand');
+  const empfangTicks = P('trichter.empfang', 'ticks');
+  const empfangNurLeer = P('trichter.empfang', 'nurLeer');
 
   const slotsVon = (id) => register.bloecke.slots(id);
   /** 'ok' (wird bewegt) | 'sonder' (Behälter mit Sonderregeln) | null (kein Behälter) */
@@ -102,8 +104,14 @@ export function erzeugeTrichter({ regelwerk, register, richtungVon }) {
         const ziel = plus(pos, r);
         const art = behaelterArt(welt.leseBlock(ziel.x, ziel.y, ziel.z).id);
         if (art === 'ok') {
+          const zielBlock = lies(welt, ziel);
+          const empfaengerWartet = zielBlock.id === hopperId && (!empfangNurLeer || zielBlock.inhalt.length === 0);
           const g = bewege(welt, pos, ziel);
-          if (g) { bewegt = true; merke(ktx, 'geschoben', pos, { ziel, gegenstand: g }); }
+          if (g) {
+            bewegt = true; merke(ktx, 'geschoben', pos, { ziel, gegenstand: g });
+            // Bedrock: ein Gegenstand, der in einen leeren Trichter geschoben wird, startet dessen Wartezeit (von Hand eingelegte Gegenstände zählen nicht)
+            if (empfaengerWartet) bereitAb.set(key(ziel), Math.max(bereitAb.get(key(ziel)) ?? 0, ktx.tick + empfangTicks));
+          }
         } else if (art === 'sonder' && !gemeldet.has(`u:${k}`)) {
           gemeldet.add(`u:${k}`); merke(ktx, 'unklar', pos, { ziel, grund: welt.leseBlock(ziel.x, ziel.y, ziel.z).id });
         }

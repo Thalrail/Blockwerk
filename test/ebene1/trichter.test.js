@@ -238,3 +238,75 @@ test('Prüfer: Trichter', () => {
   assert.deepEqual(m(e0.neueWelt()), []);
   assert.equal(e0.speichereWelt(v), e0.speichereWelt(v));
 });
+
+/** Taktgeber von Hand führen, damit zwischen einzelnen Ticks die Welt verändert werden kann. */
+function starte(welt) {
+  const sk = e1.neuerSandkasten(welt);
+  const t = e1.neuerTaktgeber(sk);
+  const m = TR.mechanik();
+  t.registriere(m);
+  return { sk, t, m, laufe(n) { for (let i = 0; i < n; i++) t.schritt(); } };
+}
+const tickVon = (m, was, x) => m.ereignisse.filter((e) => e.was === was && e.pos.x === x).map((e) => e.tick);
+/** Kiste (64 Stein) oben → A → B (→ C) waagerecht nach Osten → Kiste am Ende. */
+function waagerecht(anzahl, ende = null) {
+  const w = e0.neueWelt();
+  kiste(w, 0, 3, 0, [{ slot: 0, gegenstand: 'minecraft:stone', anzahl: 64 }]);
+  for (let x = 0; x < anzahl; x++) trichterBlock(w, x, 2, 0, 'east');
+  kiste(w, anzahl, 2, 0, ende);
+  return w;
+}
+
+test('Trichter: Wartezeit des Empfängers', () => {
+  assert.equal(e1.regelwerk.parameter('trichter.empfang', 'ticks'), 8);
+  // Waagerechte Kette A → B → C: A zieht im Tick 1, schiebt im Tick 9; B bekommt den Gegenstand in einen LEEREN Trichter und wartet 8 Ticks (17),
+  // C ebenso (25). Ohne die Regel käme der Gegenstand schon im Tick 9 in der letzten Kiste an.
+  const k = starte(waagerecht(3));
+  k.laufe(100);
+  assert.deepEqual(tickVon(k.m, 'gezogen', 0).slice(0, 2), [1, 9]);
+  assert.equal(tickVon(k.m, 'geschoben', 0)[0], 9);
+  assert.equal(tickVon(k.m, 'geschoben', 1)[0], 17, 'B schiebt frühestens 8 Ticks nach dem Empfang');
+  assert.equal(tickVon(k.m, 'geschoben', 2)[0], 25, 'C ebenso');
+  // Durchsatz im Beharrungszustand: 1 Gegenstand je 8 Ticks = 2,5 pro Sekunde (Wiki), Anlauf 8 Ticks je Trichter
+  const c = tickVon(k.m, 'geschoben', 2);
+  assert.deepEqual(c.slice(0, 4).map((t, i, a) => (i ? t - a[i - 1] : 0)), [0, 8, 8, 8]);
+  assert.equal(anzahl(k.sk.welt, 3, 2, 0, 'minecraft:stone'), c.length);
+  assert.equal(c.length, 10, 'in 100 Ticks kommen 10 Gegenstände an (Ticks 25, 33 … 97)');
+  // Senkrechte Kette: B zieht aus A (eigener Vorgang), die Empfangsregel greift nicht
+  const w = e0.neueWelt();
+  kiste(w, 0, 4, 0, [{ slot: 0, gegenstand: 'minecraft:stone', anzahl: 64 }]); trichterBlock(w, 0, 3, 0, 'down'); trichterBlock(w, 0, 2, 0, 'down'); kiste(w, 0, 1, 0);
+  const s = starte(w);
+  s.laufe(20);
+  assert.equal(s.m.ereignisse.find((e) => e.was === 'gezogen' && e.pos.y === 2).tick, 2, 'unterer Trichter zieht schon im Tick 2');
+  assert.equal(s.m.ereignisse.find((e) => e.was === 'geschoben' && e.pos.y === 2).tick, 10, '8 Ticks nach seinem eigenen Zug');
+
+  // Nicht leerer Empfänger: keine zusätzliche Wartezeit (Java-Platzhalter, ungeprüft). B hält 1 Stein (von Hand eingelegt), die Kiste dahinter ist voll.
+  const voll = Array.from({ length: 27 }, (_, i) => ({ slot: i, gegenstand: 'minecraft:stone', anzahl: 64 }));
+  const nv = waagerecht(2, voll);
+  nv.setzeInhalt(1, 2, 0, [{ slot: 0, gegenstand: 'minecraft:stone', anzahl: 1 }]);
+  const n = starte(nv);
+  n.laufe(9); // A schiebt im Tick 9 in den nicht leeren B
+  assert.deepEqual(tickVon(n.m, 'geschoben', 1), [], 'B kann nicht schieben (Kiste voll)');
+  n.sk.welt.setzeInhalt(2, 2, 0, []);
+  n.laufe(1);
+  assert.deepEqual(tickVon(n.m, 'geschoben', 1), [10], 'sofort im nächsten Tick, ohne Empfangswartezeit');
+
+  // Von Hand eingelegt zählt nicht: B bekommt im Tick 5 per Hand einen Stein und schiebt ihn im Tick 6
+  const hand = starte(waagerecht(2));
+  hand.laufe(5);
+  hand.sk.welt.setzeInhalt(1, 2, 0, [{ slot: 0, gegenstand: 'minecraft:stone', anzahl: 1 }]);
+  hand.laufe(1);
+  assert.deepEqual(tickVon(hand.m, 'geschoben', 1), [6]);
+
+  // Gesperrter, leerer Empfänger: Sperre wird bei Tick 12 aufgehoben, die Empfangswartezeit (bis 17) gilt trotzdem
+  const g = waagerecht(2);
+  trichterBlock(g, 1, 2, 0, 'east', null, true);
+  const gs = starte(g);
+  gs.laufe(12);
+  const b = gs.sk.welt.leseBlock(1, 2, 0);
+  gs.sk.welt.setzeBlock(1, 2, 0, 'minecraft:hopper', { ...b.zustand, toggle_bit: false }, b.inhalt ?? null);
+  gs.laufe(10);
+  assert.deepEqual(tickVon(gs.m, 'geschoben', 1).slice(0, 1), [17], 'nach dem Entsperren gilt die Empfangswartezeit weiter');
+  // Welt im Original unverändert
+  assert.equal(inhalt(g, 1, 2, 0).length, 0);
+});

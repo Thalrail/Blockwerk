@@ -38,7 +38,9 @@ Zuletzt aktualisiert: 20.10.2026
 | 2i | Ebene 1 – Empfangs-Wartezeit der Trichter (ein Gegenstand in einen leeren Trichter startet 8 Ticks Wartezeit, Bedrock-Wiki) | **fertig, Status `simuliert`** (Regel `trichter.empfang` `ungeprüft` für den nicht leeren Empfänger; gemergt, PR #27) |
 | 3d-3a | Ebene 2 – Sortiereinheit (eine Sorte: Filtertrichter, gesperrter Ausgabetrichter, Lagerkiste), Zufallsstrom-Tests in beiden Trichterreihenfolgen | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #28) |
 | 3d-3b | Ebene 2 – Sortierlager: Einwurfkiste mit Drossel („Handschlag“, Abstand 16 Ticks), Reihe von Einheiten (bis 48 Sorten), Überlaufkiste | **fertig, Status `simuliert`** (Regeln `ungeprüft`; PR wartet auf Abnahme) |
-| 3d-4 | Ebene 2 – Technikmodule Bahnhof, Entladestelle, Brüter | offen |
+| 3d-4a | Ebene 2 – Bahnhof (Halt für Dorfbewohner-Loren) | **zurückgestellt** bis zum Brutkammer-Entwurf (`docs/offene-fragen.md`) |
+| 3d-4b | Ebene 2 – Entladestelle (Dorfbewohner aussteigen, Waren aus Kistenlore) | **zurückgestellt** (Brutkammer-Entwurf, Ebene 1: Lore mit Passagier/Inhalt) |
+| 3d-4c | Ebene 2 – Dorfbewohner-Brüter | **zurückgestellt** (Funktion und Brutkammer offen; Ebene 1: Vermehrung mit Nahrung und Zeit) |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
 | 6 | Ebene 5 – Oberfläche: Desktop, Kompakt-/Vollmodus, 3D-Ansicht, Schichtpläne, Materialliste, Baubericht, Faithful-Texturen | offen |
@@ -261,12 +263,19 @@ Zuletzt aktualisiert: 20.10.2026
 - 12 Wesen ohne Hitbox in den Mojang-Daten (`null`).
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
+## Was in Ebene 1 für Bahnhof, Entladestelle und Brüter noch fehlt
+Vorhanden: Schienenform/-verbindung, Antrieb nur im C-Tick, Aktivierungsschiene als Stromschiene, Detektorschiene (Lorenposition von außen), Lorenstrecken-Analyse aus Jonahs Tabellen (Halt, Auslauf, Rampen), Erreichbarkeit, Betten/Berufsblöcke/Golem-Bedingung, Trichter mit Sperre und Empfangs-Wartezeit.
+- **Bahnhof:** Lore als Wesen mit Position über die Zeit (heute nur Tabellen), Passagiere (Dorfbewohner in der Lore; Ebene 0 kennt keine Passagier-Beziehung), Knopf/Hebel als Quelle der Antriebsschiene. Als statische Aussage („Lore bleibt hier stehen“) geht ein Halt schon heute.
+- **Entladestelle:** Aktivierungsschiene wirft Passagiere aus; für Waren Wesen mit Inhalt (Kisten-/Trichterlore) und ein Trichter, der aus der Lore zieht („Trichter-Loren“ sind bisher ausdrücklich nicht dabei).
+- **Brüter:** Vermehrung mit Nahrung (12 Punkte; Brot 4, Karotte/Kartoffel/Rote Bete je 1), Wesen-Inventar, Abklingzeit, Babyzeit, Zeitablauf der Dorfbewohner (heute rein statisch, `dorf.vermehrung` meldet nur „unklar“) und ein Modell für die Auswahl in der Brutkammer.
+
 ## Nächster Schritt
-**Ebene 2, Teil 3d-4: Bahnhof, Entladestelle, Brüter** (Testszenarien mit Detektorschiene, Redstone-Zeit und Wesen; hier fehlen teils Ebene-1-Bausteine, vorher klären). Danach Ebene 3 (Planung).
+**Jonah entscheidet** (siehe `docs/offene-fragen.md`): A) **Ebene 3 beginnen** (Datenmodell des Planentwurfs mit Rangfolge und Einwand-Protokoll; Ebene 2 hat dafür genug Bausteine), B) Brutkammer-Entwurf klären und danach die Ebene-1-Schritte „Passagiere in Loren“ und „Vermehrung“, C) Zitadelle-Bilder ablegen, damit der Leser (Ebene 4) planbar wird.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 
 ## Offene Entscheidungen
 - Desktop-Umsetzung: eigene Desktop-App oder als Desktop-Fenster installierte Webseite (spätestens vor Schritt 6 klären).
 - Zitadelle-Bilder (14) legt Jonah in `docs/zitadelle/bilder/` ab.
+- Brutkammer-Entwurf und Transport der Dorfbewohner in die Zellen (`docs/offene-fragen.md`).
 - Pull Requests #1 (Ebene 0) und #2 (Ebene 1, Unterbau) sind gemergt.

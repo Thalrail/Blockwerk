@@ -1,5 +1,5 @@
 {
-  "hinweis": "Wie sich Block-Zustände beim Drehen (im Uhrzeigersinn, von oben) und Spiegeln ändern. Jede Regel hat eine Quelle (minecraft.wiki, Bedrock-Abschnitt 'Block states' der genannten Seite, abgerufen 19.10.2026). Status je Regel im Feld 'status': 'geprüft' nur, wenn Jonah es in der Kreativwelt bestätigt hat (Datum in 'geprueftAm', Ergebnis in 'beobachtung'), sonst 'ungeprüft' (Testanleitung: docs/spieltests.md). Was nicht belegt werden konnte, steht unter 'unbehandelt' und wird NICHT gedreht.",
+  "hinweis": "Wie sich Block-Zustände beim Drehen (im Uhrzeigersinn, von oben) und Spiegeln ändern. Jede Regel hat eine Quelle (minecraft.wiki, Bedrock-Abschnitt 'Block states' der genannten Seite, abgerufen 19.10.2026). Status je Regel im Feld 'status': 'geprüft' nur, wenn Jonah es in der Kreativwelt bestätigt hat (Datum in 'geprueftAm', Ergebnis in 'beobachtung'), sonst 'ungeprüft' (Testanleitung: docs/spieltests.md). Was nicht belegt werden konnte, steht unter 'unbehandelt' und wird NICHT gedreht. Ausnahmen: gilt ein Zustand bei einem Block anders als allgemein (direction beim Bett), steht die Regel unter \"ausnahmen\" je Block-ID und hat dort Vorrang.",
   "zustaende": {
     "minecraft:cardinal_direction": { "status": "geprüft", "geprueftAm": "2026-10-20", "beobachtung": "Test 5 (Tür): bestätigt (nur an Türen getestet)", "art": "richtung", "abbildung": { "north": "north", "east": "east", "south": "south", "west": "west" }, "quelle": "https://minecraft.wiki/w/Oak_Door (Werte east/north/south/west als Himmelsrichtung)" },
     "minecraft:facing_direction": { "status": "ungeprüft", "art": "richtung", "abbildung": { "down": "down", "up": "up", "north": "north", "south": "south", "west": "west", "east": "east" }, "quelle": "Wertnamen sind selbst die Richtung (Mojang-Zustandsliste)" },
@@ -35,6 +35,7 @@
     { "name": "pale_moss_carpet_side", "seiten": { "north": "pale_moss_carpet_side_north", "east": "pale_moss_carpet_side_east", "south": "pale_moss_carpet_side_south", "west": "pale_moss_carpet_side_west" } },
     { "name": "connection", "seiten": { "north": "minecraft:connection_north", "east": "minecraft:connection_east", "south": "minecraft:connection_south", "west": "minecraft:connection_west" } }
   ],
+  "ausnahmen": {"minecraft:bed":{"direction":{"status":"ungeprüft","art":"richtung","abbildung":{"0":"south","1":"west","2":"north","3":"east"},"quelle":"https://minecraft.wiki/w/Bed (Bedrock-Zustand direction: 0 Kopf zeigt nach Süden, 1 Westen, 2 Norden, 3 Osten)","testanleitung":"Vier Betten mit dem Kopf nach Süden, Westen, Norden und Osten nebeneinander bauen, als Struktur speichern und um 90° gedreht laden: Zeigt der Kopf danach in die erwartete Richtung?"}}},
   "unbehandelt": {
     "minecraft:connection_up": "senkrecht, wird durch Drehen/Spiegeln nicht verändert",
     "minecraft:connection_down": "senkrecht, wird durch Drehen/Spiegeln nicht verändert",

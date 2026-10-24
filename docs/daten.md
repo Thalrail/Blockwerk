@@ -9,7 +9,7 @@ Verwendeter Stand: Version **1.26.50.4** (15.09.2026, laut `version.json`), Comm
 | `data/bloecke.json` | `metadata/vanilladata_modules/mojang-blocks.json` (1463 Blöcke, 157 Zustandsarten) + `data/quellen/eigenschaften.json` |
 | `data/gegenstaende.json` | `metadata/vanilladata_modules/mojang-items.json` (1623 Gegenstände) | plus Stapelgrößen (64/16/1) aus Mustern in `data/quellen/eigenschaften.json` (Wiki „Item“, `ungeprüft`)
 | `data/wesen.json` | `metadata/vanilladata_modules/mojang-entities.json` + `behavior_pack/entities/*.json` (Feld `minecraft:collision_box`) |
-| `data/drehregeln.json` | handgepflegt (minecraft.wiki, Bedrock), Status `ungeprüft` |
+| `data/drehregeln.json` | handgepflegt (minecraft.wiki, Bedrock), Status `ungeprüft`; `ausnahmen` je Block-ID (derzeit nur `direction` beim Bett) |
 | `data/quellen/eigenschaften.json` | handgepflegt (minecraft.wiki, Bedrock), Status `ungeprüft` |
 
 Neu erzeugen (braucht Internet, nicht Teil von `npm test`): `node tools/baue-register.mjs` – zweiter Lauf ergibt dieselben Dateien.

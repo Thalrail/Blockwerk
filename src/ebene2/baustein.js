@@ -47,6 +47,13 @@ export function pruefePaket(p) {
     if (form === 'tuer' && (!['unten', 'oben'].includes(b.haelfte) || !['links', 'rechts'].includes(b.scharnier))) fehler('Tür braucht haelfte (unten/oben) und scharnier (links/rechts)');
   }
   if (!Array.isArray(p.anschluesse)) fehler('Anschlüsse fehlen');
+  if (p.wesen !== undefined) {
+    if (!Array.isArray(p.wesen)) fehler('wesen muss eine Liste sein');
+    for (const w of p.wesen) {
+      if (typeof w.id !== 'string' || !w.id.startsWith('minecraft:')) fehler('Wesen braucht eine ID (minecraft:…)');
+      if (![w.x, w.y, w.z].every(Number.isFinite)) fehler('Wesen braucht Koordinaten x, y, z');
+    }
+  }
   const h = p.platzbedarf?.huelle;
   if (!h?.von || !h?.bis) fehler('Platzbedarf (Hüllquader) fehlt');
   if (!Array.isArray(p.platzbedarf.sperrzonen)) fehler('Sperrzonen fehlen');
@@ -88,7 +95,7 @@ export function definiere(def) {
       const huelle = huelleVon(bloecke) ?? { von: { x: 0, y: 0, z: 0 }, bis: { x: -1, y: -1, z: -1 } };
       return pruefePaket({
         id: def.id, titel: def.titel, status: baustein.status, quelle: def.quelle, parameter: werte, bloecke,
-        anschluesse: erg.anschluesse ?? [], platzbedarf: { huelle, sperrzonen: erg.sperrzonen ?? [] }, testszenario: def.testszenario,
+        anschluesse: erg.anschluesse ?? [], ...(erg.wesen ? { wesen: erg.wesen } : {}), platzbedarf: { huelle, sperrzonen: erg.sperrzonen ?? [] }, testszenario: def.testszenario,
       });
     },
   };
@@ -134,6 +141,7 @@ export function platziere(welt, paket, palette, versatz = { x: 0, y: 0, z: 0 }, 
     }
     welt.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, id, z);
   }
+  for (const w of paket.wesen ?? []) welt.fuegeWesenHinzu({ ...w, x: w.x + versatz.x, y: w.y + versatz.y, z: w.z + versatz.z });
 }
 
 /** Einfache Palette für Tests und Vorschau (Stein; Treppen, Holztür und Glas für die formgebundenen Bauelemente). */

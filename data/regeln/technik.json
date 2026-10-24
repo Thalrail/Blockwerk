@@ -6,11 +6,30 @@
       "id": "tech.bahn",
       "titel": "Bahn-Module nach Jonahs Messwerten",
       "regel": "Antriebsstrecke, Steigungsstück und Kurve folgen den von Jonah geprüften Lorenwerten (lore.abstand-eben, lore.abstand-steigung): höchstens 8 normale Schienen zwischen Antriebsschienen auf ebener Strecke, auf Rampen jede zweite Schiene angetrieben und die erste Schiene der Rampe angetrieben, Rampen bis 5 Blöcke Höhe. Technik skaliert über Anzahl: längere Strecke = mehr Abschnitte. Jede Antriebsschiene bekommt einen Redstone-Block darunter, normale Schienen ein Fundament (Rolle boden).",
-      "parameter": { "standardabstand": 4 },
+      "parameter": {
+        "standardabstand": 4
+      },
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/messungen-lore.md",
       "status": "simuliert",
       "simulationstest": "test/ebene2/technik-bahn.test.js::Technik: Antriebsstrecke",
       "ungeprueft": false
+    },
+    {
+      "id": "tech.nische",
+      "titel": "Handelsnische: geschlossene Zelle mit Berufsblock und Bett",
+      "regel": "Eine Nische ist 1 Block breit und enthält den Dorfbewohner, dahinter das Bett (Kopf an der Zelle) und vorn den Berufsblock, darüber Scheiben. Innenhöhe 3, damit über dem Bett zwei Blöcke frei sind. Benachbarte Nischen teilen sich die Wand (Rastermaß 2). Die Zelle ist von allen Seiten geschlossen, der Dorfbewohner kann sie nicht verlassen. Ob man durch die Scheibe handeln kann und ob jeder Dorfbewohner den Berufsblock seiner Zelle statt eines fremden nimmt, ist nicht belegt.",
+      "parameter": {
+        "innenhoehe": 3,
+        "rastermass": 2,
+        "dorfbewohner": "minecraft:villager_v2",
+        "bett": "minecraft:bed",
+        "standardberuf": "librarian"
+      },
+      "quelle": "https://minecraft.wiki/w/Villager",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/handelsnische.test.js::Handelsnischen: Dorfbewohner, Bett und Beruf mit Ebene 1",
+      "ungeprueft": true,
+      "testanleitung": "Eine Handelsnische nach dem Plan bauen (Dorfbewohner per Boot oder Ei hineinsetzen): Bleibt er in der Zelle, nimmt er den Beruf seines Berufsblocks an, und kann man durch die Scheiben mit ihm handeln? Bei mehreren Nischen nebeneinander: Nimmt jeder den Berufsblock seiner eigenen Zelle?"
     }
   ]
 }

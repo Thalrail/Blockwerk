@@ -9,11 +9,12 @@ const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/messungen-l
 const SCHIENE = 'minecraft:rail';
 const ANTRIEB = 'minecraft:golden_rail';
 const STROM = 'minecraft:redstone_block';
+const QUELLE_NISCHE = 'https://minecraft.wiki/w/Villager (Berufsblöcke, Betten) und docs/ebenen.md (Ebene 2: Technikmodule)';
 
 /**
- * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk, schienen: ReturnType<typeof import('../ebene1/schienen.js').erzeugeSchienen>}} quellen
+ * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk, schienen: ReturnType<typeof import('../ebene1/schienen.js').erzeugeSchienen>, ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>}} quellen
  */
-export function erzeugeTechnik({ regelwerk, schienen }) {
+export function erzeugeTechnik({ regelwerk, schienen, ebene0 }) {
   const P = (id, name) => regelwerk.parameter(id, name);
   // Jonah misst „jede k-te Schiene angetrieben, sicher bis k = 8“: das sind höchstens k − 1 = 7 normale Schienen zwischen zwei Antriebsschienen
   const maxAbstandEben = P('lore.abstand-eben', 'sicherJaBisK') - 1;
@@ -100,5 +101,62 @@ export function erzeugeTechnik({ regelwerk, schienen }) {
     },
   });
 
-  return { antriebsstrecke, steigung, kurve, alle: [antriebsstrecke, steigung, kurve] };
+  // ---------- Handelsnischen ----------
+  const bloecke = ebene0.register.bloecke;
+  const richtungVon = ebene0.vermesser.richtungVon;
+  const innenHoehe = P('tech.nische', 'innenhoehe');
+  const rastermass = P('tech.nische', 'rastermass');
+  const dorfbewohnerId = P('tech.nische', 'dorfbewohner');
+  const bettId = P('tech.nische', 'bett');
+  /** Die 13 Berufsblöcke (ohne die brennende Form), nach Beruf sortiert; der Parameter `beruf` ist die Nummer in dieser Liste. */
+  const berufe = bloecke.ids().filter((id) => bloecke.block(id).eigenschaften.beruf && !/^minecraft:lit_/.test(id))
+    .sort((a, b) => (bloecke.block(a).eigenschaften.beruf < bloecke.block(b).eigenschaften.beruf ? -1 : 1));
+  const standardBeruf = berufe.findIndex((id) => bloecke.block(id).eigenschaften.beruf === P('tech.nische', 'standardberuf'));
+  if (standardBeruf < 0) throw new Error('tech.nische: Standardberuf unbekannt');
+
+  /** Zustand eines Blocks mit allen Richtungszuständen nach `richtung` (so lassen sich Berufsblöcke später drehen); unbehandelte Zustände bleiben weg. */
+  function richtungsZustand(id, richtung) {
+    const z = {};
+    for (const [name, art] of Object.entries(bloecke.block(id).zustaende)) {
+      if (ebene0.drehregeln.zustaende[name]?.art !== 'richtung') continue;
+      const w = bloecke.zustandsart(name).werte.find((v) => richtungVon(name, v) === richtung);
+      if (w !== undefined) z[name] = w;
+    }
+    return z;
+  }
+  const kopfWert = bloecke.zustandsart('direction').werte.find((v) => richtungVon('direction', v, bettId) === 'south');
+  if (kopfWert === undefined) throw new Error('tech.nische: Bett-Richtung south unbekannt');
+
+  const nischen = definiere({
+    id: 'tech.handelsnischen', titel: 'Handelsnischen (Reihe geschlossener Zellen für je einen Dorfbewohner)', quelle: QUELLE_NISCHE,
+    parameter: [
+      param('anzahl', 'technik', { min: 1, max: 256, standard: 4, beschreibung: 'Zahl der Nischen in der Reihe (Technik skaliert über Anzahl, nie über Größe)' }),
+      param('beruf', 'technik', { min: 0, max: berufe.length - 1, standard: standardBeruf, beschreibung: `Nummer des Berufsblocks in der Liste ${berufe.map((id, i) => `${i} = ${bloecke.block(id).eigenschaften.beruf}`).join(', ')}` }),
+    ],
+    testszenario: { start: 'leere Welt, Reihe daraufgesetzt; die Dorfbewohner stehen in den Zellen', erwartung: 'Jeder Dorfbewohner bekommt ein Bett und seinen Beruf, bleibt in seiner Zelle, der Spieler kommt nicht hinein; Prüfer meldet keinen Verstoß' },
+    baue: ({ anzahl, beruf }) => {
+      const h = innenHoehe;
+      const xMax = (anzahl - 1) * rastermass + 1;
+      const bloeckeNische = [];
+      const wesen = [];
+      const feste = (x, y, z, id, zustand) => bloeckeNische.push({ x, y, z, technik: true, id, zustand });
+      for (let x = -1; x <= xMax; x++) for (let z = -4; z <= 0; z++) {
+        bloeckeNische.push({ x, y: -1, z, rolle: 'boden' });
+        bloeckeNische.push({ x, y: h, z, rolle: 'wand' });
+      }
+      for (let x = -1; x <= xMax; x++) for (let y = 0; y < h; y++) bloeckeNische.push({ x, y, z: -4, rolle: 'wand' });
+      for (let i = 0; i <= anzahl; i++) for (const z of [-3, -2, -1, 0]) for (let y = 0; y < h; y++) bloeckeNische.push({ x: i * rastermass - 1, y, z, rolle: 'wand' });
+      for (let i = 0; i < anzahl; i++) {
+        const x = i * rastermass;
+        feste(x, 0, 0, berufe[beruf], richtungsZustand(berufe[beruf], 'south'));
+        for (let y = 1; y < h; y++) bloeckeNische.push({ x, y, z: 0, rolle: 'glas', form: 'scheibe' });
+        feste(x, 0, -2, bettId, { head_piece_bit: true, direction: kopfWert });
+        feste(x, 0, -3, bettId, { head_piece_bit: false, direction: kopfWert });
+        wesen.push({ id: dorfbewohnerId, x: x + 0.5, y: 0, z: -0.5 });
+      }
+      return { bloecke: bloeckeNische, wesen, anschluesse: [{ art: 'front', seite: 'sued', laenge: xMax + 2, nischen: anzahl }] };
+    },
+  });
+
+  return { antriebsstrecke, steigung, kurve, nischen, berufe, alle: [antriebsstrecke, steigung, kurve, nischen] };
 }

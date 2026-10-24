@@ -1,0 +1,164 @@
+{
+  "bereich": "lore",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "lore.auslauf",
+      "titel": "Auslaufstrecke nach n Antriebsschienen am Stück",
+      "regel": "Eine leere Lore, die aus dem Stand über n bestromte Antriebsschienen hintereinander fährt, rollt danach auf normalen Schienen noch so viele Blöcke weiter (Tabelle). Ab etwa 27 Antriebsschienen sind es höchstens 23 Blöcke (Sättigung). Zwischen den Messpunkten wird linear gerechnet.",
+      "parameter": {
+        "tabelle": {
+          "1": 7.5,
+          "2": 11,
+          "3": 14,
+          "4": 14.75,
+          "5": 16.25,
+          "6": 17,
+          "7": 18,
+          "8": 18.25,
+          "9": 19.25,
+          "10": 19.5,
+          "11": 20,
+          "12": 20.25,
+          "13": 21,
+          "14": 21.25,
+          "15": 21.25,
+          "16": 21.5,
+          "17": 21.75,
+          "18": 21.9,
+          "19": 22,
+          "27": 23,
+          "37": 23
+        },
+        "saettigung": 23,
+        "hoechsteMessung": 37
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Messung 1: 1→7,5 · 2→11 · 3→14 · 4→14,75 · 5→16,25 · 6→17 · 7→18 · 8→18,25 · 9→19,25 · 10→19,5 · 11→20 · 12→20,25 · 13→21 · 14→21,25 · 15→21,25 · 16→21,5 · 17→21,75 · 18→21,9 · 19→22 · 27→23 · 37→23 Blöcke (Strecke nach der letzten Antriebsschiene).",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Auslauf nach n Antriebsschienen"
+    },
+    {
+      "id": "lore.abstand-eben",
+      "titel": "Abstand der Antriebsschienen auf ebener Strecke",
+      "regel": "Auf ebener Strecke kommt die Lore durch, wenn nach einer einzelnen Antriebsschiene höchstens 7 normale Schienen folgen, bevor die nächste Antriebsschiene kommt (Antriebsschiene jede 8. Schiene). Bei 9 normalen Schienen dazwischen (jede 10.) bleibt sie stehen. Dazwischen (8 normale Schienen, jede 9.) ist es nicht gemessen: „unklar“. Nach mehreren Antriebsschienen am Stück gilt entsprechend die Auslaufstrecke aus lore.auslauf (aus dem Stand gemessen, also als Untergrenze). Blockwerk rechnet vorsichtig: Eine Lücke gilt nur als sicher, wenn sie mit einem halben Block Reserve in die Auslaufstrecke passt, weil offen ist, ab welcher Stelle der Antriebsschiene Jonah die Strecke gezählt hat.",
+      "parameter": {
+        "sicherJaBisK": 8,
+        "sicherNeinAbK": 10
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Messung 2 (immer mit einer Antriebsschiene als Start): k = 2, 4, 6, 8 durch; k = 10 nicht durch.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Abstand der Antriebsschienen auf ebener Strecke"
+    },
+    {
+      "id": "lore.abstand-steigung",
+      "titel": "Abstand der Antriebsschienen auf einer Rampe",
+      "regel": "Auf einer Rampe (getestet bis 5 Blöcke Höhe) kommt die Lore hoch: bei Abstand 2 immer; bei Abstand 3 bis 6 nur, wenn die erste ansteigende Schiene eine Antriebsschiene ist; bei Abstand 7 nie. Über 5 Blöcke Höhe ist es nicht gemessen.",
+      "parameter": {
+        "immer": 2,
+        "mitAntriebErsteSchiene": 6,
+        "nieAb": 7,
+        "getestetBisHoehe": 5
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Messung 3: 7 Blöcke geht nicht (egal ob die erste steigende Schiene Antrieb oder normal ist); 6, 5, 4, 3 Blöcke gehen nur, wenn die erste steigende Schiene eine Antriebsschiene ist; 2 Blöcke geht immer. Rampe bis 5 Blöcke hoch.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Abstand der Antriebsschienen auf einer Rampe"
+    },
+    {
+      "id": "lore.steighoehe",
+      "titel": "Steighöhe nach n Antriebsschienen vor einer Rampe",
+      "regel": "Fährt die Lore aus dem Stand über n bestromte Antriebsschienen direkt in eine Rampe aus normalen Schienen, kommt sie so viele Blöcke hoch: 1→2,5 · 2→4 · 3→5 · 4→5,5 · 5→6 · 6→6,5 · 7→7 · 8→etwas über 7.",
+      "parameter": {
+        "tabelle": {
+          "1": 2.5,
+          "2": 4,
+          "3": 5,
+          "4": 5.5,
+          "5": 6,
+          "6": 6.5,
+          "7": 7,
+          "8": 7
+        },
+        "ab8": "mindestens 7"
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Messung 3.1: 1→2,5 · 2→4 · 3→5 · 4→5,5 · 5→6 · 6→6,5 · 7→7 · 8→etwas über 7 Blöcke.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Steighöhe nach n Antriebsschienen"
+    },
+    {
+      "id": "lore.fahrzeit",
+      "titel": "Fahrzeit auf bestromter Strecke",
+      "regel": "20 bestromte Antriebsschienen fährt die Lore in 3,2 s (rund 6,25 Blöcke je Sekunde im Durchschnitt aus dem Stand); ein Ring aus 32 Schienen in 5,01 s (rund 6,4 Blöcke je Sekunde). Blockwerk rechnet mit 0,16 s je Block als Richtwert; über 32 Blöcke ist das nicht gemessen.",
+      "parameter": {
+        "sekundenProBlock": 0.16,
+        "messungen": [
+          {
+            "bloecke": 20,
+            "sekunden": 3.2
+          },
+          {
+            "bloecke": 32,
+            "sekunden": 5.01
+          }
+        ],
+        "gemessenBis": 32
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Messung 4: 3,2 s für 20 Antriebsschienen; Messung 5: Ring 9×9 (32 Schienen + Startschiene) 5,01 s.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Fahrzeit auf bestromter Strecke"
+    },
+    {
+      "id": "lore.kurven-und-mob",
+      "titel": "Kurven und Dorfbewohner kosten kein Tempo",
+      "regel": "In Kurven verliert die Lore kein Tempo (Ring und Gerade gleich schnell). Ein Dorfbewohner in der Lore ändert die Fahrzeit nicht (4,93 s statt 5,01 s, innerhalb der Messgenauigkeit).",
+      "parameter": {
+        "kurvenverlust": 0,
+        "dorfbewohnerFaktor": 1
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart",
+      "status": "geprüft",
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Messung 5: Ring 9×9 ohne Dorfbewohner 5,01 s, kein Verlust gegenüber der Geraden; mit Dorfbewohner 4,93 s, ebenfalls kein Verlust.",
+      "ungeprueft": false,
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Kurven und Dorfbewohner kosten kein Tempo"
+    },
+    {
+      "id": "lore.rampe-ueber-5",
+      "titel": "Rampen über 5 Blöcke Höhe",
+      "regel": "Die Rampen-Regel ist nur bis 5 Blöcke Höhe gemessen. Darüber meldet der Prüfer „unklar“.",
+      "parameter": {
+        "getestetBisHoehe": 5
+      },
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart – Lücke, nicht gemessen",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Rampe über 5 Blöcke ist unklar",
+      "ungeprueft": true,
+      "testanleitung": "Rampen mit 8 und 12 Blöcken Höhe, Antriebsschiene alle 3 Blöcke, erste Steigschiene angetrieben: Kommt die Lore ganz hoch? Dann alle 6 Blöcke: Wie viele Blöcke Höhe schafft sie?"
+    },
+    {
+      "id": "lore.fahrt-im-antrieb",
+      "titel": "Fahrt mit Restgeschwindigkeit",
+      "regel": "Alle Messungen starten aus dem Stand. Fährt die Lore bereits schnell in einen Abschnitt ein (z. B. Rampe mitten in einer Antriebsstrecke), rechnet Blockwerk vorsichtig wie aus dem Stand. Eine bessere Lore kommt dadurch nie zu kurz, nur ist die Prüfung dann strenger als nötig.",
+      "parameter": {},
+      "quelle": "Messung Jonah (24.10.2026, Kreativ-Testwelt, leere Lore); https://minecraft.wiki/w/Minecart – Lücke, nicht gemessen",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/lore.test.js::Lore: Abstand der Antriebsschienen auf ebener Strecke",
+      "ungeprueft": true,
+      "testanleitung": "Rampe, die mitten in einer langen Antriebsstrecke beginnt (Lore schon voll beschleunigt): Reicht Antrieb alle 6 Blöcke noch, oder darf der Abstand größer sein? Ab welchem Abstand bleibt sie stehen?"
+    }
+  ]
+}

@@ -161,3 +161,11 @@ test('Gegenstände: Stapelgrößen sind 64, 16 oder 1 und gehören zu bekannten 
   }
   assert.ok(abweichend > 100, 'viele Gegenstände stapeln nicht zu 64');
 });
+
+test('Blöcke: Eigenschaft „leitet“ (Redstone) – Vollblöcke ja, Glas und Teilblöcke nein, sonst unbekannt', () => {
+  const l = (id) => register.bloecke.block(id).eigenschaften.leitet;
+  assert.deepEqual([l('minecraft:stone'), l('minecraft:oak_planks'), l('minecraft:oak_double_slab'), l('minecraft:redstone_block')], [true, true, true, true]);
+  assert.deepEqual([l('minecraft:glass'), l('minecraft:oak_slab'), l('minecraft:oak_stairs'), l('minecraft:hopper'), l('minecraft:air')], [false, false, false, false, false]);
+  assert.equal(l('minecraft:anvil'), null, 'unbekannt');
+  for (const id of register.bloecke.ids()) assert.ok([true, false, null].includes(l(id)), id);
+});

@@ -168,6 +168,24 @@ function pruefeTrichter(welt, trichter) {
   return meldungen;
 }
 
+/** Redstone-Leitungen: Staub ohne Quelle, zu lange Leitung, schwingende Schaltung, unbekannte Leitfähigkeit. */
+function pruefeRedstone(welt, redstone, loren) {
+  if (!redstone.enthaeltRedstone(welt)) return [];
+  const karte = redstone.stromkarte(welt, { loren });
+  const meldungen = [];
+  for (const p of karte.instabil) meldungen.push({ regel: 'pruefer.redstone', ort: p, schwere: 'hinweis', meldung: 'Diese Fackel findet kein Gleichgewicht (Schaltung schwingt); Blockwerk rechnet ohne Verzögerung und kann hier keinen Zustand nennen' });
+  for (const p of karte.ohneQuelle) meldungen.push({ regel: 'pruefer.redstone', ort: p, schwere: 'hinweis', meldung: 'Dieser Redstone-Staub bekommt nie Strom (keine Quelle in der Leitung)' });
+  for (const p of karte.abgeschnitten) meldungen.push({ regel: 'pruefer.redstone', ort: p, schwere: 'hinweis', meldung: 'Hier ist die Leitung ausgegangen (Stärke 0 nach 15 Blöcken); ein Verstärker würde fehlen' });
+  const gesehen = new Set();
+  for (const p of karte.unklar) {
+    const k = `${p.x},${p.y},${p.z}`;
+    if (gesehen.has(k)) continue;
+    gesehen.add(k);
+    meldungen.push({ regel: 'pruefer.redstone', ort: { x: p.x, y: p.y, z: p.z }, schwere: 'hinweis', meldung: `Ob ${welt.leseBlock(p.x, p.y, p.z).id} Strom leitet, ist nicht belegt (unklar)` });
+  }
+  return meldungen;
+}
+
 /** Stellen im Bereich, an denen Monster spawnen können (Verstoß) oder vielleicht können (Hinweis). */
 function pruefeSpawn(welt, spawn, spawnBereich, himmel) {
   return spawn.spawnstellen(welt, spawnBereich, { himmel }).map((s) => ({
@@ -249,7 +267,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -259,6 +277,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));
   if (fallen) meldungen.push(...pruefeFallen(welt, fallen));
   if (trichter) meldungen.push(...pruefeTrichter(welt, trichter));
+  if (redstone) meldungen.push(...pruefeRedstone(welt, redstone, loren));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);

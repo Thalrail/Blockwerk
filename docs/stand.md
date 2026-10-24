@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gebaut: Branch `claude/ebene-1-trichter`. 219 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gebaut: Branch `claude/ebene-1-redstone`. 227 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -21,7 +21,9 @@ Zuletzt aktualisiert: 20.10.2026
 | 2d-2 | Ebene 1 – Spawnstellen: wo können Monster spawnen (Licht, Boden, Platz), Prüfer „Spawn möglich“ | **fertig, Status `simuliert`** (Annahmen `ungeprüft`; gemergt, PR #8) |
 | 2e-1 | Ebene 1 – Lorenbewegung aus Messtabellen (keine Physik): Auslauf, Abstand der Antriebsschienen, Steighöhe, Fahrzeit, Prüfer „Lore bleibt stehen“ | **fertig**: Messwerte `geprüft` (Jonah, 24.10.2026), Lücken `ungeprüft`; gemergt, PR #10 |
 | 2e-2 | Ebene 1 – Fallende Blöcke: Sand, Kies, Betonpulver, Amboss, Drachenei fallen, landen, werden zu Gegenständen oder Beton; Prüfer „Block fällt“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #13) |
-| 2e-3 | Ebene 1 – Trichter & Blockinhalte: Cooldown 8 Ticks, Schieben/Ziehen, Redstone-Sperre, Stapelgrößen (Ebene 0), Komparator-Lesewert, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; PR wartet auf Abnahme) |
+| 2e-3 | Ebene 1 – Trichter & Blockinhalte: Cooldown 8 Ticks, Schieben/Ziehen, Redstone-Sperre, Stapelgrößen (Ebene 0), Komparator-Lesewert, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #14) |
+| 2f-1 | Ebene 1 – Redstone-Strom (Gleichgewicht): Staub, Quellen (Block, Hebel, Knopf, Fackel, Detektorschiene), starke/schwache Bestromung, Fackel-Inversion, Aktivierungsschiene, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
+| 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater, Komparator, Knopfdauer | als Nächstes |
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -117,6 +119,15 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/trichter.json` (9 Regeln, alle `ungeprüft` mit Testanleitung). Nicht dabei: Gegenstands-Entitäten über dem Trichter, Trichter-Loren, Ofen/Braustand/Komposter, Doppelkisten-Verbund, Sortierer (Baustein in Ebene 2).
 - Bekanntes Limit: die Reihenfolge mehrerer Trichter im selben Tick folgt den Koordinaten (y, z, x), in Bedrock ist sie nicht dokumentiert. Die Redstone-Sperre wirkt in Bedrock nur im C-Tick; Blockwerk liest `toggle_bit` zu jedem Tick.
 
+## Was der Redstone-Strom (Teil 2f-1) jetzt kann (`src/ebene1/redstone.js`)
+- **Gleichgewicht ohne Zeit:** `stromkarte(welt, { loren })` rechnet den stabilen Stromzustand: Quellen (Redstone-Block, eingeschalteter Hebel, gedrückter Knopf, brennende Redstonefackel, Detektorschiene mit Lore) bestromen ihre Nachbarzellen schwach und einen Block stark (Hebel/Knopf: Befestigungsblock, Fackel: Block darüber, Detektorschiene: Block darunter). Staub verteilt Strom (−1 je Block, 15 Blöcke weit), steigt und fällt über Stufen, bestromt den Block darunter und die Blöcke, auf die er zeigt, schwach. Stark bestromte Blöcke speisen Staub, schwach bestromte nicht. Fackeln invertieren ihren Befestigungsblock.
+- Schwingt eine Schaltung (Fackel mit Rückkopplung), meldet die Karte die Fackeln als `instabil`, statt einen Zustand zu raten (höchstens 64 Runden). Auswertungen: `staub(x,y,z)`, `blockBestromt`, `blockStark`, `fackelAn`, `staubQuellenFuer(ids)` (Staub, der auf Schienen zeigt, als Quelle für `antrieb.aktive`).
+- **Aktivierungsschiene:** `ebene1.aktivierung` (= `erzeugeAntrieb` mit `ids` für die Aktivierungsschiene): Bestromung wie bei der Antriebsschiene, Reichweite 8 (17 insgesamt), Antriebs- und Aktivierungsschienen übertragen nicht untereinander.
+- Ebene 0: neue Eigenschaft `leitet` (undurchsichtige Vollblöcke und doppelte Halbstufen ja, Glas/Teilblöcke nein, sonst unbekannt = `null`).
+- Prüfer `pruefer.redstone` (Option `redstone`, optional `loren`): Hinweise für Staub ohne Quelle, Leitung zu lang (nach 15 Blöcken Stärke 0), schwingende Fackeln und Blöcke mit unbekannter Leitfähigkeit neben Staub.
+- Regeln: `data/regeln/redstone.json` (13 Regeln, alle `ungeprüft` mit Testanleitung). **Jonahs Hebel-Messungen für Antriebsschienen (PR #9) bleiben maßgeblich**: Die Stromkarte liefert der Schiene nur zusätzliche Quellen (Staub). Dass ein Hebel an der Seite eines Nachbarblocks die Schiene nicht versorgt, weicht von „Nachbar stark bestromt“ ab und gilt nur für Antriebsschienen.
+- Nicht dabei (Teil 2f-2/2f-3): Verzögerung (2 Spielticks) und Brennen der Fackel, Repeater, Komparator, Knopfdauer, Druckplatten, Kolben, Beobachter, Lampen, Türen, Tagessensor; die 20-Tick-Prüfung der Detektorschiene. Keine Quasi-Konnektivität (Bedrock).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -136,7 +147,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2e: nächste Mechanik – Jonah entscheidet:** Redstone (Signalstärke, Fackeln, Hebel; damit auch Detektor-/Aktivierungsschiene). Lorenbewegung erst nach Jonahs Messungen (`docs/messungen-lore.md`).
+**Schritt 2f-2: Redstone-Zeit** (Verzögerung 2 Spielticks und Brennen der Fackel, Repeater, Komparator, Knopfdauer; Taktgeber-Tickart `uebertrager`), danach 2f-3 (Kolben, Beobachter, Lampen, Türen). Alternativ Wesen (Spieler und Dorfbewohner) – Jonah entscheidet.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

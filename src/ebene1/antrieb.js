@@ -12,9 +12,10 @@ import { RICHTUNGEN, VEKTOR } from '../ebene0/richtungen.js';
 const key = (p) => `${p.x},${p.y},${p.z}`;
 
 /**
- * @param {{regelwerk: import('./regelwerk.js').Regelwerk, schienen: ReturnType<typeof import('./schienen.js').erzeugeSchienen>}} quellen
+ * @param {{regelwerk: import('./regelwerk.js').Regelwerk, schienen: ReturnType<typeof import('./schienen.js').erzeugeSchienen>, ids?: Iterable<string>}} quellen
+ *   ids: Schienen-IDs, die wie Antriebsschienen versorgt werden (Standard: Antriebsschiene)
  */
-export function erzeugeAntrieb({ regelwerk, schienen }) {
+export function erzeugeAntrieb({ regelwerk, schienen, ids = null }) {
   const reichweite = regelwerk.parameter('antrieb.reichweite', 'reichweite');
   const stromBloecke = new Set(regelwerk.parameter('antrieb.stromblock', 'quellenBloecke'));
   const stromHorizontal = new Set(regelwerk.parameter('antrieb.redstonefackel', 'quellenHorizontal'));
@@ -25,7 +26,7 @@ export function erzeugeAntrieb({ regelwerk, schienen }) {
     ueberallAn: regelwerk.parameter('antrieb.hebel', 'ueberallAn'),
     befestigtAn: regelwerk.parameter('antrieb.hebel', 'befestigtAn'),
   };
-  const antriebsIds = schienen.belegtGerade; // golden_rail (Antriebsschiene)
+  const antriebsIds = ids ? new Set(ids) : schienen.belegtGerade; // standardmäßig golden_rail (Antriebsschiene); mit ids z. B. die Aktivierungsschiene
 
   const istAntriebsschiene = (id) => antriebsIds.has(id);
 

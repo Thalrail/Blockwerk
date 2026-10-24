@@ -1,0 +1,182 @@
+{
+  "bereich": "redstone",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "redstone.staub-abnahme",
+      "titel": "Staub verliert 1 Stärke je Block",
+      "regel": "Redstone-Staub lässt die Signalstärke je Block um 1 sinken (Quellen geben 15); nach 15 Blöcken ist die Stärke 0.",
+      "parameter": {
+        "abnahme": 1,
+        "maximum": 15
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_mechanics („Redstone dust lowers strength by 1 per block, a single line reaches about 15 blocks“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Staub-Leitung und Abnahme",
+      "ungeprueft": true,
+      "testanleitung": "Gerade Staubleitung aus 20 Blöcken, Hebel am Anfang: Bei welchem Staubblock geht die Leitung aus? Blockwerk erwartet: 15 Staubblöcke leuchten (Stärke 15 bis 1), der 16. nicht."
+    },
+    {
+      "id": "redstone.staub-verbindung",
+      "titel": "Staub verbindet sich mit Staub, Quellen und über Stufen",
+      "regel": "Staub verbindet sich mit Nachbarstaub, mit Redstone-Block, Hebel, Knöpfen, Fackeln und Detektorschienen, steigt auf einen leitenden Block daneben (wenn über dem Staub nichts leitet) und fällt zu Staub eine Ebene tiefer, wenn der Block daneben nicht leitet. Er zeigt in Richtung seiner Verbindung, bei genau einer Verbindung auch in die Gegenrichtung und ohne Verbindung in alle vier Richtungen (Punkt).",
+      "parameter": {
+        "staub": "minecraft:redstone_wire",
+        "verbindbarMuster": "^minecraft:(redstone_block|lever|detector_rail|target)$|_button$"
+      },
+      "quelle": "Java-Platzhalter, Bedrock nennt dazu nichts (Jonah, 24.10.2026: wo Bedrock schweigt, gilt Java); https://minecraft.wiki/w/Redstone_mechanics",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Staub-Leitung und Abnahme",
+      "ungeprueft": true,
+      "testanleitung": "Staubtreppe über Vollblöcke (rauf) und Luft (runter), einmal mit Glas, einmal mit Stein dazwischen: Wo reißt die Leitung ab? Staub mit Block darüber: Steigt die Leitung dann noch auf?"
+    },
+    {
+      "id": "redstone.stark-schwach",
+      "titel": "Starke und schwache Bestromung",
+      "regel": "Stark bestromte Blöcke bestromen Staub daneben, schwach bestromte (nur durch Staub) nicht. Hebel/Knopf bestromen den Befestigungsblock stark, die Fackel den Block darüber, die Detektorschiene den Block darunter; alle diese Quellen bestromen ihre übrigen Nachbarzellen schwach (Redstone-Block nur schwach). Staub bestromt den Block unter sich und die Blöcke, auf die er zeigt, schwach.",
+      "parameter": {},
+      "quelle": "Java-Platzhalter, Bedrock nennt dazu nichts (Jonah, 24.10.2026: wo Bedrock schweigt, gilt Java); https://minecraft.wiki/w/Redstone_mechanics („Strongly powered blocks can power redstone dust. Weakly powered blocks cannot.“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Quellen und starke/schwache Bestromung",
+      "ungeprueft": true,
+      "testanleitung": "Hebel an einem Stein, daneben Staub: leuchtet er? Dann Staub → Stein → Staub (Stein nur durch Staub bestromt): leuchtet der zweite Staub? Dasselbe mit Redstone-Block statt Hebel."
+    },
+    {
+      "id": "redstone.leitend",
+      "titel": "Welche Blöcke leiten",
+      "regel": "Undurchsichtige Vollblöcke und doppelte Halbstufen leiten Strom (können bestromt werden); Glas, Laub, Halbstufen, Treppen, Trichter und alles andere Teil- oder Durchsichtige leiten nicht. Unbekannte Blöcke (Ebene 0: leitet = null) gelten als nicht leitend und werden gemeldet.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_mechanics („Conductive (opaque) blocks can be powered. Non-conductive (transparent) blocks cannot.“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Quellen und starke/schwache Bestromung",
+      "ungeprueft": true,
+      "testanleitung": "Hebel an einem Block aus Glas, Laub, Eis, Honigblock, Seelensand, Schleimblock, oberer/unterer Halbstufe, Treppe: Wird die Redstone-Lampe oder ein Staub daneben bestromt? Ergebnis je Block melden."
+    },
+    {
+      "id": "redstone.quelle-block",
+      "titel": "Redstone-Block",
+      "regel": "Ein Redstone-Block gibt Stärke 15 an alle sechs Nachbarzellen ab (schwach), er bestromt Blöcke nicht stark.",
+      "parameter": {
+        "block": "minecraft:redstone_block"
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_mechanics; https://minecraft.wiki/w/Block_of_Redstone",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Quellen und starke/schwache Bestromung",
+      "ungeprueft": true,
+      "testanleitung": "Redstone-Block neben Staub (leuchtet?), neben einem Stein mit Staub dahinter (leuchtet?), unter und über Staub."
+    },
+    {
+      "id": "redstone.hebel",
+      "titel": "Hebel",
+      "regel": "Ein eingeschalteter Hebel gibt 15 an alle Nachbarzellen und bestromt den Befestigungsblock stark. Welcher Block der Befestigungsblock ist, folgt aus lever_direction (up_* = Block darunter, down_* = Block darüber, östlich = Block im Westen usw.; Annahme wie in antrieb.hebel).",
+      "parameter": {
+        "block": "minecraft:lever",
+        "befestigtAn": {
+          "up_north_south": "down",
+          "up_east_west": "down",
+          "down_north_south": "up",
+          "down_east_west": "up",
+          "east": "west",
+          "west": "east",
+          "north": "south",
+          "south": "north"
+        }
+      },
+      "quelle": "Java-Platzhalter, Bedrock nennt dazu nichts (Jonah, 24.10.2026: wo Bedrock schweigt, gilt Java); https://minecraft.wiki/w/Lever",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Quellen und starke/schwache Bestromung",
+      "ungeprueft": true,
+      "testanleitung": "Hebel an allen sechs Seiten eines Steins mit Staub daneben: Wann leuchtet der Staub? Besonders die Seitenlagen (Ost/West/Nord/Süd) prüfen, an welchem Block der Hebel hängt."
+    },
+    {
+      "id": "redstone.knopf",
+      "titel": "Knöpfe",
+      "regel": "Ein gedrückter Knopf verhält sich wie ein eingeschalteter Hebel. Die Dauer des Drückens (Holz/Stein) ist noch nicht dabei (Teil 2f-2). Der Befestigungsblock liegt hinter der Fläche, zu der der Knopf zeigt (facing_direction; Annahme).",
+      "parameter": {
+        "muster": "_button$"
+      },
+      "quelle": "Java-Platzhalter, Bedrock nennt dazu nichts (Jonah, 24.10.2026: wo Bedrock schweigt, gilt Java); https://minecraft.wiki/w/Button",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Quellen und starke/schwache Bestromung",
+      "ungeprueft": true,
+      "testanleitung": "Knopf an einem Block mit Staub daneben drücken; Knopf an der Unterseite und Oberseite eines Blocks: Welcher Block wird bestromt?"
+    },
+    {
+      "id": "redstone.fackel-invertiert",
+      "titel": "Fackel invertiert den Befestigungsblock",
+      "regel": "Eine Redstonefackel brennt nur, wenn ihr Befestigungsblock nicht bestromt ist; sie bestromt alle Nachbarzellen außer dem Befestigungsblock schwach und den Block darüber stark. Torch-Zustand und -Wechsel ohne Verzögerung (Gleichgewicht); Verzögerung 2 Spielticks und Brennen kommen in Teil 2f-2.",
+      "parameter": {
+        "an": "minecraft:redstone_torch",
+        "aus": "minecraft:unlit_redstone_torch"
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Torch (Inversion, Befestigungsblock ausgenommen, stark nach oben)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Fackel invertiert",
+      "ungeprueft": true,
+      "testanleitung": "Fackel an einem Block, Hebel am Block: Geht die Fackel aus? Fackelturm aus 2 und 3 Fackeln übereinander: leuchtet die oberste? Staub neben der Fackel: bestromt?"
+    },
+    {
+      "id": "redstone.fackel-richtung",
+      "titel": "Fackel: Befestigungsblock",
+      "regel": "Der Befestigungsblock einer Fackel liegt auf der Seite, die der Zustand torch_facing_direction nennt (west/east/north/south), bei „top“ unter der Fackel (von Jonah am 20.10.2026 bestätigt).",
+      "parameter": {},
+      "quelle": "Spieltest Jonah (20.10.2026, Test 7); https://minecraft.wiki/w/Redstone_Torch",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Fackel invertiert",
+      "ungeprueft": true,
+      "testanleitung": "Siehe redstone.fackel-invertiert (Fackel an den vier Seiten und oben eines Blocks)."
+    },
+    {
+      "id": "redstone.instabil",
+      "titel": "Schwingende Schaltungen",
+      "regel": "Schwingt eine Schaltung ohne Verzögerung (Fackel, die ihren eigenen Befestigungsblock speist), gibt es kein Gleichgewicht: Die Berechnung meldet die Fackeln als instabil, statt einen Zustand zu raten.",
+      "parameter": {
+        "maxRunden": 64
+      },
+      "quelle": "Blockwerk-Entscheidung (kein Raten); https://minecraft.wiki/w/Redstone_Torch (Brennen)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: instabile Schaltungen",
+      "ungeprueft": true,
+      "testanleitung": "Fackel an einem Block, daneben Staub, das den Block selbst bestromt (Rückkopplung): Brennt sie aus, flackert sie oder bleibt sie aus? Ergebnis melden."
+    },
+    {
+      "id": "redstone.detektorschiene",
+      "titel": "Detektorschiene als Quelle",
+      "regel": "Eine Detektorschiene gibt 15 an ihre Nachbarzellen ab, solange eine Lore auf ihr steht (oder rail_data_bit gesetzt ist), und bestromt den Block darunter stark. Die Prüfung alle 20 Ticks (Wiki) ist noch nicht dabei.",
+      "parameter": {
+        "block": "minecraft:detector_rail"
+      },
+      "quelle": "https://minecraft.wiki/w/Detector_Rail (Lore berührt die Schiene, Staub daneben 15, Block darunter stark)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Aktivierungs- und Detektorschiene",
+      "ungeprueft": true,
+      "testanleitung": "Lore über eine Detektorschiene fahren, Staub daneben und Redstone-Lampe: Wie lange leuchtet sie? Bestromt sie den Block darunter (Staub unter dem Block)?"
+    },
+    {
+      "id": "redstone.aktivierungsschiene",
+      "titel": "Aktivierungsschiene",
+      "regel": "Eine Aktivierungsschiene wird wie eine Antriebsschiene versorgt (Quelle neben der Schiene, Staub, der auf sie zeigt) und gibt den Strom an verbundene Aktivierungsschienen bis 8 Blöcke weiter (17 insgesamt). Nur Aktivierungsschienen übertragen untereinander. In Bedrock schaltet sie nur im C-Tick.",
+      "parameter": {
+        "ids": [
+          "minecraft:activator_rail"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Activator_Rail („up to eight blocks away … one source can power up to 17 rails“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Aktivierungs- und Detektorschiene",
+      "ungeprueft": true,
+      "testanleitung": "20 Aktivierungsschienen in einer Reihe, Redstone-Block neben der ersten: Wie viele aktivieren sich (erwartet 9)? Redstone-Block in der Mitte: 17? Dann Staub, das auf die Schiene zeigt."
+    },
+    {
+      "id": "redstone.keine-quasi",
+      "titel": "Keine Quasi-Konnektivität",
+      "regel": "In Bedrock werden Kolben, Spender und Werfer nicht vom Block über sich mitbestromt (Quasi-Konnektivität gibt es nur in Java). Diese Mechanismen kommen in Teil 2f-3; die Regel steht schon hier fest.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_circuit („Quasi-connectivity: Java Edition only“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Redstone: Quellen und starke/schwache Bestromung",
+      "ungeprueft": true,
+      "testanleitung": "Kolben mit Hebel genau über dem Block über dem Kolben (nicht am Kolben): Fährt er aus? (In Bedrock sollte er das nicht.)"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import { erzeugeSchienen } from './schienen.js';
 import { erzeugeAntrieb } from './antrieb.js';
 import { erzeugeFluessigkeit } from './fluessigkeit.js';
 import { erzeugeLicht } from './licht.js';
+import { erzeugeSpawn } from './spawn.js';
 import { erzeugeLore } from './lore.js';
 
 export * from './weltzeit.js';
@@ -23,6 +24,7 @@ export { erzeugeSchienen } from './schienen.js';
 export { erzeugeAntrieb } from './antrieb.js';
 export { erzeugeFluessigkeit } from './fluessigkeit.js';
 export { erzeugeLicht } from './licht.js';
+export { erzeugeSpawn } from './spawn.js';
 export { erzeugeLore } from './lore.js';
 
 /**
@@ -36,6 +38,7 @@ export function erzeugeEbene1({ ebene0, regeln }) {
   const antrieb = erzeugeAntrieb({ regelwerk, schienen });
   const fluessigkeit = erzeugeFluessigkeit({ regelwerk, register: ebene0.register });
   const licht = erzeugeLicht({ regelwerk, register: ebene0.register });
+  const spawn = erzeugeSpawn({ regelwerk, register: ebene0.register, licht });
   const lore = erzeugeLore({ regelwerk, schienen, antrieb });
   return {
     regelwerk,
@@ -43,9 +46,10 @@ export function erzeugeEbene1({ ebene0, regeln }) {
     antrieb,
     fluessigkeit,
     licht,
+    spawn,
     lore,
     neuerSandkasten: (welt) => new Sandkasten(welt),
     neuerTaktgeber: (sandkasten, optionen = {}) => new Taktgeber(sandkasten, { reihenfolge, ...optionen }),
-    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, lore, ...optionen }),
+    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, spawn, lore, ...optionen }),
   };
 }

@@ -14,6 +14,7 @@ import { erzeugeLore } from './lore.js';
 import { erzeugeFallen } from './fallen.js';
 import { erzeugeTrichter } from './trichter.js';
 import { erzeugeRedstone } from './redstone.js';
+import { erzeugeRedstoneZeit } from './redstone-zeit.js';
 
 export * from './weltzeit.js';
 export { Zufall, erwarteteTicks, erwarteteMinuten } from './zufall.js';
@@ -32,6 +33,7 @@ export { erzeugeLore } from './lore.js';
 export { erzeugeFallen } from './fallen.js';
 export { erzeugeTrichter } from './trichter.js';
 export { erzeugeRedstone } from './redstone.js';
+export { erzeugeRedstoneZeit } from './redstone-zeit.js';
 
 /**
  * @param {{ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>, regeln: object[]}} quellen
@@ -50,6 +52,7 @@ export function erzeugeEbene1({ ebene0, regeln }) {
   const redstone = erzeugeRedstone({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon });
   const aktivierung = erzeugeAntrieb({ regelwerk, schienen, ids: regelwerk.parameter('redstone.aktivierungsschiene', 'ids') });
   const trichter = erzeugeTrichter({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon });
+  const redstoneZeit = erzeugeRedstoneZeit({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, redstone, trichter });
   return {
     regelwerk,
     schienen,
@@ -61,9 +64,10 @@ export function erzeugeEbene1({ ebene0, regeln }) {
     fallen,
     trichter,
     redstone,
+    redstoneZeit,
     aktivierung,
     neuerSandkasten: (welt) => new Sandkasten(welt),
     neuerTaktgeber: (sandkasten, optionen = {}) => new Taktgeber(sandkasten, { reihenfolge, ...optionen }),
-    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, spawn, lore, fallen, trichter, redstone, ...optionen }),
+    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, spawn, lore, fallen, trichter, redstone, redstoneZeit, ...optionen }),
   };
 }

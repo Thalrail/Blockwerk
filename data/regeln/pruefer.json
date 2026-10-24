@@ -164,6 +164,19 @@
       "simulationstest": "test/ebene1/redstone.test.js::Prüfer: Redstone",
       "ungeprueft": true,
       "testanleitung": "Siehe redstone.staub-abnahme und redstone.instabil."
+    },
+    {
+      "id": "pruefer.redstone-zeit",
+      "titel": "Prüfer: Redstone läuft ab",
+      "regel": "Läuft die Schaltung im Sandkasten ab und meldet als Hinweis: eine Fackel brennt aus (Koordinate), die Schaltung wiederholt sich als Uhr (Periode in Ticks) oder kommt nicht zur Ruhe.",
+      "parameter": {
+        "maxTicks": 600
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_mechanics (folgt aus den Regeln zeit.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Prüfer: Redstone läuft ab",
+      "ungeprueft": true,
+      "testanleitung": "Siehe zeit.fackel-brennen."
     }
   ]
 }

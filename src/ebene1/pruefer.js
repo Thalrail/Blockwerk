@@ -186,6 +186,27 @@ function pruefeRedstone(welt, redstone, loren) {
   return meldungen;
 }
 
+/** Lässt die Schaltung im Sandkasten ablaufen: ausgebrannte Fackeln, Uhren (Periode) und Schaltungen, die nie zur Ruhe kommen. */
+function pruefeRedstoneZeit(welt, rz, loren, maxTicks) {
+  if (!rz.enthaeltZeitbauteile(welt)) return [];
+  const lauf = rz.erzeuge(welt, { loren });
+  const ruhe = lauf.bisRuhe(maxTicks);
+  const meldungen = [];
+  for (const e of lauf.ereignisse) {
+    if (e.was === 'brennt-aus') meldungen.push({ regel: 'pruefer.redstone-zeit', ort: e.pos, schwere: 'hinweis', meldung: `Diese Fackel brennt im Tick ${e.tick} aus (mehr als 8 Wechsel in 60 Ticks)` });
+  }
+  if (!ruhe.stabil) {
+    // Periode suchen: die kleinste Länge, nach der sich der Zustand wiederholt
+    const abdruecke = [];
+    for (let i = 0; i < 400; i++) { lauf.laufe(1); abdruecke.push(lauf.abdruck()); }
+    let periode = null;
+    for (let p = 1; p <= 200 && periode === null; p++) if (abdruecke.slice(-200).every((a, i, arr) => i + p >= arr.length || a === arr[i + p])) periode = p;
+    const erster = lauf.ereignisse.find((e) => e.was !== 'brennt-aus' && e.pos);
+    meldungen.push({ regel: 'pruefer.redstone-zeit', ort: erster ? erster.pos : { x: 0, y: 0, z: 0 }, schwere: 'hinweis', meldung: periode ? `Die Schaltung läuft als Uhr (Periode ${periode} Ticks) und kommt nicht zur Ruhe` : `Die Schaltung kommt nach ${maxTicks} Ticks nicht zur Ruhe` });
+  }
+  return meldungen;
+}
+
 /** Stellen im Bereich, an denen Monster spawnen können (Verstoß) oder vielleicht können (Hinweis). */
 function pruefeSpawn(welt, spawn, spawnBereich, himmel) {
   return spawn.spawnstellen(welt, spawnBereich, { himmel }).map((s) => ({
@@ -267,7 +288,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -278,6 +299,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (fallen) meldungen.push(...pruefeFallen(welt, fallen));
   if (trichter) meldungen.push(...pruefeTrichter(welt, trichter));
   if (redstone) meldungen.push(...pruefeRedstone(welt, redstone, loren));
+  if (redstoneZeit) meldungen.push(...pruefeRedstoneZeit(welt, redstoneZeit, loren, 600));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);

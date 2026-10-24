@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gebaut: Branch `claude/ebene-1-redstone`. 227 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gebaut: Branch `claude/ebene-1-redstone-zeit`. 234 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -22,8 +22,9 @@ Zuletzt aktualisiert: 20.10.2026
 | 2e-1 | Ebene 1 – Lorenbewegung aus Messtabellen (keine Physik): Auslauf, Abstand der Antriebsschienen, Steighöhe, Fahrzeit, Prüfer „Lore bleibt stehen“ | **fertig**: Messwerte `geprüft` (Jonah, 24.10.2026), Lücken `ungeprüft`; gemergt, PR #10 |
 | 2e-2 | Ebene 1 – Fallende Blöcke: Sand, Kies, Betonpulver, Amboss, Drachenei fallen, landen, werden zu Gegenständen oder Beton; Prüfer „Block fällt“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #13) |
 | 2e-3 | Ebene 1 – Trichter & Blockinhalte: Cooldown 8 Ticks, Schieben/Ziehen, Redstone-Sperre, Stapelgrößen (Ebene 0), Komparator-Lesewert, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #14) |
-| 2f-1 | Ebene 1 – Redstone-Strom (Gleichgewicht): Staub, Quellen (Block, Hebel, Knopf, Fackel, Detektorschiene), starke/schwache Bestromung, Fackel-Inversion, Aktivierungsschiene, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
-| 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater, Komparator, Knopfdauer | als Nächstes |
+| 2f-1 | Ebene 1 – Redstone-Strom (Gleichgewicht): Staub, Quellen (Block, Hebel, Knopf, Fackel, Detektorschiene), starke/schwache Bestromung, Fackel-Inversion, Aktivierungsschiene, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #15) |
+| 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater (Sperre, Impulse), Komparator, Knopfdauer, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
+| 2f-3 | Ebene 1 – Redstone-Mechanismen: Kolben, Beobachter, Lampen, Türen, Tagessensor | als Nächstes |
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -128,6 +129,15 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/redstone.json` (13 Regeln, alle `ungeprüft` mit Testanleitung). **Jonahs Hebel-Messungen für Antriebsschienen (PR #9) bleiben maßgeblich**: Die Stromkarte liefert der Schiene nur zusätzliche Quellen (Staub). Dass ein Hebel an der Seite eines Nachbarblocks die Schiene nicht versorgt, weicht von „Nachbar stark bestromt“ ab und gilt nur für Antriebsschienen.
 - Nicht dabei (Teil 2f-2/2f-3): Verzögerung (2 Spielticks) und Brennen der Fackel, Repeater, Komparator, Knopfdauer, Druckplatten, Kolben, Beobachter, Lampen, Türen, Tagessensor; die 20-Tick-Prüfung der Detektorschiene. Keine Quasi-Konnektivität (Bedrock).
 
+## Was die Redstone-Zeit (Teil 2f-2) jetzt kann (`src/ebene1/redstone-zeit.js`)
+- `erzeuge(welt, { loren })` baut im Sandkasten die Taktgeber-Mechaniken: **Staub** wird in jedem Spielstick neu berechnet und in die Welt geschrieben (`redstone_signal`); **Fackel, Repeater, Komparator** sind `uebertrager` (lesen im P-Tick, schreiben im C-Tick nach `2·d − 1` Ticks); **Knöpfe** lösen sich nach 20 (Stein, Polierter Schwarzstein) bzw. 30 Ticks (Holz). `laufe(n)`, `bisRuhe()`, `ereignisse`, `abdruck()`.
+- Gemessen im Test: Fackel 2 Spielticks, Kette aus n Fackeln n × 2; Repeater 2/4/6/8; Komparator 2; Staub sofort. **Brennen:** der 9. Wechsel innerhalb von 60 Ticks lässt die Fackel ausbrennen (Tick 18 bei einer Rückkopplung), wieder an im Tick 65 (Java-Platzhalter).
+- **Repeater:** 15 am Ausgang, nur von hinten nach vorn, Sperre durch einen bestromten Repeater/Komparator seitlich, An-Impulse mindestens so lang wie die Verzögerung, kurze Aus-Impulse werden unterdrückt. **Komparator:** Vergleichen und Subtrahieren, Rücken = Staub/Quelle/Behälter (auch durch einen Block), Seiten = Staub/Repeater/Komparator/Redstone-Block; die Stärke 0–15 lebt nur im Gedächtnis der Simulation (`output_lit_bit` in der Welt).
+- `redstone.stromkarte(welt, { fest })` rechnet im Zeitmodus genau einmal mit vorgegebenen Fackel-/Repeater-/Komparator-Zuständen; `signalVon(von, zu)` liefert die Eingangsstärke.
+- Prüfer `pruefer.redstone-zeit` (Option `redstoneZeit`): Hinweis „Fackel brennt im Tick N aus“ mit Koordinate, „läuft als Uhr (Periode N Ticks)“ (Beispiel Repeater + Fackel = 20 Ticks).
+- Regeln: `data/regeln/redstone-zeit.json` (9 Regeln, alle `ungeprüft` mit Testanleitung). **Annahmen mit Wirkung:** `minecraft:cardinal_direction` von Repeater/Komparator nennt die Eingangsseite (wie Java „facing“); der Staub verbindet sich nicht seitlich mit Repeatern/Komparatoren (nur über die Zeigerichtung); Komparator liest Behälter nur direkt oder durch einen Block.
+- Nicht dabei: Kolben, Beobachter, Lampen, Türen, Tagessensor, Druckplatten (brauchen Wesen), die 20-Tick-Prüfung der Detektorschiene, Redstone-Verhalten an Chunk-Grenzen.
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -147,7 +157,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2f-2: Redstone-Zeit** (Verzögerung 2 Spielticks und Brennen der Fackel, Repeater, Komparator, Knopfdauer; Taktgeber-Tickart `uebertrager`), danach 2f-3 (Kolben, Beobachter, Lampen, Türen). Alternativ Wesen (Spieler und Dorfbewohner) – Jonah entscheidet.
+**Schritt 2f-3: Redstone-Mechanismen** (Kolben, Beobachter, Lampen, Türen, Tagessensor; keine Quasi-Konnektivität in Bedrock). Alternativ Wesen (Spieler und Dorfbewohner: Bewegung, Erreichbarkeit, Berufssuche, Betten, Golems) – Jonah entscheidet.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

@@ -21,10 +21,11 @@
         "maximalVersorgt": 17
       },
       "quelle": "https://minecraft.wiki/w/Powered_Rail (Aussage nicht ausdrücklich als Bedrock gekennzeichnet)",
-      "status": "simuliert",
-      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Reichweite 8 Schienen weit",
-      "ungeprueft": true,
-      "testanleitung": "Kreativ-Testwelt auf ebenem Boden: 20 Antriebsschienen in einer Reihe, einen Redstone-Block seitlich neben die erste setzen: Wie viele Schienen leuchten (aktiviert)? Erwartung: 9 (die erste und 8 weitere). Dann den Redstone-Block neben die zehnte setzen: Erwartung 17 (8 links, 8 rechts, die zehnte). Ergebnis melden."
+      "status": "geprüft",
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Spieltest Antrieb: Von der gepowerten Schiene werden nach rechts wie nach links 8 Schienen mitgepowert, insgesamt 17.",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Reichweite 8 Schienen weit"
     },
     {
       "id": "antrieb.nur-verbundene",
@@ -32,25 +33,117 @@
       "regel": "Der Strom läuft nur über miteinander verbundene Antriebsschienen. Eine normale Schiene oder eine Lücke dazwischen unterbricht ihn (Annahme).",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Powered_Rail (Annahme, nicht ausdrücklich belegt)",
-      "status": "simuliert",
-      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: nur verbundene Antriebsschienen geben Strom weiter",
-      "ungeprueft": true,
-      "testanleitung": "Fünf Antriebsschienen in einer Reihe, in der Mitte (dritte) eine normale Schiene statt einer Antriebsschiene, Redstone-Block neben die erste: Leuchten Schiene 4 und 5? Dann die Reihe mit einer Lücke (ein Feld ohne Schiene) wiederholen. Ergebnis melden."
+      "status": "geprüft",
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Spieltest Antrieb: Sobald eine andere Schiene kommt, muss der nächste Abschnitt danach an Antriebsschienen neu gepowert werden. (Getestet mit einer normalen Schiene dazwischen; die Lücke ohne Schiene folgt daraus.)",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: nur verbundene Antriebsschienen geben Strom weiter"
     },
     {
       "id": "antrieb.stromblock",
       "titel": "Redstone-Block neben der Schiene versorgt sie",
-      "regel": "Ein Redstone-Block, der an eine Antriebsschiene grenzt, versorgt sie direkt mit Strom (belegt ist nur die Lage darunter; seitlich und oben sind Annahmen). Andere Stromquellen (Hebel, Fackel, Staub) kommen mit der Redstone-Mechanik und werden bis dahin von außen übergeben.",
+      "regel": "Ein Redstone-Block, der an eine Antriebsschiene grenzt, versorgt sie direkt mit Strom: rechts, links, über der Schiene, am Anfang und am Ende; von unten, wenn die Schiene direkt über dem Block liegt (alle sechs Nachbarfelder).",
       "parameter": {
         "quellenBloecke": [
           "minecraft:redstone_block"
         ]
       },
-      "quelle": "https://minecraft.wiki/w/Block_of_Redstone (gibt schwachen Strom der Stärke 15 an direkte Nachbarn; Beispielbild: Schienen „von unten“ versorgt; Edition und die übrigen Seiten nicht belegt → Annahme)",
+      "quelle": "Spieltest Jonah (24.10.2026); https://minecraft.wiki/w/Block_of_Redstone",
+      "status": "geprüft",
+      "ungeprueft": false,
+      "geprueftAm": "2026-10-24",
+      "beobachtung": "Jonah, Spieltest Antrieb: Redstone-Block rechts und links neben der Schiene, über der Schiene sowie am Anfang und Ende der Schiene. Von unten geht es, wenn die Schiene direkt über dem Block liegt.",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Redstone-Block versorgt die Nachbarschiene"
+    },
+    {
+      "id": "antrieb.redstonefackel",
+      "titel": "Redstonefackel neben der Schiene versorgt sie",
+      "regel": "Eine leuchtende Redstonefackel links oder rechts neben der Schiene versorgt sie. Die Fackel darf von unten stehen (auf dem Boden neben der Schiene) oder an einem benachbarten Block hängen. Blockwerk nimmt an, dass das auch für Anfang und Ende der Schiene gilt; über und unter der Schiene ist nicht getestet und wird nicht angenommen.",
+      "parameter": {
+        "quellenHorizontal": [
+          "minecraft:redstone_torch"
+        ]
+      },
+      "quelle": "Spieltest Jonah (24.10.2026, Fotos mit Fackeln neben den Schienen); https://minecraft.wiki/w/Redstone_Torch",
       "status": "simuliert",
-      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Redstone-Block versorgt die Nachbarschiene",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Redstonefackel und Hebel versorgen die Schiene",
       "ungeprueft": true,
-      "testanleitung": "Einzelne Antriebsschiene, Redstone-Block nacheinander links, rechts, vor, hinter, unter und über (soweit möglich) der Schiene: In welchen Lagen leuchtet sie? Ergebnis je Lage melden."
+      "testanleitung": "Redstonefackel vor und hinter dem Ende einer einzelnen Antriebsschiene (in der Verlängerung der Schiene), außerdem über und unter der Schiene (soweit möglich): Wird die Schiene bestromt? Ergebnis je Lage melden. (Links und rechts hat Jonah bestätigt.)"
+    },
+    {
+      "id": "antrieb.hebel",
+      "titel": "Eingeschalteter Hebel an bestimmten Blöcken versorgt die Schiene",
+      "regel": "Ein eingeschalteter Hebel versorgt die Schiene (Jonah, 24.10.2026, Schiene bei R): (1) Er sitzt auf der Oberseite eines der vier Blöcke neben der Schiene auf Schienenhöhe (R±x, R±z). (2) Er sitzt an einer beliebigen Seite (oben, unten, seitlich) eines der vier Blöcke eine Ebene höher daneben (R+y±x, R+y±z) oder des Blocks zwei Ebenen über der Schiene (R+2y). Ausgeschaltet versorgt er nichts. Zur Lage: Blockwerk bestimmt aus lever_direction, an welchem Block der Hebel befestigt ist (up_* = Block darunter, down_* = Block darüber, east/west/south/north: Block auf der gegenüberliegenden Seite; ANNAHME, nicht geprüft). Das Schienenfeld selbst hält keinen Hebel.",
+      "parameter": {
+        "block": "minecraft:lever",
+        "zustand": {
+          "open_bit": true
+        },
+        "oberseiteVon": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            1
+          ],
+          [
+            0,
+            0,
+            -1
+          ]
+        ],
+        "ueberallAn": [
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            0,
+            1,
+            -1
+          ],
+          [
+            0,
+            2,
+            0
+          ]
+        ],
+        "befestigtAn": {
+          "up_north_south": "down",
+          "up_east_west": "down",
+          "down_north_south": "up",
+          "down_east_west": "up",
+          "east": "west",
+          "west": "east",
+          "north": "south",
+          "south": "north"
+        }
+      },
+      "quelle": "Spieltest Jonah (24.10.2026); https://minecraft.wiki/w/Lever",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/antrieb.test.js::Antrieb: Redstonefackel und Hebel versorgen die Schiene",
+      "ungeprueft": true,
+      "testanleitung": "Hebel (eingeschaltet) an den genannten Blöcken wie in der Regel beschrieben: Prüfen, ob die Schiene bestromt wird, und besonders, ob Seiten-Hebel (east/west/south/north) an dem Block sitzen, an dem du ihn setzt (Blockwerk nimmt an: der Hebel zeigt von seinem Block weg). Auch Hebel an der Unterseite eines Blocks (Hebel an der Decke) prüfen. Ergebnis melden."
     }
   ]
 }

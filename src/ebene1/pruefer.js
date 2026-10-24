@@ -109,6 +109,17 @@ function pruefeFluessigkeit(welt, fluessigkeit, maxTicks) {
   return meldungen;
 }
 
+/** Läuft die Bahn ab der Startschiene ab und meldet, wo die Lore (nach Jonahs Messungen) stehen bleibt. */
+function pruefeLore(welt, lore, start) {
+  const bahn = lore.bahn(welt, start.pos, start.richtung, { aktiv: start.aktiv ?? null });
+  return lore.analysiere(bahn).map((b) => ({
+    regel: 'pruefer.lore-stillstand',
+    ort: { ...b.pos },
+    schwere: b.urteil === 'nein' ? 'verstoss' : 'hinweis',
+    meldung: b.meldung,
+  }));
+}
+
 /** Lichtquellen, deren Stärke vom Zustand abhängt (licht = null in Ebene 0). */
 function pruefeLicht(register, bloecke) {
   return bloecke
@@ -169,11 +180,12 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined, fluessigkeit = null }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
   if (schienen) meldungen.push(...pruefeSchienen(welt, schienen, bloecke));
+  if (lore && loreStart) meldungen.push(...pruefeLore(welt, lore, loreStart));
   if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
   if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));

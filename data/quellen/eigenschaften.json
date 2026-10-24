@@ -93,6 +93,70 @@
       "grund": "Eingefahrene Kolben und Schleim-/Honigblöcke sind beweglich (ausgefahrene Kolben erkennt Ebene 1 am Kolbenkopf). Status ungeprüft"
     },
     {
+      "muster": "_door$",
+      "setze": {
+        "kollision": "tuer"
+      },
+      "grund": "Tür: im Weg, solange sie zu ist; öffenbar (Holz, Kupfer, Eisen nur mit Redstone). Status ungeprüft"
+    },
+    {
+      "muster": "trapdoor$",
+      "setze": {
+        "kollision": "falltuer"
+      },
+      "grund": "Falltür: geschlossen eine dünne Fläche (kein Platzverlust, trägt), offen ein Durchgang. Status ungeprüft"
+    },
+    {
+      "muster": "_fence_gate$|^minecraft:fence_gate$",
+      "setze": {
+        "kollision": "tor"
+      },
+      "grund": "Zauntor: 1,5 hoch, geschlossen im Weg, nur der Spieler öffnet es (Dorfbewohner nicht). Status ungeprüft"
+    },
+    {
+      "muster": "_fence$|_wall$|^minecraft:(fence|nether_brick_fence)$",
+      "setze": {
+        "kollision": "hoch"
+      },
+      "grund": "Zäune und Mauern sind 1,5 Blöcke hoch (Sprunghöhe reicht nicht). Status ungeprüft"
+    },
+    {
+      "muster": "_stairs$",
+      "setze": {
+        "kollision": "treppe"
+      },
+      "grund": "Treppe: untere Stufe 0,5, obere Stufe 1,0 (kopfstehend: Unterseite offen). Status ungeprüft"
+    },
+    {
+      "muster": "_slab$",
+      "ausser": "_double_slab$",
+      "setze": {
+        "kollision": "halbstufe"
+      },
+      "grund": "Halbstufe: untere oder obere Hälfte je nach minecraft:vertical_half. Status ungeprüft"
+    },
+    {
+      "muster": "^minecraft:(ladder|vine|weeping_vines|twisting_vines|cave_vines|cave_vines_body_with_berries|cave_vines_head_with_berries)$",
+      "setze": {
+        "kollision": "leiter"
+      },
+      "grund": "Kletterbar (Leiter, Ranken). Status ungeprüft"
+    },
+    {
+      "muster": "^minecraft:(water|flowing_water)$",
+      "setze": {
+        "kollision": "wasser"
+      },
+      "grund": "Wasser: schwimmbar, bremst den Fall. Status ungeprüft"
+    },
+    {
+      "muster": "^minecraft:(lava|flowing_lava)$",
+      "setze": {
+        "kollision": "lava"
+      },
+      "grund": "Lava: tödlich, gesperrt. Status ungeprüft"
+    },
+    {
       "muster": "^minecraft:ice$",
       "setze": {
         "vollblock": true,
@@ -418,5 +482,7 @@
     "hinweis": "Stapelgröße je Gegenstand: 64 ist der Standard. 16 und 1 über Muster (Wiki „Item“, Abschnitt Stackable; Java und Bedrock laut Wiki gleich, nicht im Spiel geprüft). Ein Fehler wird gezielt hier korrigiert.",
     "eins": "_sword$|_pickaxe$|_axe$|_shovel$|_hoe$|_helmet$|_chestplate$|_leggings$|_boots$|_horse_armor$|_wolf_armor$|_nautilus_armor$|_boat$|_chest_boat$|_raft$|_chest_raft$|minecart$|^minecraft:music_disc_|^minecraft:disc_fragment_5$|_bucket$|^minecraft:(bow|crossbow|shield|fishing_rod|carrot_on_a_stick|warped_fungus_on_a_stick|flint_and_steel|shears|brush|spyglass|elytra|turtle_helmet|trident|mace|saddle|harness|totem_of_undying|enchanted_book|writable_book|bundle|goat_horn|suspicious_stew|mushroom_stew|rabbit_stew|beetroot_soup|bed|cake|potion|splash_potion|lingering_potion|boat|banner_pattern|[a-z_]+_banner_pattern|[a-z_]+_shulker_box|shulker_box|undyed_shulker_box)$|_banner_pattern$|_shulker_box$|^minecraft:[a-z_]*bed$",
     "sechzehn": "^minecraft:(ender_pearl|egg|blue_egg|brown_egg|snowball|honey_bottle|written_book|armor_stand|bucket|banner)$|_sign$|_hanging_sign$"
-  }
+  },
+  "kollisionUnklar": "^minecraft:(chest|trapped_chest|ender_chest|[a-z_]*copper_chest|[a-z_]*bed|[a-z_]*anvil|hopper|[a-z_]*cauldron|composter|[a-z_]*cake|[a-z_]*candle|enchanting_table|brewing_stand|bell|[a-z_]*lantern|[a-z_]*chain|[a-z_]*bars|[a-z_]*glass_pane|[a-z_]*campfire|dragon_egg|conduit|daylight_detector(_inverted)?|flower_pot|decorated_pot|grindstone|stonecutter_block|lectern|[a-z_]*sculk_sensor|sculk_shrieker|big_dripleaf|small_dripleaf_block|waterlily|cactus|cactus_flower|end_rod|lightning_rod|scaffolding|pointed_dripstone|amethyst_cluster|[a-z_]*amethyst_bud|piston|sticky_piston|piston_arm_collision|sticky_piston_arm_collision|moving_block|heavy_core|[a-z_]*_shelf|crafter|chiseled_bookshelf|copper_golem_statue|dried_ghast|bubble_column|barrier|light_block_[0-9]+|structure_void|end_portal|portal|end_gateway|snow_layer|frog_spawn|turtle_egg|sniffer_egg|mob_spawner|trial_spawner|vault|beacon|bush|firefly_bush|leaf_litter|pink_petals|wildflowers|sea_pickle|cocoa|vine|tripwire_hook|sweet_berry_bush)$",
+  "kollisionUnklarHinweis": "Blöcke mit Teilformen oder besonderer Höhe (Truhen, Betten, Ambosse, Trichter, Kessel, Kerzen, Laternen, Gitter, Scheiben, Kolben …): Begehbarkeit unbekannt (null), Ebene 1 meldet sie als unklar. Alle übrigen Blöcke ohne Angabe gelten als volle Würfel (Java-Standard, ungeprüft)."
 }

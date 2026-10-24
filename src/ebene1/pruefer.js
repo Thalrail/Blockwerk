@@ -224,6 +224,19 @@ function pruefeRedstoneZeit(welt, rz, loren, maxTicks) {
   return meldungen;
 }
 
+/** Sind alle Ziele vom Start aus erreichbar (Spieler, Dorfbewohner, Baby)? */
+function pruefeBegehbarkeit(welt, bewegung, { start, ziele }) {
+  const meldungen = [];
+  const ort = (p) => `(${p.x}, ${p.y}, ${p.z})`;
+  for (const z of ziele) {
+    const art = z.art ?? 'spieler';
+    const w = bewegung.weg(welt, start, z.pos, art);
+    if (!w.ok) meldungen.push({ regel: 'pruefer.begehbar', ort: { ...z.pos }, schwere: 'verstoss', meldung: `${art} erreicht ${ort(z.pos)} nicht: ${w.grund}` });
+    else if (w.springt || w.faellt) meldungen.push({ regel: 'pruefer.begehbar', ort: { ...z.pos }, schwere: 'hinweis', meldung: `${art} erreicht ${ort(z.pos)} nur mit ${w.springt ? 'Sprüngen' : ''}${w.springt && w.faellt ? ' und ' : ''}${w.faellt ? `Stürzen (Schaden ${w.fallschaden} Herzhälften)` : ''}` });
+  }
+  return meldungen;
+}
+
 /** Kolben, die nicht ausfahren können oder dabei etwas zerstören (jeweils im aktuellen Zustand der Welt). */
 function pruefeKolben(welt, kolben) {
   if (!kolben.enthaeltKolben(welt)) return [];
@@ -319,7 +332,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, kolben = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, kolben = null, bewegung = null, begehbarkeit = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -331,6 +344,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (trichter) meldungen.push(...pruefeTrichter(welt, trichter));
   if (redstone) meldungen.push(...pruefeRedstone(welt, redstone, loren));
   if (kolben) meldungen.push(...pruefeKolben(welt, kolben));
+  if (bewegung && begehbarkeit) meldungen.push(...pruefeBegehbarkeit(welt, bewegung, begehbarkeit));
   if (redstoneZeit) meldungen.push(...pruefeRedstoneZeit(welt, redstoneZeit, loren, 600));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));

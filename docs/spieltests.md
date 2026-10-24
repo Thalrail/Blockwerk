@@ -151,6 +151,15 @@ Kreativ-Testwelt, Video (60 fps). Alles Java-Platzhalter, nur prüfen, wenn dir 
 5. **Behälter:** Truhe (einzeln/doppelt), Fass, Ofen, Trichter, Werfer, Shulkerkiste. (`kolben.behaelter`)
 6. **Klebriger Kolben:** was zieht er zurück (Stein, Obsidian, Fackel, zwei Steine)? (`kolben.klebrig`)
 
+## Bewegung: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt auf Stein; für Dorfbewohner ein Dorfbewohner-Ei oder Handel. Alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Springen:** 1 Block hoch (ja), 1,5 Blöcke (Zaun, nein), 2 Blöcke (nein). (`bewegung.sprung`)
+2. **Treppe und Halbstufe:** ohne Sprung hinauf? (`bewegung.stufe`, `bewegung.treppe`)
+3. **Fallen:** 3, 4, 5, 10 Blöcke: Herzhälften Schaden; Dorfbewohner von 3 und 4 Blöcken. (`bewegung.fallen`)
+4. **Lücken:** 1, 2, 3 Blöcke breit. (`bewegung.luecke`)
+5. **Türen:** Holz-, Kupfer-, Eisentür, Falltür, Zauntor mit Dorfbewohner und Spieler. (`bewegung.tueren`)
+6. **Gang 1 Block hoch:** Baby, Spieler (kriechend). (`bewegung.hitbox`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -158,6 +167,16 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 |---|---|
 | `antrieb.redstonefackel` – Redstonefackel neben der Schiene versorgt sie | Redstonefackel vor und hinter dem Ende einer einzelnen Antriebsschiene (in der Verlängerung der Schiene), außerdem über und unter der Schiene (soweit möglich): Wird die Schiene bestromt? Ergebnis je Lage melden. (Links und rechts hat Jonah bestätigt.) |
 | `antrieb.hebel` – Eingeschalteter Hebel an bestimmten Blöcken versorgt die Schiene | Hebel (eingeschaltet) an den genannten Blöcken wie in der Regel beschrieben: Prüfen, ob die Schiene bestromt wird, und besonders, ob Seiten-Hebel (east/west/south/north) an dem Block sitzen, an dem du ihn setzt (Blockwerk nimmt an: der Hebel zeigt von seinem Block weg). Auch Hebel an der Unterseite eines Blocks (Hebel an der Decke) prüfen. Ergebnis melden. |
+| `bewegung.hitbox` – Größen von Spieler, Dorfbewohner und Baby | Baby-Dorfbewohner und Spieler durch einen 1 Block hohen Gang (Falltür oder Halbstufe über dem Boden) schicken; Spieler zusätzlich kriechen (Schwimmhaltung): Wer kommt durch? |
+| `bewegung.stufe` – Stufen bis 0,5 Blöcke ohne Sprung | Eine Reihe aus Halbstufen und Treppen hinaufgehen, ohne zu springen: Geht es ohne Sprung (Spieler, Dorfbewohner, Baby)? |
+| `bewegung.sprung` – Sprunghöhe 1 Block | Spieler, Dorfbewohner und Baby vor eine 1 Block hohe Stufe stellen (Dorfbewohner mit Ziel hinter der Stufe): Springen sie hinauf? Dann 1,5 Blöcke (Zaun oder Halbstufe auf Block): Geht es? |
+| `bewegung.treppe` – Treppen | Treppe von vorn, von der Seite und von hinten besteigen: Wann braucht es einen Sprung? Treppen mit zwei Blöcken Höhe nacheinander. |
+| `bewegung.fallen` – Fallen und Fallschaden | Aus 3, 4, 5, 10 Blöcken Höhe auf Stein fallen: Wie viele Herzhälften Schaden? Dorfbewohner auf 3 und 4 Blöcke hohen Absatz: Gehen sie herunter? |
+| `bewegung.luecke` – Lücken überspringen | Lücken von 1, 2, 3 Blöcken mit und ohne Sprint überspringen: Welche Breite schafft der Spieler? |
+| `bewegung.tueren` – Türen, Falltüren, Zauntore | Dorfbewohner eine Holztür, Kupfertür, Eisentür, Falltür, ein Zauntor durchqueren lassen: Welche passieren sie? Spieler zum Vergleich. |
+| `bewegung.leiter` – Leitern und Ranken | Dorfbewohner mit Ziel am oberen Ende einer Leiter: Kommt er hinauf? Spieler klettert 10 Blöcke. |
+| `bewegung.wasser` – Wasser | Aus 10 Blöcken Höhe in 1 Block tiefes Wasser fallen: Schaden? Spieler schwimmt durch eine Wassersäule nach oben. |
+| `bewegung.kosten` – Wegkosten | Dorfbewohner zwischen zwei Wegen (1 Sprung kurz, lang ohne Sprung): Welchen nimmt er? |
 | `fallen.welche` – Welche Blöcke fallen | Je einen Block (Sand, Kies, roter Sand, Betonpulver, Amboss, Drachenei) 5 Blöcke hoch in die Luft setzen (Stütze wegnehmen): Fallen alle? Was passiert mit Gerüst, Tropfstein und Schneeschicht? |
 | `fallen.start` – Startverzögerung | Sandblock auf einen Block setzen, den Block darunter abbauen und mit Video (60 fps) messen: Wie viele Ticks (1/20 s) dauert es, bis der Sand sich löst? Blockwerk erwartet 2 Ticks. |
 | `fallen.tempo` – Falltempo | Sand 10 Blöcke hoch fallen lassen und mit Video die Fallzeit messen: Blockwerk erwartet 9 Ticks je Block, also 4,5 s für 10 Blöcke. Ergebnis melden. |
@@ -217,6 +236,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.redstone-zeit` – Prüfer: Redstone läuft ab | Siehe zeit.fackel-brennen. |
 | `pruefer.mechanismus` – Prüfer: Mechanismen ohne Strom | Siehe mech.bestromung und mech.tagessensor. |
 | `pruefer.kolben` – Prüfer: Kolben kann nicht ausfahren oder zerstört etwas | Siehe kolben.unbeweglich und kolben.zerstoert. |
+| `pruefer.begehbar` – Prüfer: Ziel erreichbar? | Siehe bewegung.sprung und bewegung.fallen. |
 | `zeit.staub-sofort` – Staub aktualisiert jeden Spielstick | Hebel – 10 Staubblöcke – Lampe: Leuchtet die Lampe sofort (im selben Tick wie der Hebel)? Mit Video (60 fps) prüfen, ob die Länge der Staubleitung die Zeit ändert (erwartet: nein). |
 | `zeit.fackel-verzoegerung` – Fackel: 2 Spielticks | Hebel an einen Stein, daneben eine Fackel an dessen Seite, dahinter Staub und eine Lampe: Zeit zwischen Hebel und Lampe mit Video messen (erwartet 0,1 s = 2 Ticks). Dann eine Kette aus 5 Fackeln (Stein-Fackel-Stein-…): erwartet 10 Ticks (0,5 s). |
 | `zeit.fackel-brennen` – Fackel brennt aus | Fackel an einem Stein, der über Staub von der Fackel selbst bestromt wird (Rückkopplung): Brennt sie aus, nach wie vielen Wechseln, und geht sie wieder an? Auch eine Uhr mit Repeater dazwischen testen (Bedrock soll dort nicht ausbrennen). |

@@ -179,3 +179,13 @@ test('Blöcke: Eigenschaft „schiebung“ (Kolben) – beweglich, zerstört, un
   assert.equal(s('minecraft:air'), null);
   for (const id of register.bloecke.ids()) assert.ok(['beweglich', 'zerstoert', 'unbeweglich', 'behaelter', null].includes(s(id)), id);
 });
+
+test('Blöcke: Eigenschaft „kollision“ (Bewegung) – voll, keine, Halbstufe, Treppe, Tür, Zaun, Leiter, Wasser, Lava, sonst unklar', () => {
+  const k = (id) => register.bloecke.block(id).eigenschaften.kollision;
+  assert.deepEqual([k('minecraft:stone'), k('minecraft:blackstone'), k('minecraft:deepslate_bricks'), k('minecraft:oak_double_slab'), k('minecraft:glass')], Array(5).fill('voll'));
+  assert.deepEqual([k('minecraft:air'), k('minecraft:torch'), k('minecraft:poppy'), k('minecraft:rail'), k('minecraft:white_carpet'), k('minecraft:redstone_wire')], Array(6).fill('keine'));
+  assert.deepEqual([k('minecraft:oak_slab'), k('minecraft:oak_stairs'), k('minecraft:oak_fence'), k('minecraft:fence_gate'), k('minecraft:spruce_door'), k('minecraft:trapdoor'), k('minecraft:ladder'), k('minecraft:water'), k('minecraft:lava')],
+    ['halbstufe', 'treppe', 'hoch', 'tor', 'tuer', 'falltuer', 'leiter', 'wasser', 'lava']);
+  assert.deepEqual([k('minecraft:chest'), k('minecraft:white_bed'.replace('white_', '')), k('minecraft:anvil'), k('minecraft:hopper'), k('minecraft:glass_pane')], Array(5).fill(null), 'Teilformen bleiben unklar');
+  for (const id of register.bloecke.ids()) assert.ok([null, 'keine', 'voll', 'halbstufe', 'treppe', 'hoch', 'tor', 'tuer', 'falltuer', 'leiter', 'wasser', 'lava'].includes(k(id)), id);
+});

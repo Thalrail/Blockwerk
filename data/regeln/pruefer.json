@@ -199,6 +199,17 @@
       "simulationstest": "test/ebene1/kolben.test.js::Prüfer: Kolben",
       "ungeprueft": true,
       "testanleitung": "Siehe kolben.unbeweglich und kolben.zerstoert."
+    },
+    {
+      "id": "pruefer.begehbar",
+      "titel": "Prüfer: Ziel erreichbar?",
+      "regel": "Für eine Startzelle und eine Liste von Zielen (Zelle und Art) berechnet der Prüfer den Weg. Unerreichbare Ziele sind ein Verstoß mit Koordinate und Grund (zu hoch, Fallhöhe, versperrt, Ziel nicht begehbar); Wege, die nur mit Sprung oder Sturz gehen, sind ein Hinweis.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Player (folgt aus den Regeln bewegung.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/bewegung.test.js::Prüfer: Begehbarkeit",
+      "ungeprueft": true,
+      "testanleitung": "Siehe bewegung.sprung und bewegung.fallen."
     }
   ]
 }

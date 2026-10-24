@@ -109,6 +109,16 @@ function pruefeFluessigkeit(welt, fluessigkeit, maxTicks) {
   return meldungen;
 }
 
+/** Stellen im Bereich, an denen Monster spawnen können (Verstoß) oder vielleicht können (Hinweis). */
+function pruefeSpawn(welt, spawn, spawnBereich, himmel) {
+  return spawn.spawnstellen(welt, spawnBereich, { himmel }).map((s) => ({
+    regel: 'pruefer.spawn-moeglich',
+    ort: { x: s.x, y: s.y, z: s.z },
+    schwere: s.urteil === 'moeglich' ? 'verstoss' : 'hinweis',
+    meldung: s.urteil === 'moeglich' ? 'Hier können Monster spawnen (dunkel, fester Boden, genug Platz)' : `Hier können vielleicht Monster spawnen; unklar wegen: ${s.gruende.join(', ')}`,
+  }));
+}
+
 /** Lichtquellen, deren Stärke vom Zustand abhängt (licht = null in Ebene 0). */
 function pruefeLicht(register, bloecke) {
   return bloecke
@@ -169,13 +179,14 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined, fluessigkeit = null }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, stromQuellen = undefined, fluessigkeit = null, spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
   if (schienen) meldungen.push(...pruefeSchienen(welt, schienen, bloecke));
   if (antrieb && stromQuellen !== undefined) meldungen.push(...pruefeAntrieb(welt, antrieb, stromQuellen, bloecke));
   if (fluessigkeit) meldungen.push(...pruefeFluessigkeit(welt, fluessigkeit, 400));
+  if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);
 }

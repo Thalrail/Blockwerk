@@ -120,10 +120,10 @@ test('Spawn: unbekannte Böden und Blöcke geben „unklar“', () => {
     assert.deepEqual(hat(s, x, 1, 0).gruende, ['boden']);
   }
   assert.equal(hat(s, 4, 1, 0).urteil, 'moeglich');
-  // Lichtfilter unbekannt: Treppe zwischen Fackel und Standort, sonst kein Weg → Blocklicht unklar
+  // Lichtfilter unbekannt: getöntes Glas zwischen Fackel und Standort, sonst kein Weg → Blocklicht unklar
   const t = raum(); fackel(t, 0, 1, 0);
   for (let y = 1; y <= 5; y++) for (let z = -21; z <= 21; z++) t.setzeBlock(3, y, z, STEIN);
-  t.setzeBlock(3, 1, 0, 'minecraft:oak_stairs', { weirdo_direction: 0, upside_down_bit: false, 'minecraft:corner': 'none' });
+  t.setzeBlock(3, 1, 0, 'minecraft:tinted_glass');
   const st = S.spawnstellen(t, bereich(8));
   assert.equal(hat(st, 4, 1, 0)?.urteil, 'unklar');
   assert.deepEqual(hat(st, 4, 1, 0).gruende, ['blocklicht']);

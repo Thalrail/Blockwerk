@@ -4,6 +4,8 @@
 //     (das Wiki nennt für Bedrock Filterwerte und zugleich „−1 zusätzlich zur normalen Abnahme“; beide Lesarten sind in den Schranken enthalten).
 //   - Himmelslicht: 15 an freien Blöcken; die Spalte darunter geht laut Wiki ungeschwächt hindurch. Für bereits seitlich verteiltes Licht
 //     (unter 15) ist das nicht belegt: Obergrenze = auch ungeschwächt senkrecht, Untergrenze = wie seitlich (mindestens 1 je Block).
+//   - Treppen und Halbstufen (Java-Kategorie, Jonah 24.10.2026): Filter 0, aber die vollen Flächen sperren das Licht beim Übergang zwischen zwei Zellen
+//     (untere Halbstufe/Treppe: Unterseite, obere/kopfstehende: Oberseite, Treppe zusätzlich die Rückseite). Halb gefüllte Seiten lassen Licht durch (Annahme: zwei halbe Flächen, die sich ergänzen, würden in Java sperren).
 //   - Unbekannte Lichtfilter (null in Ebene 0, z. B. Glas, Treppen, Zäune) werden NICHT geraten: es wird zweimal gerechnet,
 //     mit „Unbekanntes blockiert“ (Minimum) und „Unbekanntes lässt durch“ (Maximum). Dasselbe gilt für Lichtquellen mit
 //     zustandsabhängiger Stärke (licht = null: Minimum 0, Maximum 15). Wo Minimum und Maximum auseinanderliegen, ist das Ergebnis „unklar“.
@@ -11,7 +13,9 @@
 import { HOEHE_MAX, HOEHE_MIN } from '../ebene0/richtungen.js';
 
 const RAND = 15;
-const NACHBARN = [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -1, 0]];
+const NACHBARN = [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0], [0, -1, 0]]; // Ost, West, Süd, Nord, oben, unten (Gegenstück = Index xor 1)
+const RICHTUNG_BIT = { east: 0, west: 1, south: 2, north: 3, up: 4, down: 5 };
+const STUFE_RICHTUNG = ['east', 'west', 'south', 'north']; // weirdo_direction 0–3: Seite des Vollblocks (Rückseite der Treppe), von Jonah geprüft
 
 /**
  * @param {{regelwerk: import('./regelwerk.js').Regelwerk, register: {bloecke: import('../ebene0/blockregister.js').Blockregister}}} quellen
@@ -44,6 +48,7 @@ export function erzeugeLicht({ regelwerk, register }) {
     const filterMin = new Uint8Array(n), filterMax = new Uint8Array(n); // Lichtfilter je Schranke (Min: 15 = blockiert)
     const schrittMin = new Uint8Array(n).fill(abnahme), schrittMax = new Uint8Array(n).fill(abnahme); // Abnahme beim Betreten waagerecht/aufwärts
     const quelleMin = new Uint8Array(n), quelleMax = new Uint8Array(n);
+    const sperre = new Uint8Array(n); // Bit je Richtung (NACHBARN-Index): diese Fläche der Zelle ist voll
     for (const b of alle) {
       if (!innen(b.x, b.y, b.z)) continue;
       const e = register.bloecke.block(b.id).eigenschaften;
@@ -51,6 +56,7 @@ export function erzeugeLicht({ regelwerk, register }) {
       if (e.lichtfilter === null) { filterMin[i] = 15; filterMax[i] = 0; } else { filterMin[i] = e.lichtfilter; filterMax[i] = e.lichtfilter; }
       schrittMax[i] = Math.max(abnahme, filterMax[i]);
       schrittMin[i] = filterMin[i] >= 15 ? 16 : Math.max(abnahme, abnahme + filterMin[i]);
+      if (e.lichtform) sperre[i] = sperrflaechen(e.lichtform, b.zustand);
       if (e.licht === null) { quelleMin[i] = 0; quelleMax[i] = 15; } else { quelleMin[i] = e.licht; quelleMax[i] = e.licht; }
     }
 
@@ -67,11 +73,13 @@ export function erzeugeLicht({ regelwerk, register }) {
           const yy = Math.floor(i / (dz * dx)) + y0;
           const zz = Math.floor((i % (dz * dx)) / dx) + z0;
           const xx = (i % dx) + x0;
-          for (const [ax, ay, az] of NACHBARN) {
+          for (let k = 0; k < 6; k++) {
+            const [ax, ay, az] = NACHBARN[k];
             const nx = xx + ax, ny = yy + ay, nz = zz + az;
             if (!innen(nx, ny, nz)) continue;
             const j = idx(nx, ny, nz);
             // senkrecht nach unten: Obergrenze nur der Filter; Untergrenze nur bei vollem Himmelslicht (15), sonst wie seitlich
+            if (sperre[i] & (1 << k) || sperre[j] & (1 << (k ^ 1))) continue; // volle Fläche der Zelle oder der Nachbarzelle sperrt
             const abzug = himmelslicht && ay === -1 && (!untere || l === 15) ? filter[j] : schritt[j];
             const neu = l - abzug;
             if (neu > stufe[j]) { stufe[j] = neu; eimer[neu].push(j); }
@@ -92,8 +100,10 @@ export function erzeugeLicht({ regelwerk, register }) {
           let s = 15;
           for (let y = y1; y >= y0 && s > 0; y--) {
             const i = idx(x, y, z);
+            if (sperre[i] & (1 << RICHTUNG_BIT.up)) s = 0;
             s = Math.max(0, s - (untere && filter[i] > 0 && filter[i] < 15 ? abnahme + filter[i] : filter[i]));
             start[i] = s;
+            if (sperre[i] & (1 << RICHTUNG_BIT.down)) s = 0;
           }
         }
       }
@@ -122,4 +132,15 @@ export function erzeugeLicht({ regelwerk, register }) {
   }
 
   return { lichtkarte, himmelsWerte };
+}
+
+/** Volle Flächen (Bitmaske nach NACHBARN-Index) einer Treppe oder Halbstufe aus ihren Zuständen. */
+function sperrflaechen(form, zustand) {
+  if (form === 'halbstufe') return 1 << (zustand['minecraft:vertical_half'] === 'top' ? RICHTUNG_BIT.up : RICHTUNG_BIT.down);
+  if (form === 'treppe') {
+    const rueck = STUFE_RICHTUNG[zustand.weirdo_direction];
+    if (rueck === undefined) throw new Error(`Treppe ohne gültige Richtung: ${zustand.weirdo_direction}`);
+    return (1 << (zustand.upside_down_bit ? RICHTUNG_BIT.up : RICHTUNG_BIT.down)) | (1 << RICHTUNG_BIT[rueck]);
+  }
+  return 0;
 }

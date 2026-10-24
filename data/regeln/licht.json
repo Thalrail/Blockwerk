@@ -44,7 +44,7 @@
     {
       "id": "licht.durchsichtig",
       "titel": "Glas und Teppiche lassen Licht durch wie Luft",
-      "regel": "Glasblöcke (außer getöntem Glas) und Teppiche vermindern durchgehendes Licht nicht über die normale Abnahme von 1 je Block hinaus. Glasscheiben, Türen, Fackeln, Schienen und andere dünne Blöcke sind nicht belegt und bleiben „unbekannt“. Lava blockiert in Bedrock die Lichtausbreitung vollständig.",
+      "regel": "Glasblöcke (außer getöntem Glas) und Teppiche vermindern durchgehendes Licht nicht über die normale Abnahme von 1 je Block hinaus. Glasscheiben, Türen, Falltüren, Zäune, Mauern, Fackeln, Schienen, Knöpfe, Schilder, Pflanzen, Blumen, Korallen und andere dünne Blöcke gelten nach den Java-Kategorien ebenfalls als durchlässig wie Luft (Jonah, 24.10.2026: wo Bedrock nichts sagt, gilt Java; Fehler werden gezielt behoben). Lava blockiert in Bedrock die Lichtausbreitung vollständig.",
       "parameter": {
         "filterNull": [
           "Glasblöcke",
@@ -63,7 +63,7 @@
     {
       "id": "licht.unbekannte-filter",
       "titel": "Unbekannte Lichtfilter werden mit zwei Schranken gerechnet",
-      "regel": "Für Glasscheiben, getöntes Glas, Treppen, Halbstufen, Zäune, Türen, Fackeln, Schienen, Redstone-Staub und viele andere dünne Blöcke nennt das Wiki keine Bedrock-Werte. Blockwerk rechnet mit „blockiert“ (Minimum) und „lässt durch“ (Maximum). Wo beide verschieden sind, ist das Feld „unklar“ (Hinweis statt Verstoß).",
+      "regel": "Für getöntes Glas, Schnee, Pfade, Kolben und alle Blöcke, die in keiner Java-Kategorie stehen, ist der Lichtdurchlass nicht belegt (die dünnen Blöcke siehe licht.durchsichtig). Blockwerk rechnet mit „blockiert“ (Minimum) und „lässt durch“ (Maximum). Wo beide verschieden sind, ist das Feld „unklar“ (Hinweis statt Verstoß).",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Light (nicht belegt – bewusst nicht geraten)",
       "status": "simuliert",
@@ -88,6 +88,26 @@
       "simulationstest": "test/ebene1/licht.test.js::Licht: Himmelslicht innen (Tag, Regen, Gewitter, Nacht)",
       "ungeprueft": true,
       "testanleitung": "Siehe licht.himmelslicht; zusätzlich nachts im Freien und in einer Höhle mit schmalem Zugang: Spawnen Monster am Höhleneingang, wo das Himmelslicht schwach ist?"
+    },
+    {
+      "id": "licht.treppen-halbstufen",
+      "titel": "Treppen und Halbstufen sperren Licht über ihre vollen Flächen",
+      "regel": "Treppen und Halbstufen haben Filter 0, das Licht kommt aber nur durch Flächen, die nicht voll sind. Voll sind bei einer Halbstufe die Unterseite (untere Halbstufe) bzw. die Oberseite (obere Halbstufe), bei einer Treppe die Unterseite (kopfstehend: die Oberseite) und die Rückseite (weirdo_direction: 0 Ost, 1 West, 2 Süd, 3 Nord = Seite des Vollblocks). Die Seiten der Halbstufe und die übrigen Treppenflächen sind nur teilweise gefüllt und lassen Licht durch. Annahme: zwei teilweise gefüllte Flächen, die sich zu einer vollen ergänzen, würden in Java sperren; das wird hier nicht gerechnet (Licht geht durch). Treppen-Ecken (minecraft:corner) werden wie gerade Treppen behandelt.",
+      "parameter": {
+        "halbstufeBlockiert": [
+          "Unterseite (unten)",
+          "Oberseite (oben)"
+        ],
+        "treppeBlockiert": [
+          "Unterseite oder Oberseite (kopfstehend)",
+          "Rückseite"
+        ]
+      },
+      "quelle": "Java-Kategorie „lichtblockierende Form“ auf minecraft.wiki „Opacity“ (Jonah, 24.10.2026: wo Bedrock nichts sagt, gilt Java); https://minecraft.wiki/w/Opacity",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/licht.test.js::Licht: Treppen und Halbstufen sperren nur über ihre vollen Flächen (Java-Kategorie, ungeprüft)",
+      "ungeprueft": true,
+      "testanleitung": "Dunkler Raum, Fackel hinter einer Wand mit einem Loch, in das eine Treppe gesetzt wird (Rückseite zur Fackel, von der Fackel weg, zur Seite, kopfstehend) und eine untere/obere Halbstufe: Wird es dahinter hell, wie Blockwerk es sagt (Rückseite zur Fackel oder von ihr weg: dunkel; zur Seite und bei Halbstufen: hell)? Außerdem Decke aus unteren und oberen Halbstufen mit Himmel darüber: Wird es darunter dunkel? Abweichungen melden."
     }
   ]
 }

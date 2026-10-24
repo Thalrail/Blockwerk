@@ -28,7 +28,7 @@
 - Regeln, Paletten, Module als **Daten** (JSON), nicht im Code verstreut.
 
 ## Bedrock-Regeln
-- Nur Bedrock-Mechanik, nie Java-Verhalten übernehmen. Jede Regel braucht eine Quelle (z. B. minecraft.wiki mit Bedrock-Hinweis).
+- Nur Bedrock-Mechanik. Ausnahme (Jonah, 24.10.2026): Wo es für Bedrock keine ausdrückliche Angabe gibt, gilt die Java-Regel als Platzhalter (Status `ungeprüft`, Fehler werden gezielt behoben). Jede Regel braucht eine Quelle (z. B. minecraft.wiki mit Bedrock-Hinweis).
 - Status jeder Regel und jedes Bausteins: `entworfen` → `simuliert` (Test in Ebene 1 bestanden) → `geprüft` (nur wenn Jonah es im Spiel bestätigt hat). Nie selbst auf „geprüft“ setzen.
 - Unsicheres als `ungeprüft` markieren und eine Testanleitung für Jonah (Kreativ-Testwelt) beilegen.
 

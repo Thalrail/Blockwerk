@@ -195,6 +195,23 @@ function pruefeRedstoneZeit(welt, rz, loren, maxTicks) {
   for (const e of lauf.ereignisse) {
     if (e.was === 'brennt-aus') meldungen.push({ regel: 'pruefer.redstone-zeit', ort: e.pos, schwere: 'hinweis', meldung: `Diese Fackel brennt im Tick ${e.tick} aus (mehr als 8 Wechsel in 60 Ticks)` });
   }
+  // Mechanismen, die in der ganzen Laufzeit nie geschaltet haben und am Ende aus sind
+  for (const [was, wasEnde] of [['lampe-an', 'minecraft:redstone_lamp']]) {
+    void was;
+    for (const b of lauf.welt.alleBloecke().filter((x) => x.id === wasEnde)) {
+      if (!lauf.ereignisse.some((e) => e.was === 'lampe-an' && e.pos.x === b.x && e.pos.y === b.y && e.pos.z === b.z)) {
+        meldungen.push({ regel: 'pruefer.mechanismus', ort: { x: b.x, y: b.y, z: b.z }, schwere: 'hinweis', meldung: 'Diese Lampe wird in der Simulation nie bestromt' });
+      }
+    }
+  }
+  for (const b of lauf.welt.alleBloecke().filter((x) => /_door$|_trapdoor$|_fence_gate$|^minecraft:(trapdoor|fence_gate)$/.test(x.id) && x.zustand.upper_block_bit !== true)) {
+    if (b.zustand.open_bit !== true && !lauf.ereignisse.some((e) => e.was === 'tuer-auf' && e.pos.x === b.x && e.pos.y === b.y && e.pos.z === b.z)) {
+      meldungen.push({ regel: 'pruefer.mechanismus', ort: { x: b.x, y: b.y, z: b.z }, schwere: 'hinweis', meldung: 'Diese Tür/Falltür/dieses Tor wird in der Simulation nie bestromt (bleibt geschlossen)' });
+    }
+  }
+  for (const e of lauf.ereignisse.filter((x) => x.was === 'tagessensor-unklar')) {
+    meldungen.push({ regel: 'pruefer.mechanismus', ort: e.pos, schwere: 'hinweis', meldung: 'Der Tagessensor sieht den Himmel nur teilweise (Lichtfilter über ihm unbekannt): Stärke unklar' });
+  }
   if (!ruhe.stabil) {
     // Periode suchen: die kleinste Länge, nach der sich der Zustand wiederholt
     const abdruecke = [];

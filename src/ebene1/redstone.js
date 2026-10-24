@@ -96,10 +96,11 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
     const zustandFackel = new Map(fackeln.map((f) => [key(f.pos), fest?.fackel?.has(key(f.pos)) ? fest.fackel.get(key(f.pos)) : f.an]));
     const ausgaben = fest?.ausgaben ?? [];
     const ausgabeStufe = new Map(), starkStufe = new Map();
+    const schwachStufe = new Map(); // Ausgaben, die Blöcke nur schwach bestromen (z. B. Tagessensor)
     for (const a of ausgaben) {
       const k = key(a.zelle);
       ausgabeStufe.set(k, Math.max(ausgabeStufe.get(k) ?? 0, a.stufe));
-      if (leitet(lies(a.zelle).id)) starkStufe.set(k, Math.max(starkStufe.get(k) ?? 0, a.stufe));
+      if (leitet(lies(a.zelle).id)) (a.schwach ? schwachStufe : starkStufe).set(k, Math.max((a.schwach ? schwachStufe : starkStufe).get(k) ?? 0, a.stufe));
     }
     let letzte = null, vorletzte = null, ergebnis = null;
     const wechsel = new Set();
@@ -112,6 +113,7 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
         if (q.art === 'schalter' && q.befestigt) gib(q.befestigt, true);
       }
       for (const k of starkStufe.keys()) { schwach.add(k); stark.add(k); }
+      for (const k of schwachStufe.keys()) schwach.add(k);
       for (const f of fackeln) {
         if (!zustandFackel.get(key(f.pos))) continue;
         for (const r of SECHS) {
@@ -199,6 +201,29 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
         const f = fackeln.find((x) => key(x.pos) === k);
         if (f) return ergebnis.zustand.get(k) && !(f.befestigt && key(f.befestigt) === key(zu)) ? maximum : 0;
         return 0;
+      },
+      /**
+       * Wird die Zelle (Lampe, Tür, Kolben …) bestromt? Ja bei: Staub daneben, der auf sie zeigt (oder auf ihr liegt), eingeschalteter Quelle daneben (auch oben/unten),
+       * brennender Fackel daneben (außer an ihrem Befestigungsblock), bestromtem leitenden Block daneben (stark oder schwach), Repeater/Komparator/Beobachter/Tagessensor,
+       * der in sie hineinzeigt (Ausgabe).
+       */
+      bestromtAn: (x, y, z) => {
+        const pos = { x, y, z };
+        const pk = key(pos);
+        for (const r of SECHS) {
+          const n = plus(pos, r);
+          const k = key(n);
+          if (staubSet.has(k)) {
+            if ((ergebnis.stufe.get(k) ?? 0) > 0 && (r === 'up' || (r !== 'down' && zeigtAuf(n, GEGEN[r])))) return true;
+            continue;
+          }
+          if (ausgaben.some((a) => key(a.zelle) === pk && a.stufe > 0 && key(a.von) === k)) return true;
+          if (dauerQuellen.some((q) => key(q.pos) === k)) return true;
+          const f = fackeln.find((fk) => key(fk.pos) === k);
+          if (f && ergebnis.zustand.get(k) && !(f.befestigt && key(f.befestigt) === pk)) return true;
+          if (leitet(lies(n).id) && ergebnis.bestromt(n)) return true;
+        }
+        return false;
       },
       /** Brennt die Fackel? (null, wenn dort keine Fackel steht) */
       fackelAn: (x, y, z) => ergebnis.zustand.get(key({ x, y, z })) ?? null,

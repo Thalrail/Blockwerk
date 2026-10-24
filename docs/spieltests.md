@@ -134,6 +134,14 @@ Kreativ-Testwelt, Video (60 fps), Zeiten in Spielticks (1 Tick = 0,05 s). Alles 
 4. **Komparator:** Behälter hinten, Staub mit Stärke 5, 8, 9 an der Seite, beide Modi (erwartet Vergleich 8, 8, 0; Subtraktion 3, 0, 0). (`zeit.komparator-modi`)
 5. **Knöpfe:** Stein (1 s), Holz (1,5 s). (`zeit.knopf-dauer`)
 
+## Redstone-Mechanismen: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt, Video (60 fps). Alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Lampe:** Hebel – Staub – Lampe: Zeit bis zum Ausgehen nach dem Ausschalten (erwartet 6 Ticks, 0,3 s). (`mech.lampe`)
+2. **Lagen der Lampe:** Staub zeigend/wegzeigend/Punkt, Fackel daneben, Redstone-Block oben/unten, Repeater davor. (`mech.bestromung`)
+3. **Beobachter:** Block vor ihm setzen/entfernen, Pflanze wachsen lassen: Impuls (erwartet 2 Ticks) und auf welcher Seite er herauskommt. (`mech.beobachter`, `mech.beobachter-richtung`)
+4. **Tagessensor:** Signalstärke um 6:00, 9:00, 12:00, 15:00, 18:00, 20:00 und 24:00, mit Regen, mit Dach, invertiert (erwartet mittags 15, nachts 0; invertiert nachts 11). (`mech.tagessensor`, `mech.tagessensor-invertiert`)
+5. **Türen:** Tür, Falltür, Zauntor mit Redstone-Block. (`mech.tueren`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -168,6 +176,14 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `licht.treppen-halbstufen` – Treppen und Halbstufen sperren Licht über ihre vollen Flächen | Dunkler Raum, Fackel hinter einer Wand mit einem Loch, in das eine Treppe gesetzt wird (Rückseite zur Fackel, von der Fackel weg, zur Seite, kopfstehend) und eine untere/obere Halbstufe: Wird es dahinter hell, wie Blockwerk es sagt (Rückseite zur Fackel oder von ihr weg: dunkel; zur Seite und bei Halbstufen: hell)? Außerdem Decke aus unteren und oberen Halbstufen mit Himmel darüber: Wird es darunter dunkel? Abweichungen melden. |
 | `lore.rampe-ueber-5` – Rampen über 5 Blöcke Höhe | Rampen mit 8 und 12 Blöcken Höhe, Antriebsschiene alle 3 Blöcke, erste Steigschiene angetrieben: Kommt die Lore ganz hoch? Dann alle 6 Blöcke: Wie viele Blöcke Höhe schafft sie? |
 | `lore.fahrt-im-antrieb` – Fahrt mit Restgeschwindigkeit | Rampe, die mitten in einer langen Antriebsstrecke beginnt (Lore schon voll beschleunigt): Reicht Antrieb alle 6 Blöcke noch, oder darf der Abstand größer sein? Ab welchem Abstand bleibt sie stehen? |
+| `mech.bestromung` – Wann ein Mechanismus bestromt wird | Lampe mit: Hebel an der Seite, Staub zeigend / wegzeigend / Punkt, Fackel am Block daneben, Fackel direkt an der Lampe befestigt (Lampe ist kein Befestigungsblock, daher nur ein Test mit Block), Redstone-Block oben und unten, Repeater davor. Welche Lagen schalten sie? |
+| `mech.lampe` – Redstone-Lampe | Hebel – Staub – Lampe: Wie viele Ticks (mit Video 60 fps) dauert es nach dem Ausschalten, bis die Lampe aus ist? Erwartet 6 Ticks (0,3 s). Hebel kurz an und aus: Bleibt die Lampe länger an? |
+| `mech.tueren` – Türen, Falltüren, Zauntore | Tür mit Hebel an der Seite, mit Strom nur oben (Redstone-Block über der Tür), Falltür und Zauntor: Öffnen sie sich? Schließen sie sich sofort ohne Strom? |
+| `mech.beobachter` – Beobachter | Beobachter schaut auf eine Fläche: Block setzen und wegnehmen, Pflanze wachsen lassen, Staub daneben ändern: Gibt er jedes Mal einen Impuls ab? Wie lange (erwartet 2 Ticks)? Mit Staub und Lampe hinter dem Beobachter prüfen. |
+| `mech.beobachter-richtung` – Beobachter: Richtung | Beobachter in alle sechs Richtungen setzen: Auf welcher Seite kommt der Impuls heraus, und welche Seite beobachtet er? |
+| `mech.tagessensor` – Tagessensor | Tagessensor unter freiem Himmel: Signalstärke (Komparator oder Lampe mit Komparator) um 6:00, 9:00, 12:00, 15:00, 18:00, 20:00, 24:00 ablesen; bei Regen und Gewitter wiederholen; mit Dach darüber. Blockwerk erwartet mittags 15, nachts 0. |
+| `mech.tagessensor-invertiert` – Tagessensor invertiert | Invertierten Tagessensor um 12:00 und um 24:00 messen (erwartet 0 bzw. 11) und unter einem Dach (erwartet 15). |
+| `mech.tagessensor-dimension` – Tagessensor im Nether und Ende | Tagessensor im Nether und im Ende (normal und invertiert): Signal? |
 | `pruefer.braucht-halt-fackel` – Prüfer: Fackel braucht Halt | Noch ungetestete Formen: Fackel oben auf einer Treppe (richtig herum und kopfüber), auf einer oberen Halbstufe, an Mauer, Falltür, Laub, Eis, Trichter, Kessel. Je Form melden: hält oben / hält seitlich / hält nicht. Auch prüfen, ob andere Varianten derselben Form (Stein-Treppe, Birkenzaun, gefärbtes Glas) gleich reagieren. |
 | `pruefer.braucht-halt-schiene` – Prüfer: Schiene braucht Boden | Noch ungetestete Formen: Schiene auf Mauer, Falltür, Laub, Eis, Trichter, Kessel, Seelensand, Honigblock. Je Form melden: bleibt liegen / springt ab. |
 | `pruefer.tickbereich` – Prüfer: Anlage im tickenden Bereich | Siehe takt.tickbereich. |
@@ -182,6 +198,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.trichter` – Prüfer: Trichter ohne Ziel, im Kreis oder verstopft | Siehe trichter.ziel und trichter.behaelter. |
 | `pruefer.redstone` – Prüfer: Redstone-Leitung | Siehe redstone.staub-abnahme und redstone.instabil. |
 | `pruefer.redstone-zeit` – Prüfer: Redstone läuft ab | Siehe zeit.fackel-brennen. |
+| `pruefer.mechanismus` – Prüfer: Mechanismen ohne Strom | Siehe mech.bestromung und mech.tagessensor. |
 | `zeit.staub-sofort` – Staub aktualisiert jeden Spielstick | Hebel – 10 Staubblöcke – Lampe: Leuchtet die Lampe sofort (im selben Tick wie der Hebel)? Mit Video (60 fps) prüfen, ob die Länge der Staubleitung die Zeit ändert (erwartet: nein). |
 | `zeit.fackel-verzoegerung` – Fackel: 2 Spielticks | Hebel an einen Stein, daneben eine Fackel an dessen Seite, dahinter Staub und eine Lampe: Zeit zwischen Hebel und Lampe mit Video messen (erwartet 0,1 s = 2 Ticks). Dann eine Kette aus 5 Fackeln (Stein-Fackel-Stein-…): erwartet 10 Ticks (0,5 s). |
 | `zeit.fackel-brennen` – Fackel brennt aus | Fackel an einem Stein, der über Staub von der Fackel selbst bestromt wird (Rückkopplung): Brennt sie aus, nach wie vielen Wechseln, und geht sie wieder an? Auch eine Uhr mit Repeater dazwischen testen (Bedrock soll dort nicht ausbrennen). |

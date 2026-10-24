@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gebaut: Branch `claude/ebene-1-redstone-zeit`. 234 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gebaut: Branch `claude/ebene-1-redstone-mechanismen`. 240 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -23,8 +23,9 @@ Zuletzt aktualisiert: 20.10.2026
 | 2e-2 | Ebene 1 – Fallende Blöcke: Sand, Kies, Betonpulver, Amboss, Drachenei fallen, landen, werden zu Gegenständen oder Beton; Prüfer „Block fällt“ | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #13) |
 | 2e-3 | Ebene 1 – Trichter & Blockinhalte: Cooldown 8 Ticks, Schieben/Ziehen, Redstone-Sperre, Stapelgrößen (Ebene 0), Komparator-Lesewert, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`, Java-Platzhalter; gemergt, PR #14) |
 | 2f-1 | Ebene 1 – Redstone-Strom (Gleichgewicht): Staub, Quellen (Block, Hebel, Knopf, Fackel, Detektorschiene), starke/schwache Bestromung, Fackel-Inversion, Aktivierungsschiene, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #15) |
-| 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater (Sperre, Impulse), Komparator, Knopfdauer, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
-| 2f-3 | Ebene 1 – Redstone-Mechanismen: Kolben, Beobachter, Lampen, Türen, Tagessensor | als Nächstes |
+| 2f-2 | Ebene 1 – Redstone-Zeit: Fackel-Verzögerung und Brennen, Repeater (Sperre, Impulse), Komparator, Knopfdauer, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #16) |
+| 2f-3 | Ebene 1 – Redstone-Mechanismen: Lampen, Türen/Falltüren/Zauntore, Beobachter, Tagessensor, Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; PR wartet auf Abnahme) |
+| 2f-4 | Ebene 1 – Kolben (Schieben bis 12 Blöcke, Ziehen, unbewegliche Blöcke) | als Nächstes |
 | 2e… | Ebene 1 – weitere Mechaniken, je ein PR: Redstone, Wesen (Reihenfolge entscheidet Jonah) | **als Nächstes** |
 | 3 | Ebene 2 – Bausteine: Formen (maßstabsfrei, Rundheits-/Symmetrietests r = 1–128), Bauelemente, erste Technikmodule mit Testszenario | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
@@ -138,6 +139,13 @@ Zuletzt aktualisiert: 20.10.2026
 - Regeln: `data/regeln/redstone-zeit.json` (9 Regeln, alle `ungeprüft` mit Testanleitung). **Annahmen mit Wirkung:** `minecraft:cardinal_direction` von Repeater/Komparator nennt die Eingangsseite (wie Java „facing“); der Staub verbindet sich nicht seitlich mit Repeatern/Komparatoren (nur über die Zeigerichtung); Komparator liest Behälter nur direkt oder durch einen Block.
 - Nicht dabei: Kolben, Beobachter, Lampen, Türen, Tagessensor, Druckplatten (brauchen Wesen), die 20-Tick-Prüfung der Detektorschiene, Redstone-Verhalten an Chunk-Grenzen.
 
+## Was die Redstone-Mechanismen (Teil 2f-3) jetzt können (`src/ebene1/redstone-zeit.js`)
+- `redstone.stromkarte(...).bestromtAn(x, y, z)`: Wird eine Zelle bestromt? Staub, der auf sie zeigt, auf ihr liegt oder keine Richtung hat; Quelle daneben (auch oben/unten); brennende Fackel (nicht am eigenen Befestigungsblock); bestromter leitender Block; Ausgabe von Repeater, Komparator, Beobachter, Tagessensor. Neu: Ausgaben mit `schwach: true` bestromen Blöcke nur schwach (Tagessensor).
+- **Lampe** (nur im C-Tick): sofort an, 6 Ticks nach dem ersten C-Tick ohne Strom aus (Bedrock; Java 4), zwischendurch wieder bestromt bleibt sie an. **Türen, Falltüren, Zauntore** (C-Tick): `open_bit` = bestromt, bei Türen genügt eine bestromte Hälfte, beide wechseln gemeinsam.
+- **Beobachter:** erkennt im P-Tick, wenn sich Block oder Zustand der Zelle vor ihm geändert hat, gibt 2 Ticks lang 15 stark an den Block hinter sich (`minecraft:facing_direction` = beobachtete Seite, Annahme). **Tagessensor:** rechnet alle 20 Ticks nach Java-Formeln (Tageszeit 0 = Sonnenaufgang, Wetter `klar`/`regen`/`gewitter`, Himmelslicht der Zelle darüber aus `licht.js`); Mittag 15, Sonnenauf-/untergang 5, Mitternacht 0; invertiert Mitternacht 11, unter einem Dach 15; bestromt alle sechs Nachbarn schwach.
+- Prüfer `pruefer.mechanismus` (Option `redstoneZeit`): Hinweis bei Lampe/Tür, die in der Simulation nie bestromt wird, und bei Tagessensor mit teilweise unbekanntem Himmelslicht.
+- Regeln: `data/regeln/mechanismen.json` (8 Regeln, alle `ungeprüft` mit Testanleitung). Nicht dabei: Kolben (2f-4), Zielblock, Druckplatten, Stolperdraht, Dimensionen (Nether/Ende geben in Bedrock kein Tagessensor-Signal; Blockwerk rechnet Oberwelt).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -157,7 +165,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Schritt 2f-3: Redstone-Mechanismen** (Kolben, Beobachter, Lampen, Türen, Tagessensor; keine Quasi-Konnektivität in Bedrock). Alternativ Wesen (Spieler und Dorfbewohner: Bewegung, Erreichbarkeit, Berufssuche, Betten, Golems) – Jonah entscheidet.
+**Schritt 2f-4: Kolben** (Schieben bis 12 Blöcke, Ziehen beim klebrigen Kolben, unbewegliche Blöcke, Startverzögerung 2 Ticks, nur im C-Tick). Alternativ Wesen (Spieler und Dorfbewohner: Bewegung, Erreichbarkeit, Berufssuche, Betten, Golems) – Jonah entscheidet.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

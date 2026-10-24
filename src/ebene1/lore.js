@@ -48,11 +48,11 @@ export function erzeugeLore({ regelwerk, schienen, antrieb }) {
 
   /**
    * Kommt die Lore über `normale` normale Schienen zwischen zwei bestromten Abschnitten, nach einem Abschnitt aus `davor`
-   * Antriebsschienen am Stück? 'ja' nur, wenn die Strecke samt einem halben Block Sicherheit in die gemessene Auslaufstrecke passt (unklar, ab wo genau Jonah gemessen hat), 'nein' ab einem Block mehr als der aufgerundeten Strecke, dazwischen 'unklar'.
+   * Antriebsschienen am Stück? 'ja', wenn die Strecke in die gemessene Auslaufstrecke passt (Jonah zählte ab dem Ende der letzten Antriebsschiene), 'nein' ab einem Block mehr als der aufgerundeten Strecke, dazwischen 'unklar'.
    */
   function luecke(normale, davor = 1) {
     const a = auslauf(davor);
-    if (normale + 0.5 <= a) return 'ja';
+    if (normale <= a) return 'ja';
     if (normale >= Math.ceil(a) + 1) return 'nein';
     return 'unklar';
   }
@@ -160,7 +160,7 @@ export function erzeugeLore({ regelwerk, schienen, antrieb }) {
       if (urteil === 'ja') continue;
       const stopp = Math.min(von.ende + Math.floor(auslauf(von.laenge)) + 1, nach.anfang - 1);
       melde('luecke', urteil === 'nein' ? 'nein' : 'unklar', stopp, urteil === 'nein'
-        ? `Die Lore bleibt hier stehen: ${dazwischen.length} Schienen ohne Antrieb nach ${von.laenge} Antriebsschiene(n) (Auslauf etwa ${auslauf(von.laenge)} Blöcke)`
+        ? `Die Lore bleibt hier stehen: ${dazwischen.length} Schienen ohne Antrieb nach ${von.laenge} Antriebsschiene(n) (Auslauf höchstens ${auslauf(von.laenge)} Blöcke)`
         : `Ob die Lore ${dazwischen.length} Schienen ohne Antrieb nach ${von.laenge} Antriebsschiene(n) schafft, ist nicht gemessen`);
     }
     // 2. Rampen: zusammenhängende ansteigende Schienen

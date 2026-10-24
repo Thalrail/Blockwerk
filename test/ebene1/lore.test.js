@@ -63,8 +63,7 @@ test('Lore: Abstand der Antriebsschienen auf ebener Strecke', () => {
   for (const [k, u] of Object.entries(erwartet)) assert.equal(LO.abstandEben(Number(k)), u, `k=${k}`);
   // k = Anzahl normaler Schienen dazwischen + 1: stimmt mit der Auslaufstrecke von 7,5 überein
   for (let k = 1; k <= 14; k++) assert.equal(LO.luecke(k - 1, 1), LO.abstandEben(k), `Lücke bei k=${k}`);
-  assert.equal(LO.luecke(10, 2), 'ja', 'nach 2 Antriebsschienen (Auslauf 11) reichen 10 Schienen sicher');
-  assert.equal(LO.luecke(11, 2), 'unklar', 'ganzzahliger Auslauf: ob vom Ende der Schiene oder von der Lore gezählt, ist offen');
+  assert.equal(LO.luecke(11, 2), 'ja', 'nach 2 Antriebsschienen (Auslauf 11, ab Ende der Schiene gezählt) reichen 11 Schienen');
   assert.equal(LO.luecke(12, 2), 'nein', 'Auslauf 11 ist ganzzahlig: 12 ist sicher zu weit');
   assert.deepEqual([14, 15, 16].map((m) => LO.luecke(m, 4)), ['ja', 'unklar', 'nein'], 'Auslauf 14,75: 15 liegt dazwischen');
   assert.throws(() => LO.abstandEben(0));
@@ -154,8 +153,7 @@ test('Prüfer: Lore bleibt stehen', () => {
   const neun = pruefe(strecke(50, (i) => i % 9 === 0));
   assert.ok(neun.length > 0 && neun.every((m) => m.schwere === 'hinweis'));
   // Antriebsschienen am Stück erhöhen den Auslauf: 2 am Stück, dann 11 normale
-  assert.deepEqual(pruefe(strecke(40, (i) => i < 2 || i === 12 || i === 13)), [], 'nach 2 Antriebsschienen (Auslauf 11) 10 Schienen ohne Antrieb: sicher innerhalb des Auslaufs');
-  assert.equal(pruefe(strecke(40, (i) => i < 2 || i === 13 || i === 14))[0].schwere, 'hinweis', '11 normale Schienen: Zählweise des Auslaufs offen');
+  assert.deepEqual(pruefe(strecke(40, (i) => i < 2 || i === 13 || i === 14)), [], 'nach 2 Antriebsschienen 11 Schienen ohne Antrieb: gemessener Auslauf');
   assert.equal(pruefe(strecke(40, (i) => i < 2 || i === 16 || i === 17))[0].schwere, 'verstoss', 'nach 2 Antriebsschienen 14 normale: zu weit');
   // Bahn ohne Antrieb am Start: Hinweis
   const ohne = pruefe(strecke(10, () => false));

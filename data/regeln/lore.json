@@ -43,7 +43,7 @@
     {
       "id": "lore.abstand-eben",
       "titel": "Abstand der Antriebsschienen auf ebener Strecke",
-      "regel": "Auf ebener Strecke kommt die Lore durch, wenn nach einer einzelnen Antriebsschiene höchstens 7 normale Schienen folgen, bevor die nächste Antriebsschiene kommt (Antriebsschiene jede 8. Schiene). Bei 9 normalen Schienen dazwischen (jede 10.) bleibt sie stehen. Dazwischen (8 normale Schienen, jede 9.) ist es nicht gemessen: „unklar“. Nach mehreren Antriebsschienen am Stück gilt entsprechend die Auslaufstrecke aus lore.auslauf (aus dem Stand gemessen, also als Untergrenze). Blockwerk rechnet vorsichtig: Eine Lücke gilt nur als sicher, wenn sie mit einem halben Block Reserve in die Auslaufstrecke passt, weil offen ist, ab welcher Stelle der Antriebsschiene Jonah die Strecke gezählt hat.",
+      "regel": "Auf ebener Strecke kommt die Lore durch, wenn nach einer einzelnen Antriebsschiene höchstens 7 normale Schienen folgen, bevor die nächste Antriebsschiene kommt (Antriebsschiene jede 8. Schiene). Bei 9 normalen Schienen dazwischen (jede 10.) bleibt sie stehen. Dazwischen (8 normale Schienen, jede 9.) ist es nicht gemessen: „unklar“. Nach mehreren Antriebsschienen am Stück gilt entsprechend die Auslaufstrecke aus lore.auslauf (aus dem Stand gemessen, also als Untergrenze). Die Auslaufstrecke zählt ab dem Ende der letzten Antriebsschiene (Jonah, 24.10.2026).",
       "parameter": {
         "sicherJaBisK": 8,
         "sicherNeinAbK": 10

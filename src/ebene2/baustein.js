@@ -32,8 +32,15 @@ export function pruefePaket(p) {
   if (!Array.isArray(p.bloecke)) fehler('Blöcke fehlen');
   for (const b of p.bloecke) {
     if (![b.x, b.y, b.z].every(Number.isInteger)) fehler('Blockkoordinate keine ganze Zahl');
+    if (b.technik === true) {
+      // Technikblöcke (Schiene, Redstone-Block, Trichter …) sind fest: id + Zustand, keine Rolle
+      if (typeof b.id !== 'string' || !b.id.startsWith('minecraft:')) fehler('Technikblock braucht eine Block-ID (minecraft:…)');
+      if ('rolle' in b || 'form' in b) fehler('Technikblöcke haben keine Rolle und keine Form');
+      if (b.zustand !== undefined && (b.zustand === null || typeof b.zustand !== 'object')) fehler('zustand muss ein Objekt sein');
+      continue;
+    }
     if (!ROLLEN.includes(b.rolle)) fehler(`Rolle "${b.rolle}" unbekannt`);
-    if ('id' in b) fehler('Bausteine setzen Rollen, keine Block-IDs');
+    if ('id' in b) fehler('Bausteine setzen Rollen, keine Block-IDs (Technikblöcke nur mit technik: true)');
     const form = b.form ?? 'voll';
     if (!FORMEN.includes(form)) fehler(`Form "${form}" unbekannt`);
     if ((form === 'treppe' || form === 'tuer') && !RICHTUNGEN.includes(b.richtung)) fehler(`${form} braucht eine Richtung`);
@@ -110,6 +117,10 @@ function zustandVon(ebene0, b) {
  */
 export function platziere(welt, paket, palette, versatz = { x: 0, y: 0, z: 0 }, ebene0 = null) {
   for (const b of paket.bloecke) {
+    if (b.technik === true) {
+      welt.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, b.id, b.zustand ?? {});
+      continue;
+    }
     const m = palette[b.rolle];
     if (!m) throw new Error(`Palette kennt die Rolle "${b.rolle}" nicht`);
     const form = b.form ?? 'voll';

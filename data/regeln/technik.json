@@ -1,0 +1,16 @@
+{
+  "bereich": "tech",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "tech.bahn",
+      "titel": "Bahn-Module nach Jonahs Messwerten",
+      "regel": "Antriebsstrecke, Steigungsstück und Kurve folgen den von Jonah geprüften Lorenwerten (lore.abstand-eben, lore.abstand-steigung): höchstens 8 normale Schienen zwischen Antriebsschienen auf ebener Strecke, auf Rampen jede zweite Schiene angetrieben und die erste Schiene der Rampe angetrieben, Rampen bis 5 Blöcke Höhe. Technik skaliert über Anzahl: längere Strecke = mehr Abschnitte. Jede Antriebsschiene bekommt einen Redstone-Block darunter, normale Schienen ein Fundament (Rolle boden).",
+      "parameter": { "standardabstand": 4 },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/messungen-lore.md",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/technik-bahn.test.js::Technik: Antriebsstrecke",
+      "ungeprueft": false
+    }
+  ]
+}

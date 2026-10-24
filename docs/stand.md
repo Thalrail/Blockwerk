@@ -5,7 +5,7 @@ Zuletzt aktualisiert: 20.10.2026
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gebaut: Branch `claude/ebene-2-bauelemente`. 273 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gemergt (PR #23). Teil 3d-1 (Bahn-Module) ist gebaut: Branch `claude/ebene-2-technik-bahn`. 276 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -31,8 +31,10 @@ Zuletzt aktualisiert: 20.10.2026
 | 2g-2 | Ebene 1 – Wesen: Dorfbewohner-Verhalten (Betten, Berufsblock-Suche, Dorf, Iron-Golem-Bedingung), Prüfer | **fertig, Status `simuliert`** (alle Regeln `ungeprüft`; gemergt, PR #20) |
 | 3a | Ebene 2 – Baustein-Paket und Formen: Scheibe/Ring, Zylinder, Kugel, Kuppel, Kegel (maßstabsfrei, Tests für alle Größen bis 257) | **fertig, Status `simuliert`** (gemergt, PR #21) |
 | 3b | Ebene 2 – Bogen (Segmentbogen, Stich 0,3 × Spannweite), Tonnengewölbe, Satteldach, Walmdach/Zeltdach (maßstabsfrei, Tests über alle Größen) | **fertig, Status `simuliert`** (gemergt, PR #22) |
-| 3c | Ebene 2 – Bauelemente: Gang, Treppe, Wendeltreppe, Tür, Fenster, Säule (Menschenmaß fest, formgebundene Blöcke mit Richtung) | **fertig, Status `simuliert`** (Zustandsregel `bau.zustaende` `ungeprüft`; PR wartet auf Abnahme) |
-| 3d | Ebene 2 – erste Technikmodule (Nische, Bahnhof, Kurve, Steigungsstück …) mit Testszenario in Ebene 1 | offen |
+| 3c | Ebene 2 – Bauelemente: Gang, Treppe, Wendeltreppe, Tür, Fenster, Säule (Menschenmaß fest, formgebundene Blöcke mit Richtung) | **fertig, Status `simuliert`** (Zustandsregel `bau.zustaende` `ungeprüft`; gemergt, PR #23) |
+| 3d-1 | Ebene 2 – Technikmodule Bahn: Antriebsstrecke, Steigungsstück, Kurve (nach Jonahs Lorenmessungen, Testszenario in Ebene 1) | **fertig, Status `simuliert`** (nur geprüfte Messwerte; PR wartet auf Abnahme) |
+| 3d-2 | Ebene 2 – Technikmodule Handelsnische, Lager (Trichterreihe), Sortierer | als Nächstes |
+| 3d-3 | Ebene 2 – Technikmodule Bahnhof, Entladestelle, Brüter | offen |
 | 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
 | 6 | Ebene 5 – Oberfläche: Desktop, Kompakt-/Vollmodus, 3D-Ansicht, Schichtpläne, Materialliste, Baubericht, Faithful-Texturen | offen |
@@ -192,6 +194,12 @@ Zuletzt aktualisiert: 20.10.2026
 - **Annahmen:** Tür-Himmelsrichtung legt die Lage der Türplatte so fest wie angenommen (Testanleitung in `docs/spieltests.md`); Scharnier rechts = `door_hinge_bit` true; Scheiben bekommen keine Verbindungszustände (das Spiel rechnet sie beim Bauen). Ebene 1 sucht Wege standardmäßig nur 64 Blöcke weit: für lange Treppen `{ radius: 200 }` übergeben.
 - Nicht dabei: Rampen, Leitern, Falltüren, Zauntore, Halbstufen als Form, Balkone, Mauerwerk-Muster, Material/Stil (Ebene 3).
 
+## Was Ebene 2, Teil 3d-1, jetzt kann (`src/ebene2/technik.js`)
+- **Technikblöcke im Paket:** ein Block mit `technik: true` trägt feste `id` und `zustand` (keine Rolle, keine Form); nur das Fundament darunter ist verkleidbar (Rolle `boden`). `platziere` setzt Technikblöcke unverändert. Schienenformen kommen aus `schienen.formAus` (Ebene 1), nicht aus Zahlen im Code.
+- `tech.antriebsstrecke`: `abschnitte` × (1 Antriebsschiene mit Redstone-Block darunter + `abstand` normale Schienen). **Technik skaliert über Anzahl.** `abstand` höchstens **7** normale Schienen (Jonahs Messung: jede 8. Schiene angetrieben ist sicher; Ebene 1 zeigt: bei 8 normalen Schienen ist der Auslauf von 7,5 Blöcken überschritten). `tech.steigung`: Rampe 1–5 Blöcke (bis zur gemessenen Höhe), erste Schiene und Ausgang angetrieben, höchstens jede zweite Schiene ohne Antrieb. `tech.kurve`: 90°-Kurve nach Osten oder Westen mit Schenkeln aus Antriebsschienen, Kurvenschiene normal, Abstand ≥ 1 und ≤ 7.
+- Regel `tech.bahn` (`data/regeln/technik.json`, `simuliert`, nichts `ungeprüft`): nutzt nur von Jonah geprüfte Werte aus `lore.json`. Tests mit Ebene 1: Lorenbahn `lore.bahn` läuft lückenlos, `lore.analysiere` ohne Befund, `antrieb.aktive` und `aktiviere` bestätigen das Antriebsbit im Paket, Prüfer ohne Verstoß, Steigung in allen vier Himmelsrichtungen (Vermesser); Mutationen von Abstand, Rampenabstand und Rampenhöhe schlagen an.
+- Nicht dabei: Bahnhof, Weiche, Kreuzung, Detektor-/Aktivierungsschiene, Überdachung der Bahn, Verlegen von A nach B (Ebene 3).
+
 ## Bekannte Lücken / Annahmen in Ebene 1
 - Reihenfolge innerhalb eines Spielticks, Überlauf bei mehr als 100 geplanten Ticks, Form des Tickbereichs (Quadrat) und Wirkung von randomTickSpeed sind nicht dokumentiert → `ungeprüft`.
 - Simulationsdistanz des Aternos-Servers: 4 Chunks (Jonah, `data/server.json`); die Form des Tickbereichs (Quadrat) bleibt eine Annahme.
@@ -211,7 +219,7 @@ Zuletzt aktualisiert: 20.10.2026
 - Offizielle Mojang-Daten sind „All rights reserved“ (EULA): im Repo liegen nur abgeleitete Fakten, keine Rohkopien.
 
 ## Nächster Schritt
-**Ebene 2, Teil 3d: erste Technikmodule** (Nische, Bahnhof, Kurve, Steigungsstück … mit Testszenario in Ebene 1; Technik skaliert über Anzahl, nie über Größe). Danach Ebene 3 (Planung).
+**Ebene 2, Teil 3d-2: Handelsnische, Lager (Trichterreihe in Fässer), Sortierer** mit Testszenario in Ebene 1 (Dorfbewohner, Trichter, Redstone). Danach 3d-3 (Bahnhof, Entladestelle, Brüter) und Ebene 3 (Planung).
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

@@ -1,0 +1,104 @@
+// Ebene 2 – Technikmodule: Bahn (Antriebsstrecke, Steigungsstück, Kurve). Regeln: data/regeln/technik.json; Messwerte aus data/regeln/lore.json (von Jonah geprüft).
+// Technik skaliert über Anzahl, nie über Größe: Strecken werden verlängert (mehr Abschnitte), nicht gestreckt. Technikblöcke (Schiene, Antriebsschiene,
+// Redstone-Block) sind fest (`technik: true`, Block-ID und Zustand); nur das Fundament unter normalen Schienen ist verkleidbar (Rolle `boden`).
+// Alle Module laufen nach Norden (die Lore fährt Richtung z−), die Schiene liegt auf y = 0 (Rampe: steigt von y = 0), das Fundament auf y − 1.
+// Die Zustandswerte der Schienenformen kommen aus `schienen.formAus` (Ebene 1), nicht aus Zahlen im Code. Drehen übernimmt der Vermesser (Ebene 0).
+import { definiere, param } from './baustein.js';
+
+const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/messungen-lore.md (Ebene 2: Technikmodule, Messwerte von Jonah)';
+const SCHIENE = 'minecraft:rail';
+const ANTRIEB = 'minecraft:golden_rail';
+const STROM = 'minecraft:redstone_block';
+
+/**
+ * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk, schienen: ReturnType<typeof import('../ebene1/schienen.js').erzeugeSchienen>}} quellen
+ */
+export function erzeugeTechnik({ regelwerk, schienen }) {
+  const P = (id, name) => regelwerk.parameter(id, name);
+  // Jonah misst „jede k-te Schiene angetrieben, sicher bis k = 8“: das sind höchstens k − 1 = 7 normale Schienen zwischen zwei Antriebsschienen
+  const maxAbstandEben = P('lore.abstand-eben', 'sicherJaBisK') - 1;
+  const rampeImmer = P('lore.abstand-steigung', 'immer');
+  const maxRampe = P('lore.abstand-steigung', 'getestetBisHoehe');
+  const standardAbstand = P('tech.bahn', 'standardabstand');
+
+  const form = (a, b, opt) => {
+    const w = schienen.formAus([a, b], opt);
+    if (w === null) throw new Error(`Keine Schienenform für ${JSON.stringify([a, b])}`);
+    return w;
+  };
+  const ende = (richtung, dy = 0) => ({ richtung, dy });
+
+  /** Baut aus einer Zellenliste (Reihenfolge = Fahrtrichtung) Schienen, Strom und Fundament. */
+  function bahnBloecke(zellen) {
+    const bloecke = [];
+    for (const z of zellen) {
+      const id = z.antrieb ? ANTRIEB : SCHIENE;
+      bloecke.push({ x: z.x, y: z.y, z: z.z, technik: true, id, zustand: { rail_direction: z.form, ...(z.antrieb ? { rail_data_bit: true } : {}) } });
+      bloecke.push(z.antrieb ? { x: z.x, y: z.y - 1, z: z.z, technik: true, id: STROM } : { x: z.x, y: z.y - 1, z: z.z, rolle: 'boden' });
+    }
+    return bloecke;
+  }
+
+  const abstandParam = (min) => param('abstand', 'technik', { min, max: maxAbstandEben, standard: Math.min(standardAbstand, maxAbstandEben), beschreibung: 'Normale Schienen zwischen zwei Antriebsschienen (höchstens der gemessene sichere Abstand von 8 Schienen, also 7 normale)' });
+
+  const antriebsstrecke = definiere({
+    id: 'tech.antriebsstrecke', titel: 'Antriebsstrecke (gerade, ebene Lorenbahn nach Norden)', quelle: QUELLE,
+    parameter: [param('abschnitte', 'technik', { min: 1, max: 64, standard: 4, beschreibung: 'Zahl der Abschnitte aus 1 Antriebsschiene und `abstand` normalen Schienen (Technik skaliert über Anzahl)' }), abstandParam(0)],
+    testszenario: { start: 'leere Welt, Strecke daraufgesetzt, Lore am Anfang', erwartung: 'Alle Antriebsschienen sind bestromt, die Analyse der Lorenbahn meldet kein „nein“ und kein „unklar“' },
+    baue: ({ abschnitte, abstand }) => {
+      const n = abschnitte * (abstand + 1);
+      const zellen = Array.from({ length: n }, (_, i) => ({ x: 0, y: 0, z: -i, form: form(ende('north'), ende('south')), antrieb: i % (abstand + 1) === 0 }));
+      return {
+        bloecke: bahnBloecke(zellen),
+        anschluesse: [{ art: 'schiene', seite: 'sued', hoehe: 0 }, { art: 'schiene', seite: 'nord', hoehe: 0, laenge: n }],
+      };
+    },
+  });
+
+  const steigung = definiere({
+    id: 'tech.steigung', titel: 'Steigungsstück (Rampe nach Norden mit Antriebsschienen)', quelle: QUELLE,
+    parameter: [param('hoehe', 'technik', { min: 1, max: maxRampe, standard: Math.min(3, maxRampe), beschreibung: 'Höhe der Rampe in Blöcken (nur bis zur gemessenen Höhe)' })],
+    testszenario: { start: 'leere Welt, Rampe daraufgesetzt, Lore am Anfang', erwartung: 'Alle Antriebsschienen sind bestromt, die Lore bleibt auf der Rampe nicht stehen (Analyse ohne „nein“/„unklar“)' },
+    baue: ({ hoehe }) => {
+      const steigend = form(ende('south', 0), ende('north', 1), { gerade: true });
+      const eben = form(ende('north'), ende('south'));
+      // erste Schiene angetrieben, danach höchstens jede `immer`-te; oben eine Antriebsschiene als Ausgang
+      const zellen = Array.from({ length: hoehe }, (_, i) => ({ x: 0, y: i, z: -i, form: steigend, antrieb: i % rampeImmer === 0 }));
+      zellen.push({ x: 0, y: hoehe, z: -hoehe, form: eben, antrieb: true });
+      return {
+        bloecke: bahnBloecke(zellen),
+        anschluesse: [{ art: 'schiene', seite: 'sued', hoehe: 0 }, { art: 'schiene', seite: 'nord', hoehe }],
+      };
+    },
+  });
+
+  const kurve = definiere({
+    id: 'tech.kurve', titel: 'Kurve (90 Grad, zwei Schenkel mit Antriebsschienen)', quelle: QUELLE,
+    parameter: [
+      param('schenkel', 'technik', { min: 1, max: 16, standard: 3, beschreibung: 'Zahl der Schienen je Schenkel vor und nach der Kurvenschiene' }),
+      param('drehsinn', 'menschenmass', { min: 0, max: 1, standard: 1, beschreibung: '1 = Rechtskurve (nach Osten), 0 = Linkskurve (nach Westen)' }),
+      abstandParam(1), // die Kurvenschiene selbst ist normal und kann nicht angetrieben werden
+    ],
+    testszenario: { start: 'leere Welt, Kurve daraufgesetzt, Lore am Anfang', erwartung: 'Alle Schienen sind verbunden, die Antriebsschienen bestromt, die Analyse ohne „nein“/„unklar“' },
+    baue: ({ schenkel: s, drehsinn, abstand }) => {
+      const aus = drehsinn === 1 ? 'east' : 'west';
+      const dx = drehsinn === 1 ? 1 : -1;
+      const zellen = [];
+      for (let i = 0; i < s; i++) zellen.push({ x: 0, y: 0, z: -i, form: form(ende('north'), ende('south')) });
+      zellen.push({ x: 0, y: 0, z: -s, form: form(ende('south'), ende(aus)) });
+      for (let i = 1; i <= s; i++) zellen.push({ x: dx * i, y: 0, z: -s, form: form(ende('east'), ende('west')) });
+      const L = zellen.length, c = s;
+      const antrieb = new Set([0, L - 1, c - 1, c + 1].filter((i) => i >= 0 && i < L && i !== c));
+      for (let i = 0; i < L; i += abstand + 1) if (i !== c) antrieb.add(i);
+      // Kontrolle der Regel: nie mehr als `abstand` normale Schienen zwischen zwei Antriebsschienen
+      let lauf = 0;
+      zellen.forEach((z, i) => { z.antrieb = antrieb.has(i); lauf = z.antrieb ? 0 : lauf + 1; if (lauf > abstand) throw new Error(`tech.kurve: ${lauf} normale Schienen am Stück bei Abstand ${abstand}`); });
+      return {
+        bloecke: bahnBloecke(zellen),
+        anschluesse: [{ art: 'schiene', seite: 'sued', hoehe: 0 }, { art: 'schiene', seite: aus === 'east' ? 'ost' : 'west', hoehe: 0 }],
+      };
+    },
+  });
+
+  return { antriebsstrecke, steigung, kurve, alle: [antriebsstrecke, steigung, kurve] };
+}

@@ -187,9 +187,9 @@ function pruefeRedstone(welt, redstone, loren) {
 }
 
 /** Lässt die Schaltung im Sandkasten ablaufen: ausgebrannte Fackeln, Uhren (Periode) und Schaltungen, die nie zur Ruhe kommen. */
-function pruefeRedstoneZeit(welt, rz, loren, maxTicks) {
+function pruefeRedstoneZeit(welt, rz, loren, maxTicks, trichterSperre = false) {
   if (!rz.enthaeltZeitbauteile(welt)) return [];
-  const lauf = rz.erzeuge(welt, { loren });
+  const lauf = rz.erzeuge(welt, { loren, trichter: trichterSperre });
   const ruhe = lauf.bisRuhe(maxTicks);
   const meldungen = [];
   for (const e of lauf.ereignisse) {
@@ -207,6 +207,13 @@ function pruefeRedstoneZeit(welt, rz, loren, maxTicks) {
   for (const b of lauf.welt.alleBloecke().filter((x) => /_door$|_trapdoor$|_fence_gate$|^minecraft:(trapdoor|fence_gate)$/.test(x.id) && x.zustand.upper_block_bit !== true)) {
     if (b.zustand.open_bit !== true && !lauf.ereignisse.some((e) => e.was === 'tuer-auf' && e.pos.x === b.x && e.pos.y === b.y && e.pos.z === b.z)) {
       meldungen.push({ regel: 'pruefer.mechanismus', ort: { x: b.x, y: b.y, z: b.z }, schwere: 'hinweis', meldung: 'Diese Tür/Falltür/dieses Tor wird in der Simulation nie bestromt (bleibt geschlossen)' });
+    }
+  }
+  if (trichterSperre) {
+    // Trichter, die am Ende der Simulation gesperrt sind und seit dem Sperren nie wieder frei wurden
+    for (const b of lauf.welt.alleBloecke().filter((x) => x.id === 'minecraft:hopper' && x.zustand.toggle_bit === true)) {
+      const frei = lauf.ereignisse.some((e) => e.was === 'trichter-frei' && e.pos.x === b.x && e.pos.y === b.y && e.pos.z === b.z);
+      meldungen.push({ regel: 'pruefer.redstone-zeit', ort: { x: b.x, y: b.y, z: b.z }, schwere: 'hinweis', meldung: `Dieser Trichter ist in der Simulation ${frei ? 'am Ende' : 'dauerhaft'} gesperrt (Strom erreicht ihn)` });
     }
   }
   for (const e of lauf.ereignisse.filter((x) => x.was === 'tagessensor-unklar')) {
@@ -354,7 +361,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, kolben = null, bewegung = null, begehbarkeit = null, dorf = null, dorfPruefen = false, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, trichterSperre = false, kolben = null, bewegung = null, begehbarkeit = null, dorf = null, dorfPruefen = false, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -368,7 +375,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (kolben) meldungen.push(...pruefeKolben(welt, kolben));
   if (dorf && dorfPruefen) meldungen.push(...pruefeDorf(welt, dorf));
   if (bewegung && begehbarkeit) meldungen.push(...pruefeBegehbarkeit(welt, bewegung, begehbarkeit));
-  if (redstoneZeit) meldungen.push(...pruefeRedstoneZeit(welt, redstoneZeit, loren, 600));
+  if (redstoneZeit) meldungen.push(...pruefeRedstoneZeit(welt, redstoneZeit, loren, 600, trichterSperre));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);

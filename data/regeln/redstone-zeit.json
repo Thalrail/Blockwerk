@@ -124,6 +124,19 @@
       "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Knöpfe",
       "ungeprueft": true,
       "testanleitung": "Stein-Knopf, Holz-Knopf, Bambus-Knopf und Polierter-Schwarzstein-Knopf drücken, Lampe daneben mit Video (60 fps): Wie lange leuchtet sie? Erwartet 1 s (Stein, Polierter Schwarzstein) und 1,5 s (Holzarten)."
+    },
+    {
+      "id": "zeit.trichter-sperre",
+      "titel": "Trichter-Sperre folgt dem Strom im C-Tick",
+      "regel": "Mit der Option trichter setzt die Simulation toggle_bit jedes Trichters auf „bestromt“ (gleiche Bestromungsregel wie bei Lampen und Türen) und zwar nur im C-Tick; ein schon beim Start bestromter Trichter beginnt gesperrt. Ein gesperrter Trichter schiebt und zieht nicht, empfängt aber weiter. Nach dem Entsperren arbeitet er, sobald der Cooldown (8 Ticks) abgelaufen ist.",
+      "parameter": {
+        "tickart": "mechanismus"
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper („A powered hopper stops pushing, pulling, and collecting. It can still receive items“) und https://minecraft.wiki/w/Tick (Bedrock: Mechanismen schalten im C-Tick)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/trichter-sperre.test.js::Trichter-Sperre: Redstone-Block, Fackel und Takt",
+      "ungeprueft": true,
+      "testanleitung": "Trichter zwischen zwei Kisten, daneben einen Redstone-Block setzen und wieder wegnehmen: Hört er sofort auf? Läuft er sofort oder erst nach einer Verzögerung weiter? Dann Filterkern: Trichter mit einem Gegenstand, dahinter ein Komparator, der in einen Linientrichter zeigt – sperrt der gefüllte Filter den Linientrichter, und wie schnell?"
     }
   ]
 }

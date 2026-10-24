@@ -182,6 +182,12 @@ Kreativwelt. Die Nische ist eine Reihe von Zellen (Plan in der Oberfläche spät
 3. **Reihenfolge:** Drei Nischen nebeneinander. Berufsblöcke und Dorfbewohner einmal von links nach rechts, einmal in umgekehrter Reihenfolge setzen: Nimmt jeder den Beruf seines eigenen Blocks? Bedrock vergibt den ersten Block der Liste, egal wie weit; welche Reihenfolge ist die „Liste“ im Spiel? (`dorf.zuordnung`)
 4. **Bett drehen:** Vier Betten mit dem Kopf nach Süden, Westen, Norden, Osten bauen, als Struktur speichern und um 90° gedreht laden: Zeigt der Kopf in die erwartete Richtung? (Drehregel `minecraft:bed` / `direction`)
 
+## Trichter-Sperre durch Redstone: Tests (Ebene 1)
+Kreativwelt, Kiste → Trichter → Kiste:
+1. **Redstone-Block daneben:** Hört der Trichter sofort auf? Block wegnehmen: läuft er sofort oder mit Verzögerung weiter? (`zeit.trichter-sperre`)
+2. **Fackel neben dem Trichter:** sperrt sie ihn? Wie bei der Lampe?
+3. **Filterkern:** Trichter mit einem Gegenstand (zeigt ins Leere), Komparator dahinter, der in einen Linientrichter zeigt: Sperrt der gefüllte Filter den Linientrichter, und wie schnell? Filter leeren: läuft der Linientrichter wieder?
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
@@ -285,6 +291,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `zeit.komparator-modi` – Komparator: Vergleichen und Subtrahieren | Komparator hinter einer Kiste (Wert 8) und Staub von der Seite mit Stärke 5, 8, 9: Vergleichs- und Subtraktionsmodus. Erwartung Vergleich: 8, 8, 0; Subtraktion: 3, 0, 0. |
 | `zeit.komparator-verzoegerung` – Komparator: 2 Spielticks | Hebel – Komparator – Staub – Lampe: Zeit messen (erwartet 2 Ticks). |
 | `zeit.knopf-dauer` – Knopfdauer | Stein-Knopf, Holz-Knopf, Bambus-Knopf und Polierter-Schwarzstein-Knopf drücken, Lampe daneben mit Video (60 fps): Wie lange leuchtet sie? Erwartet 1 s (Stein, Polierter Schwarzstein) und 1,5 s (Holzarten). |
+| `zeit.trichter-sperre` – Trichter-Sperre folgt dem Strom im C-Tick | Trichter zwischen zwei Kisten, daneben einen Redstone-Block setzen und wieder wegnehmen: Hört er sofort auf? Läuft er sofort oder erst nach einer Verzögerung weiter? Dann Filterkern: Trichter mit einem Gegenstand, dahinter ein Komparator, der in einen Linientrichter zeigt – sperrt der gefüllte Filter den Linientrichter, und wie schnell? |
 | `redstone.staub-abnahme` – Staub verliert 1 Stärke je Block | Gerade Staubleitung aus 20 Blöcken, Hebel am Anfang: Bei welchem Staubblock geht die Leitung aus? Blockwerk erwartet: 15 Staubblöcke leuchten (Stärke 15 bis 1), der 16. nicht. |
 | `redstone.staub-verbindung` – Staub verbindet sich mit Staub, Quellen und über Stufen | Staubtreppe über Vollblöcke (rauf) und Luft (runter), einmal mit Glas, einmal mit Stein dazwischen: Wo reißt die Leitung ab? Staub mit Block darüber: Steigt die Leitung dann noch auf? |
 | `redstone.stark-schwach` – Starke und schwache Bestromung | Hebel an einem Stein, daneben Staub: leuchtet er? Dann Staub → Stein → Staub (Stein nur durch Staub bestromt): leuchtet der zweite Staub? Dasselbe mit Redstone-Block statt Hebel. |

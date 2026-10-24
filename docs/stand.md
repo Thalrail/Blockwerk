@@ -1,11 +1,11 @@
 # Stand – Blockwerk
 
-Zuletzt aktualisiert: 20.10.2026
+Zuletzt aktualisiert: 25.10.2026
 
 ## Ausgangslage
 - **Neubeginn.** Der frühere M0/M1-Prototyp (ZIP) ist verworfen und wird **nicht** übernommen. Blockplan (claude.ai-Artifact) ist ebenfalls abgelöst.
 - Grundlage ist ausschließlich das bestätigte Ebenenmodell in `docs/ebenen.md` und die Entscheidungen in `docs/entscheidungen.md`.
-- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gemergt (PR #23). Teil 3d-1 (Bahn-Module) ist gemergt (PR #24). Teil 3d-2 (Handelsnische) ist gemergt (PR #25). Schritt 2h (Trichter-Sperre durch Redstone) ist gemergt (PR #26). Schritt 2i (Empfangs-Wartezeit der Trichter) ist gemergt (PR #27). Teil 3d-3a (Sortiereinheit) ist gemergt (PR #28). Teil 3d-3b (Sortierlager) ist gebaut: Branch `claude/ebene-2-sortierlager`. 289 Tests, alle grün (`npm test`).
+- Schritt 0 und Schritt 1 sind gebaut (PR #1 gemergt). Ebene 1, Teil 2a (Unterbau) ist gebaut und gemergt (PR #2). Teil 2b-1, Schienen (Form und Verbindung), ist gemergt (PR #3). Teil 2b-2, Schienen-Antrieb, ist gemergt (PR #4/#9). Teil 2c, Wasser und Lava, ist gemergt (PR #5/#6). Teil 2d-1, Licht, ist gemergt (PR #7). Teil 2e-1, Lorenbewegung aus Jonahs Messungen, ist gemergt (PR #10). Teil 2d-2, Spawnstellen, ist gemergt (PR #8). Teil 2e-2, fallende Blöcke, ist gemergt (PR #13). Teil 2e-3, Trichter & Blockinhalte, ist gemergt (PR #14). Teil 2f-1, Redstone-Strom, ist gemergt (PR #15). Teil 2f-2, Redstone-Zeit, ist gemergt (PR #16). Teil 2f-3, Lampen, Türen, Beobachter und Tagessensor, ist gemergt (PR #17). Teil 2f-4, Kolben, ist gemergt (PR #18). Teil 2g-1, Bewegung und Erreichbarkeit, ist gemergt (PR #19). Teil 2g-2, Dorfbewohner-Verhalten, ist gemergt (PR #20). Ebene 2, Teil 3a (Baustein-Paket und Formen), ist gemergt (PR #21). Teil 3b (Bogen, Tonnengewölbe, Dachformen) ist gemergt (PR #22). Teil 3c (Bauelemente) ist gemergt (PR #23). Teil 3d-1 (Bahn-Module) ist gemergt (PR #24). Teil 3d-2 (Handelsnische) ist gemergt (PR #25). Schritt 2h (Trichter-Sperre durch Redstone) ist gemergt (PR #26). Schritt 2i (Empfangs-Wartezeit der Trichter) ist gemergt (PR #27). Teil 3d-3a (Sortiereinheit) ist gemergt (PR #28). Teil 3d-3b (Sortierlager) ist gemergt (PR #29). Ebene 3, Teil 4a (Planentwurf, Rangfolge, Einwand-Protokoll, Baubericht) ist gebaut: Branch `claude/ebene-3-planentwurf`. 295 Tests, alle grün (`npm test`).
 - Spieltests 1–8 von Jonah am 20.10.2026 ausgewertet: 7 Drehregeln stehen auf `geprüft`, Rest `ungeprüft` (siehe `docs/spieltests.md`).
 
 ## Bauplan (Reihenfolge nach Ebenen, von unten nach oben)
@@ -41,7 +41,11 @@ Zuletzt aktualisiert: 20.10.2026
 | 3d-4a | Ebene 2 – Bahnhof (Halt für Dorfbewohner-Loren) | **zurückgestellt** bis zum Brutkammer-Entwurf (`docs/offene-fragen.md`) |
 | 3d-4b | Ebene 2 – Entladestelle (Dorfbewohner aussteigen, Waren aus Kistenlore) | **zurückgestellt** (Brutkammer-Entwurf, Ebene 1: Lore mit Passagier/Inhalt) |
 | 3d-4c | Ebene 2 – Dorfbewohner-Brüter | **zurückgestellt** (Funktion und Brutkammer offen; Ebene 1: Vermehrung mit Nahrung und Zeit) |
-| 4 | Ebene 3 – Planung: Konstrukteur, Grobdesigner, Techniker, Architekt, Designer, Bauleiter, Einwand-Protokoll, Baubericht | offen |
+| 4a | Ebene 3 – Gerüst: Planentwurf (JSON), Besitz und Rangfolge, Sperren/Fixierung, Einwand-Protokoll mit Bauleiter-Rückfrage, Baubericht, Brücke Entwurf → Welt → Prüfer | **fertig** (PR wartet auf Abnahme) |
+| 4b | Ebene 3 – Konstrukteur: Gliederung in Abschnitte, Verbindungen verlegen, Nähte | als Nächstes |
+| 4c | Ebene 3 – Techniker: Bedarf → Module, Technikzonen, Gesamtbilanz | offen |
+| 4d | Ebene 3 – Architekt, Designer, Grobdesigner | offen |
+| 4e | Ebene 3 – Ablauf je Abschnitt mit Rückgriff, Abschlussprüfung | offen |
 | 5 | Ebene 4 – Leser: Spezifikationsschema, Spezifikations-Prüfer, Briefing-Prompt, Bildmessung | offen |
 | 6 | Ebene 5 – Oberfläche: Desktop, Kompakt-/Vollmodus, 3D-Ansicht, Schichtpläne, Materialliste, Baubericht, Faithful-Texturen | offen |
 | 7 | Prüfstein Zitadelle + Spieltest-Schleife | offen |
@@ -269,8 +273,16 @@ Vorhanden: Schienenform/-verbindung, Antrieb nur im C-Tick, Aktivierungsschiene 
 - **Entladestelle:** Aktivierungsschiene wirft Passagiere aus; für Waren Wesen mit Inhalt (Kisten-/Trichterlore) und ein Trichter, der aus der Lore zieht („Trichter-Loren“ sind bisher ausdrücklich nicht dabei).
 - **Brüter:** Vermehrung mit Nahrung (12 Punkte; Brot 4, Karotte/Kartoffel/Rote Bete je 1), Wesen-Inventar, Abklingzeit, Babyzeit, Zeitablauf der Dorfbewohner (heute rein statisch, `dorf.vermehrung` meldet nur „unklar“) und ein Modell für die Auswahl in der Brutkammer.
 
+## Was Ebene 3, Teil 4a, jetzt kann (`src/ebene3`)
+- **Planentwurf** (`entwurf.js`): reines JSON (Projekt, Abschnitte, Teile mit Baustein/Parameter/Lage/Drehung, Palette, Zonen, Sperrzonen, Prüfaufträge, Sperren, Einwände, Bericht, Zähler), kanonisch speicherbar, nie verändert: jede Änderung liefert einen neuen Entwurf.
+- **Besitz und Rangfolge** (`fachleute.js`, Daten `data/regeln/planung.json`): Techniker > Grobdesigner > Architekt > Konstrukteur > Designer; Bauleiter außerhalb, Jonahs Fixierung darüber. Jeder ändert nur seinen Teil (Konstrukteur: Abschnitte, Verbindungen, Prüfaufträge; Grobdesigner: Zonen; Techniker: Technikteile, Sperrzonen; Architekt: Formen, Bauelemente; Designer: Palette). Höherrangig Festgelegtes ist für Niederrangige gesperrt.
+- **Einwand-Protokoll** (`einwand.js`): Quellen sind die Prüfer aus Ebene 1 (Zuständigkeitstabelle) und eigene Geometrieregeln (Überschneidung, Sperrzone, Zone). Höchstens 3 Runden; Streit um dasselbe Teil entscheidet der Rang des Erhebenden. Bleibt ein Einwand offen, stellt der Bauleiter Jonah eine Rückfrage mit Optionen (`bauleiter.js`).
+- **Baubericht** (`bericht.js`): durchnummeriert, jeder Eintrag mit maschinenlesbaren Daten und einem deutschen Satz.
+- **Brücke** (`materialisiere.js`): Entwurf → Ebene-2-Bausteine → Welt (Drehen/Verschieben über den Vermesser) → `ebene1.pruefe`.
+- Regeln: `data/regeln/planung.json` (5 Regeln, Entwurfs-Entscheidungen; keine Spielregeln, kein Spieltest nötig). Nicht dabei: die Fachleute selbst (4b–4e).
+
 ## Nächster Schritt
-**Jonah entscheidet** (siehe `docs/offene-fragen.md`): A) **Ebene 3 beginnen** (Datenmodell des Planentwurfs mit Rangfolge und Einwand-Protokoll; Ebene 2 hat dafür genug Bausteine), B) Brutkammer-Entwurf klären und danach die Ebene-1-Schritte „Passagiere in Loren“ und „Vermehrung“, C) Zitadelle-Bilder ablegen, damit der Leser (Ebene 4) planbar wird.
+**Schritt 4b: Konstrukteur** (Gliederung, Verbindungen, Nähte). Daneben bleibt offen (siehe `docs/offene-fragen.md`): B) Brutkammer-Entwurf klären und danach die Ebene-1-Schritte „Passagiere in Loren“ und „Vermehrung“, C) Zitadelle-Bilder ablegen, damit der Leser (Ebene 4) planbar wird.
 Nebenbei: Jonah macht die offenen Lore-Tests (Abstand 9, Rampen über 5 Blöcke, Rampe mitten in der Antriebsstrecke) aus `docs/spieltests.md`.
 Optional: weitere Spieltests (Schild, Ranken, Hebel, Wandkoralle) erst, wenn ein Baustein sie braucht.
 

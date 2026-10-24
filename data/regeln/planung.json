@@ -1,0 +1,130 @@
+{
+  "bereich": "plan",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "plan.rangfolge",
+      "titel": "Rangfolge bei Streit",
+      "regel": "Bei Streit gilt die Rangfolge Techniker vor Grobdesigner vor Architekt vor Konstrukteur vor Designer. Der Bauleiter steht außerhalb der Rangfolge: Er überwacht alle, erzwingt Besitz und Rangfolge und stellt Jonah Rückfragen. Eine Fixierung durch Jonah steht über allem.",
+      "parameter": {
+        "reihenfolge": [
+          "techniker",
+          "grobdesigner",
+          "architekt",
+          "konstrukteur",
+          "designer"
+        ],
+        "bauleiter": "bauleiter",
+        "fixierung": "jonah"
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Rangfolge bei Streit; Ebene 5: Fixierung)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/rechte.test.js::Rechte: Besitz, Rangfolge und Fixierung",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.besitz",
+      "titel": "Jeder ändert nur seinen eigenen Teil",
+      "regel": "Der Konstrukteur besitzt Abschnitte, Prüfaufträge und Verbindungen (Teile mit „verbindung“: Gänge, Treppen, Schienen zwischen Abschnitten), der Grobdesigner die Zonen, der Techniker Technikteile und Sperrzonen, der Architekt Formen und Bauelemente, der Designer die Palette. Fremde Felder zu ändern ist ein Fehler. Die Art eines Teils folgt aus dem Baustein (form. = Form, bau. = Bauelement, tech. = Technik), außer es ist ausdrücklich eine Verbindung.",
+      "parameter": {
+        "felder": {
+          "abschnitte": "konstrukteur",
+          "pruefungen": "konstrukteur",
+          "zonen": "grobdesigner",
+          "sperrzonen": "techniker",
+          "palette": "designer"
+        },
+        "teile": {
+          "form": "architekt",
+          "bauelement": "architekt",
+          "technik": "techniker",
+          "verbindung": "konstrukteur"
+        },
+        "bausteinPraefix": {
+          "form.": "form",
+          "bau.": "bauelement",
+          "tech.": "technik"
+        }
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Die Fachleute, Grundsätze)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/rechte.test.js::Rechte: Besitz, Rangfolge und Fixierung",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.runden",
+      "titel": "Höchstens N Runden, dann greift der Bauleiter ein",
+      "regel": "Ein Einwand wird in höchstens N Runden vom Zuständigen gelöst (Änderung, dann neu prüfen). Bleibt er offen, wird er eskaliert: Der Bauleiter formuliert eine konkrete Rückfrage mit Optionen an Jonah. Jeder Einwand und jede Änderung landet im Baubericht.",
+      "parameter": {
+        "maximum": 3
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Einwand-Protokoll)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/einwand.test.js::Einwand: Runden, Änderung, Eskalation und Rückfrage",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.zustaendigkeit",
+      "titel": "Welcher Fachmann bekommt welchen Prüfer-Einwand",
+      "regel": "Meldungen des Prüfers aus Ebene 1 gehen an den Zuständigen: Technik (Schienen, Lore, Wasser, Fallen, Trichter, Redstone, Kolben, Dorf) an den Techniker, Begehbarkeit und Tickbereich an den Konstrukteur, Licht und Spawn an den Designer. Unbekannte Regeln gehen an den Bauleiter, der Jonah fragt.",
+      "parameter": {
+        "tabelle": {
+          "pruefer.braucht-halt-fackel": "techniker",
+          "pruefer.braucht-halt-schiene": "techniker",
+          "pruefer.tickbereich": "konstrukteur",
+          "pruefer.schiene-verbindung": "techniker",
+          "pruefer.antriebsschiene-kurve": "techniker",
+          "pruefer.antrieb-ohne-quelle": "techniker",
+          "pruefer.wasser-zerstoert": "techniker",
+          "pruefer.licht-unklar": "designer",
+          "pruefer.spawn-moeglich": "designer",
+          "pruefer.lore-stillstand": "techniker",
+          "pruefer.faellt": "techniker",
+          "pruefer.trichter": "techniker",
+          "pruefer.redstone": "techniker",
+          "pruefer.redstone-zeit": "techniker",
+          "pruefer.mechanismus": "techniker",
+          "pruefer.kolben": "techniker",
+          "pruefer.begehbar": "konstrukteur",
+          "pruefer.dorf": "techniker"
+        },
+        "standard": "bauleiter"
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Rollen der Fachleute, Einwand-Protokoll)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/einwand.test.js::Einwand: Quellen und Zuständigkeit",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.geometrie",
+      "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
+      "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin. Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",
+      "parameter": {
+        "pruefstart": {
+          "tech.antriebsstrecke": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "richtung": "north"
+          },
+          "tech.steigung": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "richtung": "north"
+          },
+          "tech.kurve": {
+            "x": 0,
+            "y": 0,
+            "z": 0,
+            "richtung": "north"
+          }
+        }
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Gemeinsamer Planentwurf, Sperrzonen, Zonenplan)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/einwand.test.js::Einwand: Überschneidung, Sperrzone und Zone",
+      "ungeprueft": false
+    }
+  ]
+}

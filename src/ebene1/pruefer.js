@@ -237,6 +237,28 @@ function pruefeBegehbarkeit(welt, bewegung, { start, ziele }) {
   return meldungen;
 }
 
+/** Betten, Berufsblöcke und Iron Golems eines Dorfs (Dorfbewohner stehen als Wesen in der Welt). */
+function pruefeDorf(welt, dorfmodell) {
+  const meldungen = [];
+  const ort = (p) => `(${p.x}, ${p.y}, ${p.z})`;
+  for (const b of dorfmodell.betten(welt)) if (!b.gueltig) meldungen.push({ regel: 'pruefer.dorf', ort: { x: b.x, y: b.y, z: b.z }, schwere: 'hinweis', meldung: `Bett bei ${ort(b)} zählt nicht: ${b.grund}` });
+  const zu = dorfmodell.zuordnung(welt);
+  for (const z of zu) {
+    if (z.beruf && !z.beruf.erreichbar) meldungen.push({ regel: 'pruefer.dorf', ort: { x: z.beruf.x, y: z.beruf.y, z: z.beruf.z }, schwere: 'verstoss', meldung: `Dorfbewohner ${z.nr} beansprucht ${z.beruf.id} bei ${ort(z.beruf)}, erreicht ihn aber nicht (Ärger-Partikel, kein Beruf)` });
+    else if (!z.bett) meldungen.push({ regel: 'pruefer.dorf', ort: { ...z.pos }, schwere: 'hinweis', meldung: `Dorfbewohner ${z.nr} bei ${ort(z.pos)} findet kein freies, erreichbares Bett und bekommt keinen Beruf` });
+  }
+  const bewohner = dorfmodell.dorfbewohner(welt);
+  for (const s of dorfmodell.berufsbloecke(welt)) {
+    if (!bewohner.some((v) => !v.baby && dorfmodell.imUmkreis(v.pos, s))) meldungen.push({ regel: 'pruefer.dorf', ort: { x: s.x, y: s.y, z: s.z }, schwere: 'hinweis', meldung: `${s.id} bei ${ort(s)}: kein Dorfbewohner in Reichweite` });
+  }
+  const d = dorfmodell.dorf(welt);
+  if (d) {
+    if (d.dorfbewohner > d.betten) meldungen.push({ regel: 'pruefer.dorf', ort: { ...d.mittelpunkt }, schwere: 'hinweis', meldung: `Mehr Dorfbewohner (${d.dorfbewohner}) als gültige Betten (${d.betten}): kein Nachwuchs, ohne Bett keine Arbeit` });
+    if (d.golem !== 'nein') meldungen.push({ regel: 'pruefer.dorf', ort: { ...d.mittelpunkt }, schwere: 'hinweis', meldung: d.golem === 'ja' ? `Iron Golems können im Dorf spawnen (${d.dorfbewohner} Dorfbewohner, ${d.betten} Betten)` : `Iron Golems könnten spawnen (${d.eisengolems} vorhanden; Anzahl je Dorfbewohner nicht belegt)` });
+  }
+  return meldungen;
+}
+
 /** Kolben, die nicht ausfahren können oder dabei etwas zerstören (jeweils im aktuellen Zustand der Welt). */
 function pruefeKolben(welt, kolben) {
   if (!kolben.enthaeltKolben(welt)) return [];
@@ -332,7 +354,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, kolben = null, bewegung = null, begehbarkeit = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, kolben = null, bewegung = null, begehbarkeit = null, dorf = null, dorfPruefen = false, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -344,6 +366,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (trichter) meldungen.push(...pruefeTrichter(welt, trichter));
   if (redstone) meldungen.push(...pruefeRedstone(welt, redstone, loren));
   if (kolben) meldungen.push(...pruefeKolben(welt, kolben));
+  if (dorf && dorfPruefen) meldungen.push(...pruefeDorf(welt, dorf));
   if (bewegung && begehbarkeit) meldungen.push(...pruefeBegehbarkeit(welt, bewegung, begehbarkeit));
   if (redstoneZeit) meldungen.push(...pruefeRedstoneZeit(welt, redstoneZeit, loren, 600));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));

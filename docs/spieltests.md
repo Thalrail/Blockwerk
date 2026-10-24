@@ -160,6 +160,14 @@ Kreativ-Testwelt auf Stein; für Dorfbewohner ein Dorfbewohner-Ei oder Handel. A
 5. **Türen:** Holz-, Kupfer-, Eisentür, Falltür, Zauntor mit Dorfbewohner und Spieler. (`bewegung.tueren`)
 6. **Gang 1 Block hoch:** Baby, Spieler (kriechend). (`bewegung.hitbox`)
 
+## Dorfbewohner: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
+2. **Berufsblock hinter Glas:** Ärger-Partikel, kein Beruf? (`dorf.berufsblock`)
+3. **Bett mit Block darüber:** Beansprucht der Dorfbewohner es? (`dorf.bett`)
+4. **Golem:** Dorf mit 9/10 Dorfbewohnern und 19/20 Betten: Spawnt ein Iron Golem? (`dorf.golem`)
+5. **Berufe:** Jeder Berufsblock → richtiger Beruf? (`dorf.berufe`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -177,6 +185,13 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `bewegung.leiter` – Leitern und Ranken | Dorfbewohner mit Ziel am oberen Ende einer Leiter: Kommt er hinauf? Spieler klettert 10 Blöcke. |
 | `bewegung.wasser` – Wasser | Aus 10 Blöcken Höhe in 1 Block tiefes Wasser fallen: Schaden? Spieler schwimmt durch eine Wassersäule nach oben. |
 | `bewegung.kosten` – Wegkosten | Dorfbewohner zwischen zwei Wegen (1 Sprung kurz, lang ohne Sprung): Welchen nimmt er? |
+| `dorf.definition` – Dorf: Betten, Dorfbewohner, Grenze | Ein Bett mit Dorfbewohner und weitere Betten 31 und 33 Blöcke entfernt: Zählen die entfernten Betten zum selben Dorf (Dorfbewohner-Zahl, Golem-Spawn)? Schwer direkt zu sehen; Hinweis: Dorfbewohner nahe dem Rand ändern ihr Verhalten (Alarm). |
+| `dorf.bett` – Bett gültig | Bett mit Vollblock direkt darüber und Bett mit Halbstufe darüber neben einen Dorfbewohner stellen: Beansprucht er sie? Bett hinter einer Mauer, die er nicht überwindet. |
+| `dorf.bevoelkerung` – Höchstbevölkerung = Zahl der Betten | Dorf mit 3 Betten und 3 Dorfbewohnern mit Brot füttern: Entsteht ein Baby? Mit 4. Bett? |
+| `dorf.berufsblock` – Berufsblock im Umkreis 16 / 4 | Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Bekommt der Dorfbewohner den Beruf Bibliothekar? Lesepult hinter Glas: Ärger-Partikel? |
+| `dorf.berufe` – Berufsblöcke und Berufe | Je einen Berufsblock neben einen arbeitslosen Dorfbewohner (mit Bett) stellen: Welcher Beruf entsteht? |
+| `dorf.zuordnung` – Zuordnung: nächstes Bett, erster freier Block | Zwei Dorfbewohner, ein Bett, ein Berufsblock: Wer bekommt den Beruf? Berufsblock ohne Bett in Reichweite: Wird der Beruf trotzdem vergeben? |
+| `dorf.golem` – Iron Golem: 10 Dorfbewohner und 20 Betten | Dorf mit 9, 10 Dorfbewohnern und 19, 20 Betten: Spawnt ein Iron Golem (Wartezeit mehrere Minuten, Spieler in der Nähe)? Mit schon einem Golem im Dorf? |
 | `fallen.welche` – Welche Blöcke fallen | Je einen Block (Sand, Kies, roter Sand, Betonpulver, Amboss, Drachenei) 5 Blöcke hoch in die Luft setzen (Stütze wegnehmen): Fallen alle? Was passiert mit Gerüst, Tropfstein und Schneeschicht? |
 | `fallen.start` – Startverzögerung | Sandblock auf einen Block setzen, den Block darunter abbauen und mit Video (60 fps) messen: Wie viele Ticks (1/20 s) dauert es, bis der Sand sich löst? Blockwerk erwartet 2 Ticks. |
 | `fallen.tempo` – Falltempo | Sand 10 Blöcke hoch fallen lassen und mit Video die Fallzeit messen: Blockwerk erwartet 9 Ticks je Block, also 4,5 s für 10 Blöcke. Ergebnis melden. |
@@ -237,6 +252,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.mechanismus` – Prüfer: Mechanismen ohne Strom | Siehe mech.bestromung und mech.tagessensor. |
 | `pruefer.kolben` – Prüfer: Kolben kann nicht ausfahren oder zerstört etwas | Siehe kolben.unbeweglich und kolben.zerstoert. |
 | `pruefer.begehbar` – Prüfer: Ziel erreichbar? | Siehe bewegung.sprung und bewegung.fallen. |
+| `pruefer.dorf` – Prüfer: Dorfbewohner, Betten, Berufsblöcke, Iron Golem | Siehe dorf.berufsblock und dorf.golem. |
 | `zeit.staub-sofort` – Staub aktualisiert jeden Spielstick | Hebel – 10 Staubblöcke – Lampe: Leuchtet die Lampe sofort (im selben Tick wie der Hebel)? Mit Video (60 fps) prüfen, ob die Länge der Staubleitung die Zeit ändert (erwartet: nein). |
 | `zeit.fackel-verzoegerung` – Fackel: 2 Spielticks | Hebel an einen Stein, daneben eine Fackel an dessen Seite, dahinter Staub und eine Lampe: Zeit zwischen Hebel und Lampe mit Video messen (erwartet 0,1 s = 2 Ticks). Dann eine Kette aus 5 Fackeln (Stein-Fackel-Stein-…): erwartet 10 Ticks (0,5 s). |
 | `zeit.fackel-brennen` – Fackel brennt aus | Fackel an einem Stein, der über Staub von der Fackel selbst bestromt wird (Rückkopplung): Brennt sie aus, nach wie vielen Wechseln, und geht sie wieder an? Auch eine Uhr mit Repeater dazwischen testen (Bedrock soll dort nicht ausbrennen). |

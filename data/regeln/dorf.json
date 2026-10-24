@@ -1,0 +1,101 @@
+{
+  "bereich": "dorf",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "dorf.definition",
+      "titel": "Dorf: Betten, Dorfbewohner, Grenze",
+      "regel": "Ein Dorf besteht aus mindestens einem gültigen Bett und einem Dorfbewohner. Der Mittelpunkt ist das erste Bett; die Grenze reicht 32 Blöcke waagerecht und 12 senkrecht um jedes gültige Bett (anfangs 65 × 25 × 65) und wächst mit weiteren Betten.",
+      "parameter": {
+        "breite": 65,
+        "hoehe": 25,
+        "dorfbewohnerIds": [
+          "minecraft:villager_v2",
+          "minecraft:villager"
+        ],
+        "golemIds": [
+          "minecraft:iron_golem"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Village (Bedrock-Abschnitt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Dorf: Grenze und Mittelpunkt",
+      "ungeprueft": true,
+      "testanleitung": "Ein Bett mit Dorfbewohner und weitere Betten 31 und 33 Blöcke entfernt: Zählen die entfernten Betten zum selben Dorf (Dorfbewohner-Zahl, Golem-Spawn)? Schwer direkt zu sehen; Hinweis: Dorfbewohner nahe dem Rand ändern ihr Verhalten (Alarm)."
+    },
+    {
+      "id": "dorf.bett",
+      "titel": "Bett gültig",
+      "regel": "Ein Bett zählt nur, wenn zwei freie Blöcke darüber sind und ein Dorfbewohner es erreichen kann. Jedes Bett (zwei Hälften) zählt einmal.",
+      "parameter": {
+        "freieBloeckeDarueber": 2
+      },
+      "quelle": "https://minecraft.wiki/w/Villager; https://minecraft.wiki/w/Village (Java: Bett braucht Platz darüber)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Dorf: Betten",
+      "ungeprueft": true,
+      "testanleitung": "Bett mit Vollblock direkt darüber und Bett mit Halbstufe darüber neben einen Dorfbewohner stellen: Beansprucht er sie? Bett hinter einer Mauer, die er nicht überwindet."
+    },
+    {
+      "id": "dorf.bevoelkerung",
+      "titel": "Höchstbevölkerung = Zahl der Betten",
+      "regel": "Die Zahl der Dorfbewohner geht nicht über die Zahl der gültigen Betten hinaus; liegt sie darunter und zwei erwachsene Dorfbewohner sind da, kann Nachwuchs entstehen (Futter nötig, hier unklar).",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Village; https://minecraft.wiki/w/Villager",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Dorf: Betten",
+      "ungeprueft": true,
+      "testanleitung": "Dorf mit 3 Betten und 3 Dorfbewohnern mit Brot füttern: Entsteht ein Baby? Mit 4. Bett?"
+    },
+    {
+      "id": "dorf.berufsblock",
+      "titel": "Berufsblock im Umkreis 16 / 4",
+      "regel": "Ein Dorfbewohner sucht unbeanspruchte Berufsblöcke im Umkreis von 16 Blöcken waagerecht und 4 Blöcken senkrecht und beansprucht den ersten in der Liste, auch wenn er ihn nicht erreicht (dann zeigt er Ärger-Partikel und bekommt keinen Beruf).",
+      "parameter": {
+        "horizontal": 16,
+        "vertikal": 4
+      },
+      "quelle": "https://minecraft.wiki/w/Villager (Bedrock: „nearest“ nicht belegt, erster in der Liste)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Dorf: Berufsblock-Suche",
+      "ungeprueft": true,
+      "testanleitung": "Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Bekommt der Dorfbewohner den Beruf Bibliothekar? Lesepult hinter Glas: Ärger-Partikel?"
+    },
+    {
+      "id": "dorf.berufe",
+      "titel": "Berufsblöcke und Berufe",
+      "regel": "Hochofen = Rüstungsschmied, Räucherofen = Metzger, Kartentisch = Kartograf, Braustand = Kleriker, Komposter = Bauer, Fass = Fischer, Fletching-Tisch = Pfeilmacher, Kessel = Lederer, Lesepult = Bibliothekar, Steinsäge = Steinmetz, Webstuhl = Schäfer, Schmiedetisch = Werkzeugschmied, Schleifstein = Waffenschmied.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Villager (Berufstabelle, Java 19w11a; für Bedrock nicht gesondert angegeben)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Ebene 0: Berufe und Betten",
+      "ungeprueft": true,
+      "testanleitung": "Je einen Berufsblock neben einen arbeitslosen Dorfbewohner (mit Bett) stellen: Welcher Beruf entsteht?"
+    },
+    {
+      "id": "dorf.zuordnung",
+      "titel": "Zuordnung: nächstes Bett, erster freier Block",
+      "regel": "Dorfbewohner (in Reihenfolge der Nummer) nehmen das nächste erreichbare Bett; ein Beruf wird nur mit Bett vergeben; jeder Berufsblock gehört höchstens einem Dorfbewohner. Babys nehmen weder Bett noch Beruf.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Villager (Blockwerk-Annahme: Bedrock nennt die Reihenfolge nicht; Java-Platzhalter)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Dorf: Zuordnung",
+      "ungeprueft": true,
+      "testanleitung": "Zwei Dorfbewohner, ein Bett, ein Berufsblock: Wer bekommt den Beruf? Berufsblock ohne Bett in Reichweite: Wird der Beruf trotzdem vergeben?"
+    },
+    {
+      "id": "dorf.golem",
+      "titel": "Iron Golem: 10 Dorfbewohner und 20 Betten",
+      "regel": "Ein Dorf mit mindestens 10 Dorfbewohnern und 20 Betten lässt Iron Golems spawnen. Gibt es schon Golems, ist die Zahl je Dorfbewohner unklar (Wiki „Villager“: mehr als 10 Dorfbewohner je Golem; 75 % haben im letzten Tag gearbeitet), Blockwerk meldet dann „unklar“.",
+      "parameter": {
+        "dorfbewohner": 10,
+        "betten": 20
+      },
+      "quelle": "https://minecraft.wiki/w/Village (Bedrock); https://minecraft.wiki/w/Villager",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/dorf.test.js::Dorf: Iron Golem",
+      "ungeprueft": true,
+      "testanleitung": "Dorf mit 9, 10 Dorfbewohnern und 19, 20 Betten: Spawnt ein Iron Golem (Wartezeit mehrere Minuten, Spieler in der Nähe)? Mit schon einem Golem im Dorf?"
+    }
+  ]
+}

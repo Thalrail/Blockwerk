@@ -153,6 +153,17 @@
       "simulationstest": "test/ebene1/trichter.test.js::Prüfer: Trichter",
       "ungeprueft": true,
       "testanleitung": "Siehe trichter.ziel und trichter.behaelter."
+    },
+    {
+      "id": "pruefer.redstone",
+      "titel": "Prüfer: Redstone-Leitung",
+      "regel": "Meldet als Hinweis: Staub, der nie Strom bekommt; eine Leitung, die nach 15 Blöcken ausgeht (ohne Verstärker); schwingende Schaltungen (Fackeln, die kein Gleichgewicht finden); Blöcke neben Staub, deren Leitfähigkeit unbekannt ist.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_mechanics (folgt aus den Regeln redstone.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone.test.js::Prüfer: Redstone",
+      "ungeprueft": true,
+      "testanleitung": "Siehe redstone.staub-abnahme und redstone.instabil."
     }
   ]
 }

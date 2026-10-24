@@ -117,6 +117,15 @@ Kreativ-Testwelt, Video (60 fps) für Zeiten. Alles Java-Platzhalter, nur prüfe
 4. **Komparator:** Kiste mit 1, 64, 1728 Steinen und mit 16 Enderperlen je Slot füllen und die Signalstärke ablesen. (`trichter.komparator`)
 5. **Ofen:** Trichter über, neben und unter einem Ofen. (`trichter.unklar`)
 
+## Redstone-Strom: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt auf Stein. Alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Reichweite:** Hebel/Redstone-Block am Anfang einer geraden Staubleitung aus 20 Blöcken: Bei welchem Staubblock geht sie aus? Blockwerk erwartet: 15 leuchten. (`redstone.staub-abnahme`)
+2. **Stark/schwach:** Staub → Stein → Staub: Bekommt der zweite Staub Strom? Dasselbe mit einem Hebel am Stein. (`redstone.stark-schwach`)
+3. **Fackelturm:** 2 und 3 Fackeln übereinander mit Hebel am untersten Block. (`redstone.fackel-invertiert`)
+4. **Hebel-Lagen:** Hebel an allen Seiten eines Steins mit Staub daneben. (`redstone.hebel`)
+5. **Aktivierungsschiene:** 20 Schienen, Redstone-Block neben der ersten (erwartet 9) und in der Mitte (17). (`redstone.aktivierungsschiene`)
+6. **Detektorschiene:** Lore über die Schiene, Staub daneben. (`redstone.detektorschiene`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -163,6 +172,20 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.lore-stillstand` – Prüfer: Lore bleibt stehen | Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb. |
 | `pruefer.faellt` – Prüfer: Block fällt | Siehe fallen.landen-block und fallen.landen-gegenstand. |
 | `pruefer.trichter` – Prüfer: Trichter ohne Ziel, im Kreis oder verstopft | Siehe trichter.ziel und trichter.behaelter. |
+| `pruefer.redstone` – Prüfer: Redstone-Leitung | Siehe redstone.staub-abnahme und redstone.instabil. |
+| `redstone.staub-abnahme` – Staub verliert 1 Stärke je Block | Gerade Staubleitung aus 20 Blöcken, Hebel am Anfang: Bei welchem Staubblock geht die Leitung aus? Blockwerk erwartet: 15 Staubblöcke leuchten (Stärke 15 bis 1), der 16. nicht. |
+| `redstone.staub-verbindung` – Staub verbindet sich mit Staub, Quellen und über Stufen | Staubtreppe über Vollblöcke (rauf) und Luft (runter), einmal mit Glas, einmal mit Stein dazwischen: Wo reißt die Leitung ab? Staub mit Block darüber: Steigt die Leitung dann noch auf? |
+| `redstone.stark-schwach` – Starke und schwache Bestromung | Hebel an einem Stein, daneben Staub: leuchtet er? Dann Staub → Stein → Staub (Stein nur durch Staub bestromt): leuchtet der zweite Staub? Dasselbe mit Redstone-Block statt Hebel. |
+| `redstone.leitend` – Welche Blöcke leiten | Hebel an einem Block aus Glas, Laub, Eis, Honigblock, Seelensand, Schleimblock, oberer/unterer Halbstufe, Treppe: Wird die Redstone-Lampe oder ein Staub daneben bestromt? Ergebnis je Block melden. |
+| `redstone.quelle-block` – Redstone-Block | Redstone-Block neben Staub (leuchtet?), neben einem Stein mit Staub dahinter (leuchtet?), unter und über Staub. |
+| `redstone.hebel` – Hebel | Hebel an allen sechs Seiten eines Steins mit Staub daneben: Wann leuchtet der Staub? Besonders die Seitenlagen (Ost/West/Nord/Süd) prüfen, an welchem Block der Hebel hängt. |
+| `redstone.knopf` – Knöpfe | Knopf an einem Block mit Staub daneben drücken; Knopf an der Unterseite und Oberseite eines Blocks: Welcher Block wird bestromt? |
+| `redstone.fackel-invertiert` – Fackel invertiert den Befestigungsblock | Fackel an einem Block, Hebel am Block: Geht die Fackel aus? Fackelturm aus 2 und 3 Fackeln übereinander: leuchtet die oberste? Staub neben der Fackel: bestromt? |
+| `redstone.fackel-richtung` – Fackel: Befestigungsblock | Siehe redstone.fackel-invertiert (Fackel an den vier Seiten und oben eines Blocks). |
+| `redstone.instabil` – Schwingende Schaltungen | Fackel an einem Block, daneben Staub, das den Block selbst bestromt (Rückkopplung): Brennt sie aus, flackert sie oder bleibt sie aus? Ergebnis melden. |
+| `redstone.detektorschiene` – Detektorschiene als Quelle | Lore über eine Detektorschiene fahren, Staub daneben und Redstone-Lampe: Wie lange leuchtet sie? Bestromt sie den Block darunter (Staub unter dem Block)? |
+| `redstone.aktivierungsschiene` – Aktivierungsschiene | 20 Aktivierungsschienen in einer Reihe, Redstone-Block neben der ersten: Wie viele aktivieren sich (erwartet 9)? Redstone-Block in der Mitte: 17? Dann Staub, das auf die Schiene zeigt. |
+| `redstone.keine-quasi` – Keine Quasi-Konnektivität | Kolben mit Hebel genau über dem Block über dem Kolben (nicht am Kolben): Fährt er aus? (In Bedrock sollte er das nicht.) |
 | `schiene.linie-verlaengern` – Eine Linie wird in derselben Richtung verlängert | Kreativ-Testwelt auf ebenem Boden: eine Schiene setzen, daneben in Ost-West-Richtung eine zweite, dann eine dritte in derselben Reihe. Erwartung: alle drei liegen Ost-West. Dasselbe in Nord-Süd-Richtung. Abweichungen melden. |
 | `schiene.zwei-nachbarn` – Zwei Nachbarn: verbinden, gerade oder als Kurve | Zwei Schienen im rechten Winkel zueinander setzen (z. B. eine im Westen, eine im Norden einer freien Stelle) und dazwischen die Ecke legen: Kurve? Dann die Ecke so legen, dass drei Schienen Nachbarn sind (siehe schiene.t-stelle). |
 | `schiene.nachbar-umstellen` – Nachbarschienen stellen sich auf die neue Schiene ein | Eine Ost-West-Linie aus drei Schienen legen, dann an das Ende der Mittelschiene seitlich (Nord) eine vierte setzen: Bleibt die Linie unverändert, oder dreht sich die Mittelschiene? Ergebnis melden. |

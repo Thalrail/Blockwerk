@@ -7,7 +7,14 @@
       "titel": "Filtertrichter mit Haltemenge und Füllern",
       "regel": "Der Filtertrichter hält in Slot 1 die Haltemenge der Sorte und in den Slots 2–5 je einen Füller (ein Gegenstand, der nie im Strom vorkommt, in 64er-Stapeln). So zieht er aus dem Rohr nur die Sorte. Die Haltemenge ist das größte k, bei dem sein Komparatorsignal gerade noch 1 ist (Formel wie bei Trichtern: floor(1 + (k ÷ Stapel + Füllerbruchteil) ÷ 5 × 14)); sie hängt von der Stapelgröße der Sorte ab (64er: 18, 16er: 4). Nicht stapelbare Sorten lassen sich so nicht filtern. Im Spiel müssen die Füller umbenannte Gegenstände oder per Befehl besorgte Blöcke sein.",
       "parameter": {
-        "fueller": ["minecraft:barrier", "minecraft:structure_void", "minecraft:light_block_0", "minecraft:allow", "minecraft:deny", "minecraft:border_block"],
+        "fueller": [
+          "minecraft:barrier",
+          "minecraft:structure_void",
+          "minecraft:light_block_0",
+          "minecraft:allow",
+          "minecraft:deny",
+          "minecraft:border_block"
+        ],
         "fuellerAnzahl": 4,
         "fuellerMenge": 1,
         "konstante": 1
@@ -33,12 +40,41 @@
       "id": "lager.eingang",
       "titel": "Eingangsabstand mindestens 9 Ticks",
       "regel": "Der Strom im Rohr darf höchstens alle 9 Ticks einen Gegenstand liefern. Bei dichterem Strom (volle Auslastung, alle 8 Ticks) rutscht je nach Reihenfolge, in der das Spiel die Trichter bearbeitet, ein Teil der Sorte am Filter vorbei bis zum Rohrende; das Wiki beschreibt dasselbe für Bedrock. Fremde Gegenstände landen nie im Filter oder in der Lagerkiste.",
-      "parameter": { "mindestabstand": 9 },
+      "parameter": {
+        "mindestabstand": 9
+      },
       "quelle": "https://minecraft.wiki/w/Tutorial:Item_sorting („Bedrock hopper pipes running at full load can push a small share of items past filters“)",
       "status": "simuliert",
       "simulationstest": "test/ebene2/sortiereinheit.test.js::Sortiereinheit: Grenze bei dichtem Strom",
       "ungeprueft": true,
       "testanleitung": "Gemisch einmal mit voller Geschwindigkeit (Trichterkette direkt vor dem Rohr) und einmal gedrosselt (alle 10 Ticks) durchlaufen lassen: Kommt bei voller Geschwindigkeit etwas von der Sorte am Rohrende an?"
+    },
+    {
+      "id": "lager.drossel",
+      "titel": "Einwurf-Drossel („Handschlag“)",
+      "regel": "Unter der Einwurfkiste sitzt der Trichter G1, dahinter G2. Ein Komparator liest G2, ein Repeater-Weg sperrt G1, solange G2 einen Gegenstand hält. G2 behält ihn mindestens 8 Ticks (Empfangs-Wartezeit), danach vergehen noch einige Ticks bis zur Freigabe: der Abstand beträgt in der Simulation 16 Ticks (mindestens 9, in beiden Trichterreihenfolgen), unabhängig vom Inhalt der Kiste. Dadurch bleibt der Strom im Rohr unter dem Tempo, bei dem Filter Gegenstände durchlassen.",
+      "parameter": {
+        "gemessenerAbstand": 16
+      },
+      "quelle": "https://minecraft.wiki/w/Hopper („A powered hopper stops pushing, pulling, and collecting“, Bedrock-Wartezeit des Empfängers) und https://minecraft.wiki/w/Tutorial:Item_sorting",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/sortierlager.test.js::Sortierlager: Drossel und Dauerstrom",
+      "ungeprueft": true,
+      "testanleitung": "Einwurfkiste mit vollen Stapeln über dem Trichter bauen, Komparator und Repeater-Weg nach Plan: Mit der Stoppuhr den Abstand zwischen zwei Gegenständen am Rohrende messen. Erwartet: deutlich mehr als 9 Ticks (etwa 0,8 Sekunden). Ohne den Sperrweg: genau 8 Ticks (0,4 Sekunden)."
+    },
+    {
+      "id": "lager.lager",
+      "titel": "Sortierlager: Reihe von Einheiten mit Überlaufkiste",
+      "regel": "Je Sorte eine Sortiereinheit im Raster 6 entlang des Rohrs, bis zu 48 Sorten, alle verschieden, stapelbar und nie ein Füller. Am Rohrende liegt die Überlaufkiste für alles, was keine Einheit zieht. Größere Lager sind längere Reihen, nie größere Einheiten (Technik skaliert über Anzahl).",
+      "parameter": {
+        "hoechstSorten": 48,
+        "raster": 6
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Technik skaliert über Anzahl, Lager für 48 Gegenstandssorten)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/sortierlager.test.js::Sortierlager: 48 Sorten und Paket",
+      "ungeprueft": true,
+      "testanleitung": "Sortierlager mit 3 Sorten bauen und aus einer vollen Kiste mit gemischten Stapeln laufen lassen: Liegt jede Sorte in ihrer Kiste, nichts Fremdes dort, der Rest in der Überlaufkiste?"
     }
   ]
 }

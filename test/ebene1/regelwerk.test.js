@@ -31,10 +31,10 @@ test('Status „simuliert“ verweist auf einen Test, der wirklich existiert', (
 test('Niemand setzt Regeln auf „geprüft“ außer Jonah: nur Regeln mit seiner dokumentierten Beobachtung', () => {
   // Wird erst geändert, wenn Jonah im Spiel bestätigt hat (Datum + Beobachtung sind dann Pflicht).
   const geprueft = e1.regelwerk.nachStatus('geprüft');
-  assert.deepEqual(geprueft.map((r) => r.id), ['schiene.antriebsschiene-gerade', 'schiene.t-stelle', 'schiene.zustandswerte']);
+  assert.deepEqual(geprueft.map((r) => r.id).sort(), ['lore.abstand-eben', 'lore.abstand-steigung', 'lore.auslauf', 'lore.fahrzeit', 'lore.kurven-und-mob', 'lore.steighoehe', 'schiene.antriebsschiene-gerade', 'schiene.t-stelle', 'schiene.zustandswerte']);
   for (const r of geprueft) {
     assert.match(r.beobachtung, /^Jonah/, r.id);
-    assert.match(r.geprueftAm, /^2026-10-2[01]$/, r.id);
+    assert.match(r.geprueftAm, /^2026-10-2[014]$/, r.id);
   }
 });
 

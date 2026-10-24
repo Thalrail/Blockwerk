@@ -1,0 +1,115 @@
+{
+  "bereich": "spawn",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "spawn.blocklicht",
+      "titel": "Monster spawnen nur bei Blocklicht 0",
+      "regel": "Die meisten Monster der Oberwelt spawnen nicht, wenn das Blocklicht am Standort größer als 0 ist (Bedrock ab 1.17.30). Jede Lichtquelle mit Blocklicht ≥ 1 auf dem Standort verhindert den Spawn.",
+      "parameter": {
+        "hoechstens": 0
+      },
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (Bedrock-Abschnitt) und https://minecraft.wiki/w/Light",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Spawn: Fackel verhindert Spawn im Umkreis",
+      "ungeprueft": false
+    },
+    {
+      "id": "spawn.himmelslicht",
+      "titel": "Inneres Himmelslicht: bis 6 sicher ja, ab 8 sicher nein, 7 unklar",
+      "regel": "Die meisten Monster spawnen nicht bei innerem Himmelslicht von 7 oder mehr (Seite „Mob spawning“) bzw. brauchen höchstens 7 (Seite „Light“). Beide Seiten widersprechen sich genau beim Wert 7: bis 6 ist der Spawn möglich, ab 8 nicht, bei genau 7 meldet Blockwerk „unklar“. Nachts im Freien (inneres Himmelslicht 4) ist es dunkel genug.",
+      "parameter": {
+        "sicherJaBis": 6,
+        "sicherNeinAb": 8
+      },
+      "quelle": "https://minecraft.wiki/w/Mob_spawning („≥ 7 verhindert“) und https://minecraft.wiki/w/Light („höchstens 7“) – widersprüchlich beim Wert 7",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Spawn: Himmelslicht genau 7 ist unklar",
+      "ungeprueft": true,
+      "testanleitung": "Nur der Grenzwert 7 ist offen (am Tag unter einem Dach, wo das Himmelslicht schwach wird): Spawnen Zombies in einem sonst dunklen Gang, in den von der Seite Tageslicht fällt, dort, wo das Himmelslicht noch 7 beträgt? Praktisch: Tagsüber in einer Höhle mit offenem Eingang die Stelle suchen, bis zu der Monster am Tag noch hineinwandern/spawnen, und die Entfernung zum Eingang melden."
+    },
+    {
+      "id": "spawn.boden",
+      "titel": "Boden mit voller fester Oberseite",
+      "regel": "Der Block unter den Füßen muss eine volle feste Oberseite haben. Teppiche, untere Halbstufen, Zäune, Treppen (aufrecht und kopfstehend), Verstärker und Truhen zählen nicht. Undurchsichtige Vollblöcke und doppelte Halbstufen zählen.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (Bedrock-Abschnitt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Spawn: Boden muss eine volle feste Oberseite haben",
+      "ungeprueft": false
+    },
+    {
+      "id": "spawn.boden-unklar",
+      "titel": "Boden: Glas, Laub, obere Halbstufe, Seelensand",
+      "regel": "Für Glas und Laub sagt das Wiki: kein Spawn auf durchsichtigen Vollblöcken, „muss geprüft werden“. Obere Halbstufen und Seelensand sind nicht belegt. Blockwerk meldet solche Böden als „unklar“.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (Bedrock-Abschnitt, mit Prüfvermerk)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Spawn: unbekannte Böden und Blöcke geben „unklar“",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt, Nacht oder dunkler Raum, ohne Licht: Auf Glas, Laub, oberer Halbstufe und Seelensand je eine Fläche von 5×5 bauen (3 Blöcke Luft darüber, Wände ringsum): Spawnen dort nach einigen Minuten Zombies? Ergebnis je Boden melden."
+    },
+    {
+      "id": "spawn.fuesse",
+      "titel": "Fuß-Zelle: Luft, Gras und Blumen ja, Teppich nein, sonst unklar",
+      "regel": "Die Zelle, in der das Monster steht, muss Luft oder eine nichtblockierende Pflanze (Gras, Blumen) sein. Teppich blockiert den Spawn. Alle anderen nicht festen Blöcke (Schienen, Platten, Schilder, Setzlinge, Knöpfe …) sind in den Quellen nicht eingeordnet: Blockwerk meldet dort „unklar“, nicht „nein“.",
+      "parameter": {
+        "pflanzen": [
+          "minecraft:short_grass",
+          "minecraft:tall_grass",
+          "minecraft:fern",
+          "minecraft:large_fern",
+          "minecraft:dandelion",
+          "minecraft:poppy",
+          "minecraft:blue_orchid",
+          "minecraft:allium",
+          "minecraft:azure_bluet",
+          "minecraft:red_tulip",
+          "minecraft:orange_tulip",
+          "minecraft:white_tulip",
+          "minecraft:pink_tulip",
+          "minecraft:oxeye_daisy",
+          "minecraft:cornflower",
+          "minecraft:lily_of_the_valley",
+          "minecraft:sunflower",
+          "minecraft:lilac",
+          "minecraft:rose_bush",
+          "minecraft:peony"
+        ],
+        "nein": [
+          "Teppiche"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (Bedrock-Abschnitt: „Füße in Luft oder einer nichtblockierenden Pflanze wie Gras oder Blume“; Teppich zählt nicht als Boden; die übrigen dünnen Blöcke sind nicht belegt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Spawn: Fuß-Zelle ist dreiwertig (Luft, Pflanze, Teppich, Unbekanntes)",
+      "ungeprueft": true,
+      "testanleitung": "Dunkler Raum: Auf einem Steinboden stehen (a) Gras/Blumen, (b) eine Schiene, (c) eine Druckplatte, (d) ein Schild, (e) ein Setzling, (f) ein Teppich auf dem Boden. Spawnen auf diesen Feldern Zombies (Füße im Block)? Je Fall melden."
+    },
+    {
+      "id": "spawn.platz",
+      "titel": "Platz für die Hitbox, Füße in Luft",
+      "regel": "Die Hitbox des Monsters (Breite und Höhe aus dem Wesenregister) darf keinen festen Block überlappen; die Zellen, die sie belegt, müssen Luft sein. Standard-Monster: Zombie (0,6 × 1,9 → 2 Blöcke hoch); Spinne (1,4 × 0,9) braucht 1 Block Höhe, aber 3 Blöcke Breite. Blöcke, die weder Luft noch undurchsichtig-fest sind (Pflanzen, Platten, Schilder …), gelten als „unklar“.",
+      "parameter": {
+        "standardMonster": "minecraft:zombie"
+      },
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (Bedrock-Abschnitt: „Hitbox darf keinen festen Block überlappen“; Zellen-Näherung ist eine Annahme)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/spawn.test.js::Spawn: Platz für die Hitbox (Zombie 2 hoch, Spinne 1 hoch, 3 breit)",
+      "ungeprueft": true,
+      "testanleitung": "Kreativ-Testwelt, dunkler Raum: (1) Gang 1 Block breit und 2 hoch, (2) 3 breit und 1 hoch, (3) 3 breit und 2 hoch, jeweils ohne Licht: Welche Monster (Zombie, Spinne) spawnen wo? Ergebnis melden."
+    },
+    {
+      "id": "spawn.entfernung",
+      "titel": "Spawn-Entfernung zum Spieler",
+      "regel": "Bei Simulationsdistanz 4 (Jonahs Server) spawnen Monster 24 bis 44 Blöcke vom Spieler entfernt, nur in tickenden Chunks. Blockwerk simuliert keinen Spieler; der Wert ist eine Information für den Techniker (nähere Bereiche bleiben spawnfrei, solange der Spieler dort steht).",
+      "parameter": {
+        "minimum": 24,
+        "maximumBeiSimulationsdistanz4": 44
+      },
+      "quelle": "https://minecraft.wiki/w/Mob_spawning (Bedrock-Abschnitt)",
+      "status": "entworfen",
+      "ungeprueft": false
+    }
+  ]
+}

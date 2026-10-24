@@ -79,6 +79,12 @@ Alle in einem geschlossenen dunklen Raum (Höhle oder Raum aus Stein ohne Himmel
 2. **Reichweite einer Fackel:** wie viele Blöcke weit ist der Boden noch „hell“ (kein Monsterspawn)? Blockwerk erwartet 13. (`licht.blocklicht`)
 3. **Kerzen und Seegurken:** wie hell ist 1, 2, 3, 4 Kerzen? Siehe `pruefer.licht-unklar`.
 
+## Spawnstellen: die wichtigsten Tests (Ebene 1)
+Alle in einem komplett dunklen Raum aus Stein (Höhle oder Raum ohne Licht und ohne Himmel), Kreativmodus, Schwierigkeit „Normal“ oder höher, Nacht oder ohne Himmel. Warte einige Minuten und beobachte.
+1. **Welcher Boden zählt?** Je eine Fläche von 5×5 mit Glas, Laub, oberer Halbstufe, Seelensand, unterer Halbstufe, Teppich, Zaun: Auf welchen spawnen Zombies? (`spawn.boden-unklar`, `spawn.boden`)
+2. **Wie viel Platz?** Gänge: 1 breit × 2 hoch, 3 breit × 1 hoch, 3 breit × 2 hoch (alle dunkel): Welche Monster (Zombie, Spinne) spawnen wo? (`spawn.platz`)
+3. **Licht:** Eine Fackel mitten im Raum: Bis wohin spawnen keine Monster? Blockwerk erwartet: im Umkreis von 13 Blöcken (Taxi-Abstand) nicht. (`spawn.blocklicht`)
+
 ## Lore: Ergebnisse und offene Tests (Ebene 1)
 Deine Messungen vom 24.10.2026 stehen in `docs/messungen-lore.md` und als `geprüft` in `data/regeln/lore.json`. Offen sind drei Tests (Standard-Start wie in den Messungen):
 1. **Abstand 9 auf ebener Strecke** (jede 9. Schiene eine Antriebsschiene, mindestens 5 Antriebsschienen): kommt die Lore durch? (`lore.abstand-eben`, Blockwerk meldet bisher „unklar“)
@@ -118,6 +124,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.antrieb-ohne-quelle` – Prüfer: Antriebsschiene ohne Stromquelle in Reichweite | Siehe antrieb.reichweite. |
 | `pruefer.wasser-zerstoert` – Prüfer: Wasser zerstört etwas | Siehe fluessigkeit.wegspuelen. |
 | `pruefer.licht-unklar` – Prüfer: Lichtquelle mit zustandsabhängiger Stärke | Kerze (1 bis 4 Kerzen, angezündet), Seegurke (1–4, im Wasser), Respawn-Anker (Ladung 0–4): Wie hell ist es jeweils? Mit einem Lichtblock vergleichen und die Stufe melden. |
+| `pruefer.spawn-moeglich` – Prüfer: Monster können hier spawnen | Siehe spawn.platz und spawn.boden-unklar. |
 | `pruefer.lore-stillstand` – Prüfer: Lore bleibt stehen | Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb. |
 | `schiene.linie-verlaengern` – Eine Linie wird in derselben Richtung verlängert | Kreativ-Testwelt auf ebenem Boden: eine Schiene setzen, daneben in Ost-West-Richtung eine zweite, dann eine dritte in derselben Reihe. Erwartung: alle drei liegen Ost-West. Dasselbe in Nord-Süd-Richtung. Abweichungen melden. |
 | `schiene.zwei-nachbarn` – Zwei Nachbarn: verbinden, gerade oder als Kurve | Zwei Schienen im rechten Winkel zueinander setzen (z. B. eine im Westen, eine im Norden einer freien Stelle) und dazwischen die Ecke legen: Kurve? Dann die Ecke so legen, dass drei Schienen Nachbarn sind (siehe schiene.t-stelle). |
@@ -126,6 +133,10 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `schiene.rampe` – Rampe zur Schiene eine Ebene höher | Auf Boden einen Block-Absatz bauen: unten drei Schienen in einer Linie, oben am Absatz eine Schiene direkt am Rand der Linie, in der Fluchtlinie. Erwartung: die letzte untere Schiene steigt zur oberen an. Dann umgekehrte Reihenfolge des Setzens und das Ergebnis vergleichen. |
 | `schiene.bevorzugung` – Rampen: West vor Ost, Süd vor Nord | Nur noch die Achsen-Mischung offen: links (West) und unten (Süd) je eine Schiene einen Block höher, in der Mitte unten eine Schiene setzen: Steigt sie nach Westen oder nach Süden an? |
 | `schiene.detektor-aktivierung-gerade` – Detektor- und Aktivierungsschiene: auch gerade? | Detektorschiene und Aktivierungsschiene jeweils an eine Schiene im rechten Winkel setzen (Ecke): Bleibt sie gerade, oder wird sie eine Kurve? Je Schienenart melden. |
+| `spawn.himmelslicht` – Inneres Himmelslicht: bis 6 sicher ja, ab 8 sicher nein, 7 unklar | Nur der Grenzwert 7 ist offen (am Tag unter einem Dach, wo das Himmelslicht schwach wird): Spawnen Zombies in einem sonst dunklen Gang, in den von der Seite Tageslicht fällt, dort, wo das Himmelslicht noch 7 beträgt? Praktisch: Tagsüber in einer Höhle mit offenem Eingang die Stelle suchen, bis zu der Monster am Tag noch hineinwandern/spawnen, und die Entfernung zum Eingang melden. |
+| `spawn.boden-unklar` – Boden: Glas, Laub, obere Halbstufe, Seelensand | Kreativ-Testwelt, Nacht oder dunkler Raum, ohne Licht: Auf Glas, Laub, oberer Halbstufe und Seelensand je eine Fläche von 5×5 bauen (3 Blöcke Luft darüber, Wände ringsum): Spawnen dort nach einigen Minuten Zombies? Ergebnis je Boden melden. |
+| `spawn.fuesse` – Fuß-Zelle: Luft, Gras und Blumen ja, Teppich nein, sonst unklar | Dunkler Raum: Auf einem Steinboden stehen (a) Gras/Blumen, (b) eine Schiene, (c) eine Druckplatte, (d) ein Schild, (e) ein Setzling, (f) ein Teppich auf dem Boden. Spawnen auf diesen Feldern Zombies (Füße im Block)? Je Fall melden. |
+| `spawn.platz` – Platz für die Hitbox, Füße in Luft | Kreativ-Testwelt, dunkler Raum: (1) Gang 1 Block breit und 2 hoch, (2) 3 breit und 1 hoch, (3) 3 breit und 2 hoch, jeweils ohne Licht: Welche Monster (Zombie, Spinne) spawnen wo? Ergebnis melden. |
 | `takt.uebertrager-verzoegerung` – Übertrager: Schreibzeitpunkt bei Verzögerung d | Kreativ-Testwelt: Hebel → Verstärker mit Verzögerung 4 (4× Rechtsklick) → Lampe. Mit Video (60 fps) die Zeit zwischen Hebelklick und Lampe messen: Erwartung 0,4 s (8 Spielticks); bei Verzögerung 1: 0,1 s. Dann zwei Verstärker (je Verzögerung 1) hintereinander: Erwartung 0,2 s. |
 | `takt.geplante-ticks-ueberlauf` – Geplante Ticks: Überlauf | Kreativ-Testwelt: eine große Wasserfläche (z. B. 40×40 Quellblöcke) auf einmal fließen lassen (Block unter dem Becken entfernen) und beobachten, ob sich der Abfluss verlangsamt, ohne dass Wasser fehlt. Ergebnis: schnell/verzögert/Wasser fehlt. |
 | `takt.zufallsticks` – Zufallsticks | Wird zusammen mit der ersten Wachstums-Mechanik angelegt (z. B. Weizenreife über eine Zeitspanne messen). |

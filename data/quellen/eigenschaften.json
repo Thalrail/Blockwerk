@@ -1,5 +1,5 @@
 {
-  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft. Lichtfilter (lichtfilter): wie viel Licht ein Block beim Durchgang schluckt. 0 = Luft u. Ä., 15 = undurchsichtiger Vollblock und doppelte Halbstufe (blockiert ganz), 2 = Laub, 1 = Wasser (Bedrock-Werte laut minecraft.wiki „Light“), null = unbekannt (getöntes Glas, Schnee, Pfade, Kolben …; Treppen und Halbstufen haben Filter 0 und blockieren nur über ihre vollen Flächen, siehe lichtform). Die Engine rechnet bei null mit zwei Schranken (blockiert / lässt durch). Lichtquellen, deren Stärke vom Zustand abhängt (Kerzen, Seegurken, Kupferglühbirnen, Respawn-Anker, Tresor …), stehen in lichtZustandsabhaengig und haben licht = null. Glasblöcke (außer getöntem Glas) und Teppiche gelten als lichtdurchlässig wie Luft (Filter 0, Wiki „Opacity“; Scheiben, Türen, Fackeln, Schienen u. a. gelten nach den Java-Kategorien ebenfalls als durchlässig (Jonah, 24.10.2026: wo Bedrock nichts sagt, gilt Java); Treppen, Halbstufen, Schnee, Pfade, Kolben und weitere Blöcke mit lichtblockierender Form bleiben unbekannt). Bedrock-Besonderheit laut Wiki: Wasser und Eis haben −1 zusätzlich zur normalen Abnahme; Blockwerk rechnet bei bekannten Filtern deshalb mit Schranken: Schritt = max(1, Filter) bis 1 + Filter.",
+  "hinweis": "Handgepflegte Ergänzung zu den Mojang-Daten. Die Mojang-Daten enthalten Block-IDs und Zustände, aber keine Eigenschaften wie Vollblock oder Lichtstärke. Alles hier ist Status 'ungeprüft' (Quelle: minecraft.wiki, Bedrock-Angaben), bis Jonah es im Spiel bestätigt. Werte, die weder durch ein Muster noch durch einen Eintrag gesetzt sind: vollblock/durchsichtig = null (unbekannt), licht = 0, faellt/brauchtHalt/arbeitsblock = false (Lücken möglich, dann hier ergänzen). Tragfähigkeit (fackelOben, fackelSeiten, schiene): was eine Fackel bzw. Schiene hält. fackelOben: true | false | \"obere-haelfte\" (nur wenn minecraft:vertical_half = top) | null (unbekannt). fackelSeiten: \"alle\" | \"keine\" | \"grosse-seite\" (Treppe: nur auf der Seite, zu der die hohe Seite zeigt) | null. schiene: true | false | \"wenn-oben\" (Halbstufe: nur die obere Hälfte trägt, Treppe: nur kopfstehend – von Jonah getestet) | null. Für die Formen Glas, Halbstufe, Treppe, Zaun, Glasscheibe hat Jonah sie am 20.10.2026 an je einem Block getestet; dass alle Varianten derselben Form gleich reagieren, ist eine Annahme. Flüssigkeitsverhalten (fluessigkeit): \"offen\" (Luft, Wasser/Lava fließen hinein), \"wegspuelbar\" (Fluss ersetzt den Block, er geht verloren: Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen, Schnee, Spinnweben, Endstäbe, Köpfe, Blumentopf), \"fest\" (blockiert: alle Vollblöcke), null (unbekannt – die Engine behandelt das wie fest). Quelle: minecraft.wiki „Water“; Status ungeprüft. Lichtfilter (lichtfilter): wie viel Licht ein Block beim Durchgang schluckt. 0 = Luft u. Ä., 15 = undurchsichtiger Vollblock und doppelte Halbstufe (blockiert ganz), 2 = Laub, 1 = Wasser (Bedrock-Werte laut minecraft.wiki „Light“), null = unbekannt (getöntes Glas, Schnee, Pfade, Kolben …; Treppen und Halbstufen haben Filter 0 und blockieren nur über ihre vollen Flächen, siehe lichtform). Die Engine rechnet bei null mit zwei Schranken (blockiert / lässt durch). Lichtquellen, deren Stärke vom Zustand abhängt (Kerzen, Seegurken, Kupferglühbirnen, Respawn-Anker, Tresor …), stehen in lichtZustandsabhaengig und haben licht = null. Glasblöcke (außer getöntem Glas) und Teppiche gelten als lichtdurchlässig wie Luft (Filter 0, Wiki „Opacity“; Scheiben, Türen, Fackeln, Schienen u. a. gelten nach den Java-Kategorien ebenfalls als durchlässig (Jonah, 24.10.2026: wo Bedrock nichts sagt, gilt Java); Treppen, Halbstufen, Schnee, Pfade, Kolben und weitere Blöcke mit lichtblockierender Form bleiben unbekannt). Bedrock-Besonderheit laut Wiki: Wasser und Eis haben −1 zusätzlich zur normalen Abnahme; Blockwerk rechnet bei bekannten Filtern deshalb mit Schranken: Schritt = max(1, Filter) bis 1 + Filter. Spawn-Boden (spawnBoden): kann ein Monster auf diesem Block spawnen? true = volle feste Oberseite (undurchsichtige Vollblöcke, doppelte Halbstufen), false = laut Wiki nicht (Teppiche, Zäune, Treppen, Verstärker, Truhen), \"halbstufe\" = einfache Halbstufe (untere Lage nein, obere nicht belegt), null = unbekannt (u. a. Glas und Laub: das Wiki sagt „muss geprüft werden“). Quelle: minecraft.wiki „Mob spawning“ (Bedrock-Abschnitt). spawnBodenUnklar: Vollblock-Näherungen, deren Oberseite nicht voll ist (Seelensand 14/16 hoch) – Spawn-Boden bleibt unbekannt.",
   "quelle": "https://minecraft.wiki/ (Seiten der einzelnen Blöcke, Abschnitt Bedrock Edition)",
   "regeln": [
     {
@@ -226,6 +226,21 @@
         "lichtfilter": 1
       },
       "grund": "Eis wie Wasser: in Bedrock zusätzlich −1 zur normalen Abnahme (Wiki „Opacity“)"
+    },
+    {
+      "muster": "_carpet$|_fence$|_stairs$|_repeater$|^minecraft:(chest|trapped_chest)$",
+      "setze": {
+        "spawnBoden": false
+      },
+      "grund": "Wiki „Mob spawning“ (Bedrock): Teppiche, Zäune, Treppen (aufrecht und kopfstehend), Verstärker und Truhen zählen nicht als Spawn-Boden"
+    },
+    {
+      "muster": "_slab$",
+      "ausser": "_double_slab$",
+      "setze": {
+        "spawnBoden": "halbstufe"
+      },
+      "grund": "Untere Halbstufe zählt nicht (Wiki), obere nicht belegt"
     }
   ],
   "lichtstaerke": {
@@ -374,5 +389,8 @@
     "minecraft:waxed_oxidized_copper_bulb",
     "minecraft:vault",
     "minecraft:firefly_bush"
+  ],
+  "spawnBodenUnklar": [
+    "minecraft:soul_sand"
   ]
 }

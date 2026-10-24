@@ -1,0 +1,125 @@
+{
+  "bereich": "fallen",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "fallen.welche",
+      "titel": "Welche Blöcke fallen",
+      "regel": "Sand, roter Sand, Kies, Drachenei, Betonpulver (alle Farben), Amboss (alle Stufen), verdächtiger Sand und verdächtiger Kies fallen, wenn darunter nichts trägt. Gerüst hat eine eigene Regel (7 Blöcke Abstand zur Stütze) und ist hier ausgenommen; Tropfstein, Schnee und Eiszapfen sind nicht dabei.",
+      "parameter": {
+        "ausgenommen": [
+          "minecraft:scaffolding"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Falling_Block (Edition nicht gekennzeichnet; Schnee nur Bedrock, nicht umgesetzt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: Amboss und andere fallende Blöcke",
+      "ungeprueft": true,
+      "testanleitung": "Je einen Block (Sand, Kies, roter Sand, Betonpulver, Amboss, Drachenei) 5 Blöcke hoch in die Luft setzen (Stütze wegnehmen): Fallen alle? Was passiert mit Gerüst, Tropfstein und Schneeschicht?"
+    },
+    {
+      "id": "fallen.start",
+      "titel": "Startverzögerung",
+      "regel": "Ein Block, dessen Stütze verschwindet, beginnt nach 2 Ticks zu fallen.",
+      "parameter": {
+        "startVerzoegerung": 2
+      },
+      "quelle": "Java-Platzhalter, Bedrock nennt dazu nichts (Jonah, 24.10.2026: wo Bedrock schweigt, gilt Java); https://minecraft.wiki/w/Falling_Block",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: Tempo und Start",
+      "ungeprueft": true,
+      "testanleitung": "Sandblock auf einen Block setzen, den Block darunter abbauen und mit Video (60 fps) messen: Wie viele Ticks (1/20 s) dauert es, bis der Sand sich löst? Blockwerk erwartet 2 Ticks."
+    },
+    {
+      "id": "fallen.tempo",
+      "titel": "Falltempo",
+      "regel": "Ein fallender Block braucht etwa 0,45 s je Block, also 9 Ticks.",
+      "parameter": {
+        "fallTicks": 9
+      },
+      "quelle": "https://minecraft.wiki/w/Falling_Block (Sand: „etwa 0,45 Sekunden je Meter“, Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: Tempo und Start",
+      "ungeprueft": true,
+      "testanleitung": "Sand 10 Blöcke hoch fallen lassen und mit Video die Fallzeit messen: Blockwerk erwartet 9 Ticks je Block, also 4,5 s für 10 Blöcke. Ergebnis melden."
+    },
+    {
+      "id": "fallen.landen-block",
+      "titel": "Landen auf festem Block",
+      "regel": "Auf einem festen Vollblock bleibt ein fallender Block liegen; ein Stapel fällt zusammen und landet übereinander.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Falling_Block (Landung auf fester Oberseite, Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: landet auf festem Block, Stapel fallen zusammen",
+      "ungeprueft": true,
+      "testanleitung": "Drei Sandblöcke übereinander 6 Blöcke hoch, die Stütze wegnehmen: Landen alle drei übereinander auf dem Boden?"
+    },
+    {
+      "id": "fallen.landen-gegenstand",
+      "titel": "Fackel, Schiene, Staub, Halbstufe und Seelensand machen einen Gegenstand",
+      "regel": "Landet ein fallender Block in einer Fackel-Zelle (ohne Luft darunter), in Schiene oder Redstone-Staub, oder auf einer Halbstufe oder Seelensand, wird er zum Gegenstand und gibt keinen Block; die Schiene bzw. Fackel bleibt.",
+      "parameter": {
+        "muster": "(^minecraft:|_)rail$|^minecraft:redstone_wire$",
+        "teilbloecke": [
+          "_slab$",
+          "^minecraft:soul_sand$"
+        ],
+        "teilbloeckeAusser": "_double_slab$"
+      },
+      "quelle": "https://minecraft.wiki/w/Falling_Block; https://minecraft.wiki/w/Sand („in Fackel, Schiene oder Redstone-Staub bzw. auf Halbstufe oder Seelensand wird der Sand zum Gegenstand“, Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: Fackel, Schiene, Staub, Halbstufe und Seelensand machen einen Gegenstand",
+      "ungeprueft": true,
+      "testanleitung": "Sand 4 Blöcke hoch über: eine Schiene, Redstone-Staub, eine Halbstufe (unten und oben), Seelensand, eine Fackel auf Stein: Wird der Sand jeweils ein Gegenstand, bleibt er liegen oder fällt er durch? Ergebnis je Fall melden."
+    },
+    {
+      "id": "fallen.durch-fackel",
+      "titel": "Durch eine Fackel fallen",
+      "regel": "Ein fallender Block fällt durch eine Fackel hindurch, wenn darunter Luft ist; die Fackel bleibt. Ist darunter ein fester Block, wird der Block zum Gegenstand (siehe fallen.landen-gegenstand).",
+      "parameter": {
+        "muster": "(^minecraft:|_)torch$"
+      },
+      "quelle": "https://minecraft.wiki/w/Sand („Sand falls through torches without breaking, if there is air below the torch“, Edition nicht gekennzeichnet)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: durch Fackeln hindurch, wenn darunter Luft ist",
+      "ungeprueft": true,
+      "testanleitung": "Eine Fackel an die Seite eines Blocks hängen (Luft darunter) und Sand von oben darauf fallen lassen: Fällt er durch, und bleibt die Fackel stehen?"
+    },
+    {
+      "id": "fallen.fluessigkeit",
+      "titel": "Durch Wasser und Lava",
+      "regel": "Fallende Blöcke fallen ohne Verzögerung durch Wasser, Lava und Feuer.",
+      "parameter": {},
+      "quelle": "Java-Platzhalter, Bedrock nennt dazu nichts (Jonah, 24.10.2026: wo Bedrock schweigt, gilt Java); https://minecraft.wiki/w/Falling_Block („werden von Wasser und Lava weder geschoben noch gebremst“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: durch Wasser und Lava",
+      "ungeprueft": true,
+      "testanleitung": "Sand über eine 5 Blöcke tiefe Wasserschicht (und Lava) fallen lassen: Fällt er in derselben Zeit hindurch wie durch Luft?"
+    },
+    {
+      "id": "fallen.betonpulver",
+      "titel": "Betonpulver wird im Wasser zu Beton",
+      "regel": "Berührt Betonpulver Wasser (fallend oder liegend, Zelle selbst oder ein Nachbar), wird es sofort zu Beton der gleichen Farbe.",
+      "parameter": {
+        "muster": "^minecraft:(.+)_concrete_powder$",
+        "ersatz": "minecraft:$1_concrete"
+      },
+      "quelle": "https://minecraft.wiki/w/Falling_Block („Concrete powder becomes concrete if it touches water while falling or after landing“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: Betonpulver wird im Wasser zu Beton",
+      "ungeprueft": true,
+      "testanleitung": "Betonpulver neben, über und in Wasser fallen lassen und liegen lassen: Wird es sofort zu Beton? Gilt das für alle Seiten (auch von unten)?"
+    },
+    {
+      "id": "fallen.unbekannt",
+      "titel": "Unbekannte Blöcke darunter",
+      "regel": "Liegt unter dem fallenden Block ein Block, für den Blockwerk keine Landeregel kennt (z. B. Treppe, Zaun, Falltür), bleibt der Block liegen und die Prüfung meldet „unklar“.",
+      "parameter": {},
+      "quelle": "Blockwerk-Entscheidung (Raten wird vermieden); https://minecraft.wiki/w/Falling_Block",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Fallen: unbekannte Blöcke geben unklar",
+      "ungeprueft": true,
+      "testanleitung": "Sand auf Treppe, Zaun, Falltür, Glasscheibe, Trichter, Kessel fallen lassen: Bleibt er liegen, wird er zum Gegenstand oder fällt er daneben? Ergebnis je Block melden."
+    }
+  ]
+}

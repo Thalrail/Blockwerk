@@ -131,6 +131,17 @@
       "simulationstest": "test/ebene1/lore.test.js::Prüfer: Lore bleibt stehen",
       "ungeprueft": true,
       "testanleitung": "Siehe lore.rampe-ueber-5 und lore.fahrt-im-antrieb."
+    },
+    {
+      "id": "pruefer.faellt",
+      "titel": "Prüfer: Block fällt",
+      "regel": "Jeder Block mit Schwerkraft (Sand, Kies, Betonpulver, Amboss …), unter dem nichts trägt, wird als Verstoß mit Koordinate gemeldet; die Meldung nennt, wo er landet. Wird er zum Gegenstand, ist es ein Verstoß; bei unbekanntem Landeblock ein Hinweis.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Falling_Block (folgt aus den Regeln fallen.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/fallen.test.js::Prüfer: Block fällt",
+      "ungeprueft": true,
+      "testanleitung": "Siehe fallen.landen-block und fallen.landen-gegenstand."
     }
   ]
 }

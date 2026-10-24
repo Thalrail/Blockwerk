@@ -142,6 +142,15 @@ Kreativ-Testwelt, Video (60 fps). Alles Java-Platzhalter, nur prüfen, wenn dir 
 4. **Tagessensor:** Signalstärke um 6:00, 9:00, 12:00, 15:00, 18:00, 20:00 und 24:00, mit Regen, mit Dach, invertiert (erwartet mittags 15, nachts 0; invertiert nachts 11). (`mech.tagessensor`, `mech.tagessensor-invertiert`)
 5. **Türen:** Tür, Falltür, Zauntor mit Redstone-Block. (`mech.tueren`)
 
+## Kolben: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt, Video (60 fps). Alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Grenze:** Kolben vor 12 und 13 Steinen: 12 ja, 13 nein. (`kolben.limit`)
+2. **Zeit:** Hebel am Kolben, Zeit bis zum Kopf (erwartet 4 Ticks nach dem ersten C-Tick). (`kolben.start`, `kolben.dauer`)
+3. **Unbewegliches:** Obsidian, Plattenspieler, Schleifstein, Leitstein, Verzauberungstisch vor dem Kolben. (`kolben.unbeweglich`)
+4. **Zerstörbares:** Fackel, Blume, Staub, Knopf, Tür, Leiter, Schild; Teppich und Schiene werden geschoben. (`kolben.zerstoert`)
+5. **Behälter:** Truhe (einzeln/doppelt), Fass, Ofen, Trichter, Werfer, Shulkerkiste. (`kolben.behaelter`)
+6. **Klebriger Kolben:** was zieht er zurück (Stein, Obsidian, Fackel, zwei Steine)? (`kolben.klebrig`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -167,6 +176,14 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `fluessigkeit.hindernisse` – Nur feste Blöcke halten Flüssigkeit auf | Wasser neben Treppe (Vorder- und Rückseite), Halbstufe (oben/unten), Zaun, Glasscheibe, Leiter, Schild, Tür, Falltür, Mauer: Fließt es hinein, vorbei oder hält der Block es auf? Ergebnis je Block melden. |
 | `fluessigkeit.gefaelle-mischwege` – Gefälle bei Wegen aus geraden und diagonalen Schritten | Quelle auf ebenem Stein, ein Loch bei (4, 2), bei (4, 3) und bei (3, 1): Fließt das Wasser gezielt zum Loch oder breitet es sich in alle Richtungen aus? Blockwerk erwartet: (3, 1) und (4, 2) gezielt, (4, 3) nicht. |
 | `fluessigkeit.ecken` – Ecken des Quadrats und diagonale Lücken | Wasserquelle auf ebenem Stein: Welche Stufe hat das Wasser bei (7, 7) und (4, 4) (Höhe der Wasserfläche, 1 hoch … 7 niedrig)? Dann Steine auf (1, 0), (0, 1) und (-1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1) um die Quelle legen, nur die Ecke (1, 1) frei: Fließt das Wasser diagonal nach (1, 1)? Ergebnis melden. |
+| `kolben.limit` – Höchstens 12 Blöcke | Kolben vor einer Reihe aus 12 Steinen (Platz dahinter) und aus 13 Steinen: Fährt er aus? Erwartet 12 ja, 13 nein. |
+| `kolben.start` – Start nach 2 Ticks, nur im C-Tick | Hebel an den Kolben: Wie viele Ticks (Video, 60 fps) vergehen bis der Kopf draußen ist (erwartet 4 Ticks)? Strom von oben, unten, hinten, seitlich ja; vom Kopf her nicht; ein Block mit Strom zwei Blöcke weiter (Quasi) bestromt ihn nicht. |
+| `kolben.dauer` – Ausfahren und Einfahren dauern je 2 Ticks | Beobachter vor einem Kolben und Redstone-Lampe hinter dem Beobachter: Zeit zwischen Hebel und Impuls messen (erwartet 4 Ticks bis zum Block-Update). |
+| `kolben.unbeweglich` – Unbewegliche Blöcke | Je einen dieser Blöcke vor einen Kolben setzen: Fährt der Kolben aus? Besonders: Schleifstein, Plattenspieler, Leitstein, Verzauberungstisch, ausgefahrener Kolben. |
+| `kolben.zerstoert` – Zerstörbare Blöcke am Ende | Kolben vor: Fackel, Blume, Staub, Knopf, Tür, Leiter, Schild, Teppich, Schiene, Schnee. Was passiert mit jedem? |
+| `kolben.behaelter` – Behälter | Kolben vor einer Truhe (einzeln und doppelt), einem Fass, Ofen, Trichter, Werfer, Shulkerkiste: Wird der Block geschoben? Mit Inhalt? |
+| `kolben.klebrig` – Klebriger Kolben zieht 1 Block | Klebrigen Kolben ausfahren lassen, dann einfahren, mit einem Stein, einem Obsidian, einer Fackel und zwei Steinen hintereinander vor dem Kopf: Was wird zurückgezogen? |
+| `kolben.blockiert` – Blockierter Kolben fährt nicht aus | Kolben vor Obsidian bestromen: Passiert etwas (Geräusch, Kopf)? Bleibt er danach bestromt blockiert? |
 | `licht.blocklicht` – Blocklicht nimmt um 1 je Block ab | Kreativ-Testwelt, dunkle Höhle oder Raum ohne Himmel: Eine Fackel (Stärke 14) in der Mitte eines großen Raums. Mit einem Lichtblock (/give @s light_block ["block_light_level"=…]) oder Beobachtung der Monsterspawns prüfen, wie weit das Licht reicht. Erwartung: 13 Blöcke Entfernung noch Licht 1, ab 14 Blöcken dunkel. |
 | `licht.himmelslicht` – Himmelslicht: senkrecht ungeschwächt, seitlich minus 1 | Tagsüber: ein 1×1-Schacht, 20 Blöcke tief, mit Dach daneben. Ganz unten im Schacht ist es hell (Himmelslicht 15). Zeigt der waagerechte Gang vom Schachtboden aus, nach wie vielen Blöcken er dunkel wird (erwartet 15)? Mit Spawn-Beobachtung oder Lichtblock-Vergleich. |
 | `licht.filter` – Lichtfilter von Laub, Wasser und Halbstufen | Fackel hinter einer 1-Block-Wand aus Laub, dann aus Wasser (Eimer in einem 1-Block-Loch): Wie viel dunkler ist es dahinter als durch Luft (eine Stufe weniger = Wiki-Filterwert, zwei Stufen weniger = „plus 1“)? Mit Lichtblöcken vergleichen und die Differenz melden. |
@@ -199,6 +216,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.redstone` – Prüfer: Redstone-Leitung | Siehe redstone.staub-abnahme und redstone.instabil. |
 | `pruefer.redstone-zeit` – Prüfer: Redstone läuft ab | Siehe zeit.fackel-brennen. |
 | `pruefer.mechanismus` – Prüfer: Mechanismen ohne Strom | Siehe mech.bestromung und mech.tagessensor. |
+| `pruefer.kolben` – Prüfer: Kolben kann nicht ausfahren oder zerstört etwas | Siehe kolben.unbeweglich und kolben.zerstoert. |
 | `zeit.staub-sofort` – Staub aktualisiert jeden Spielstick | Hebel – 10 Staubblöcke – Lampe: Leuchtet die Lampe sofort (im selben Tick wie der Hebel)? Mit Video (60 fps) prüfen, ob die Länge der Staubleitung die Zeit ändert (erwartet: nein). |
 | `zeit.fackel-verzoegerung` – Fackel: 2 Spielticks | Hebel an einen Stein, daneben eine Fackel an dessen Seite, dahinter Staub und eine Lampe: Zeit zwischen Hebel und Lampe mit Video messen (erwartet 0,1 s = 2 Ticks). Dann eine Kette aus 5 Fackeln (Stein-Fackel-Stein-…): erwartet 10 Ticks (0,5 s). |
 | `zeit.fackel-brennen` – Fackel brennt aus | Fackel an einem Stein, der über Staub von der Fackel selbst bestromt wird (Rückkopplung): Brennt sie aus, nach wie vielen Wechseln, und geht sie wieder an? Auch eine Uhr mit Repeater dazwischen testen (Bedrock soll dort nicht ausbrennen). |

@@ -188,6 +188,17 @@
       "simulationstest": "test/ebene1/mechanismen.test.js::Prüfer: Mechanismen",
       "ungeprueft": true,
       "testanleitung": "Siehe mech.bestromung und mech.tagessensor."
+    },
+    {
+      "id": "pruefer.kolben",
+      "titel": "Prüfer: Kolben kann nicht ausfahren oder zerstört etwas",
+      "regel": "Für jeden eingefahrenen Kolben prüft der Prüfer im aktuellen Zustand der Welt, ob er ausfahren könnte, und meldet als Hinweis mit Koordinate den Grund (unbeweglich, mehr als 12 Blöcke, Behälter/unklar) oder dass er einen Block zerstört.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Piston (folgt aus den Regeln kolben.*)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Prüfer: Kolben",
+      "ungeprueft": true,
+      "testanleitung": "Siehe kolben.unbeweglich und kolben.zerstoert."
     }
   ]
 }

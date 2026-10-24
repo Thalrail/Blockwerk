@@ -169,3 +169,13 @@ test('Blöcke: Eigenschaft „leitet“ (Redstone) – Vollblöcke ja, Glas und 
   assert.equal(l('minecraft:anvil'), null, 'unbekannt');
   for (const id of register.bloecke.ids()) assert.ok([true, false, null].includes(l(id)), id);
 });
+
+test('Blöcke: Eigenschaft „schiebung“ (Kolben) – beweglich, zerstört, unbeweglich, Behälter', () => {
+  const s = (id) => register.bloecke.block(id).eigenschaften.schiebung;
+  assert.deepEqual([s('minecraft:stone'), s('minecraft:oak_stairs'), s('minecraft:white_carpet'), s('minecraft:rail'), s('minecraft:piston'), s('minecraft:slime')], Array(6).fill('beweglich'));
+  assert.deepEqual([s('minecraft:torch'), s('minecraft:poppy'), s('minecraft:redstone_wire'), s('minecraft:lever'), s('minecraft:stone_button'), s('minecraft:ladder')], Array(6).fill('zerstoert'));
+  assert.deepEqual([s('minecraft:obsidian'), s('minecraft:bedrock'), s('minecraft:jukebox'), s('minecraft:piston_arm_collision'), s('minecraft:reinforced_deepslate')], Array(5).fill('unbeweglich'));
+  assert.deepEqual([s('minecraft:chest'), s('minecraft:hopper'), s('minecraft:furnace'), s('minecraft:barrel')], Array(4).fill('behaelter'));
+  assert.equal(s('minecraft:air'), null);
+  for (const id of register.bloecke.ids()) assert.ok(['beweglich', 'zerstoert', 'unbeweglich', 'behaelter', null].includes(s(id)), id);
+});

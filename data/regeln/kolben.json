@@ -1,0 +1,111 @@
+{
+  "bereich": "kolben",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "kolben.limit",
+      "titel": "Höchstens 12 Blöcke",
+      "regel": "Ein Kolben schiebt höchstens 12 Blöcke auf einmal; sind es mehr, fährt er nicht aus.",
+      "parameter": {
+        "bloecke": 12
+      },
+      "quelle": "https://minecraft.wiki/w/Piston („A piston moves at most 12 blocks at once“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Schieben und Grenzen",
+      "ungeprueft": true,
+      "testanleitung": "Kolben vor einer Reihe aus 12 Steinen (Platz dahinter) und aus 13 Steinen: Fährt er aus? Erwartet 12 ja, 13 nein."
+    },
+    {
+      "id": "kolben.start",
+      "titel": "Start nach 2 Ticks, nur im C-Tick",
+      "regel": "Ein bestromter Kolben (von jeder Seite außer dem Kopf; keine Quasi-Konnektivität) beginnt in Bedrock nach 2 Spielticks und nur im C-Tick; die Prüfung, ob die Kette schiebbar ist, geschieht beim Start.",
+      "parameter": {
+        "startTicks": 2,
+        "kolbenIds": [
+          "minecraft:piston",
+          "minecraft:sticky_piston"
+        ],
+        "armIds": [
+          "minecraft:piston_arm_collision",
+          "minecraft:sticky_piston_arm_collision"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Piston (Bedrock: „Start delay is fixed at 2 game ticks, activation only on the C-tick“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Zeit und Strom",
+      "ungeprueft": true,
+      "testanleitung": "Hebel an den Kolben: Wie viele Ticks (Video, 60 fps) vergehen bis der Kopf draußen ist (erwartet 4 Ticks)? Strom von oben, unten, hinten, seitlich ja; vom Kopf her nicht; ein Block mit Strom zwei Blöcke weiter (Quasi) bestromt ihn nicht."
+    },
+    {
+      "id": "kolben.dauer",
+      "titel": "Ausfahren und Einfahren dauern je 2 Ticks",
+      "regel": "Das Ausfahren und das Einfahren dauern je 2 Spielticks. Blockwerk setzt Blöcke und Kolbenkopf am Ende der 2 Ticks.",
+      "parameter": {
+        "ticks": 2
+      },
+      "quelle": "https://minecraft.wiki/w/Piston („Extension and retraction each take 2 game ticks“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Zeit und Strom",
+      "ungeprueft": true,
+      "testanleitung": "Beobachter vor einem Kolben und Redstone-Lampe hinter dem Beobachter: Zeit zwischen Hebel und Impuls messen (erwartet 4 Ticks bis zum Block-Update)."
+    },
+    {
+      "id": "kolben.unbeweglich",
+      "titel": "Unbewegliche Blöcke",
+      "regel": "Obsidian, Bedrock, Weinender Obsidian, Reinforced Deepslate, Respawn-Anker, Verzauberungstisch, Endertruhe, Leuchtfeuer, Befehlsblöcke, Strukturblock, Barriere, Lichtblock, Spawner, Portale, Endportalrahmen, Plattenspieler, Leitstein, Sculk-Sensoren, -Shrieker und -Katalysator, Tresor, Schleifstein, Jigsaw sowie ausgefahrene Kolben und Kolbenköpfe verhindern das Ausfahren.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Piston (Limitations: „Cannot be pushed“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Schieben und Grenzen",
+      "ungeprueft": true,
+      "testanleitung": "Je einen dieser Blöcke vor einen Kolben setzen: Fährt der Kolben aus? Besonders: Schleifstein, Plattenspieler, Leitstein, Verzauberungstisch, ausgefahrener Kolben."
+    },
+    {
+      "id": "kolben.zerstoert",
+      "titel": "Zerstörbare Blöcke am Ende",
+      "regel": "Am Ende der Kette wird ein zerstörbarer Block (Fackel, Pflanze, Staub, Knopf, Hebel, Schild, Tür, Leiter, Schnee …) entfernt; Teppiche und Schienen werden geschoben.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Piston („Blocks … break when pushed“); Teppiche und Schienen sind beweglich",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Schieben und Grenzen",
+      "ungeprueft": true,
+      "testanleitung": "Kolben vor: Fackel, Blume, Staub, Knopf, Tür, Leiter, Schild, Teppich, Schiene, Schnee. Was passiert mit jedem?"
+    },
+    {
+      "id": "kolben.behaelter",
+      "titel": "Behälter",
+      "regel": "Truhen, Fässer, Öfen, Trichter, Werfer, Spender und andere Blockentitäten: ob Kolben sie in Bedrock schieben, ist nicht eindeutig belegt. Blockwerk lässt den Kolben nicht ausfahren und meldet „unklar“.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Piston (Abschnitt „Cannot be pushed, because these blocks hold block entities“; Bedrock nicht eindeutig)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Schieben und Grenzen",
+      "ungeprueft": true,
+      "testanleitung": "Kolben vor einer Truhe (einzeln und doppelt), einem Fass, Ofen, Trichter, Werfer, Shulkerkiste: Wird der Block geschoben? Mit Inhalt?"
+    },
+    {
+      "id": "kolben.klebrig",
+      "titel": "Klebriger Kolben zieht 1 Block",
+      "regel": "Beim Einfahren zieht ein klebriger Kolben den Block vor dem Kopf in die Kopfzelle zurück (einen Block, nur wenn er beweglich ist).",
+      "parameter": {
+        "block": "minecraft:sticky_piston",
+        "anzahl": 1
+      },
+      "quelle": "https://minecraft.wiki/w/Piston (Sticky Piston)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: klebriger Kolben",
+      "ungeprueft": true,
+      "testanleitung": "Klebrigen Kolben ausfahren lassen, dann einfahren, mit einem Stein, einem Obsidian, einer Fackel und zwei Steinen hintereinander vor dem Kopf: Was wird zurückgezogen?"
+    },
+    {
+      "id": "kolben.blockiert",
+      "titel": "Blockierter Kolben fährt nicht aus",
+      "regel": "Ist die Kette nicht schiebbar (unbeweglich, mehr als 12, Behälter), bleibt der Kolben eingefahren; Blockwerk meldet den Grund.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Piston („If a push's requirements are not met, the piston will not extend“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/kolben.test.js::Kolben: Schieben und Grenzen",
+      "ungeprueft": true,
+      "testanleitung": "Kolben vor Obsidian bestromen: Passiert etwas (Geräusch, Kopf)? Bleibt er danach bestromt blockiert?"
+    }
+  ]
+}

@@ -55,9 +55,15 @@ async function bloecke(eig) {
   const arbeits = new Set(eig.arbeitsbloecke);
   const ergebnis = {};
   for (const b of roh.data_items) {
-    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null, lichtfilter: null, lichtform: null, spawnBoden: null, leitet: null };
+    const e = { vollblock: null, durchsichtig: null, licht: 0, faellt: false, brauchtHalt: false, arbeitsblock: arbeits.has(b.name), fackelOben: null, fackelSeiten: null, schiene: null, fluessigkeit: null, lichtfilter: null, lichtform: null, spawnBoden: null, leitet: null, schiebung: null };
     for (const r of regeln) if (r.re.test(b.name) && !(r.ausser && r.ausser.test(b.name))) Object.assign(e, r.setze);
     if (e.fluessigkeit === null && e.vollblock === true) e.fluessigkeit = 'fest';
+    // Verhalten beim Kolben: unbeweglich (Muster), Behälter (Blockentität, unklar), zerstört beim Schieben (wie wegspülbare Pflanzen, außer Teppich und Schiene), alles Übrige beweglich (Java-Standard, ungeprüft); Luft, Flüssigkeiten und Feuer sind keine Blöcke zum Schieben (null)
+    if (e.schiebung === null) {
+      if (b.name in eig.behaelter) e.schiebung = 'behaelter';
+      else if (e.fluessigkeit === 'wegspuelbar') e.schiebung = /_carpet$|_rail$|^minecraft:rail$/.test(b.name) ? 'beweglich' : 'zerstoert';
+      else if (!/^minecraft:(air|water|flowing_water|lava|flowing_lava|fire|soul_fire)$/.test(b.name)) e.schiebung = 'beweglich'; // Java: alles Übrige ist normal beweglich
+    }
     if (e.lichtfilter === null && e.vollblock === true && e.durchsichtig === false) e.lichtfilter = 15;
     if (e.spawnBoden === null && e.vollblock === true && e.durchsichtig === false && !eig.spawnBodenUnklar.includes(b.name)) e.spawnBoden = true;
     if (e.spawnBoden === null && b.name.endsWith('_double_slab')) e.spawnBoden = true;

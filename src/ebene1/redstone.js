@@ -205,12 +205,13 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
       /**
        * Wird die Zelle (Lampe, Tür, Kolben …) bestromt? Ja bei: Staub daneben, der auf sie zeigt (oder auf ihr liegt), eingeschalteter Quelle daneben (auch oben/unten),
        * brennender Fackel daneben (außer an ihrem Befestigungsblock), bestromtem leitenden Block daneben (stark oder schwach), Repeater/Komparator/Beobachter/Tagessensor,
-       * der in sie hineinzeigt (Ausgabe).
+       * der in sie hineinzeigt (Ausgabe). `ohneRichtung`: diese Seite zählt nicht (Kolben werden vom Kopf aus nicht bestromt).
        */
-      bestromtAn: (x, y, z) => {
+      bestromtAn: (x, y, z, ohneRichtung = null) => {
         const pos = { x, y, z };
         const pk = key(pos);
         for (const r of SECHS) {
+          if (r === ohneRichtung) continue; // z. B. der Kopf eines Kolbens
           const n = plus(pos, r);
           const k = key(n);
           if (staubSet.has(k)) {

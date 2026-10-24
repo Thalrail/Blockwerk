@@ -66,10 +66,11 @@ Zuletzt aktualisiert: 20.10.2026
 - **Keine Lorenphysik:** Bedrock nennt dazu keine Zahlen. Jonahs Messungen A–F (`docs/messungen-lore.md`) sind die Grundlage für Schritt 2b-3.
 
 ## Was Wasser und Lava (Teil 2c) jetzt können (`src/ebene1/fluessigkeit.js`)
-- Als Taktgeber-Mechanik über geplante Ticks: Wasser 7 Blöcke weit, 1 Block alle 5 Ticks; Lava Oberwelt 3 Blöcke / 30 Ticks, Nether 7 Blöcke / 10 Ticks. Darstellung mit `liquid_depth` (0 Quelle, 1–7 Fluss, ab 8 fallend).
-- Fließt nach unten ohne Grenze, sucht Gefälle in bis zu 4 Blöcken, bildet neue Wasserquellen (2 Quellen), Lava nie; Mischen: Obsidian, Bruchstein, Stein; spült Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen u. a. weg (Ebene-0-Eigenschaft `fluessigkeit`); Abklingen ohne Nachschub.
+- Als Taktgeber-Mechanik über geplante Ticks: Wasser 7 Blöcke weit (Quadrat), 1 Ring alle 5 Ticks; Lava Oberwelt 3 Blöcke / 30 Ticks, Nether 7 Blöcke / 10 Ticks. Darstellung mit `liquid_depth` (0 Quelle, 1–7 Fluss, ab 8 fallend).
+- Fließt nach unten ohne Grenze, sucht Gefälle (gerade bis zum 5. Block, diagonal bis (3, 3)), bildet neue Wasserquellen (2 Quellen), Lava nie; Mischen: Obsidian, Bruchstein, Stein; spült Fackeln, Schienen, Teppiche, Redstone-Staub, Pflanzen u. a. weg (Ebene-0-Eigenschaft `fluessigkeit`); Abklingen ohne Nachschub.
 - `simuliere(welt)` läuft in einer Kopie bis zum stabilen Zustand. Prüfer `pruefer.wasser-zerstoert`: Verstoß mit Koordinate für alles, was weggespült wird; Hinweis bei Wasser-Lava-Mischungen.
 - Regeln: `data/regeln/fluessigkeit.json` (11 Regeln, 2 belegt, 9 mit Annahmen und Testanleitung). Vieles ist im Wiki nicht als Bedrock gekennzeichnet.
+- **Jonahs Spieltests 24.10.2026:** Weite 7/3 als **Quadrat** (Ecken mit, Stufe = größter Abstand), Tempo (innerhalb der Stoppuhr-Genauigkeit), Wegspülen (Pflanzenfamilien), Vollblöcke halten auf, Gefälle gerade bis zum 5. Block und diagonal bis (3, 3), Plus-Form sind `geprüft` und in der Simulation umgesetzt (Wegkosten gerade 2, diagonal 3, Grenze 10; Annahmen `fluessigkeit.ecken`, `fluessigkeit.gefaelle-mischwege`). Offen: stilles Wasser + fließende Lava = glatter Stein (Lage der Lava ungeklärt). Details in `docs/spieltests.md`.
 - Nicht dabei: Strömung auf Wesen, Waterlogging, Blasensäulen, Eis/Schnee, Lava-Feuer, Dimension im Plan (nur Einstellung der Simulation).
 - Annahme mit Wirkung: Eine Quelle über fließendem Wasser breitet sich auch seitlich aus (Plus-Form um eine Quelle in der Luft). Treppen, Halbstufen, Zäune usw. halten Wasser wie feste Blöcke auf, bis getestet.
 

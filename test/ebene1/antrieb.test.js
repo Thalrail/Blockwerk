@@ -157,3 +157,38 @@ test('Antrieb: Schienen außerhalb des Tickbereichs schalten nicht', () => {
   t2.laufe(2);
   assert.equal(sk2.welt.leseBlock(19, 1, 0).zustand.rail_data_bit, true);
 });
+
+test('Antrieb: Redstonefackel und Hebel versorgen die Schiene', () => {
+  const mit = (x, y, z, id, zustand = {}) => {
+    const w = boden(); e1.schienen.platziere(w, { x: 0, y: 1, z: 0 }, GOLD);
+    w.setzeBlock(x, y, z, id, zustand);
+    return A.aktive(w).size;
+  };
+  const fackel = (richtung) => ({ torch_facing_direction: richtung });
+  // Fackel links und rechts neben der Schiene (Spieltest Jonah): stehend von unten oder an einem Nachbarblock hängend
+  assert.equal(mit(1, 1, 0, 'minecraft:redstone_torch', fackel('top')), 1, 'rechts');
+  assert.equal(mit(-1, 1, 0, 'minecraft:redstone_torch', fackel('top')), 1, 'links');
+  assert.equal(mit(0, 1, 1, 'minecraft:redstone_torch', fackel('west')), 1, 'seitlich, an einem Nachbarblock hängend');
+  // ausgebrannte Fackel und Fackel über/unter der Schiene versorgen nichts (nicht getestet, nicht angenommen)
+  assert.equal(mit(1, 1, 0, 'minecraft:unlit_redstone_torch', fackel('top')), 0);
+  assert.equal(mit(0, 2, 0, 'minecraft:redstone_torch', fackel('west')), 0, 'über der Schiene: nicht angenommen');
+  assert.equal(mit(0, 0, 0, 'minecraft:redstone_torch', fackel('top')), 0, 'unter der Schiene: nicht angenommen');
+  // Hebel: nur eingeschaltet, auf jedem der Nachbarfelder
+  for (const [x, y, z] of [[1, 1, 0], [-1, 1, 0], [0, 1, 1], [0, 1, -1], [0, 2, 0], [0, 0, 0]]) {
+    assert.equal(mit(x, y, z, 'minecraft:lever', { lever_direction: 'up_north_south', open_bit: true }), 1, `Hebel an ${x},${y},${z} ein`);
+    assert.equal(mit(x, y, z, 'minecraft:lever', { lever_direction: 'up_north_south', open_bit: false }), 0, `Hebel an ${x},${y},${z} aus`);
+  }
+  // Der Strom läuft durch die Kette: Fackel an der ersten Schiene versorgt 9
+  const w = boden(); reihe(w, 0, 12); w.setzeBlock(0, 1, 1, 'minecraft:redstone_torch', { torch_facing_direction: 'top' });
+  assert.equal(A.aktive(w).size, 9);
+});
+
+test('Antrieb: von Jonah geprüfte Regeln tragen Datum und Beobachtung', () => {
+  for (const id of ['antrieb.reichweite', 'antrieb.nur-verbundene', 'antrieb.stromblock']) {
+    const r = e1.regelwerk.regel(id);
+    assert.equal(r.status, 'geprüft', id);
+    assert.match(r.beobachtung, /^Jonah/, id);
+    assert.equal(r.ungeprueft, false);
+  }
+  assert.equal(e1.regelwerk.regel('antrieb.redstonefackel').ungeprueft, true, 'vorn/hinten/über/unter bleiben offen');
+});

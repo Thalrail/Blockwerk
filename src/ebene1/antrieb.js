@@ -4,7 +4,8 @@
 //     'mechanismus': der Taktgeber ruft sie nur in C-Ticks auf.
 //   - Eine versorgte Antriebsschiene aktiviert verbundene Antriebsschienen bis zu `reichweite` Schienen weit
 //     (Wiki, Edition nicht gekennzeichnet → ungeprüft). Strom geben nur verbundene Antriebsschienen weiter (Annahme).
-//   - Direkte Versorgung: ein Stromblock (hier: Redstone-Block) oder eine von außen übergebene Stromquelle grenzt an die Schiene.
+//   - Direkte Versorgung (Spieltests Jonah, 24.10.2026): Redstone-Block auf einem der 6 Nachbarfelder, leuchtende Redstonefackel seitlich,
+//     eingeschalteter Hebel auf einem Nachbarfeld, oder eine von außen übergebene Stromquelle.
 // Die Welt wird nur über Ebene 0 gelesen und geschrieben.
 import { RICHTUNGEN, VEKTOR } from '../ebene0/richtungen.js';
 
@@ -16,6 +17,8 @@ const key = (p) => `${p.x},${p.y},${p.z}`;
 export function erzeugeAntrieb({ regelwerk, schienen }) {
   const reichweite = regelwerk.parameter('antrieb.reichweite', 'reichweite');
   const stromBloecke = new Set(regelwerk.parameter('antrieb.stromblock', 'quellenBloecke'));
+  const stromHorizontal = new Set(regelwerk.parameter('antrieb.redstonefackel', 'quellenHorizontal'));
+  const stromMitZustand = regelwerk.parameter('antrieb.hebel', 'quellenMitZustand');
   const antriebsIds = schienen.belegtGerade; // golden_rail (Antriebsschiene)
 
   const istAntriebsschiene = (id) => antriebsIds.has(id);
@@ -25,7 +28,10 @@ export function erzeugeAntrieb({ regelwerk, schienen }) {
     for (const r of RICHTUNGEN) {
       const n = { x: pos.x + VEKTOR[r].x, y: pos.y + VEKTOR[r].y, z: pos.z + VEKTOR[r].z };
       if (strom.has(key(n))) return true;
-      if (stromBloecke.has(welt.leseBlock(n.x, n.y, n.z).id)) return true;
+      const nb = welt.leseBlock(n.x, n.y, n.z);
+      if (stromBloecke.has(nb.id)) return true;
+      if (r !== 'up' && r !== 'down' && stromHorizontal.has(nb.id)) return true; // Fackel: seitlich (links/rechts getestet, vorn/hinten angenommen)
+      if (stromMitZustand.some((q) => q.block === nb.id && Object.entries(q.zustand).every(([k, v]) => nb.zustand[k] === v))) return true;
     }
     return false;
   }

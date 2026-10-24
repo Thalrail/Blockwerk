@@ -1,0 +1,44 @@
+{
+  "bereich": "lager",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "lager.filter",
+      "titel": "Filtertrichter mit Haltemenge und Füllern",
+      "regel": "Der Filtertrichter hält in Slot 1 die Haltemenge der Sorte und in den Slots 2–5 je einen Füller (ein Gegenstand, der nie im Strom vorkommt, in 64er-Stapeln). So zieht er aus dem Rohr nur die Sorte. Die Haltemenge ist das größte k, bei dem sein Komparatorsignal gerade noch 1 ist (Formel wie bei Trichtern: floor(1 + (k ÷ Stapel + Füllerbruchteil) ÷ 5 × 14)); sie hängt von der Stapelgröße der Sorte ab (64er: 18, 16er: 4). Nicht stapelbare Sorten lassen sich so nicht filtern. Im Spiel müssen die Füller umbenannte Gegenstände oder per Befehl besorgte Blöcke sein.",
+      "parameter": {
+        "fueller": ["minecraft:barrier", "minecraft:structure_void", "minecraft:light_block_0", "minecraft:allow", "minecraft:deny", "minecraft:border_block"],
+        "fuellerAnzahl": 4,
+        "fuellerMenge": 1,
+        "konstante": 1
+      },
+      "quelle": "https://minecraft.wiki/w/Tutorial:Item_sorting (Filtertrichter: 1 Zielsorte und 4 Füller; Haltemenge dort 41 mit anderer Schwelle)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/sortiereinheit.test.js::Sortiereinheit: Haltemenge, Paket und Füller",
+      "ungeprueft": true,
+      "testanleitung": "Einen Trichter mit 18 Stück der Sorte und vier verschiedenen, nie im Strom vorkommenden Füllern (je 1) bauen, einen Komparator dahinter: zeigt er Signal 1? Mit 19 Stück Signal 2? Bei einer 16er-Sorte (Enderperle) mit 4 und 5 Stück?"
+    },
+    {
+      "id": "lager.sperre",
+      "titel": "Ausgabetrichter gesperrt, solange der Filtertrichter nicht übervoll ist",
+      "regel": "Ein Komparator liest den Filtertrichter und zieht die Konstante 1 ab (zweiter Komparator liest ein Fass mit einem Stück). Bei Haltemenge + 1 zeigt er Signal 1, ein Repeater verstärkt, Staub und ein Repeater führen das Signal an einen Block, an dem die Fackel neben dem Ausgabetrichter hängt: die Fackel geht aus, der Ausgabetrichter entsperrt und zieht aus Slot 1 den Überschuss in die Lagerkiste, bis das Signal wieder 0 ist. Beim Start kann ein Stück zu viel abgezogen werden; die Haltemenge lässt dafür Spielraum.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Tutorial:Item_sorting (Wortbeschreibung des Sortierers; Anordnung eigener Entwurf)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/sortiereinheit.test.js::Sortiereinheit: Zufallsströme in beiden Reihenfolgen",
+      "ungeprueft": true,
+      "testanleitung": "Sortiereinheit mit zwei Sorten nach Plan bauen und aus einem Gemisch aus drei Sorten durchlaufen lassen (Eingangsabstand mindestens 9 Ticks): Liegt alles Gewünschte in der Lagerkiste, nichts Fremdes? Bleibt der Filtertrichter bei Haltemenge, bleiben die Füller drin, und bleibt der Ausgabetrichter sonst gesperrt?"
+    },
+    {
+      "id": "lager.eingang",
+      "titel": "Eingangsabstand mindestens 9 Ticks",
+      "regel": "Der Strom im Rohr darf höchstens alle 9 Ticks einen Gegenstand liefern. Bei dichterem Strom (volle Auslastung, alle 8 Ticks) rutscht je nach Reihenfolge, in der das Spiel die Trichter bearbeitet, ein Teil der Sorte am Filter vorbei bis zum Rohrende; das Wiki beschreibt dasselbe für Bedrock. Fremde Gegenstände landen nie im Filter oder in der Lagerkiste.",
+      "parameter": { "mindestabstand": 9 },
+      "quelle": "https://minecraft.wiki/w/Tutorial:Item_sorting („Bedrock hopper pipes running at full load can push a small share of items past filters“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/sortiereinheit.test.js::Sortiereinheit: Grenze bei dichtem Strom",
+      "ungeprueft": true,
+      "testanleitung": "Gemisch einmal mit voller Geschwindigkeit (Trichterkette direkt vor dem Rohr) und einmal gedrosselt (alle 10 Ticks) durchlaufen lassen: Kommt bei voller Geschwindigkeit etwas von der Sorte am Rohrende an?"
+    }
+  ]
+}

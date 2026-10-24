@@ -20,6 +20,15 @@ export function param(name, groessenart, { min, max, standard, beschreibung, gan
   return Object.freeze(p);
 }
 
+/** Beschreibt einen Listenparameter (z. B. die Gegenstandssorten eines Lagers): Liste von Texten mit Länge min…max. */
+export function listeParam(name, groessenart, { min, max, standard, beschreibung }) {
+  if (!GROESSENARTEN.includes(groessenart)) throw new Error(`Parameter ${name}: Größenart "${groessenart}" ungültig`);
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min > max) throw new Error(`Parameter ${name}: Längenbereich widersprüchlich`);
+  if (!Array.isArray(standard) || standard.length < min || standard.length > max) throw new Error(`Parameter ${name}: Standardliste passt nicht`);
+  if (typeof beschreibung !== 'string' || !beschreibung) throw new Error(`Parameter ${name}: Beschreibung fehlt`);
+  return Object.freeze({ name, groessenart, min, max, standard, beschreibung, liste: true });
+}
+
 /** Prüft ein fertiges Paket auf Vollständigkeit und Form. Wirft bei Fehlern. */
 export function pruefePaket(p) {
   const fehler = (m) => { throw new Error(`Baustein ${String(p?.id)}: ${m}`); };
@@ -28,7 +37,10 @@ export function pruefePaket(p) {
   if (!STATI.includes(p.status)) fehler(`Status "${p.status}" ungültig`);
   if (!/https?:\/\//.test(p.quelle)) fehler('quelle braucht einen Link');
   if (!p.parameter || typeof p.parameter !== 'object') fehler('Parameter fehlen');
-  for (const [name, w] of Object.entries(p.parameter)) if (!Number.isFinite(w)) fehler(`Parameter ${name} ist keine Zahl`);
+  for (const [name, w] of Object.entries(p.parameter)) {
+    const liste = Array.isArray(w) && w.every((x) => typeof x === 'string');
+    if (!Number.isFinite(w) && !liste) fehler(`Parameter ${name} ist weder Zahl noch Liste von Texten`);
+  }
   if (!Array.isArray(p.bloecke)) fehler('Blöcke fehlen');
   for (const b of p.bloecke) {
     if (![b.x, b.y, b.z].every(Number.isInteger)) fehler('Blockkoordinate keine ganze Zahl');
@@ -37,6 +49,10 @@ export function pruefePaket(p) {
       if (typeof b.id !== 'string' || !b.id.startsWith('minecraft:')) fehler('Technikblock braucht eine Block-ID (minecraft:…)');
       if ('rolle' in b || 'form' in b) fehler('Technikblöcke haben keine Rolle und keine Form');
       if (b.zustand !== undefined && (b.zustand === null || typeof b.zustand !== 'object')) fehler('zustand muss ein Objekt sein');
+      if (b.inhalt !== undefined) {
+        if (!Array.isArray(b.inhalt)) fehler('inhalt muss eine Liste von Slots sein');
+        for (const s of b.inhalt) if (!Number.isInteger(s?.slot) || s.slot < 0 || typeof s.gegenstand !== 'string' || !Number.isInteger(s.anzahl) || s.anzahl < 1) fehler('inhalt: Slot braucht slot, gegenstand und anzahl');
+      }
       continue;
     }
     if (!ROLLEN.includes(b.rolle)) fehler(`Rolle "${b.rolle}" unbekannt`);
@@ -84,6 +100,13 @@ export function definiere(def) {
       for (const k of Object.keys(eingabe)) if (!beschreibung.has(k)) throw new Error(`${def.id}: unbekannter Parameter "${k}"`);
       const werte = {};
       for (const p of def.parameter) {
+        if (p.liste) {
+          const l = eingabe[p.name] ?? p.standard;
+          if (!Array.isArray(l) || !l.every((x) => typeof x === 'string')) throw new Error(`${def.id}: Parameter ${p.name} muss eine Liste von Texten sein`);
+          if (l.length < p.min || l.length > p.max) throw new Error(`${def.id}: Parameter ${p.name} hat ${l.length} Einträge, erlaubt sind ${p.min}…${p.max} (außerhalb)`);
+          werte[p.name] = [...l];
+          continue;
+        }
         const w = eingabe[p.name] ?? p.standard;
         if (!Number.isFinite(w)) throw new Error(`${def.id}: Parameter ${p.name} muss eine Zahl sein`);
         if (p.ganzzahl && !Number.isInteger(w)) throw new Error(`${def.id}: Parameter ${p.name} muss ganzzahlig sein`);
@@ -125,7 +148,7 @@ function zustandVon(ebene0, b) {
 export function platziere(welt, paket, palette, versatz = { x: 0, y: 0, z: 0 }, ebene0 = null) {
   for (const b of paket.bloecke) {
     if (b.technik === true) {
-      welt.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, b.id, b.zustand ?? {});
+      welt.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, b.id, b.zustand ?? {}, b.inhalt ?? null);
       continue;
     }
     const m = palette[b.rolle];

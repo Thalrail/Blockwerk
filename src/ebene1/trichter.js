@@ -79,7 +79,12 @@ export function erzeugeTrichter({ regelwerk, register, richtungVon }) {
     return richtungVon('facing_direction', block.zustand.facing_direction);
   }
 
-  function mechanik() {
+  /**
+   * @param {{reihenfolge?: 'aufsteigend'|'absteigend'}} [optionen] Reihenfolge der Trichter im selben Tick: aufsteigend = (y, z, x) wie bisher, absteigend = umgekehrt.
+   *   In Bedrock ist sie nicht dokumentiert; Tests laufen mit beiden, damit eine Schaltung nicht von der Annahme abhängt.
+   */
+  function mechanik({ reihenfolge = 'aufsteigend' } = {}) {
+    if (!['aufsteigend', 'absteigend'].includes(reihenfolge)) throw new Error(`Unbekannte Reihenfolge: ${String(reihenfolge)}`);
     const ereignisse = [];
     const bereitAb = new Map(); // Trichter → Tick, ab dem er wieder arbeitet
     let letzteBewegung = 0;
@@ -136,6 +141,7 @@ export function erzeugeTrichter({ regelwerk, register, richtungVon }) {
       schritt(ktx) {
         // feste Reihenfolge: sortiert nach (y, z, x) – die Reihenfolge innerhalb eines Ticks ist in Bedrock nicht dokumentiert
         positionen ??= ktx.welt.alleBloecke().filter((b) => b.id === hopperId).map((b) => ({ x: b.x, y: b.y, z: b.z }));
+        if (reihenfolge === 'absteigend' && !positionen.umgekehrt) { positionen.reverse(); positionen.umgekehrt = true; }
         for (const pos of positionen) trichterTick(ktx, pos);
       },
     };

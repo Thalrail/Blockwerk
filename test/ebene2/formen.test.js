@@ -10,7 +10,7 @@ const e0 = e2.ebene0;
 const TOLERANZ = e1.regelwerk.parameter('formen.rundung', 'toleranz');
 
 test('Bausteine: Paketform', () => {
-  assert.equal(e2.bausteine.size, 19);
+  assert.equal(e2.bausteine.size, 20);
   for (const b of e2.bausteine.values()) {
     const p = b.erzeuge();
     pruefePaket(p);
@@ -23,12 +23,14 @@ test('Bausteine: Paketform', () => {
     const xs = p.bloecke.map((x) => x.x), ys = p.bloecke.map((x) => x.y), zs = p.bloecke.map((x) => x.z);
     assert.deepEqual(p.platzbedarf.huelle, { von: { x: Math.min(...xs), y: Math.min(...ys), z: Math.min(...zs) }, bis: { x: Math.max(...xs), y: Math.max(...ys), z: Math.max(...zs) } }, b.id);
     // Eingaben werden geprüft
-    const erster = b.parameter[0].name; // erster Parameter ist bei allen Bausteinen eine ganzzahlige Maßangabe
-    assert.throws(() => b.erzeuge({ [erster]: 0 }), /außerhalb/);
-    assert.throws(() => b.erzeuge({ [erster]: 4.5 }), /ganzzahlig/);
-    assert.throws(() => b.erzeuge({ [erster]: 100000 }), /außerhalb/);
+    const zahl = b.parameter.find((x) => !x.liste && x.ganzzahl); // ein ganzzahliger Maßparameter (Listenparameter prüfen ihre Bausteine selbst)
+    if (zahl) {
+      assert.throws(() => b.erzeuge({ [zahl.name]: zahl.min - 1 }), /außerhalb/);
+      assert.throws(() => b.erzeuge({ [zahl.name]: zahl.min + 0.5 }), /ganzzahlig/);
+      assert.throws(() => b.erzeuge({ [zahl.name]: 100000 }), /außerhalb/);
+      assert.throws(() => b.erzeuge({ [zahl.name]: 'x' }), /Zahl/);
+    }
     assert.throws(() => b.erzeuge({ farbe: 1 }), /unbekannter Parameter/);
-    assert.throws(() => b.erzeuge({ [erster]: 'x' }), /Zahl/);
   }
   // Größenarten: Wandstärke ist Menschenmaß, Maße sind Geometrie
   const art = (id, name) => e2.bausteine.get(id).parameter.find((x) => x.name === name).groessenart;

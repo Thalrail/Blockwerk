@@ -108,13 +108,13 @@
     {
       "id": "fluessigkeit.mischen",
       "titel": "Wasser und Lava mischen",
-      "regel": "Lava mit Wasser darüber oder daneben wird zu Obsidian (Quelle) bzw. Bruchstein (Fluss). Lava, die nach unten auf Wasser fällt, macht Stein. Wasser unter Lava zählt nicht.",
+      "regel": "Lava mit Wasser darüber oder daneben wird zu Obsidian (Quelle) bzw. Bruchstein (Fluss). Lava, die nach unten auf Wasser fällt, macht Stein. Wasser unter Lava zählt nicht. Jonah (24.10.2026): stille Lava + fließendes Wasser = Obsidian (Blockwerk: Lavaquelle + Wasser = Obsidian, stimmt); beides fließend = Bruchstein (stimmt); stilles Wasser + fließende Lava = glatter Stein (Blockwerk macht daraus bisher nur dann Stein, wenn die Lava von oben fällt, sonst Bruchstein; Abweichung, bis die Lage der Lava geklärt ist).",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Water; https://minecraft.wiki/w/Lava (Edition nicht gekennzeichnet; Lage „darunter“ ist eine Annahme)",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Mischen von Wasser und Lava",
       "ungeprueft": true,
-      "testanleitung": "Kreativ-Testwelt: (1) Wasserquelle neben Lava-Quelle, (2) Wasserfluss trifft Lavafluss, (3) Lava fließt von oben auf Wasser, (4) Wasserquelle unter einer Lava-Quelle. Je Fall melden: Obsidian, Bruchstein, Stein oder nichts."
+      "testanleitung": "Stilles Wasser (Quelle) und fließende Lava: (1) Lava fließt seitlich an die Wasserquelle, (2) Lava fällt von oben auf die Wasserquelle. Was entsteht jeweils (glatter Stein oder Bruchstein), und welcher Block wird verwandelt (die Lava oder das Wasser)?"
     },
     {
       "id": "fluessigkeit.wegspuelen",
@@ -153,24 +153,26 @@
     {
       "id": "fluessigkeit.gefaelle-diagonal",
       "titel": "Gefälle auf der Diagonale",
-      "regel": "Jonah meldet: Bei einem Loch auf der Diagonalen ist es der 4. Block. Blockwerk rechnet Diagonalen bisher als Weg über zwei gerade Schritte (Betragssumme) und findet ein diagonales Loch deshalb nur bis (2, 2). Ob „4. Block“ den Punkt (4, 4) oder einen anderen Abstand meint, ist offen.",
-      "parameter": {},
+      "regel": "Jonah (24.10.2026): Liegt ein Loch diagonal zur Quelle, wird es bis zum 4. Block auf der Diagonalen gefunden, also bei (4, 4); in gerader Richtung bis zum 5. Block (siehe fluessigkeit.gefaelle). Blockwerk rechnet Diagonalen als Weg über zwei gerade Schritte und findet ein diagonales Loch deshalb nur bis (2, 2). Das passt erst zusammen, wenn die Simulation auf die Quadratform umgestellt ist (siehe fluessigkeit.form).",
+      "parameter": {
+        "diagonaleBisN": 4
+      },
       "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt) – Messung unklar; https://minecraft.wiki/w/Water",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Flüssigkeit: Gefälle bis 4 Blöcke wird bevorzugt",
       "ungeprueft": true,
-      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) schräg: bei (n, n) für n = 1, 2, 3, 4, 5 (jeweils einzeln): Fließt das Wasser nur in Richtung des Lochs oder in alle Richtungen? Melde die Koordinaten (Quelle bei 0,0), bis zu welchem n es bevorzugt wird."
+      "testanleitung": "Quelle auf ebenem Stein, ein Loch (1 Block tief) bei (n, n) für n = 3, 4, 5 (jeweils einzeln): Fließt das Wasser gezielt zum Loch? Schon bei n = 4 und 5 prüfen, ob es sich auch in die anderen Richtungen ausbreitet."
     },
     {
       "id": "fluessigkeit.form",
-      "titel": "Form der Ausbreitung (Raute oder Quadrat)",
-      "regel": "Blockwerk breitet Wasser und Lava auf ebenem Boden als Raute aus (Betragssumme der Abstände ≤ Reichweite). Jonah sah in beiden Fällen ein „optisches Quadrat“ mit Reichweite 7 (Wasser) bzw. 3 (Lava) in jede Himmelsrichtung. Ob die Ecken (z. B. 7, 7) gefüllt werden, ist offen; solange gilt die Raute, und die Planung rechnet damit eher zu wenig Wasser an den Ecken.",
+      "titel": "Form der Ausbreitung: Quadrat (Blockwerk rechnet noch eine Raute)",
+      "regel": "Jonah (24.10.2026): Wasser und Lava breiten sich auf ebenem Boden als Quadrat aus (7 bzw. 3 Blöcke in jede Himmelsrichtung, Ecken mit). Blockwerk rechnet bisher eine Raute (Betragssumme der Abstände ≤ Reichweite); die Ecken fehlen deshalb in der Simulation. Der Prüfer „Wasser zerstört“ meldet an den Ecken also zu wenig. Die Umstellung der Simulation auf ein Quadrat ist noch nicht gemacht (offen: Stufen an den Ecken, Verhalten an Hindernissen).",
       "parameter": {},
       "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt) – Form unklar; https://minecraft.wiki/w/Water",
       "status": "simuliert",
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: Weite 7 Blöcke und Tempo 5 Ticks",
       "ungeprueft": true,
-      "testanleitung": "Wasserquelle auf ebenem Stein setzen, Bereich ausbreiten lassen, dann zählen: Liegt Wasser bei (7, 0)? bei (4, 3)? bei (5, 5)? bei (7, 7)? Für Lava (Oberwelt) entsprechend (3, 0), (2, 1), (2, 2), (3, 3). Melde die Koordinaten relativ zur Quelle, am besten mit Foto von oben."
+      "testanleitung": "Wasserquelle auf ebenem Stein: Welche Stufe hat das Wasser bei (7, 0), (7, 7), (4, 4)? (Stufe = Höhe der Wasserfläche: 1 hoch … 7 niedrig.) Ein Foto von oben mit F3/Koordinaten reicht. Dann eine Wand aus 3 Blöcken um die Quelle (nur diagonal offen lassen): Fließt das Wasser durch die diagonale Lücke?"
     },
     {
       "id": "fluessigkeit.plus-form",
@@ -199,7 +201,7 @@
     {
       "id": "fluessigkeit.wegspuelen-getestet",
       "titel": "Wasser spült diese Pflanzen und Teile weg",
-      "regel": "Fließendes Wasser spült weg: Fackeln, Redstone-Staub, alle gepflanzten Samen (Nutzpflanzen und Stängel), Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker, alle Korallen (keine Korallenblöcke) und alle Blumen. Jonah schätzt, dass noch mehr dazugehört; nicht getestet ist alles andere.",
+      "regel": "Fließendes Wasser spült weg: Fackeln, Redstone-Staub, alle gepflanzten Samen (Nutzpflanzen und Stängel), Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker (auch Laubstreu), alle Korallen (keine Korallenblöcke) und alle Blumen. Jonah schätzt, dass noch mehr dazugehört; nicht getestet ist alles andere.",
       "parameter": {
         "familien": [
           "fackeln",
@@ -216,7 +218,7 @@
       "quelle": "Spieltest Jonah (2026-10-24, Kreativ-Testwelt); https://minecraft.wiki/w/Water",
       "status": "geprüft",
       "geprueftAm": "2026-10-24",
-      "beobachtung": "Jonah: Weggespült werden Fackeln, Redstone-Staub, jegliche gepflanzten Samen, Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker, alle Korallen, alle Blumen (und „Laub“ – Bedeutung offen) und wahrscheinlich noch mehr.",
+      "beobachtung": "Jonah: Weggespült werden Fackeln, Redstone-Staub, jegliche gepflanzten Samen, Seegurken, alle Ranken, alle Setzlinge, alle Bodendecker, alle Korallen, alle Blumen (und „Laub“ = Laubstreu, ein Dekoelement) und wahrscheinlich noch mehr.",
       "ungeprueft": false,
       "simulationstest": "test/ebene1/fluessigkeit.test.js::Wasser: spült die von Jonah getesteten Pflanzen weg"
     }

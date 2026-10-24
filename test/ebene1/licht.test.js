@@ -75,7 +75,10 @@ test('Licht: Filter von Laub, Wasser und doppelten Halbstufen', () => {
   const f = (id) => e0.register.bloecke.block(id).eigenschaften.lichtfilter;
   assert.deepEqual([f('minecraft:oak_leaves'), f('minecraft:water'), f('minecraft:oak_double_slab'), f('minecraft:stone'), f('minecraft:air')], [2, 1, 15, 15, 0]);
   assert.deepEqual([f('minecraft:glass'), f('minecraft:white_carpet'), f('minecraft:lava'), f('minecraft:ice')], [0, 0, 15, 1], 'Wiki „Opacity“: Glas und Teppich wie Luft, Lava blockiert, Eis wie Wasser');
-  assert.deepEqual([f('minecraft:oak_stairs'), f('minecraft:oak_slab'), f('minecraft:oak_fence'), f('minecraft:torch'), f('minecraft:tinted_glass'), f('minecraft:glass_pane')], [null, null, null, null, null, null], 'unbekannt bleibt unbekannt');
+  assert.deepEqual([f('minecraft:oak_stairs'), f('minecraft:oak_slab'), f('minecraft:tinted_glass'), f('minecraft:snow_layer'), f('minecraft:hopper')], [null, null, null, null, null], 'Formen mit lichtblockierender Schale und alles ohne Angabe bleibt unbekannt');
+  // Jonah, 24.10.2026: wo Bedrock nichts sagt, gilt Java – dünne Blöcke lassen Licht durch wie Luft (Filter 0)
+  assert.deepEqual([f('minecraft:oak_fence'), f('minecraft:torch'), f('minecraft:glass_pane'), f('minecraft:golden_rail'), f('minecraft:cobblestone_wall'), f('minecraft:poppy'), f('minecraft:tube_coral_fan'), f('minecraft:stone_button')], [0, 0, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual([f('minecraft:sea_lantern'), f('minecraft:melon_stem')].map((x) => x), [15, 0], 'Seelaterne ist ein Vollblock, Stängel sind dünn');
   const dach = (id, zustand = {}) => {
     const w = e0.neueWelt();
     for (let x = -20; x <= 20; x++) for (let z = -20; z <= 20; z++) { w.setzeBlock(x, 0, z, STEIN); w.setzeBlock(x, 5, z, id, zustand); }
@@ -128,8 +131,15 @@ test('Licht: Glas und Teppich lassen Licht durch wie Luft (Wiki „Opacity“)',
     const k = L.lichtkarte(w, bereich(8, 1));
     assert.deepEqual(k.block(4, 1, 0), { min: 10, max: 10 }, `${id}: dahinter genauso hell wie durch Luft`);
   }
-  // getöntes Glas und Glasscheibe sind nicht belegt → unklar
-  for (const id of ['minecraft:tinted_glass', 'minecraft:glass_pane']) {
+  // dünne Blöcke gelten nach Java wie Luft (Filter 0)
+  for (const id of ['minecraft:glass_pane', 'minecraft:oak_fence', 'minecraft:golden_rail']) {
+    const w = raum(); fackel(w, 0, 1, 0);
+    for (let y = 1; y <= 5; y++) for (let z = -21; z <= 21; z++) w.setzeBlock(3, y, z, STEIN);
+    w.setzeBlock(3, 1, 0, id, id.endsWith('rail') ? { rail_direction: 0 } : {});
+    assert.deepEqual(L.lichtkarte(w, bereich(8, 1)).block(4, 1, 0), { min: 10, max: 10 }, `${id}: wie Luft`);
+  }
+  // getöntes Glas ist nicht belegt → unklar
+  for (const id of ['minecraft:tinted_glass']) {
     const w = raum(); fackel(w, 0, 1, 0);
     for (let y = 1; y <= 5; y++) for (let z = -21; z <= 21; z++) w.setzeBlock(3, y, z, STEIN);
     w.setzeBlock(3, 1, 0, id, {});

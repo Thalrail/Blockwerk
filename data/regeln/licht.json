@@ -44,7 +44,7 @@
     {
       "id": "licht.durchsichtig",
       "titel": "Glas und Teppiche lassen Licht durch wie Luft",
-      "regel": "Glasblöcke (außer getöntem Glas) und Teppiche vermindern durchgehendes Licht nicht über die normale Abnahme von 1 je Block hinaus. Glasscheiben, Türen, Fackeln, Schienen und andere dünne Blöcke sind nicht belegt und bleiben „unbekannt“. Lava blockiert in Bedrock die Lichtausbreitung vollständig.",
+      "regel": "Glasblöcke (außer getöntem Glas) und Teppiche vermindern durchgehendes Licht nicht über die normale Abnahme von 1 je Block hinaus. Glasscheiben, Türen, Falltüren, Zäune, Mauern, Fackeln, Schienen, Knöpfe, Schilder, Pflanzen, Blumen, Korallen und andere dünne Blöcke gelten nach den Java-Kategorien ebenfalls als durchlässig wie Luft (Jonah, 24.10.2026: wo Bedrock nichts sagt, gilt Java; Fehler werden gezielt behoben). Lava blockiert in Bedrock die Lichtausbreitung vollständig.",
       "parameter": {
         "filterNull": [
           "Glasblöcke",
@@ -63,7 +63,7 @@
     {
       "id": "licht.unbekannte-filter",
       "titel": "Unbekannte Lichtfilter werden mit zwei Schranken gerechnet",
-      "regel": "Für Glasscheiben, getöntes Glas, Treppen, Halbstufen, Zäune, Türen, Fackeln, Schienen, Redstone-Staub und viele andere dünne Blöcke nennt das Wiki keine Bedrock-Werte. Blockwerk rechnet mit „blockiert“ (Minimum) und „lässt durch“ (Maximum). Wo beide verschieden sind, ist das Feld „unklar“ (Hinweis statt Verstoß).",
+      "regel": "Für getöntes Glas, Treppen, Halbstufen, Schnee, Pfade, Kolben und alle Blöcke, die in keiner Java-Kategorie stehen, ist der Lichtdurchlass nicht belegt (die dünnen Blöcke siehe licht.durchsichtig). Blockwerk rechnet mit „blockiert“ (Minimum) und „lässt durch“ (Maximum). Wo beide verschieden sind, ist das Feld „unklar“ (Hinweis statt Verstoß).",
       "parameter": {},
       "quelle": "https://minecraft.wiki/w/Light (nicht belegt – bewusst nicht geraten)",
       "status": "simuliert",

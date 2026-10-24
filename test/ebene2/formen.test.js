@@ -10,12 +10,12 @@ const e0 = e2.ebene0;
 const TOLERANZ = e1.regelwerk.parameter('formen.rundung', 'toleranz');
 
 test('Bausteine: Paketform', () => {
-  assert.equal(e2.bausteine.size, 15);
+  assert.equal(e2.bausteine.size, 18);
   for (const b of e2.bausteine.values()) {
     const p = b.erzeuge();
     pruefePaket(p);
     assert.ok(p.bloecke.length > 0, b.id);
-    assert.ok(p.bloecke.every((x) => ROLLEN.includes(x.rolle) && !('id' in x)), `${b.id}: nur Rollen`);
+    assert.ok(p.bloecke.every((x) => (x.technik === true ? typeof x.id === 'string' && !('rolle' in x) : ROLLEN.includes(x.rolle) && !('id' in x))), `${b.id}: Rollen, Technikblöcke nur mit technik: true`);
     assert.ok(b.parameter.every((x) => ['geometrie', 'menschenmass', 'technik'].includes(x.groessenart)), b.id);
     assert.deepEqual(b.erzeuge(), p, `${b.id}: deterministisch`);
     assert.notEqual(p.status, 'geprüft', `${b.id}: nie von mir auf geprüft`);

@@ -172,6 +172,9 @@ Kreativwelt. Gebaut wird nach den Plänen der Seite; geprüft wird nur die Lage 
 2. **Doppeltür:** zwei Türen nebeneinander, Scharniere außen: öffnen sie beide nach außen?
 3. **Treppe:** Aufstieg nach Norden, 4 Stufen: geht es nach Norden hoch? Eine Wendeltreppe mit Radius 1 (8 Stufen je Umdrehung) im Uhrzeigersinn: stimmt die Laufrichtung?
 
+## Bahn-Module: Sichttest (Ebene 2)
+Die Abstände stammen aus deinen Messungen (`lore.*`, geprüft). Zum Anschauen: eine Antriebsstrecke mit 4 Abschnitten à 4 normalen Schienen und einer Antriebsschiene mit Redstone-Block darunter nach Norden bauen und eine Lore starten; ebenso eine Rampe 3 Blöcke hoch und eine Kurve mit 3 Schienen je Schenkel. Fährt die Lore durch?
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)

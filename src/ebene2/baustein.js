@@ -5,7 +5,10 @@ import { STATI } from '../ebene1/regelwerk.js';
 
 /** Größenarten (docs/ebenen.md): Geometrie skaliert frei, Menschenmaß bleibt fest, Technik skaliert über Anzahl. */
 export const GROESSENARTEN = Object.freeze(['geometrie', 'menschenmass', 'technik']);
-export const ROLLEN = Object.freeze(['wand', 'akzent', 'boden', 'licht']);
+export const ROLLEN = Object.freeze(['wand', 'akzent', 'boden', 'licht', 'glas']);
+/** Formen eines Blocks: `voll` (Standard) oder formgebunden mit Richtung (Treppe, Tür) bzw. Scheibe. Das Material bleibt Sache der Rolle. */
+export const FORMEN = Object.freeze(['voll', 'treppe', 'tuer', 'scheibe']);
+export const RICHTUNGEN = Object.freeze(['north', 'east', 'south', 'west']);
 
 /** Beschreibt einen Parameter. `ganzzahl: false` erlaubt Kommazahlen (Proportionen). */
 export function param(name, groessenart, { min, max, standard, beschreibung, ganzzahl = true }) {
@@ -31,6 +34,10 @@ export function pruefePaket(p) {
     if (![b.x, b.y, b.z].every(Number.isInteger)) fehler('Blockkoordinate keine ganze Zahl');
     if (!ROLLEN.includes(b.rolle)) fehler(`Rolle "${b.rolle}" unbekannt`);
     if ('id' in b) fehler('Bausteine setzen Rollen, keine Block-IDs');
+    const form = b.form ?? 'voll';
+    if (!FORMEN.includes(form)) fehler(`Form "${form}" unbekannt`);
+    if ((form === 'treppe' || form === 'tuer') && !RICHTUNGEN.includes(b.richtung)) fehler(`${form} braucht eine Richtung`);
+    if (form === 'tuer' && (!['unten', 'oben'].includes(b.haelfte) || !['links', 'rechts'].includes(b.scharnier))) fehler('Tür braucht haelfte (unten/oben) und scharnier (links/rechts)');
   }
   if (!Array.isArray(p.anschluesse)) fehler('Anschlüsse fehlen');
   const h = p.platzbedarf?.huelle;
@@ -81,18 +88,48 @@ export function definiere(def) {
   return Object.freeze(baustein);
 }
 
+/** Zustandswert einer Richtung für einen Richtungszustand (umgekehrt zu `vermesser.richtungVon`), aus den Daten von Ebene 0. */
+function wertFuer(ebene0, zustandName, richtung) {
+  const werte = ebene0.register.bloecke.zustandsart(zustandName).werte;
+  const w = werte.find((x) => ebene0.vermesser.richtungVon(zustandName, x) === richtung);
+  if (w === undefined) throw new Error(`Zustand ${zustandName} kennt die Richtung ${richtung} nicht`);
+  return w;
+}
+
+/** Zustände eines formgebundenen Blocks (Treppe: weirdo_direction = Seite des Vollblocks; Tür: Himmelsrichtung, Scharnier rechts = door_hinge_bit). */
+function zustandVon(ebene0, b) {
+  if (b.form === 'treppe') return { weirdo_direction: wertFuer(ebene0, 'weirdo_direction', b.richtung), upside_down_bit: false, 'minecraft:corner': 'none' };
+  if (b.form === 'tuer') return { 'minecraft:cardinal_direction': wertFuer(ebene0, 'minecraft:cardinal_direction', b.richtung), door_hinge_bit: b.scharnier === 'rechts', upper_block_bit: b.haelfte === 'oben', open_bit: false };
+  return {};
+}
+
 /**
- * Setzt ein Paket in eine Welt (nur über Ebene 0). `palette` ordnet jeder Rolle einen Block zu: Rolle → id oder {id, zustand}.
+ * Setzt ein Paket in eine Welt (nur über Ebene 0). `palette` ordnet jeder Rolle einen Block zu: Rolle → id, {id, zustand} oder je Form
+ * {voll, treppe, tuer, scheibe}. Formgebundene Blöcke brauchen `ebene0` (Drehregeln für die Richtungszustände).
  * Bausteine kennen kein Material; diese Zuordnung ist Sache von Ebene 3 (hier nur für Tests und Vorschau).
  */
-export function platziere(welt, paket, palette, versatz = { x: 0, y: 0, z: 0 }) {
+export function platziere(welt, paket, palette, versatz = { x: 0, y: 0, z: 0 }, ebene0 = null) {
   for (const b of paket.bloecke) {
     const m = palette[b.rolle];
     if (!m) throw new Error(`Palette kennt die Rolle "${b.rolle}" nicht`);
-    const { id, zustand = {} } = typeof m === 'string' ? { id: m } : m;
-    welt.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, id, zustand);
+    const form = b.form ?? 'voll';
+    const eintrag = typeof m === 'string' || 'id' in m ? (form === 'voll' ? m : null) : m[form];
+    if (!eintrag) throw new Error(`Palette kennt für die Rolle "${b.rolle}" die Form "${form}" nicht`);
+    const { id, zustand = {} } = typeof eintrag === 'string' ? { id: eintrag } : eintrag;
+    let z = zustand;
+    if (form !== 'voll' && form !== 'scheibe') {
+      if (!ebene0) throw new Error(`${form} braucht ebene0 zum Berechnen der Zustände`);
+      z = { ...zustandVon(ebene0, b), ...zustand };
+    }
+    welt.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, id, z);
   }
 }
 
-/** Einfache Palette für Tests und Vorschau (alles Stein, Boden und Licht erkennbar). */
-export const TESTPALETTE = Object.freeze({ wand: 'minecraft:stone', akzent: 'minecraft:cobblestone', boden: 'minecraft:stone', licht: 'minecraft:glowstone' });
+/** Einfache Palette für Tests und Vorschau (Stein; Treppen, Holztür und Glas für die formgebundenen Bauelemente). */
+export const TESTPALETTE = Object.freeze({
+  wand: 'minecraft:stone',
+  akzent: Object.freeze({ voll: 'minecraft:cobblestone', treppe: 'minecraft:stone_stairs', tuer: 'minecraft:wooden_door' }),
+  boden: Object.freeze({ voll: 'minecraft:stone', treppe: 'minecraft:stone_stairs' }),
+  licht: 'minecraft:glowstone',
+  glas: Object.freeze({ voll: 'minecraft:glass', scheibe: 'minecraft:glass_pane' }),
+});

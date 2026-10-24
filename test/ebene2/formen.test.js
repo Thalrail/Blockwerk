@@ -10,7 +10,7 @@ const e0 = e2.ebene0;
 const TOLERANZ = e1.regelwerk.parameter('formen.rundung', 'toleranz');
 
 test('Bausteine: Paketform', () => {
-  assert.equal(e2.bausteine.size, 9);
+  assert.equal(e2.bausteine.size, 15);
   for (const b of e2.bausteine.values()) {
     const p = b.erzeuge();
     pruefePaket(p);
@@ -48,7 +48,7 @@ test('Bausteine: Platzieren über Ebene 0 und Prüfer (Testszenario)', () => {
   for (const b of e2.bausteine.values()) {
     const p = b.erzeuge();
     const w = e0.neueWelt();
-    platziere(w, p, TESTPALETTE, { x: 10, y: 5, z: -4 });
+    e2.platziere(w, p, TESTPALETTE, { x: 10, y: 5, z: -4 });
     assert.equal(w.anzahlBloecke(), p.bloecke.length, b.id);
     assert.deepEqual(e1.pruefe(w, { schienen: null }).filter((x) => x.schwere === 'verstoss'), [], `${b.id}: ${p.testszenario.erwartung}`);
   }

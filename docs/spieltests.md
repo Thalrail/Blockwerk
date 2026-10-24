@@ -166,6 +166,12 @@ Die Formen sind reine Mathematik und brauchen keinen Spieltest. Wenn du trotzdem
 ## Bogen und Dach: Sichttest (Ebene 2)
 Reine Mathematik, kein Spieltest nötig. Zum Anschauen in der Kreativwelt: ein Bogen mit 9 Blöcken lichter Weite (Pfeiler 2 hoch, Stich knapp 3) und ein Satteldach mit 11 Blöcken Breite (Firsthöhe 5 bis 6) nach den Querschnitten der Tests nachbauen und prüfen, ob beide Seiten gleich aussehen und ein Spieler unter dem Bogen durchpasst.
 
+## Bauelemente: Türen und Treppen (Ebene 2)
+Kreativwelt. Gebaut wird nach den Plänen der Seite; geprüft wird nur die Lage der Blockzustände (`bau.zustaende`):
+1. **Tür:** einfache Tür mit Richtung Norden in eine Ost-West-Mauer setzen. Liegt die Türplatte quer zum Weg nach Norden, mit dem Scharnier links, und lässt sie sich durchqueren?
+2. **Doppeltür:** zwei Türen nebeneinander, Scharniere außen: öffnen sie beide nach außen?
+3. **Treppe:** Aufstieg nach Norden, 4 Stufen: geht es nach Norden hoch? Eine Wendeltreppe mit Radius 1 (8 Stufen je Umdrehung) im Uhrzeigersinn: stimmt die Laufrichtung?
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)
@@ -181,6 +187,7 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 |---|---|
 | `antrieb.redstonefackel` – Redstonefackel neben der Schiene versorgt sie | Redstonefackel vor und hinter dem Ende einer einzelnen Antriebsschiene (in der Verlängerung der Schiene), außerdem über und unter der Schiene (soweit möglich): Wird die Schiene bestromt? Ergebnis je Lage melden. (Links und rechts hat Jonah bestätigt.) |
 | `antrieb.hebel` – Eingeschalteter Hebel an bestimmten Blöcken versorgt die Schiene | Hebel (eingeschaltet) an den genannten Blöcken wie in der Regel beschrieben: Prüfen, ob die Schiene bestromt wird, und besonders, ob Seiten-Hebel (east/west/south/north) an dem Block sitzen, an dem du ihn setzt (Blockwerk nimmt an: der Hebel zeigt von seinem Block weg). Auch Hebel an der Unterseite eines Blocks (Hebel an der Decke) prüfen. Ergebnis melden. |
+| `bau.zustaende` – Zustände von Treppe und Tür | Eine Tür mit Richtung Norden und eine Doppeltür in einer Ost-West-Mauer, eine Treppe mit Aufstieg nach Norden bauen: Stimmt die Lage der Türplatte (Scharnier links/rechts) und zeigt die Treppe nach Norden hoch? |
 | `bewegung.hitbox` – Größen von Spieler, Dorfbewohner und Baby | Baby-Dorfbewohner und Spieler durch einen 1 Block hohen Gang (Falltür oder Halbstufe über dem Boden) schicken; Spieler zusätzlich kriechen (Schwimmhaltung): Wer kommt durch? |
 | `bewegung.stufe` – Stufen bis 0,5 Blöcke ohne Sprung | Eine Reihe aus Halbstufen und Treppen hinaufgehen, ohne zu springen: Geht es ohne Sprung (Spieler, Dorfbewohner, Baby)? |
 | `bewegung.sprung` – Sprunghöhe 1 Block | Spieler, Dorfbewohner und Baby vor eine 1 Block hohe Stufe stellen (Dorfbewohner mit Ziel hinter der Stufe): Springen sie hinauf? Dann 1,5 Blöcke (Zaun oder Halbstufe auf Block): Geht es? |

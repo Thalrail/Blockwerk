@@ -36,9 +36,11 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
   /**
    * Stabiler Stromzustand der Welt.
    * @param {import('../ebene0/welt.js').Welt} welt
-   * @param {{loren?: {x:number,y:number,z:number}[]}} [optionen] Zellen, in denen eine Lore steht (für Detektorschienen)
+   * @param {{loren?: {x:number,y:number,z:number}[], fest?: {fackel?: Map<string, boolean>, ausgaben?: {von:object, zelle:object, stufe:number}[]}}} [optionen]
+   *   loren: Zellen, in denen eine Lore steht (für Detektorschienen)
+   *   fest: Zeitmodus (Teil 2f-2): Fackelzustände (Schlüssel "x,y,z") und Ausgaben von Repeatern/Komparatoren sind vorgegeben, es wird genau einmal gerechnet
    */
-  function stromkarte(welt, { loren = [] } = {}) {
+  function stromkarte(welt, { loren = [], fest = null } = {}) {
     const lore = new Set(loren.map(key));
     const lies = (p) => welt.leseBlock(p.x, p.y, p.z);
     const alle = welt.alleBloecke();
@@ -91,7 +93,14 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
       return v.includes(h) || v.length === 0 || (v.length === 1 && GEGEN[v[0]] === h);
     };
 
-    const zustandFackel = new Map(fackeln.map((f) => [key(f.pos), f.an]));
+    const zustandFackel = new Map(fackeln.map((f) => [key(f.pos), fest?.fackel?.has(key(f.pos)) ? fest.fackel.get(key(f.pos)) : f.an]));
+    const ausgaben = fest?.ausgaben ?? [];
+    const ausgabeStufe = new Map(), starkStufe = new Map();
+    for (const a of ausgaben) {
+      const k = key(a.zelle);
+      ausgabeStufe.set(k, Math.max(ausgabeStufe.get(k) ?? 0, a.stufe));
+      if (leitet(lies(a.zelle).id)) starkStufe.set(k, Math.max(starkStufe.get(k) ?? 0, a.stufe));
+    }
     let letzte = null, vorletzte = null, ergebnis = null;
     const wechsel = new Set();
     for (let runde = 0; runde < MAX_RUNDEN; runde++) {
@@ -102,6 +111,7 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
         for (const r of SECHS) gib(plus(q.pos, r), q.art === 'schalter' ? false : q.art === 'detektor' ? r === 'down' : false);
         if (q.art === 'schalter' && q.befestigt) gib(q.befestigt, true);
       }
+      for (const k of starkStufe.keys()) { schwach.add(k); stark.add(k); }
       for (const f of fackeln) {
         if (!zustandFackel.get(key(f.pos))) continue;
         for (const r of SECHS) {
@@ -117,9 +127,10 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
       for (const d of staub) {
         let v = 0;
         const k = key(d);
-        if (schwach.has(k)) v = maximum;
-        else {
-          for (const r of SECHS) { const n = plus(d, r); if (stark.has(key(n)) && leitet(lies(n).id)) { v = maximum; break; } }
+        v = ausgabeStufe.get(k) ?? 0;
+        if (schwach.has(k) && !starkStufe.has(k)) v = maximum;
+        else if (!v) {
+          for (const r of SECHS) { const n = plus(d, r); if (stark.has(key(n)) && leitet(lies(n).id)) { v = Math.max(v, starkStufe.get(key(n)) ?? maximum); } }
         }
         if (v > 0) { stufe.set(k, v); offen.push(d); }
       }
@@ -146,6 +157,7 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
         if (an !== zustandFackel.get(key(f.pos))) { geaendert = true; wechsel.add(key(f.pos)); }
       }
       ergebnis = { stufe, schwach, stark, durchStaub, bestromt, zustand: new Map(zustandFackel), runde };
+      if (fest) { ergebnis.stabil = true; break; }
       if (!geaendert) { ergebnis.stabil = true; break; }
       vorletzte = letzte; letzte = new Map(zustandFackel);
       for (const [k, v] of neu) zustandFackel.set(k, v);
@@ -167,6 +179,27 @@ export function erzeugeRedstone({ regelwerk, register, richtungVon }) {
       blockBestromt: (x, y, z) => ergebnis.bestromt({ x, y, z }),
       /** Stark bestromt? (Hebel/Knopf am Block, Fackel darunter, Detektorschiene darunter) */
       blockStark: (x, y, z) => leitet(lies({ x, y, z }).id) && ergebnis.stark.has(key({ x, y, z })),
+      /**
+       * Signalstärke, die die Zelle `von` an die Nachbarzelle `zu` abgibt: Staub (nur wenn er auf `zu` zeigt), bestromter Block (15), eingeschaltete Quelle (15),
+       * brennende Fackel (außer an ihren Befestigungsblock), Ausgabe eines Repeaters/Komparators (vorgegebene Stärke). 0, wenn nichts ankommt.
+       */
+      signalVon: (von, zu) => {
+        const k = key(von);
+        const b = lies(von);
+        if (staubSet.has(k)) {
+          const lvl = ergebnis.stufe.get(k) ?? 0;
+          const richtung = HORIZONTAL.find((h) => key(plus(von, h)) === key(zu));
+          return lvl > 0 && richtung && zeigtAuf(von, richtung) ? lvl : 0;
+        }
+        let m = 0;
+        for (const a of ausgaben) if (key(a.von) === k && key(a.zelle) === key(zu)) m = Math.max(m, a.stufe);
+        if (m) return m;
+        if (dauerQuellen.some((q) => key(q.pos) === k)) return maximum;
+        if (leitet(b.id)) return ergebnis.bestromt(von) ? (starkStufe.get(k) ?? maximum) : 0;
+        const f = fackeln.find((x) => key(x.pos) === k);
+        if (f) return ergebnis.zustand.get(k) && !(f.befestigt && key(f.befestigt) === key(zu)) ? maximum : 0;
+        return 0;
+      },
       /** Brennt die Fackel? (null, wenn dort keine Fackel steht) */
       fackelAn: (x, y, z) => ergebnis.zustand.get(key({ x, y, z })) ?? null,
       /** Zellen mit Staub, der auf eine Schiene zeigt, die in `ids` steht: Quellen für antrieb.aktive(). */

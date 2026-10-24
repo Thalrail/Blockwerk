@@ -126,6 +126,14 @@ Kreativ-Testwelt auf Stein. Alles Java-Platzhalter, nur prüfen, wenn dir im Spi
 5. **Aktivierungsschiene:** 20 Schienen, Redstone-Block neben der ersten (erwartet 9) und in der Mitte (17). (`redstone.aktivierungsschiene`)
 6. **Detektorschiene:** Lore über die Schiene, Staub daneben. (`redstone.detektorschiene`)
 
+## Redstone-Zeit: die wichtigsten Tests (Ebene 1)
+Kreativ-Testwelt, Video (60 fps), Zeiten in Spielticks (1 Tick = 0,05 s). Alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
+1. **Fackelkette:** Hebel → Stein → Fackel (seitlich) → Stein → Fackel …: Zeit bis zur Lampe am Ende bei 1, 2, 5 Fackeln (erwartet 2, 4, 10 Ticks). (`zeit.fackel-verzoegerung`)
+2. **Repeater:** Verzögerung 1, 2, 3, 4 (erwartet 2, 4, 6, 8 Ticks); auf welcher Seite ist der Eingang bei Blick nach N/O/S/W? (`zeit.repeater-verzoegerung`)
+3. **Brennen:** Fackel mit Rückkopplung über Staub: Brennt sie aus (erwartet nach 8 Wechseln in 60 Ticks) und geht sie nach etwa 3 Sekunden wieder an? (`zeit.fackel-brennen`)
+4. **Komparator:** Behälter hinten, Staub mit Stärke 5, 8, 9 an der Seite, beide Modi (erwartet Vergleich 8, 8, 0; Subtraktion 3, 0, 0). (`zeit.komparator-modi`)
+5. **Knöpfe:** Stein (1 s), Holz (1,5 s). (`zeit.knopf-dauer`)
+
 ## Ebene 1: Regeln mit Annahmen (ungeprüft)
 Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht eindeutig oder sie sind abgeleitet. Der Status bleibt `ungeprüft`, bis du sie im Spiel bestätigst. Die Texte stehen auch in `data/regeln/*.json`.
 
@@ -173,6 +181,16 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 | `pruefer.faellt` – Prüfer: Block fällt | Siehe fallen.landen-block und fallen.landen-gegenstand. |
 | `pruefer.trichter` – Prüfer: Trichter ohne Ziel, im Kreis oder verstopft | Siehe trichter.ziel und trichter.behaelter. |
 | `pruefer.redstone` – Prüfer: Redstone-Leitung | Siehe redstone.staub-abnahme und redstone.instabil. |
+| `pruefer.redstone-zeit` – Prüfer: Redstone läuft ab | Siehe zeit.fackel-brennen. |
+| `zeit.staub-sofort` – Staub aktualisiert jeden Spielstick | Hebel – 10 Staubblöcke – Lampe: Leuchtet die Lampe sofort (im selben Tick wie der Hebel)? Mit Video (60 fps) prüfen, ob die Länge der Staubleitung die Zeit ändert (erwartet: nein). |
+| `zeit.fackel-verzoegerung` – Fackel: 2 Spielticks | Hebel an einen Stein, daneben eine Fackel an dessen Seite, dahinter Staub und eine Lampe: Zeit zwischen Hebel und Lampe mit Video messen (erwartet 0,1 s = 2 Ticks). Dann eine Kette aus 5 Fackeln (Stein-Fackel-Stein-…): erwartet 10 Ticks (0,5 s). |
+| `zeit.fackel-brennen` – Fackel brennt aus | Fackel an einem Stein, der über Staub von der Fackel selbst bestromt wird (Rückkopplung): Brennt sie aus, nach wie vielen Wechseln, und geht sie wieder an? Auch eine Uhr mit Repeater dazwischen testen (Bedrock soll dort nicht ausbrennen). |
+| `zeit.repeater-verzoegerung` – Repeater: Verzögerung 1 bis 4 Redstone-Ticks | Repeater mit 1, 2, 3, 4 Verzögerung hinter einem Hebel, vorne Staub und Lampe: Zeit messen (erwartet 2, 4, 6, 8 Ticks). Außerdem: Auf welcher Seite des Blocks leuchtet es (Eingang/Ausgang bei Blickrichtung Nord/Süd/Ost/West)? |
+| `zeit.repeater-sperre` – Repeater: Sperre | Repeater (an) und einen zweiten bestromten Repeater seitlich auf ihn gerichtet; Eingang des ersten ausschalten: Bleibt der Ausgang an? Sperre lösen: schaltet er dann aus? |
+| `zeit.repeater-impuls` – Repeater: kurze Impulse | Knopf (1 Redstone-Tick Impuls) an einen Repeater mit Verzögerung 4: Wie lang ist der Ausgangsimpuls (erwartet 8 Ticks)? |
+| `zeit.komparator-modi` – Komparator: Vergleichen und Subtrahieren | Komparator hinter einer Kiste (Wert 8) und Staub von der Seite mit Stärke 5, 8, 9: Vergleichs- und Subtraktionsmodus. Erwartung Vergleich: 8, 8, 0; Subtraktion: 3, 0, 0. |
+| `zeit.komparator-verzoegerung` – Komparator: 2 Spielticks | Hebel – Komparator – Staub – Lampe: Zeit messen (erwartet 2 Ticks). |
+| `zeit.knopf-dauer` – Knopfdauer | Stein-Knopf, Holz-Knopf, Bambus-Knopf und Polierter-Schwarzstein-Knopf drücken, Lampe daneben mit Video (60 fps): Wie lange leuchtet sie? Erwartet 1 s (Stein, Polierter Schwarzstein) und 1,5 s (Holzarten). |
 | `redstone.staub-abnahme` – Staub verliert 1 Stärke je Block | Gerade Staubleitung aus 20 Blöcken, Hebel am Anfang: Bei welchem Staubblock geht die Leitung aus? Blockwerk erwartet: 15 Staubblöcke leuchten (Stärke 15 bis 1), der 16. nicht. |
 | `redstone.staub-verbindung` – Staub verbindet sich mit Staub, Quellen und über Stufen | Staubtreppe über Vollblöcke (rauf) und Luft (runter), einmal mit Glas, einmal mit Stein dazwischen: Wo reißt die Leitung ab? Staub mit Block darüber: Steigt die Leitung dann noch auf? |
 | `redstone.stark-schwach` – Starke und schwache Bestromung | Hebel an einem Stein, daneben Staub: leuchtet er? Dann Staub → Stein → Staub (Stein nur durch Staub bestromt): leuchtet der zweite Staub? Dasselbe mit Redstone-Block statt Hebel. |

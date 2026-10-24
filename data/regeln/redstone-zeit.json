@@ -1,0 +1,129 @@
+{
+  "bereich": "zeit",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "zeit.staub-sofort",
+      "titel": "Staub aktualisiert jeden Spielstick",
+      "regel": "Redstone-Staub wird in jedem Spielstick neu berechnet (ohne Verzögerung); Fackeln, Repeater und Komparator lesen im P-Tick und schreiben nach ihrer Verzögerung im C-Tick (Taktgeber). Die Simulation endet, wenn sich 16 Ticks lang nichts ändert.",
+      "parameter": {
+        "ruheTicks": 16
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_mechanics („Redstone dust updates every game tick“; P-Tick/C-Tick)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Fackel und Staub",
+      "ungeprueft": true,
+      "testanleitung": "Hebel – 10 Staubblöcke – Lampe: Leuchtet die Lampe sofort (im selben Tick wie der Hebel)? Mit Video (60 fps) prüfen, ob die Länge der Staubleitung die Zeit ändert (erwartet: nein)."
+    },
+    {
+      "id": "zeit.fackel-verzoegerung",
+      "titel": "Fackel: 2 Spielticks",
+      "regel": "Eine Redstonefackel ändert ihren Zustand 2 Spielticks (1 Redstone-Tick) nach der Änderung ihres Eingangs; n Fackeln in einer Kette brauchen n × 2 Ticks.",
+      "parameter": {
+        "redstoneTicks": 1
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Torch („A state change takes 2 game ticks“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Fackel und Staub",
+      "ungeprueft": true,
+      "testanleitung": "Hebel an einen Stein, daneben eine Fackel an dessen Seite, dahinter Staub und eine Lampe: Zeit zwischen Hebel und Lampe mit Video messen (erwartet 0,1 s = 2 Ticks). Dann eine Kette aus 5 Fackeln (Stein-Fackel-Stein-…): erwartet 10 Ticks (0,5 s)."
+    },
+    {
+      "id": "zeit.fackel-brennen",
+      "titel": "Fackel brennt aus",
+      "regel": "Macht eine Fackel mehr als 8 Wechsel innerhalb von 60 Ticks, brennt sie aus und bleibt aus, bis weniger als 8 Wechsel in den letzten 60 Ticks liegen.",
+      "parameter": {
+        "wechsel": 8,
+        "ticks": 60
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Torch (Burnout: more than 8 toggles in 60 ticks; Java; Bedrock: nur bei Selbstspeisung ohne Verzögerung)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Fackeluhr und Brennen",
+      "ungeprueft": true,
+      "testanleitung": "Fackel an einem Stein, der über Staub von der Fackel selbst bestromt wird (Rückkopplung): Brennt sie aus, nach wie vielen Wechseln, und geht sie wieder an? Auch eine Uhr mit Repeater dazwischen testen (Bedrock soll dort nicht ausbrennen)."
+    },
+    {
+      "id": "zeit.repeater-verzoegerung",
+      "titel": "Repeater: Verzögerung 1 bis 4 Redstone-Ticks",
+      "regel": "Ein Repeater schaltet seinen Ausgang nach 1 bis 4 Redstone-Ticks (2, 4, 6, 8 Spielticks; repeater_delay = Verzögerung − 1), gibt 15 ab und leitet nur von hinten nach vorn. Annahme: minecraft:cardinal_direction nennt die Eingangsseite (wie Java „facing“); der Ausgang liegt gegenüber.",
+      "parameter": {
+        "ids": [
+          "minecraft:unpowered_repeater",
+          "minecraft:powered_repeater"
+        ],
+        "cardinalDirectionIstEingang": true
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Repeater („Delay starts at 2 ticks … up to 8“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Repeater",
+      "ungeprueft": true,
+      "testanleitung": "Repeater mit 1, 2, 3, 4 Verzögerung hinter einem Hebel, vorne Staub und Lampe: Zeit messen (erwartet 2, 4, 6, 8 Ticks). Außerdem: Auf welcher Seite des Blocks leuchtet es (Eingang/Ausgang bei Blickrichtung Nord/Süd/Ost/West)?"
+    },
+    {
+      "id": "zeit.repeater-sperre",
+      "titel": "Repeater: Sperre",
+      "regel": "Ein bestromter Repeater oder Komparator, der seitlich auf einen Repeater zeigt, sperrt ihn: Sein Ausgang bleibt, wie er ist, bis die Sperre endet.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_Repeater („A powered repeater or comparator facing its side locks the output“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Repeater",
+      "ungeprueft": true,
+      "testanleitung": "Repeater (an) und einen zweiten bestromten Repeater seitlich auf ihn gerichtet; Eingang des ersten ausschalten: Bleibt der Ausgang an? Sperre lösen: schaltet er dann aus?"
+    },
+    {
+      "id": "zeit.repeater-impuls",
+      "titel": "Repeater: kurze Impulse",
+      "regel": "Ein eingeschalteter Ausgang bleibt mindestens so lange an wie die Verzögerung; ein kurzer Gegenimpuls, bevor der Wechsel geschrieben ist, wird unterdrückt.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Redstone_Repeater (Minimum pulses)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Repeater",
+      "ungeprueft": true,
+      "testanleitung": "Knopf (1 Redstone-Tick Impuls) an einen Repeater mit Verzögerung 4: Wie lang ist der Ausgangsimpuls (erwartet 8 Ticks)?"
+    },
+    {
+      "id": "zeit.komparator-modi",
+      "titel": "Komparator: Vergleichen und Subtrahieren",
+      "regel": "Vergleichsmodus: Ausgang = hinten, solange keine Seite stärker ist, sonst 0. Subtraktionsmodus (output_subtract_bit): max(hinten − max(links, rechts), 0). Hinten zählt Staub (der auf ihn zeigt), Quellen (15) und Behälter (auch durch einen Block); Seiten zählen Staub, Repeater, Komparator und Redstone-Block. Annahme zur Richtung wie bei zeit.repeater-verzoegerung.",
+      "parameter": {
+        "ids": [
+          "minecraft:unpowered_comparator",
+          "minecraft:powered_comparator"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Comparator (Formeln)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Komparator",
+      "ungeprueft": true,
+      "testanleitung": "Komparator hinter einer Kiste (Wert 8) und Staub von der Seite mit Stärke 5, 8, 9: Vergleichs- und Subtraktionsmodus. Erwartung Vergleich: 8, 8, 0; Subtraktion: 3, 0, 0."
+    },
+    {
+      "id": "zeit.komparator-verzoegerung",
+      "titel": "Komparator: 2 Spielticks",
+      "regel": "Ein Komparator ändert seinen Ausgang 2 Spielticks (1 Redstone-Tick) nach einer Änderung von Eingang oder Seiten.",
+      "parameter": {
+        "redstoneTicks": 1
+      },
+      "quelle": "https://minecraft.wiki/w/Redstone_Comparator („signals take 2 game ticks“)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Komparator",
+      "ungeprueft": true,
+      "testanleitung": "Hebel – Komparator – Staub – Lampe: Zeit messen (erwartet 2 Ticks)."
+    },
+    {
+      "id": "zeit.knopf-dauer",
+      "titel": "Knopfdauer",
+      "regel": "Ein gedrückter Stein-Knopf (auch aus Polierter Schwarzstein) löst sich nach 20 Ticks (1 s), alle anderen Knöpfe (Holz) nach 30 Ticks (1,5 s).",
+      "parameter": {
+        "steinMuster": "^minecraft:(stone|polished_blackstone)_button$",
+        "steinTicks": 20,
+        "holzTicks": 30
+      },
+      "quelle": "https://minecraft.wiki/w/Button („A stone button stays on for 20 ticks, a wooden button for 30 ticks“, Edition nicht unterschieden)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/redstone-zeit.test.js::Redstone-Zeit: Knöpfe",
+      "ungeprueft": true,
+      "testanleitung": "Stein-Knopf, Holz-Knopf, Bambus-Knopf und Polierter-Schwarzstein-Knopf drücken, Lampe daneben mit Video (60 fps): Wie lange leuchtet sie? Erwartet 1 s (Stein, Polierter Schwarzstein) und 1,5 s (Holzarten)."
+    }
+  ]
+}

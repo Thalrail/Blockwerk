@@ -29,6 +29,8 @@ sich über „Installieren“ als eigenes Fenster öffnen; der Kompaktmodus kann
 Bedienung: Beispielprojekt laden, Schichten abhaken (Leertaste), mit ← → blättern, mit M zwischen Voll- und Kompaktansicht wechseln,
 „3D-Ansicht“ zeigt das ganze Bauwerk (drehen mit der Maus; Etagenschnitt, Technik ausblenden, Baufortschritt eingefärbt),
 „Link kopieren“ schickt Plan und Fortschritt an Freunde.
+„Neue Vorlage“: Briefing-Prompt kopieren, im Claude-Chat mit den Bildern eingeben, die Antwort einfügen, Rückfragen per Klick beantworten,
+Bilder messen lassen (optional), die Zusammenfassung lesen und freigeben – dann entsteht der Bauplan.
 
 ## Tests
 ```

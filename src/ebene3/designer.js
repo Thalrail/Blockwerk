@@ -23,10 +23,17 @@ export function erzeugePaletten({ regelwerk, ebene0 }) {
 
   /** Einträge einer Rolle als Liste [form, id]. */
   function eintraege(rolle, wert) {
-    if (typeof wert === 'string') return [['voll', wert]];
-    if (wert && typeof wert === 'object' && 'id' in wert) return [['voll', wert.id]];
-    if (wert && typeof wert === 'object') return Object.entries(wert).map(([form, w]) => [form, typeof w === 'string' ? w : w?.id]);
+    if (typeof wert === 'string') return [['voll', wert, {}]];
+    if (wert && typeof wert === 'object' && 'id' in wert) return [['voll', wert.id, wert.zustand ?? {}]];
+    if (wert && typeof wert === 'object') return Object.entries(wert).map(([form, w]) => [form, typeof w === 'string' ? w : w?.id, typeof w === 'object' ? (w?.zustand ?? {}) : {}]);
     return ungueltig(`Rolle ${rolle} braucht einen Block`);
+  }
+
+  /** Das Bauwerk wird gedreht und gespiegelt: ein Block mit Richtungszustand braucht dafür seinen Zustand (z. B. Säulenachse). */
+  function kannDrehen(rolle, id, zustand) {
+    const w = ebene0.neueWelt();
+    w.setzeBlock(0, 0, 0, id, zustand);
+    try { ebene0.vermesser.drehe(w.ausschnitt({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 }), 1); } catch (f) { ungueltig(`Rolle ${rolle}: ${id} lässt sich nicht drehen (${f.message})`); }
   }
 
   /** Prüft einen (auch unvollständigen) Palettenteil. */
@@ -34,13 +41,14 @@ export function erzeugePaletten({ regelwerk, ebene0 }) {
     if (!palette || typeof palette !== 'object' || Array.isArray(palette)) ungueltig('keine Zuordnung von Rollen zu Blöcken');
     for (const [rolle, wert] of Object.entries(palette)) {
       if (!rollen.includes(rolle)) ungueltig(`Rolle „${rolle}“ unbekannt (${rollen.join(', ')})`);
-      for (const [form, id] of eintraege(rolle, wert)) {
+      for (const [form, id, zustand] of eintraege(rolle, wert)) {
         if (!(form in formen)) ungueltig(`Rolle ${rolle}: Form „${form}“ unbekannt (${Object.keys(formen).join(', ')})`);
         if (typeof id !== 'string' || !bloecke.hat(id)) ungueltig(`Rolle ${rolle}: ${String(id)} steht nicht im Blockregister`);
         const eig = bloecke.block(id).eigenschaften;
         if (eig.arbeitsblock === true) ungueltig(`Rolle ${rolle}: ${id} ist ein Arbeitsblock und als Material verboten`);
         if (!id.endsWith(formen[form])) ungueltig(`Rolle ${rolle}: ${id} passt nicht zur Form „${form}“ (Name endet auf ${formen[form]})`);
         if (rolle === 'licht' && !(eig.licht > 0)) ungueltig(`Rolle licht: ${id} leuchtet nicht`);
+        if (form === 'voll' || form === 'scheibe') kannDrehen(rolle, id, zustand);
       }
     }
   }

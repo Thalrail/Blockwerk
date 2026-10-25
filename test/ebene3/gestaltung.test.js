@@ -211,6 +211,7 @@ test('Designer: Paletten und Stimmungen', () => {
       const paket = e2.baue(id, {});
       const welt = e0.neueWelt();
       e2.platziere(welt, paket, { ...palette }, { x: 0, y: 0, z: 0 });
+      assert.doesNotThrow(() => e0.vermesser.drehe(welt.ausschnitt({ x: -600, y: -64, z: -600 }, { x: 600, y: 319, z: 600 }), 1), `${name}/${id}: lässt sich drehen`);
       for (const b of paket.bloecke) {
         const gesetzt = welt.leseBlock(b.x, b.y, b.z);
         assert.ok(e0.register.bloecke.hat(gesetzt.id), `${name}/${id}: ${gesetzt.id}`);
@@ -250,6 +251,8 @@ test('Designer: Paletten und Stimmungen', () => {
   assert.match(fehler(RechtFehler, setze({ akzent: { tuer: 'minecraft:oak_planks' } })), /passt nicht zur Form „tuer“/);
   assert.match(fehler(RechtFehler, setze({ glas: { scheibe: 'minecraft:glass' } })), /passt nicht zur Form „scheibe“/);
   assert.match(fehler(RechtFehler, setze({ licht: 'minecraft:stone' })), /leuchtet nicht/);
+  assert.match(fehler(RechtFehler, setze({ wand: 'minecraft:quartz_block' })), /lässt sich nicht drehen/);
+  assert.doesNotThrow(setze({ wand: { id: 'minecraft:quartz_block', zustand: { pillar_axis: 'y' } } }));
   assert.match(fehler(RechtFehler, setze({ dach: 'minecraft:stone' })), /Rolle „dach“ unbekannt/);
   assert.match(fehler(RechtFehler, setze({ wand: { kuppel: 'minecraft:stone' } })), /Form „kuppel“ unbekannt/);
   assert.match(fehler(RechtFehler, () => e3.aendere(grund(), 'designer', { art: 'setze-abschnittspalette', abschnitt: 'A', palette: { wand: 'minecraft:lectern' } })), /Arbeitsblock/);

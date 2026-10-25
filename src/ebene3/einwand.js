@@ -88,6 +88,8 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       });
     }
     einwaende.push(...geometrie(entwurf, mat));
+    const zugelassen = new Set(entwurf.zulassungen ?? []);
+    einwaende.splice(0, einwaende.length, ...einwaende.filter((x) => !zugelassen.has(x.schluessel)));
     einwaende.sort((a, b) => fachleute.rang(a.von) - fachleute.rang(b.von) || (a.schluessel < b.schluessel ? -1 : a.schluessel > b.schluessel ? 1 : 0));
     return { einwaende, hinweise, mat };
   }

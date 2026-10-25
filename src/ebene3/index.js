@@ -1,6 +1,6 @@
 // Ebene 3 – Planung („Die Fachleute“). Einstiegspunkt.
 // Dieser Stand liefert das Gerüst: Planentwurf, Besitz und Rangfolge, Einwand-Protokoll mit Bauleiter, Baubericht und die Brücke zu Ebene 0–2.
-// Die Fachleute: Konstrukteur, Techniker, Grobdesigner, Architekt, Designer (Rückgriff und Abschlussprüfung folgen).
+// Die Fachleute: Konstrukteur, Techniker, Grobdesigner, Architekt, Designer ; dazu der Ablauf mit Rückgriff und Abschlussprüfung.
 import { erzeugeFachleute } from './fachleute.js';
 import { erzeugeMaterialisierung } from './materialisiere.js';
 import { erzeugeEinwaende } from './einwand.js';
@@ -9,6 +9,7 @@ import { erzeugeTechniker } from './techniker.js';
 import { erzeugeGrobdesigner } from './grobdesigner.js';
 import { erzeugeArchitekt } from './architekt.js';
 import { erzeugeDesigner, erzeugePaletten } from './designer.js';
+import { erzeugeAblauf } from './ablauf.js';
 
 export { VERSION, neuerEntwurf, kopie, pruefeForm, entwurfZuJson, entwurfAusJson } from './entwurf.js';
 export { haengeAn, berichtAlsText } from './bericht.js';
@@ -21,6 +22,7 @@ export { erzeugeTechniker, BedarfFehler } from './techniker.js';
 export { erzeugeGrobdesigner, ZonenFehler } from './grobdesigner.js';
 export { erzeugeArchitekt, FormFehler } from './architekt.js';
 export { erzeugeDesigner, erzeugePaletten, GestaltungsFehler } from './designer.js';
+export { erzeugeAblauf, AblaufFehler } from './ablauf.js';
 
 /**
  * @param {{ebene0: object, ebene1: object, ebene2: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
@@ -35,6 +37,7 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
   const architekt = erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierung });
   const designer = erzeugeDesigner({ fachleute, paletten });
   const einwaende = erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte: konstrukteur.naehte, zusaetze: (e) => [...techniker.einwaende(e), ...architekt.einwaende(e)] });
+  const ablauf = erzeugeAblauf({ regelwerk, fachleute, konstrukteur, techniker, grobdesigner, architekt, designer, einwaende });
   return {
     fachleute,
     konstrukteur,
@@ -43,6 +46,7 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
     architekt,
     designer,
     paletten,
+    ablauf,
     aendere: fachleute.aendere,
     fixiere: fachleute.fixiere,
     materialisiere: materialisierung.materialisiere,

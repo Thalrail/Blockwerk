@@ -3,6 +3,10 @@
 import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
+import { baueNetz } from '../src/ebene5/netz.js';
+import { erzeugeAnsicht3d } from './ansicht3d.js';
+
+const FLAECHEN_MAX = 3_000_000;
 
 const PFEIL = [' ', '↑', '→', '↓', '←', '⊙', '⊗'];
 const $app = document.getElementById('app');
@@ -14,7 +18,8 @@ const speicher = {
 
 const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
-  modus: speicher.lies('blockwerk.modus', 'voll'), a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
+  modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
+  sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -195,18 +200,42 @@ function rechteSpalte() {
   } else inhalt = `<pre class="text">${esc(z.daten.zusammenfassung)}</pre>`;
   return `<div class="reiter">${reiter.map(([k, t]) => `<button class="${r === k ? 'an' : ''}" data-a="reiter" data-k="${k}">${t}</button>`).join('')}</div>${inhalt}`;
 }
-function vollansicht() {
+function hoehen() {
+  let lo = Infinity, hi = -Infinity;
+  for (const ab of plan().abschnitte) for (const sc of ab.schichten) { lo = Math.min(lo, sc.y); hi = Math.max(hi, sc.y); }
+  return { lo, hi };
+}
+function mitte3d() {
+  const h = hoehen(), q = z.sicht, y = q.maxY ?? h.hi;
+  const wahl = (wert, text) => `<option value="${wert}" ${q.abschnitte === wert ? 'selected' : ''}>${text}</option>`;
+  return `<div class="regler">
+      <label>Abschnitte <select id="s3-abschnitte">${wahl('alle', 'alle')}${wahl('nur', 'nur der gewählte')}${wahl('bis', 'bis einschließlich des gewählten')}</select></label>
+      <label>Etagenschnitt bis Höhe <input id="s3-hoehe" type="range" min="${h.lo}" max="${h.hi}" value="${y}"> <b id="s3-hoehe-wert">${y === h.hi ? 'ganz' : y}</b></label>
+      <button data-a="bisAktuelle" title="Höhe der aktuellen Schicht">bis zur aktuellen Schicht</button>
+      <label><input id="s3-technik" type="checkbox" ${q.technik ? 'checked' : ''}> Technik</label>
+      <label><input id="s3-verbindungen" type="checkbox" ${q.verbindungen ? 'checked' : ''}> Gänge und Schienen</label>
+      <label><input id="s3-fortschritt" type="checkbox" ${q.fortschritt ? 'checked' : ''}> Baufortschritt einfärben</label>
+      <label><input id="s3-hervorheben" type="checkbox" ${q.hervorheben ? 'checked' : ''}> gewählten Abschnitt hervorheben</label>
+      <button data-a="einpassen">Einpassen</button></div>
+    <div class="leinwand drei"></div>
+    <div class="hinweis-zeile" id="s3-info">${esc(z.netzMeldung)}</div>
+    <div class="klein"><strong>Vereinfachte Darstellung:</strong> jeder Block als voller Würfel (Treppen, Platten, Zäune usw. nicht in Originalform). Maus: ziehen = drehen, Umschalt-Ziehen = verschieben, Rad = zoomen, Doppelklick = einpassen.</div>`;
+}
+function mitteSchichtplan() {
   const a = abschnitt(), s = schicht(), p = fortschritt.prozent(z.fortschritt, plan());
-  return `<div class="haupt-raster">
-    <aside class="spalte">${abschnittsliste()}</aside>
-    <main class="mitte">
-      <div class="leiste"><h2>${esc(a.name)} – Höhe ${s.y}</h2><span class="klein">Schicht ${z.s + 1} von ${a.schichten.length} · ${s.n} Blöcke</span><span class="abstand"></span>
+  return `<div class="leiste"><h2>${esc(a.name)} – Höhe ${s.y}</h2><span class="klein">Schicht ${z.s + 1} von ${a.schichten.length} · ${s.n} Blöcke</span><span class="abstand"></span>
         <button data-a="zurueck" title="Taste ←">←</button><button data-a="vor" title="Taste →">→</button>
         <button class="${fertig(a, s) ? '' : 'gut'}" data-a="haken" title="Leertaste">${fertig(a, s) ? 'Haken entfernen' : 'Schicht abhaken'}</button>
         <button data-a="abschnittHaken" title="Alle Schichten dieses Abschnitts abhaken">Abschnitt ✓</button></div>
       <div class="klein">Gesamtfortschritt: ${prozentText(p)} (${p.fertigeSchichten}/${p.schichten} Schichten)</div>
-      <div class="leinwand"><canvas></canvas></div><div class="hinweis-zeile"></div>
-    </main>
+      <div class="leinwand"><canvas></canvas></div><div class="hinweis-zeile"></div>`;
+}
+function vollansicht() {
+  const reiter = `<div class="reiter"><button class="${z.ansicht === 'plan' ? 'an' : ''}" data-a="ansicht" data-k="plan">Schichtplan</button><button class="${z.ansicht === '3d' ? 'an' : ''}" data-a="ansicht" data-k="3d">3D-Ansicht</button>
+    ${z.ansicht === '3d' ? `<span class="abstand"></span><button data-a="zurueck" title="Taste ←">←</button><button data-a="vor" title="Taste →">→</button><button class="${fertig(abschnitt(), schicht()) ? '' : 'gut'}" data-a="haken" title="Leertaste">${fertig(abschnitt(), schicht()) ? 'Haken entfernen' : 'Schicht abhaken'}</button>` : ''}</div>`;
+  return `<div class="haupt-raster">
+    <aside class="spalte">${abschnittsliste()}</aside>
+    <main class="mitte">${reiter}${z.ansicht === '3d' ? mitte3d() : mitteSchichtplan()}</main>
     <aside class="spalte">${rechteSpalte()}</aside></div>`;
 }
 function kompaktansicht() {
@@ -230,11 +259,44 @@ function render() {
   else html += z.modus === 'kompakt' ? kompaktansicht() : vollansicht();
   $app.innerHTML = html;
   if (aktiv) { const n = document.getElementById('name'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
-  if (z.daten && !z.status) {
+  if (z.daten && !z.status && z.modus !== 'kompakt' && z.ansicht === '3d') aktualisiere3d(true);
+  if (z.daten && !z.status && !(z.modus !== 'kompakt' && z.ansicht === '3d')) {
     const l = $app.querySelector('canvas');
     if (l) { requestAnimationFrame(() => { zeichne(l, abschnitt(), schicht(), z.modus === 'kompakt'); }); l.addEventListener('mousemove', hinweisUnterMaus); }
   }
   if (z.pip && !z.pip.closed) renderPip();
+}
+
+// ---------- 3D ----------
+let a3d = null;
+function sichtParameter() {
+  const q = z.sicht;
+  return {
+    maxY: q.maxY ?? undefined, abschnitte: q.abschnitte, gewaehlt: z.a, hervorheben: q.hervorheben,
+    ausgeblendet: [...(q.technik ? [] : [2]), ...(q.verbindungen ? [] : [3])],
+    fortschritt: q.fortschritt ? (ai, si) => (fortschritt.istAbgehakt(z.fortschritt, fortschritt.schluessel(plan().abschnitte[ai].id, plan().abschnitte[ai].schichten[si])) ? 1 : (ai === z.a && si === z.s ? 2 : 0)) : null,
+  };
+}
+/** Hängt die 3D-Zeichnung in die Seite und baut das Netz neu, wenn sich Sicht, Auswahl oder Fortschritt geändert haben. */
+function aktualisiere3d(einhaengen) {
+  a3d ??= erzeugeAnsicht3d();
+  const platz = $app.querySelector('.leinwand.drei');
+  if (!platz) return;
+  if (!a3d.verfuegbar) { platz.textContent = 'Dein Browser kann kein WebGL2. Bitte Chrome, Edge oder Firefox in einer aktuellen Version benutzen.'; return; }
+  if (einhaengen) platz.append(a3d.canvas);
+  a3d.groesse(); // erst die Größe, dann einpassen: das Seitenverhältnis muss stimmen
+  const signatur = JSON.stringify([z.spec?.freigabe?.abdruck, z.a, z.s, z.sicht, z.fortschritt.uhr, Object.keys(z.fortschritt.eintraege).length]);
+  const neuesProjekt = a3d.projekt !== z.daten;
+  if (signatur !== z.netzSignatur || neuesProjekt) {
+    z.netzSignatur = signatur;
+    const netz = baueNetz(plan(), sichtParameter());
+    z.netzMeldung = netz.bloecke ? `${netz.bloecke.toLocaleString('de-DE')} Blöcke, ${netz.flaechen.toLocaleString('de-DE')} sichtbare Flächen` : 'Nichts anzuzeigen (alles ausgeblendet oder abgeschnitten).';
+    if (netz.flaechen > FLAECHEN_MAX) { z.netzMeldung = `Zu viele Flächen (${netz.flaechen.toLocaleString('de-DE')}). Bitte einen Abschnitt oder einen Etagenschnitt wählen.`; a3d.setzeNetz(baueNetz({ abschnitte: [] }), {}); }
+    else a3d.setzeNetz(netz, { passeEin: neuesProjekt });
+    a3d.projekt = z.daten;
+    const info = document.getElementById('s3-info'); if (info) info.textContent = z.netzMeldung;
+  }
+  requestAnimationFrame(() => a3d.groesse());
 }
 
 // ---------- Kleines Fenster, das im Vordergrund bleibt (Document Picture-in-Picture) ----------
@@ -270,6 +332,9 @@ async function aktion(name, el) {
     else if (name === 'abschnitt') { z.a = Number(d.i); z.s = Math.min(z.s, abschnitt().schichten.length - 1); const n = abschnitt().schichten.findIndex((s) => !fertig(abschnitt(), s)); z.s = n >= 0 ? n : 0; render(); }
     else if (name === 'schicht') { z.a = Number(d.i); z.s = Number(d.j); render(); }
     else if (name === 'reiter') { z.reiter = d.k; render(); }
+    else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }
+    else if (name === 'einpassen') { a3d?.einpassen(); }
+    else if (name === 'bisAktuelle') { z.sicht.maxY = schicht().y; render(); }
     else if (name === 'zurueck') { schrittSchicht(-1); render(); }
     else if (name === 'vor') { schrittSchicht(1); render(); }
     else if (name === 'haken') { schichtUmschalten(); render(); }
@@ -298,7 +363,21 @@ function taste(ev) {
 }
 document.addEventListener('click', klick);
 document.addEventListener('keydown', taste);
-document.addEventListener('input', (ev) => { if (ev.target.id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); } });
+document.addEventListener('input', (ev) => {
+  const id = ev.target.id;
+  if (id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); }
+  else if (id === 's3-hoehe') { // der Regler bleibt beim Ziehen im Bild, darum kein komplettes Neuzeichnen der Seite
+    const h = hoehen(), v = Number(ev.target.value);
+    z.sicht.maxY = v >= h.hi ? null : v;
+    document.getElementById('s3-hoehe-wert').textContent = v >= h.hi ? 'ganz' : v;
+    aktualisiere3d(false);
+  }
+});
+document.addEventListener('change', (ev) => {
+  const id = ev.target.id;
+  if (id === 's3-abschnitte') { z.sicht.abschnitte = ev.target.value; render(); }
+  else if (['s3-technik', 's3-verbindungen', 's3-fortschritt', 's3-hervorheben'].includes(id)) { z.sicht[id.slice(3)] = ev.target.checked; render(); }
+});
 document.addEventListener('change', async (ev) => {
   if (ev.target.id !== 'datei' || !ev.target.files[0]) return;
   try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null); } catch (f) { z.fehler = String(f.message ?? f); render(); }

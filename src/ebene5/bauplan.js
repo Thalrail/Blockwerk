@@ -3,6 +3,8 @@
 // Die Ebene rechnet nichts Neues aus, sie ordnet nur an, was Ebene 0–3 berechnet haben. Deterministisch; keine Uhr, kein Zufall.
 
 export const RICHTUNGEN = [null, 'north', 'east', 'south', 'west', 'up', 'down'];
+/** Art des Teils je Zelle (Feld `t` einer Schicht): für die 3D-Ansicht (Technik und Verbindungen ausblendbar). */
+export const ARTEN = ['form', 'bauelement', 'technik', 'verbindung'];
 const SYMBOLE = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
 
 /** FNV-1a (32 Bit) über einen Text. */
@@ -46,7 +48,7 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
           const [x, y, z] = k.split(',').map(Number);
           const b = welt.leseBlock(x, y, z);
           if (b.id === luft) continue;
-          zellen.set(k, { x, y, z, id: b.id, zustand: b.zustand, inhalt: b.inhalt ?? null });
+          zellen.set(k, { x, y, z, id: b.id, zustand: b.zustand, inhalt: b.inhalt ?? null, art: Math.max(0, ARTEN.indexOf(t.art)) });
         }
       }
       // Legende: häufigste Blöcke zuerst, feste Symbole
@@ -61,13 +63,13 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
       const schichten = [...nachY.keys()].sort((p, q) => p - q).map((y) => {
         const liste = nachY.get(y).sort((p, q) => p.z - q.z || p.x - q.x);
         const n = liste.length;
-        const sx = new Int32Array(n), sz = new Int32Array(n), sb = new Uint16Array(n), sr = new Uint8Array(n);
+        const sx = new Int32Array(n), sz = new Int32Array(n), sb = new Uint16Array(n), sr = new Uint8Array(n), st = new Uint8Array(n);
         const summe = {};
         const inhalte = [];
         let h = fnv(`${a.id}|${y}`);
         let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
         liste.forEach((c, i) => {
-          sx[i] = c.x; sz[i] = c.z; sb[i] = index.get(c.id); sr[i] = richtungsNummer(c.id, c.zustand);
+          sx[i] = c.x; sz[i] = c.z; sb[i] = index.get(c.id); sr[i] = richtungsNummer(c.id, c.zustand); st[i] = c.art;
           summe[c.id] = (summe[c.id] ?? 0) + 1;
           if (c.x < x0) x0 = c.x; if (c.x > x1) x1 = c.x; if (c.z < z0) z0 = c.z; if (c.z > z1) z1 = c.z;
           h = fnv(`;${c.x},${c.z},${c.id},${sr[i]}`, h);
@@ -77,7 +79,7 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
           }
         });
         for (const [id, m] of Object.entries(summe)) gesamt[id] = (gesamt[id] ?? 0) + m;
-        return { y, n, x: sx, z: sz, b: sb, r: sr, bereich: { x0, x1, z0, z1 }, summe, inhalte, abdruck: hex8(h) };
+        return { y, n, x: sx, z: sz, b: sb, r: sr, t: st, bereich: { x0, x1, z0, z1 }, summe, inhalte, abdruck: hex8(h) };
       });
       const huelle = a.huelle;
       const wesen = alleWesen

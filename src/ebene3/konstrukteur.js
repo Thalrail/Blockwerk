@@ -59,6 +59,21 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
     }
   }
 
+  /** Ordnet nach Abhängigkeit; bei Gleichstand zuerst der Abschnitt nahe am Nullpunkt, dann die kleinere Id. Wirft bei einem Kreis. */
+  function ordne(abschnitte, n0) {
+    const abstand = (a) => ['x', 'y', 'z'].reduce((s, k) => s + (a.huelle.von[k] + a.huelle.bis[k] - 2 * n0[k]) ** 2, 0);
+    const rest = [...abschnitte], reihenfolge = [], fertig = new Set();
+    while (rest.length) {
+      const kandidaten = rest.filter((a) => (a.nach ?? []).every((n) => fertig.has(n))).sort((a, b) => abstand(a) - abstand(b) || (a.id < b.id ? -1 : 1));
+      if (!kandidaten.length) throw new GliederungFehler(`die Abhängigkeiten bilden einen Kreis (${rest.map((a) => a.id).sort().join(', ')})`);
+      const a = kandidaten[0];
+      rest.splice(rest.indexOf(a), 1);
+      fertig.add(a.id);
+      reihenfolge.push(a);
+    }
+    return reihenfolge;
+  }
+
   /**
    * Teilt das Projekt in Abschnitte ein. Reihenfolge nach Abhängigkeit; bei Gleichstand der Abschnitt zuerst, dessen Hülle dem Nullpunkt am nächsten liegt, dann die Id.
    * @param {object} entwurf  ohne Abschnitte
@@ -68,18 +83,7 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
   function gliedere(entwurf, vorlage) {
     if (entwurf.abschnitte.length) throw new GliederungFehler('der Entwurf ist schon gegliedert (Änderungen macht später der Rückgriff)');
     pruefeVorlage(vorlage);
-    const n0 = entwurf.projekt.nullpunkt;
-    const abstand = (a) => ['x', 'y', 'z'].reduce((s, k) => s + (a.huelle.von[k] + a.huelle.bis[k] - 2 * n0[k]) ** 2, 0);
-    const bereit = (a, fertig) => (a.nach ?? []).every((n) => fertig.has(n));
-    const rest = [...vorlage], reihenfolge = [], fertig = new Set();
-    while (rest.length) {
-      const kandidaten = rest.filter((a) => bereit(a, fertig)).sort((a, b) => abstand(a) - abstand(b) || (a.id < b.id ? -1 : 1));
-      if (!kandidaten.length) throw new GliederungFehler(`die Abhängigkeiten bilden einen Kreis (${rest.map((a) => a.id).sort().join(', ')})`);
-      const a = kandidaten[0];
-      rest.splice(rest.indexOf(a), 1);
-      fertig.add(a.id);
-      reihenfolge.push(a);
-    }
+    const reihenfolge = ordne(vorlage, entwurf.projekt.nullpunkt);
     let e = entwurf;
     reihenfolge.forEach((a, i) => {
       e = aendere(e, { art: 'setze-abschnitt', abschnitt: {
@@ -88,6 +92,28 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
       } });
     });
     return e;
+  }
+
+  /**
+   * Die Änderungen, die `id` hinter `nach` stellen (zusätzliche Abhängigkeit, neue Reihenfolge aller Abschnitte). Wirft bei einem Kreis
+   * oder wenn `id` schon in Arbeit oder fertig ist (das wäre ein Rückgriff).
+   * @returns {object[]} Änderungen für `fachleute.aendere` (leer, wenn nichts zu tun ist)
+   */
+  function abhaengigkeitAenderungen(entwurf, id, nach) {
+    const a = entwurf.abschnitte.find((x) => x.id === id), b = entwurf.abschnitte.find((x) => x.id === nach);
+    if (!a || !b) throw new GliederungFehler(`Abschnitt ${String(!a ? id : nach)} gibt es nicht`);
+    if (a.status !== 'offen') throw new GliederungFehler(`Abschnitt ${id} ist schon ${a.status}; das wäre ein Rückgriff`);
+    const neu = entwurf.abschnitte.map((x) => (x.id === id ? { ...x, nach: [...new Set([...(x.nach ?? []), nach])].sort() } : x));
+    const geordnet = ordne(neu, entwurf.projekt.nullpunkt);
+    return geordnet.map((x, i) => ({ art: 'setze-abschnitt', abschnitt: { ...x, reihenfolge: i + 1 } })).filter((c, i) => {
+      const alt = entwurf.abschnitte.find((y) => y.id === c.abschnitt.id);
+      return alt.reihenfolge !== c.abschnitt.reihenfolge || alt.nach.length !== c.abschnitt.nach.length;
+    });
+  }
+
+  /** Stellt `id` hinter `nach` (siehe abhaengigkeitAenderungen) und wendet die Änderungen an. */
+  function ergaenzeAbhaengigkeit(entwurf, id, nach) {
+    return abhaengigkeitAenderungen(entwurf, id, nach).reduce((e, c) => aendere(e, c), entwurf);
   }
 
   const nachReihenfolge = (e) => [...e.abschnitte].sort((a, b) => a.reihenfolge - b.reihenfolge);
@@ -252,5 +278,5 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
     return e;
   }
 
-  return { gliedere, naechster, schliesse, verlege, naehte, pruefeNaehte, GliederungFehler };
+  return { gliedere, abhaengigkeitAenderungen, ergaenzeAbhaengigkeit, naechster, schliesse, verlege, naehte, pruefeNaehte, GliederungFehler };
 }

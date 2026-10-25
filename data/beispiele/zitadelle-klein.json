@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "version": 1,
+  "projekt": {
+    "name": "Zitadelle (klein)",
+    "bauplatz": {
+      "breite": 400,
+      "hoehe": 100,
+      "tiefe": 300
+    },
+    "massstab": 1
+  },
+  "teile": [
+    {
+      "id": "zentralturm",
+      "name": "Zentralturm",
+      "art": "turm",
+      "wichtigkeit": "muss",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 21,
+          "tiefe": 21,
+          "hoehe": 40
+        },
+        "proportionen": {
+          "hoehe_zu_breite": 1.9
+        }
+      },
+      "lage": {
+        "bezug": "projekt",
+        "relation": "mitte"
+      },
+      "stil": {
+        "stimmung": "glanz"
+      },
+      "verbindungen": [
+        {
+          "mit": "markthalle",
+          "art": "gang"
+        }
+      ]
+    },
+    {
+      "id": "markthalle",
+      "name": "Markthalle",
+      "art": "halle",
+      "wichtigkeit": "muss",
+      "form": {
+        "baustein": "form.kuppel",
+        "groesse": {
+          "breite": 31,
+          "tiefe": 31
+        }
+      },
+      "lage": {
+        "bezug": "zentralturm",
+        "relation": "neben-osten"
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "menge": 6
+        },
+        {
+          "art": "bruteranlage"
+        }
+      ]
+    },
+    {
+      "id": "lagerkeller",
+      "name": "Lagerkeller",
+      "art": "keller",
+      "wichtigkeit": "soll",
+      "form": {
+        "baustein": "form.satteldach",
+        "groesse": {
+          "breite": 25,
+          "laenge": 25
+        }
+      },
+      "lage": {
+        "bezug": "zentralturm",
+        "relation": "unter"
+      },
+      "funktionen": [
+        {
+          "art": "lager",
+          "sorten": [
+            "minecraft:acacia_button",
+            "minecraft:acacia_door",
+            "minecraft:acacia_fence"
+          ]
+        }
+      ],
+      "stil": {
+        "stimmung": "dunkel-industriell"
+      }
+    }
+  ],
+  "freigabe": {
+    "von": "jonah",
+    "version": 1,
+    "abdruck": "76134782"
+  }
+}

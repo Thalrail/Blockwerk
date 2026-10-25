@@ -1,0 +1,14 @@
+{
+  "name": "Blockwerk – Bauplan",
+  "short_name": "Blockwerk",
+  "description": "Bauplaner für Minecraft Bedrock Edition: Schichtpläne zum Nachbauen von Hand",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14161a",
+  "theme_color": "#14161a",
+  "lang": "de",
+  "icons": [
+    { "src": "web/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

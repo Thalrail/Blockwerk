@@ -1,0 +1,150 @@
+{
+  "bereich": "leser",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "leser.schema",
+      "titel": "Das Schema der Bauspezifikation",
+      "regel": "Die Bauspezifikation ist die einzige Verbindung vom Leser in die Planung. Sie beschreibt nur, WAS gebaut wird: Schema-Version und Versionsnummer der Spezifikation, Projekt (Name, Bauplatzgröße, Nullpunkt, Maßstab), Teile mit Art, Form aus Ebene 2 mit Größe und Proportionen, Lage als Beziehung zu einem anderen Teil oder zum Bauplatz, Funktionen als Bedarf, Stil, Wichtigkeit (muss, soll, kann) und Verbindungen. Keine Koordinaten, keine Blöcke, keine Schaltungen. Das Vokabular steht in dieser Regel als Daten; Prüfer, Briefing-Prompt und die Planung (Ebene 3) lesen dasselbe.",
+      "parameter": {
+        "schema": 1,
+        "teilarten": [
+          "turm",
+          "halle",
+          "mauer",
+          "keller",
+          "kuppelbau",
+          "tor",
+          "bruecke",
+          "platz",
+          "lager",
+          "anlage"
+        ],
+        "relationen": {
+          "mitte": "mittig bei {bezug}",
+          "ecke-nordwest": "an der Ecke Nordwest bei {bezug}",
+          "ecke-nordost": "an der Ecke Nordost bei {bezug}",
+          "ecke-suedwest": "an der Ecke Südwest bei {bezug}",
+          "ecke-suedost": "an der Ecke Südost bei {bezug}",
+          "ueber": "über {bezug}",
+          "unter": "unter {bezug}",
+          "neben-norden": "nördlich neben {bezug}",
+          "neben-osten": "östlich neben {bezug}",
+          "neben-sueden": "südlich neben {bezug}",
+          "neben-westen": "westlich neben {bezug}",
+          "innen": "innerhalb von {bezug}"
+        },
+        "wichtigkeiten": [
+          "muss",
+          "soll",
+          "kann"
+        ],
+        "verbindungsarten": [
+          "gang",
+          "schiene"
+        ],
+        "proportionen": {
+          "hoehe_zu_breite": {
+            "min": 0.05,
+            "max": 50
+          },
+          "tiefe_zu_breite": {
+            "min": 0.05,
+            "max": 50
+          }
+        },
+        "funktionen": {
+          "handelsnischen": {
+            "menge": {
+              "min": 1,
+              "max": 4096
+            },
+            "beruf": {
+              "min": 0,
+              "max": 12
+            }
+          },
+          "lager": {
+            "sorten": {
+              "min": 1,
+              "max": 4096
+            }
+          }
+        },
+        "funktionenOhneModul": [
+          "bruteranlage",
+          "bahnhof",
+          "entladestelle",
+          "mobfarm"
+        ],
+        "bauplatz": {
+          "breite": {
+            "min": 1,
+            "max": 4096
+          },
+          "hoehe": {
+            "min": 1,
+            "max": 384
+          },
+          "tiefe": {
+            "min": 1,
+            "max": 4096
+          }
+        },
+        "verboteneFelder": [
+          "x",
+          "y",
+          "z",
+          "koordinaten",
+          "position",
+          "bloecke",
+          "block",
+          "blockid",
+          "schaltung",
+          "schaltplan",
+          "redstone"
+        ],
+        "farben": {
+          "maximum": 8
+        }
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 4: Leser)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene4/leser.test.js::Leser: Schema und Prüfer",
+      "ungeprueft": false
+    },
+    {
+      "id": "leser.pruefer",
+      "titel": "Der Prüfer der Spezifikation",
+      "regel": "Der Prüfer prüft streng gegen das Schema. Unbekannte Begriffe, unmögliche Werte (außerhalb der Bereiche der Bausteine aus Ebene 2), Widersprüche (Lagebezug im Kreis, doppelte Ids), fehlende Pflichtangaben (Wichtigkeit, Sortenliste beim Lager) und Fragen, die der Leser selbst gestellt hat, werden zu Rückfragen an Jonah mit Pfad und Optionen zum Anklicken; geraten wird nie. Hinweise (kein Hindernis): Bedarf, der in mehrere Module geteilt wird, Funktionen ohne Modul (werden Schaltungsanfragen), Maßstab ungleich 1.",
+      "parameter": {
+        "vorschlaege": 3,
+        "hoechstAbstand": 3
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 4: Leser)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene4/leser.test.js::Leser: Schema und Prüfer",
+      "ungeprueft": false
+    },
+    {
+      "id": "leser.briefing",
+      "titel": "Der feste Briefing-Prompt",
+      "regel": "Die Seite erzeugt einen festen, deterministischen Prompt. Jonah gibt ihn mit den Bildern im Claude-Chat ein und kopiert das JSON zurück. Der Prompt wird aus dem Schema, dem Vokabular und den Bausteinen aus Ebene 2 erzeugt, damit er nie vom Prüfer abweicht. Einen eigenen API-Schlüssel gibt es erst später und optional.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 4: Leser)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene4/leser.test.js::Leser: Briefing-Prompt",
+      "ungeprueft": false
+    },
+    {
+      "id": "leser.freigabe",
+      "titel": "Freigabe und Versionen",
+      "regel": "Jonah sieht die Spezifikation als lesbare Zusammenfassung und gibt sie frei, bevor die Planung (Ebene 3) startet. Freigegeben wird nur ohne offene Rückfragen; jede spätere Änderung hebt die Freigabe auf. Spezifikationen haben Versionen; der Vergleich zweier Versionen nennt hinzugefügte, entfernte und geänderte Teile, damit der Konstrukteur entscheiden kann, welche Abschnitte neu geplant werden.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 4: Leser)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene4/leser.test.js::Leser: Zusammenfassung, Freigabe und Versionen",
+      "ungeprueft": false
+    }
+  ]
+}

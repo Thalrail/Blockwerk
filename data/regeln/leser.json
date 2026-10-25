@@ -145,6 +145,182 @@
       "status": "simuliert",
       "simulationstest": "test/ebene4/leser.test.js::Leser: Zusammenfassung, Freigabe und Versionen",
       "ungeprueft": false
+    },
+    {
+      "id": "leser.messung",
+      "titel": "Bildmessung und Abgleich mit der KI",
+      "regel": "Die Bildmessung arbeitet ohne KI und deterministisch auf Pixelbildern (RGBA): Farbpalette (Farbklassen nach Farbton, Sättigung und Helligkeit), Proportion Höhe zu Breite aus dem Aufriss, Form (rund, eckig), Seitenverhältnis, Kreise (Komponenten) und gerade Linien im Grundriss. Der Abgleich vergleicht die Messwerte mit der Spezifikation der KI; Widersprüche (Text rund, Bild eckig; Maße oder Proportionen weichen um mehr als die Toleranz ab; eine genannte Farbe kommt im Bild nicht vor) werden Rückfragen an Jonah, nicht geraten. Alle Schwellen sind Daten und werden später an den echten Zitadelle-Bildern kalibriert.",
+      "parameter": {
+        "hintergrundAbstand": 60,
+        "minGroesse": 8,
+        "runde": {
+          "mittelMin": 0.92,
+          "mittelMax": 1.09,
+          "streuungMax": 0.06
+        },
+        "ecke": {
+          "radius": 1.15,
+          "anteil": 0.08
+        },
+        "linie": {
+          "mindestLaenge": 0.6,
+          "maxDicke": 0.1,
+          "mindestPixel": 12,
+          "maxPixel": 3,
+          "schlankheit": 5
+        },
+        "komponente": {
+          "mindestAnteil": 0.005
+        },
+        "farbe": {
+          "mindestAnteil": 0.01,
+          "vorhanden": 0.03,
+          "dominant": 0.25
+        },
+        "unbunt": {
+          "sMax": 0.15,
+          "schwarzV": 0.2,
+          "weissV": 0.85
+        },
+        "braun": {
+          "tonVon": 10,
+          "tonBis": 45,
+          "vMax": 0.6,
+          "sMin": 0.3
+        },
+        "farbtoene": [
+          {
+            "farbe": "rot",
+            "von": 345,
+            "bis": 15
+          },
+          {
+            "farbe": "orange",
+            "von": 15,
+            "bis": 40
+          },
+          {
+            "farbe": "gelb",
+            "von": 40,
+            "bis": 70
+          },
+          {
+            "farbe": "grün",
+            "von": 70,
+            "bis": 165
+          },
+          {
+            "farbe": "türkis",
+            "von": 165,
+            "bis": 200
+          },
+          {
+            "farbe": "blau",
+            "von": 200,
+            "bis": 260
+          },
+          {
+            "farbe": "lila",
+            "von": 260,
+            "bis": 300
+          },
+          {
+            "farbe": "rosa",
+            "von": 300,
+            "bis": 345
+          }
+        ],
+        "farbwoerter": {
+          "weiß": [
+            "weiß"
+          ],
+          "weiss": [
+            "weiß"
+          ],
+          "schwarz": [
+            "schwarz"
+          ],
+          "grau": [
+            "grau"
+          ],
+          "silber": [
+            "grau",
+            "weiß"
+          ],
+          "rot": [
+            "rot"
+          ],
+          "orange": [
+            "orange"
+          ],
+          "gelb": [
+            "gelb"
+          ],
+          "gold": [
+            "gelb",
+            "orange"
+          ],
+          "grün": [
+            "grün"
+          ],
+          "gruen": [
+            "grün"
+          ],
+          "türkis": [
+            "türkis"
+          ],
+          "blau": [
+            "blau"
+          ],
+          "lila": [
+            "lila"
+          ],
+          "violett": [
+            "lila"
+          ],
+          "rosa": [
+            "rosa"
+          ],
+          "pink": [
+            "rosa"
+          ],
+          "braun": [
+            "braun"
+          ],
+          "beige": [
+            "gelb",
+            "braun",
+            "weiß"
+          ]
+        },
+        "toleranz": {
+          "verhaeltnis": 0.15
+        },
+        "bausteinform": {
+          "rund": [
+            "form.zylinder",
+            "form.kugel",
+            "form.kuppel",
+            "form.kegel",
+            "form.scheibe",
+            "bau.wendeltreppe",
+            "bau.saeule"
+          ],
+          "eckig": [
+            "form.satteldach",
+            "form.walmdach",
+            "form.tonnengewoelbe",
+            "bau.gang",
+            "bau.treppe",
+            "bau.tuer",
+            "bau.fenster"
+          ]
+        }
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 4: Bildmessung)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene4/messung.test.js::Bildmessung: Bilder, Farben und Linien",
+      "ungeprueft": false
     }
   ]
 }

@@ -60,8 +60,8 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
     // Zonen des Grobdesigners: Teile eines Abschnitts bleiben in dessen Zone
     for (const z of entwurf.zonen) {
       if (!z.abschnitt) continue;
-      // eine Technikzone gilt nur für Technikteile, jede andere Zone für alle Teile des Abschnitts
-      for (const t of entwurf.teile.filter((x) => x.abschnitt === z.abschnitt && (z.funktion !== 'technik' || x.art === 'technik'))) {
+      // Zone ohne Funktion: für alle Teile des Abschnitts; Technikzone: nur für Technikteile; andere Funktionszone: nur für Teile, die in dieser Zone stehen sollen
+      for (const t of entwurf.teile.filter((x) => x.abschnitt === z.abschnitt && (z.funktion === undefined || (z.funktion === 'technik' ? x.art === 'technik' : x.zone === z.funktion)))) {
         const draussen = [...mat.teile.get(t.id).schluessel].filter((k) => !imQuader(zelleVon(k), z));
         if (!draussen.length) continue;
         liste.push({ regel: 'plan.geometrie', von: 'grobdesigner', an: fachleute.besitzer(t), ort: zelleVon(kleinste(draussen)), schwere: 'verstoss', ziel: `teil:${t.id}`, abschnitt: t.abschnitt, text: `${t.baustein} (${t.id}) ragt aus der Zone ${z.id} des Abschnitts ${z.abschnitt}`, schluessel: `plan.geometrie|zone|${z.id}|${t.id}` });

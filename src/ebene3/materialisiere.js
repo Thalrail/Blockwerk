@@ -13,13 +13,13 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   const pruefstart = regelwerk.parameter('plan.geometrie', 'pruefstart');
 
   /** Palette des Entwurfs über der Testpalette (Rolle → Block oder Block je Form). */
-  const paletteVon = (entwurf) => ({ ...TESTPALETTE, ...entwurf.palette });
+  const paletteVon = (entwurf, abschnitt) => ({ ...TESTPALETTE, ...entwurf.palette, ...(entwurf.paletten?.[abschnitt] ?? {}) });
 
   /** Baut ein Teil: Paket, gedrehte und verschobene Blöcke, Blockschlüssel, Hülle, Startpunkt für die Lorenprüfung. */
   function baueTeil(entwurf, teil) {
     const paket = ebene2.baue(teil.baustein, teil.parameter);
     const w = ebene0.neueWelt();
-    ebene2.platziere(w, paket, paletteVon(entwurf));
+    ebene2.platziere(w, paket, paletteVon(entwurf, teil.abschnitt));
     const h = paket.platzbedarf.huelle;
     let bauteil = w.ausschnitt(h.von, h.bis);
     bauteil = ebene0.vermesser.drehe(bauteil, teil.lage.drehung);

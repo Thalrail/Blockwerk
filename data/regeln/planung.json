@@ -25,7 +25,7 @@
     {
       "id": "plan.besitz",
       "titel": "Jeder ändert nur seinen eigenen Teil",
-      "regel": "Der Konstrukteur besitzt Abschnitte, Prüfaufträge und Verbindungen (Teile mit „verbindung“: Gänge, Treppen, Schienen zwischen Abschnitten), der Grobdesigner die Zonen, der Techniker außerdem den Bedarf und die Schaltungsanfragen, Technikteile und Sperrzonen, der Architekt Formen und Bauelemente, der Designer die Palette. Fremde Felder zu ändern ist ein Fehler. Die Art eines Teils folgt aus dem Baustein (form. = Form, bau. = Bauelement, tech. = Technik), außer es ist ausdrücklich eine Verbindung.",
+      "regel": "Der Konstrukteur besitzt Abschnitte, Prüfaufträge und Verbindungen (Teile mit „verbindung“: Gänge, Treppen, Schienen zwischen Abschnitten), der Grobdesigner die Zonen, der Techniker außerdem den Bedarf und die Schaltungsanfragen, Technikteile und Sperrzonen, der Architekt Formen und Bauelemente samt Formwünschen, der Designer die Gesamtpalette und die Abschnittspaletten. Fremde Felder zu ändern ist ein Fehler. Die Art eines Teils folgt aus dem Baustein (form. = Form, bau. = Bauelement, tech. = Technik), außer es ist ausdrücklich eine Verbindung.",
       "parameter": {
         "felder": {
           "abschnitte": "konstrukteur",
@@ -34,7 +34,9 @@
           "sperrzonen": "techniker",
           "palette": "designer",
           "bedarf": "techniker",
-          "anfragen": "techniker"
+          "anfragen": "techniker",
+          "formwuensche": "architekt",
+          "paletten": "designer"
         },
         "teile": {
           "form": "architekt",
@@ -100,7 +102,7 @@
     {
       "id": "plan.geometrie",
       "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
-      "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Technikzone gilt nur für Technikteile). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",
+      "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Zone ohne Funktion gilt für alle Teile, eine Technikzone nur für Technikteile, jede andere Funktionszone nur für Teile, die der Architekt dort einplant). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",
       "parameter": {
         "pruefstart": {
           "tech.antriebsstrecke": {
@@ -223,6 +225,123 @@
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Techniker, Ablauf je Abschnitt)",
       "status": "simuliert",
       "simulationstest": "test/ebene3/techniker.test.js::Techniker: Bilanz und Einspruch",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.zonenplan",
+      "titel": "Zonenplan des Grobdesigners",
+      "regel": "Der Grobdesigner teilt die Hülle eines Abschnitts in Streifen entlang x (ganze Blöcke, volle Tiefe und Höhe) nach Anteilen für die Funktionen Technik, Handel, Verkehr und Optik; der Rest an Blöcken geht an den letzten Streifen. Hat der Abschnitt Bedarf, ist die Technikzone mindestens so breit wie das Mindestmaß des Technikers; passt das Mindestmaß nicht in die Hülle, setzt er nichts, sondern der Bauleiter fragt Jonah. Er bestimmt, wo etwas hinkommt, nicht wie.",
+      "parameter": {
+        "funktionen": [
+          "technik",
+          "handel",
+          "verkehr",
+          "optik"
+        ]
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Grobdesigner, Architekt, Designer)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/gestaltung.test.js::Grobdesigner: Zonenplan",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.formen",
+      "titel": "Formen setzen und gegen die Vorlage messen",
+      "regel": "Der Architekt setzt jede gewünschte Form oder jedes Bauelement in die gewünschte Zone an einen Anker (Mitte oder eine Ecke der Zone). Überschneidet der Hüllquader schon gesetzte Teile, sucht er die nächste freie Stelle in fester Reihenfolge von den Ecken nach innen; gibt es keine, geht ein Einwand mit dem Platzbedarf an den Grobdesigner. Danach misst er das Teil gegen die Vorlage: Symmetrie an den Mittelachsen (genau) und das Verhältnis Höhe zu Breite (Toleranz in Blöcken, Standard ½).",
+      "parameter": {
+        "anker": [
+          "mitte",
+          "nordwest",
+          "nordost",
+          "suedwest",
+          "suedost"
+        ],
+        "toleranz": 0.5,
+        "achsen": [
+          "x",
+          "z"
+        ]
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Grobdesigner, Architekt, Designer)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/gestaltung.test.js::Architekt: Formen setzen und messen",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.palette",
+      "titel": "Paletten des Designers",
+      "regel": "Der Designer setzt Rollen (Wand, Akzent, Boden, Licht, Glas) auf echte Blöcke, als Gesamtpalette oder je Abschnitt (Abschnittspalette geht vor). Jeder Block muss im Blockregister stehen, darf kein Arbeitsblock sein (die Sperre des Technikers), und Treppen, Türen und Scheiben müssen zur Form passen. Technikblöcke ändert er nie: Ebene 2 setzt sie fest. Die Stimmungen sind vorbereitete, vollständige Paletten.",
+      "parameter": {
+        "rollen": [
+          "wand",
+          "akzent",
+          "boden",
+          "licht",
+          "glas"
+        ],
+        "formen": {
+          "voll": "",
+          "treppe": "_stairs",
+          "tuer": "_door",
+          "scheibe": "_pane"
+        },
+        "stimmungen": {
+          "glanz": {
+            "wand": "minecraft:quartz_block",
+            "akzent": {
+              "voll": "minecraft:gold_block",
+              "treppe": "minecraft:quartz_stairs",
+              "tuer": "minecraft:birch_door"
+            },
+            "boden": {
+              "voll": "minecraft:smooth_quartz",
+              "treppe": "minecraft:smooth_quartz_stairs"
+            },
+            "licht": "minecraft:glowstone",
+            "glas": {
+              "voll": "minecraft:glass",
+              "scheibe": "minecraft:glass_pane"
+            }
+          },
+          "dunkel-industriell": {
+            "wand": "minecraft:polished_blackstone",
+            "akzent": {
+              "voll": "minecraft:deepslate_bricks",
+              "treppe": "minecraft:deepslate_brick_stairs",
+              "tuer": "minecraft:iron_door"
+            },
+            "boden": {
+              "voll": "minecraft:blackstone",
+              "treppe": "minecraft:polished_blackstone_stairs"
+            },
+            "licht": "minecraft:shroomlight",
+            "glas": {
+              "voll": "minecraft:glass",
+              "scheibe": "minecraft:glass_pane"
+            }
+          },
+          "hell-nordisch": {
+            "wand": "minecraft:birch_planks",
+            "akzent": {
+              "voll": "minecraft:spruce_planks",
+              "treppe": "minecraft:spruce_stairs",
+              "tuer": "minecraft:spruce_door"
+            },
+            "boden": {
+              "voll": "minecraft:birch_planks",
+              "treppe": "minecraft:birch_stairs"
+            },
+            "licht": "minecraft:sea_lantern",
+            "glas": {
+              "voll": "minecraft:white_stained_glass",
+              "scheibe": "minecraft:white_stained_glass_pane"
+            }
+          }
+        }
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Grobdesigner, Architekt, Designer)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/gestaltung.test.js::Designer: Paletten und Stimmungen",
       "ungeprueft": false
     }
   ]

@@ -1,0 +1,429 @@
+{
+  "hinweis": "Darstellung ohne Texturen: Farbfläche und Name je Block. Die Texturen (Faithful 32x, https://faithfulpack.net) kommen später; fehlende Zuordnungen bekommen eine markierte Ersatzfarbe.",
+  "farben": [
+    {
+      "muster": "^minecraft:light_blue_",
+      "farbe": "#3aafd9"
+    },
+    {
+      "muster": "^minecraft:light_gray_",
+      "farbe": "#8e8e86"
+    },
+    {
+      "muster": "^minecraft:white_",
+      "farbe": "#e9ecec"
+    },
+    {
+      "muster": "^minecraft:orange_",
+      "farbe": "#f07613"
+    },
+    {
+      "muster": "^minecraft:magenta_",
+      "farbe": "#bd44b3"
+    },
+    {
+      "muster": "^minecraft:yellow_",
+      "farbe": "#f8c627"
+    },
+    {
+      "muster": "^minecraft:lime_",
+      "farbe": "#70b919"
+    },
+    {
+      "muster": "^minecraft:pink_",
+      "farbe": "#ed8dac"
+    },
+    {
+      "muster": "^minecraft:gray_",
+      "farbe": "#3e4447"
+    },
+    {
+      "muster": "^minecraft:cyan_",
+      "farbe": "#158991"
+    },
+    {
+      "muster": "^minecraft:purple_",
+      "farbe": "#792aac"
+    },
+    {
+      "muster": "^minecraft:blue_",
+      "farbe": "#35399d"
+    },
+    {
+      "muster": "^minecraft:brown_",
+      "farbe": "#724728"
+    },
+    {
+      "muster": "^minecraft:green_",
+      "farbe": "#546d1b"
+    },
+    {
+      "muster": "^minecraft:red_",
+      "farbe": "#a12722"
+    },
+    {
+      "muster": "^minecraft:black_",
+      "farbe": "#141519"
+    },
+    {
+      "muster": "water",
+      "farbe": "#2f55d8"
+    },
+    {
+      "muster": "lava",
+      "farbe": "#d4570c"
+    },
+    {
+      "muster": "dark_oak",
+      "farbe": "#42301a"
+    },
+    {
+      "muster": "oak",
+      "farbe": "#a2824f"
+    },
+    {
+      "muster": "spruce",
+      "farbe": "#6f5030"
+    },
+    {
+      "muster": "birch",
+      "farbe": "#c8b77a"
+    },
+    {
+      "muster": "jungle",
+      "farbe": "#a77a52"
+    },
+    {
+      "muster": "acacia",
+      "farbe": "#a95c32"
+    },
+    {
+      "muster": "mangrove",
+      "farbe": "#773a37"
+    },
+    {
+      "muster": "cherry",
+      "farbe": "#e3b3b0"
+    },
+    {
+      "muster": "bamboo",
+      "farbe": "#c9b53f"
+    },
+    {
+      "muster": "crimson",
+      "farbe": "#7a2b46"
+    },
+    {
+      "muster": "warped",
+      "farbe": "#2b7f77"
+    },
+    {
+      "muster": "polished_blackstone",
+      "farbe": "#35323b"
+    },
+    {
+      "muster": "blackstone",
+      "farbe": "#2c2830"
+    },
+    {
+      "muster": "deepslate",
+      "farbe": "#4d4d51"
+    },
+    {
+      "muster": "stone_brick",
+      "farbe": "#7a7a7a"
+    },
+    {
+      "muster": "cobblestone",
+      "farbe": "#7a7a7a"
+    },
+    {
+      "muster": "andesite",
+      "farbe": "#868687"
+    },
+    {
+      "muster": "diorite",
+      "farbe": "#bdbdbd"
+    },
+    {
+      "muster": "granite",
+      "farbe": "#956755"
+    },
+    {
+      "muster": "stone",
+      "farbe": "#7d7d7d"
+    },
+    {
+      "muster": "smooth_quartz",
+      "farbe": "#ebe5de"
+    },
+    {
+      "muster": "quartz",
+      "farbe": "#ebe5de"
+    },
+    {
+      "muster": "red_sandstone",
+      "farbe": "#b4571d"
+    },
+    {
+      "muster": "sandstone",
+      "farbe": "#d8cb9b"
+    },
+    {
+      "muster": "sand",
+      "farbe": "#dbcf9f"
+    },
+    {
+      "muster": "gravel",
+      "farbe": "#837f7e"
+    },
+    {
+      "muster": "podzol",
+      "farbe": "#5b4220"
+    },
+    {
+      "muster": "dirt",
+      "farbe": "#866043"
+    },
+    {
+      "muster": "grass",
+      "farbe": "#5d9c3b"
+    },
+    {
+      "muster": "clay",
+      "farbe": "#9ea4b0"
+    },
+    {
+      "muster": "nether_brick",
+      "farbe": "#2c161a"
+    },
+    {
+      "muster": "brick",
+      "farbe": "#96574a"
+    },
+    {
+      "muster": "prismarine",
+      "farbe": "#5aa097"
+    },
+    {
+      "muster": "terracotta",
+      "farbe": "#9a5a42"
+    },
+    {
+      "muster": "concrete",
+      "farbe": "#cfd5d6"
+    },
+    {
+      "muster": "obsidian",
+      "farbe": "#150f23"
+    },
+    {
+      "muster": "bedrock",
+      "farbe": "#565656"
+    },
+    {
+      "muster": "netherite",
+      "farbe": "#4a4448"
+    },
+    {
+      "muster": "copper",
+      "farbe": "#c06b4a"
+    },
+    {
+      "muster": "iron",
+      "farbe": "#d8d8d8"
+    },
+    {
+      "muster": "gold",
+      "farbe": "#f9d649"
+    },
+    {
+      "muster": "diamond",
+      "farbe": "#4aedd9"
+    },
+    {
+      "muster": "emerald",
+      "farbe": "#2fbd5a"
+    },
+    {
+      "muster": "lapis",
+      "farbe": "#1d4aa0"
+    },
+    {
+      "muster": "redstone",
+      "farbe": "#a81a0b"
+    },
+    {
+      "muster": "glowstone",
+      "farbe": "#c9964b"
+    },
+    {
+      "muster": "sea_lantern",
+      "farbe": "#a9d3d0"
+    },
+    {
+      "muster": "shroomlight",
+      "farbe": "#e8a45c"
+    },
+    {
+      "muster": "lantern",
+      "farbe": "#d9a35a"
+    },
+    {
+      "muster": "torch",
+      "farbe": "#e9a53a"
+    },
+    {
+      "muster": "lamp",
+      "farbe": "#c9964b"
+    },
+    {
+      "muster": "hopper",
+      "farbe": "#4f4f4f"
+    },
+    {
+      "muster": "chest",
+      "farbe": "#a06f2d"
+    },
+    {
+      "muster": "barrel",
+      "farbe": "#8a6234"
+    },
+    {
+      "muster": "comparator",
+      "farbe": "#b0b0a8"
+    },
+    {
+      "muster": "repeater",
+      "farbe": "#a8a8a0"
+    },
+    {
+      "muster": "piston",
+      "farbe": "#8d7a56"
+    },
+    {
+      "muster": "observer",
+      "farbe": "#6e6e6e"
+    },
+    {
+      "muster": "dropper",
+      "farbe": "#707070"
+    },
+    {
+      "muster": "dispenser",
+      "farbe": "#707070"
+    },
+    {
+      "muster": "rail",
+      "farbe": "#8e7a56"
+    },
+    {
+      "muster": "lever",
+      "farbe": "#7d7d7d"
+    },
+    {
+      "muster": "button",
+      "farbe": "#7d7d7d"
+    },
+    {
+      "muster": "lectern",
+      "farbe": "#9a7a47"
+    },
+    {
+      "muster": "bookshelf",
+      "farbe": "#9a7a47"
+    },
+    {
+      "muster": "bed",
+      "farbe": "#a61f1f"
+    },
+    {
+      "muster": "door",
+      "farbe": "#8b6a3e"
+    },
+    {
+      "muster": "glass",
+      "farbe": "#c7e9f0"
+    },
+    {
+      "muster": "wool",
+      "farbe": "#e9ecec"
+    },
+    {
+      "muster": "carpet",
+      "farbe": "#e9ecec"
+    }
+  ],
+  "namen": {
+    "minecraft:stone": "Stein",
+    "minecraft:cobblestone": "Bruchstein",
+    "minecraft:stone_bricks": "Steinziegel",
+    "minecraft:stone_brick_stairs": "Steinziegeltreppe",
+    "minecraft:stone_stairs": "Steintreppe",
+    "minecraft:dirt": "Erde",
+    "minecraft:sand": "Sand",
+    "minecraft:gravel": "Kies",
+    "minecraft:glass": "Glas",
+    "minecraft:glass_pane": "Glasscheibe",
+    "minecraft:glowstone": "Leuchtstein",
+    "minecraft:quartz_block": "Quarzblock",
+    "minecraft:smooth_quartz": "Glatter Quarz",
+    "minecraft:quartz_stairs": "Quarztreppe",
+    "minecraft:smooth_quartz_stairs": "Glatte Quarztreppe",
+    "minecraft:gold_block": "Goldblock",
+    "minecraft:polished_blackstone": "Polierter Schwarzstein",
+    "minecraft:blackstone": "Schwarzstein",
+    "minecraft:deepslate_bricks": "Tiefenschieferziegel",
+    "minecraft:deepslate_brick_stairs": "Tiefenschieferziegeltreppe",
+    "minecraft:polished_blackstone_stairs": "Polierte Schwarzsteintreppe",
+    "minecraft:shroomlight": "Pilzlicht",
+    "minecraft:sea_lantern": "Seelaterne",
+    "minecraft:birch_planks": "Birkenbretter",
+    "minecraft:spruce_planks": "Fichtenbretter",
+    "minecraft:birch_stairs": "Birkentreppe",
+    "minecraft:spruce_stairs": "Fichtentreppe",
+    "minecraft:birch_door": "Birkentür",
+    "minecraft:spruce_door": "Fichtentür",
+    "minecraft:iron_door": "Eisentür",
+    "minecraft:wooden_door": "Holztür",
+    "minecraft:hopper": "Trichter",
+    "minecraft:chest": "Truhe",
+    "minecraft:barrel": "Fass",
+    "minecraft:redstone_block": "Redstone-Block",
+    "minecraft:redstone_torch": "Redstone-Fackel",
+    "minecraft:redstone_wire": "Redstone-Staub",
+    "minecraft:unpowered_repeater": "Verstärker",
+    "minecraft:powered_repeater": "Verstärker (an)",
+    "minecraft:unpowered_comparator": "Komparator",
+    "minecraft:powered_comparator": "Komparator (an)",
+    "minecraft:golden_rail": "Antriebsschiene",
+    "minecraft:rail": "Schiene",
+    "minecraft:detector_rail": "Sensorschiene",
+    "minecraft:activator_rail": "Aktivierungsschiene",
+    "minecraft:bed": "Bett",
+    "minecraft:lectern": "Lesepult",
+    "minecraft:smoker": "Räucherofen",
+    "minecraft:blast_furnace": "Hochofen",
+    "minecraft:barrel_": "Fass",
+    "minecraft:composter": "Komposter",
+    "minecraft:cartography_table": "Kartentisch",
+    "minecraft:fletching_table": "Pfeilmachertisch",
+    "minecraft:smithing_table": "Schmiedetisch",
+    "minecraft:stonecutter_block": "Steinsäge",
+    "minecraft:loom": "Webstuhl",
+    "minecraft:grindstone": "Schleifstein",
+    "minecraft:brewing_stand": "Braustand",
+    "minecraft:cauldron": "Kessel",
+    "minecraft:torch": "Fackel",
+    "minecraft:lantern": "Laterne",
+    "minecraft:oak_planks": "Eichenbretter",
+    "minecraft:oak_stairs": "Eichentreppe",
+    "minecraft:water": "Wasser",
+    "minecraft:lava": "Lava",
+    "minecraft:obsidian": "Obsidian",
+    "minecraft:iron_block": "Eisenblock",
+    "minecraft:white_concrete": "Weißer Beton",
+    "minecraft:white_stained_glass": "Weißes Buntglas",
+    "minecraft:white_stained_glass_pane": "Weiße Buntglasscheibe"
+  }
+}

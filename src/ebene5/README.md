@@ -1,2 +1,2 @@
-﻿Ebene 5 – Ausgabe & Oberfläche (Desktop). Noch leer.
-Siehe docs/ebenen.md. Importe nur aus tieferen Ebenen.
+Ebene 5 – Ausgabe & Oberfläche. Stand 6a: Logik ohne Oberfläche (`bauplan.js`, `material.js`, `darstellung.js`, `fortschritt.js`, `teilen.js`, `daten-browser.js`); die Seite selbst liegt in `index.html` und `web/` (darf Uhr, DOM, localStorage und Worker nutzen).
+Live-Abhaken mit Freunden folgt (der Fortschritt ist dafür schon als mischbares Modell gebaut). Siehe docs/ebenen.md. Importe nur aus tieferen Ebenen.

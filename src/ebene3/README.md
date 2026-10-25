@@ -1,2 +1,2 @@
-Ebene 3 – Planung. Vollständig: Gerüst (Planentwurf, Besitz/Rangfolge, Einwand-Protokoll, Bauleiter, Baubericht, Brücke zu Ebene 0–2), alle Fachleute (Konstrukteur, Techniker, Grobdesigner, Architekt, Designer) und der Ablauf mit Rückgriff und Abschlussprüfung.
-Einstieg: `erzeugeEbene3(...).ablauf.starte(vorgabe)`. Siehe docs/ebenen.md. Importe nur aus tieferen Ebenen.
+Ebene 3 – Planung. Vollständig: Gerüst (Planentwurf, Besitz/Rangfolge, Einwand-Protokoll, Bauleiter, Baubericht, Brücke zu Ebene 0–2), alle Fachleute, der Ablauf mit Rückgriff und Abschlussprüfung und die Übersetzung der freigegebenen Spezifikation (`uebersetzung.js`) samt `ablauf.aktualisiere` für neue Fassungen.
+Einstieg: `erzeugeEbene3(...).ablauf.starte(vorgabe)` oder über Ebene 4 `baue(spec)`. Siehe docs/ebenen.md. Importe nur aus tieferen Ebenen.

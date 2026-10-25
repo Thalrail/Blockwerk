@@ -46,17 +46,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     return menge;
   }
 
-  /**
-   * Rückgriff: öffnet den Abschnitt, alle von ihm abhängigen und den gerade laufenden wieder. Teile, Zonen, Sperrzonen und Prüfaufträge werden
-   * von ihren Besitzern entfernt (auch Bedarf und Wünsche, sie werden aus der Vorgabe neu aufgebaut). `aenderung` darf name, huelle, schnittstellen, vorgabe ändern.
-   * @returns {object} neuer Entwurf
-   */
-  function rueckgriff(entwurf, id, { grund = '', aenderung = null } = {}) {
-    const ziel = entwurf.abschnitte.find((a) => a.id === id);
-    if (!ziel) throw new AblaufFehler(`Abschnitt ${String(id)} gibt es nicht`);
-    for (const k of Object.keys(aenderung ?? {})) if (!aenderbar.includes(k)) throw new AblaufFehler(`Am Abschnitt lässt sich „${k}“ nicht ändern (${aenderbar.join(', ')})`);
-    const menge = abhaengige(entwurf, id);
-    for (const a of entwurf.abschnitte) if (a.status === 'in-arbeit') menge.add(a.id);
+  /** Entfernt von den Besitzern alles, was zu den Abschnitten der Menge gehört (Teile, Zonen, Sperrzonen, Prüfaufträge, Bedarf, Wünsche). */
+  function bereinige(entwurf, menge) {
     let e = entwurf;
     const als = (wer, a) => { e = fachleute.aendere(e, wer, a).entwurf; };
     const entfernt = new Set();
@@ -67,8 +58,25 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     // Bedarf und Wünsche werden beim neuen Ablauf aus der Vorgabe wieder aufgebaut; bis dahin soll kein Einwand gegen den noch leeren Abschnitt entstehen
     for (const b of [...(e.bedarf ?? [])].filter((x) => menge.has(x.abschnitt))) als('techniker', { art: 'entferne-bedarf', id: b.id });
     for (const w of [...(e.formwuensche ?? [])].filter((x) => menge.has(x.abschnitt))) als('architekt', { art: 'entferne-formwunsch', id: w.id });
+    return e;
+  }
+
+  /**
+   * Rückgriff: öffnet den Abschnitt, alle von ihm abhängigen und den gerade laufenden wieder. Teile, Zonen, Sperrzonen und Prüfaufträge werden
+   * von ihren Besitzern entfernt (auch Bedarf und Wünsche, sie werden aus der Vorgabe neu aufgebaut). `aenderung` darf name, huelle, schnittstellen, vorgabe ändern.
+   * @returns {object} neuer Entwurf
+   */
+  function rueckgriff(entwurf, id, { grund = '', aenderung = null, intern = false, zaehlen = true } = {}) {
+    const ziel = entwurf.abschnitte.find((a) => a.id === id);
+    if (!ziel) throw new AblaufFehler(`Abschnitt ${String(id)} gibt es nicht`);
+    const erlaubt = intern ? [...aenderbar, 'nach'] : aenderbar;
+    for (const k of Object.keys(aenderung ?? {})) if (!erlaubt.includes(k)) throw new AblaufFehler(`Am Abschnitt lässt sich „${k}“ nicht ändern (${aenderbar.join(', ')})`);
+    const menge = abhaengige(entwurf, id);
+    for (const a of entwurf.abschnitte) if (a.status === 'in-arbeit') menge.add(a.id);
+    let e = bereinige(entwurf, menge);
+    const als = (wer, a) => { e = fachleute.aendere(e, wer, a).entwurf; };
     for (const a of [...e.abschnitte].filter((x) => menge.has(x.id)).sort((x, y) => x.reihenfolge - y.reihenfolge)) {
-      const neu = { ...a, status: 'offen', ...(a.id === id ? { rueckgriffe: (a.rueckgriffe ?? 0) + 1, ...(aenderung ?? {}) } : {}) };
+      const neu = { ...a, status: 'offen', ...(a.id === id ? { rueckgriffe: (a.rueckgriffe ?? 0) + (zaehlen ? 1 : 0), ...(aenderung ?? {}) } : {}) };
       delete neu.aufgebaut;
       als('konstrukteur', { art: 'setze-abschnitt', abschnitt: neu });
     }
@@ -226,6 +234,47 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     throw new AblaufFehler('Der Ablauf kommt nicht zum Ende (zu viele Durchläufe)');
   }
 
+  const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v === null || typeof v !== 'object' ? v : Object.fromEntries(Object.keys(v).sort().filter((x) => v[x] !== undefined).map((x) => [x, v[x]]))));
+  const inhalt = (a) => ({ name: a.name, huelle: a.huelle, nach: [...(a.nach ?? [])].sort(), schnittstellen: a.schnittstellen ?? [], vorgabe: a.vorgabe ?? {} });
+  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, verbindungen: a.verbindungen, stimmung: a.stimmung });
+  const abschnittAus = (a) => ({ id: a.id, name: a.name, huelle: a.huelle, nach: a.nach ?? [], schnittstellen: a.schnittstellen ?? [], vorgabe: vorgabeVon(a) });
+
+  /**
+   * Wendet eine neue Fassung der Vorgabe auf einen begonnenen oder fertigen Entwurf an. Der Konstrukteur entscheidet, was neu geplant wird:
+   * geänderte Abschnitte (und die von ihnen abhängigen) werden über den Rückgriff geöffnet, neue ergänzt, weggefallene entfernt; unveränderte behalten ihre Teile.
+   * Fixierungen und Zulassungen von Jonah bleiben bestehen. Danach läuft der Ablauf weiter.
+   * @returns {{entwurf: object, status: string, rueckfragen: object[], offeneAnfragen: object[], geaendert: string[], neu: string[], entfernt: string[]}}
+   */
+  function aktualisiere(entwurf, vorgabe, optionen = {}) {
+    if (!vorgabe || !Array.isArray(vorgabe.abschnitte)) throw new AblaufFehler('die Vorgabe braucht eine Liste „abschnitte“');
+    const neu = new Map(vorgabe.abschnitte.map((a) => [a.id, abschnittAus(a)]));
+    let e = entwurf;
+    const alt = new Map(e.abschnitte.map((a) => [a.id, a]));
+    const entfernt = [...alt.keys()].filter((id) => !neu.has(id)).sort();
+    const hinzu = [...neu.keys()].filter((id) => !alt.has(id)).sort();
+    const geaendert = [...neu.keys()].filter((id) => alt.has(id) && norm(inhalt(alt.get(id))) !== norm(inhalt(neu.get(id)))).sort((x, y) => alt.get(x).reihenfolge - alt.get(y).reihenfolge);
+    // 0. Projektangaben und Gesamtpalette der neuen Fassung (die Welt wird beim Prüfen aus Entwurf und Palette gebaut, es muss nichts neu gebaut werden)
+    e = kopie(e);
+    e.projekt = { ...e.projekt, name: vorgabe.name ?? e.projekt.name, bauplatz: { ...(vorgabe.bauplatz ?? e.projekt.bauplatz) }, nullpunkt: { ...(vorgabe.nullpunkt ?? e.projekt.nullpunkt) } };
+    if (vorgabe.stimmung) e = D.setzePalette(e, vorgabe.stimmung);
+    else if (Object.keys(e.palette).length) e = fachleute.aendere(e, 'designer', { art: 'setze-palette', palette: {}, ersetze: true }).entwurf;
+    // 1. weggefallene Abschnitte leeren (ihre Teile gehen von den Besitzern), geänderte über den Rückgriff öffnen
+    if (entfernt.length) e = bereinige(e, new Set(entfernt));
+    for (const id of geaendert) {
+      const n = neu.get(id);
+      e = rueckgriff(e, id, { grund: 'neue Fassung der Spezifikation', intern: true, zaehlen: false, aenderung: { name: n.name, huelle: n.huelle, nach: n.nach, schnittstellen: n.schnittstellen, vorgabe: n.vorgabe } });
+    }
+    // 2. weggefallene entfernen (jetzt hängt keiner mehr von ihnen ab), neue ergänzen, Reihenfolge neu
+    for (const id of entfernt) e = K.entferneAbschnitt(e, id);
+    for (const id of hinzu) e = K.ergaenzeAbschnitt(e, neu.get(id), { ordnen: false });
+    if (entfernt.length || hinzu.length || geaendert.length) e = K.ordneNeu(e);
+    if (entfernt.length || hinzu.length || geaendert.length) {
+      e = kopie(e);
+      haengeAn(e, 'entscheidung', { von: 'konstrukteur', text: `plant nach der neuen Fassung neu: ${[...geaendert.map((x) => `${x} geändert`), ...hinzu.map((x) => `${x} neu`), ...entfernt.map((x) => `${x} entfernt`)].join(', ')}` });
+    }
+    return { ...fortsetzen(e, optionen), geaendert, neu: hinzu, entfernt };
+  }
+
   /** Startet den ganzen Ablauf aus einer Vorgabe. */
   function starte(vorgabe, optionen = {}) {
     const v = vorlauf(vorgabe);
@@ -264,5 +313,5 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     return rueckgriff(e, w.abschnitt, { grund: w.text, aenderung: option === 'aendern' ? aenderung : null });
   }
 
-  return { starte, fortsetzen, abschliessen, rueckgriff, antworte, vorlauf, standardHandler, AblaufFehler };
+  return { starte, fortsetzen, aktualisiere, abschliessen, rueckgriff, antworte, vorlauf, standardHandler, AblaufFehler };
 }

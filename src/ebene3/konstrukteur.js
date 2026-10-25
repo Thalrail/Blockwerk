@@ -117,6 +117,34 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
     return abhaengigkeitAenderungen(entwurf, id, nach).reduce((e, c) => aendere(e, c), entwurf);
   }
 
+  /** Setzt die Reihenfolge aller Abschnitte nach ihren gespeicherten Abhängigkeiten neu (Änderungen nur, wo sich die Nummer ändert). Wirft bei einem Kreis. */
+  function ordneNeu(entwurf) {
+    const ids = new Set(entwurf.abschnitte.map((x) => x.id));
+    for (const a of entwurf.abschnitte) for (const n of a.nach ?? []) if (!ids.has(n)) throw new GliederungFehler(`Abschnitt ${a.id} kommt nach ${n}, den es nicht gibt`);
+    const geordnet = ordne(entwurf.abschnitte, entwurf.projekt.nullpunkt);
+    return geordnet.reduce((e, a, i) => {
+      const alt = e.abschnitte.find((x) => x.id === a.id);
+      return alt.reihenfolge === i + 1 ? e : aendere(e, { art: 'setze-abschnitt', abschnitt: { ...alt, reihenfolge: i + 1 } });
+    }, entwurf);
+  }
+
+  /** Fügt einen neuen Abschnitt hinzu (offen) und ordnet neu. */
+  function ergaenzeAbschnitt(entwurf, a, { ordnen = true } = {}) {
+    if (entwurf.abschnitte.some((x) => x.id === a.id)) throw new GliederungFehler(`Abschnitt ${a.id} gibt es schon`);
+    pruefeVorlage([{ id: a.id, name: a.name, huelle: a.huelle, schnittstellen: [] }]);
+    for (const x of entwurf.abschnitte) if (ueberschneiden(x.huelle, a.huelle)) throw new GliederungFehler(`die Hüllen von ${x.id} und ${a.id} überschneiden sich`);
+    const neu = { id: a.id, name: a.name, reihenfolge: entwurf.abschnitte.length + 1, huelle: structuredClone(a.huelle), nach: [...(a.nach ?? [])].sort(), schnittstellen: structuredClone(a.schnittstellen ?? []), ...(a.vorgabe ? { vorgabe: structuredClone(a.vorgabe) } : {}) };
+    const e = aendere(entwurf, { art: 'setze-abschnitt', abschnitt: neu });
+    return ordnen ? ordneNeu(e) : e;
+  }
+
+  /** Entfernt einen Abschnitt, in dem keine Teile mehr stehen und von dem keiner abhängt, und ordnet neu. */
+  function entferneAbschnitt(entwurf, id) {
+    if (!entwurf.abschnitte.some((x) => x.id === id)) throw new GliederungFehler(`Abschnitt ${String(id)} gibt es nicht`);
+    const e = aendere(entwurf, { art: 'entferne-abschnitt', id });
+    return e.abschnitte.length ? ordneNeu(e) : e;
+  }
+
   const nachReihenfolge = (e) => [...e.abschnitte].sort((a, b) => a.reihenfolge - b.reihenfolge);
 
   /** Sagt den nächsten Abschnitt an (offen, alle Vorgänger fertig); solange einer in Arbeit ist, keinen. */
@@ -280,5 +308,5 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
     return e;
   }
 
-  return { gliedere, abhaengigkeitAenderungen, ergaenzeAbhaengigkeit, naechster, schliesse, verlege, naehte, pruefeNaehte, GliederungFehler };
+  return { gliedere, ordneNeu, ergaenzeAbschnitt, entferneAbschnitt, abhaengigkeitAenderungen, ergaenzeAbhaengigkeit, naechster, schliesse, verlege, naehte, pruefeNaehte, GliederungFehler };
 }

@@ -34,5 +34,5 @@ let zwischenspeicher4;
 /** Ebene 4 (Leser: Prüfer, Briefing, Zusammenfassung, Freigabe), einmal geladen; enthält zusätzlich ebene0/1/2/3. */
 export function ebene4() {
   const e3 = ebene3();
-  return (zwischenspeicher4 ??= { ebene3: e3, ebene2: e3.ebene2, ebene1: e3.ebene1, ebene0: e3.ebene0, ...erzeugeEbene4({ ebene0: e3.ebene0, ebene2: e3.ebene2, regelwerk: e3.ebene1.regelwerk }) });
+  return (zwischenspeicher4 ??= { ebene3: e3, ebene2: e3.ebene2, ebene1: e3.ebene1, ebene0: e3.ebene0, ...erzeugeEbene4({ ebene0: e3.ebene0, ebene2: e3.ebene2, ebene3: e3, regelwerk: e3.ebene1.regelwerk }) });
 }

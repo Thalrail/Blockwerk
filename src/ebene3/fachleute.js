@@ -77,6 +77,17 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         beschreibung = `Abschnitt „${a.name}“ (Reihenfolge ${a.reihenfolge}) gesetzt`;
         break;
       }
+      case 'entferne-abschnitt': {
+        const i = e.abschnitte.findIndex((x) => x.id === aenderung.id);
+        if (i < 0) throw new RechtFehler('ungueltig', `Abschnitt ${String(aenderung.id)} existiert nicht`);
+        ziel = `abschnitt:${aenderung.id}`;
+        pruefeDarf(e, fachmann, ziel, feldBesitz.abschnitte);
+        if (e.teile.some((t) => t.abschnitt === aenderung.id)) throw new RechtFehler('ungueltig', `Im Abschnitt ${aenderung.id} stehen noch Teile`);
+        if (e.abschnitte.some((x) => (x.nach ?? []).includes(aenderung.id))) throw new RechtFehler('ungueltig', `Von Abschnitt ${aenderung.id} hängen noch andere ab`);
+        e.abschnitte.splice(i, 1);
+        beschreibung = `Abschnitt ${aenderung.id} entfernt`;
+        break;
+      }
       case 'setze-zone': case 'setze-sperrzone': {
         const sperr = aenderung.art === 'setze-sperrzone';
         const z = sperr ? aenderung.sperrzone : aenderung.zone;
@@ -93,7 +104,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         ziel = 'palette';
         pruefeDarf(e, fachmann, ziel, feldBesitz.palette);
         pruefePalette(aenderung.palette);
-        e.palette = { ...e.palette, ...aenderung.palette };
+        e.palette = aenderung.ersetze === true ? { ...aenderung.palette } : { ...e.palette, ...aenderung.palette };
         beschreibung = `Palette für ${Object.keys(aenderung.palette).join(', ')} gesetzt`;
         break;
       }

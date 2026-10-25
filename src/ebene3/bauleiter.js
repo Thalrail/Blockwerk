@@ -14,7 +14,7 @@ const ort = (o) => (o ? `(${o.x}, ${o.y}, ${o.z})` : 'ohne Ort');
 export function rueckfrage(entwurf, einwand, { runden }) {
   const id = `R${entwurf.zaehler.rueckfrage++}`;
   const frage = `${einwand.text} (bei ${ort(einwand.ort)}, Regel ${einwand.regel}). Wie soll es weitergehen?`;
-  const r = { id, einwand: einwand.id, ort: einwand.ort, ziel: einwand.ziel ?? null, frage, optionen: OPTIONEN.map((o) => ({ ...o })) };
+  const r = { id, status: 'offen', einwand: einwand.id, ort: einwand.ort, ziel: einwand.ziel ?? null, frage, optionen: OPTIONEN.map((o) => ({ ...o })) };
   entwurf.rueckfragen.push(r);
   haengeAn(entwurf, 'eskalation', { einwand: einwand.id, regel: einwand.regel, ort: einwand.ort, runden });
   haengeAn(entwurf, 'rueckfrage', { id, frage, optionen: r.optionen });

@@ -115,6 +115,42 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         beschreibung = `Zone ${aenderung.id} entfernt`;
         break;
       }
+      case 'entferne-sperrzone': {
+        const i = e.sperrzonen.findIndex((x) => x.id === aenderung.id);
+        if (i < 0) throw new RechtFehler('ungueltig', `Sperrzone ${String(aenderung.id)} existiert nicht`);
+        ziel = `sperrzone:${aenderung.id}`;
+        pruefeDarf(e, fachmann, ziel, feldBesitz.sperrzonen);
+        e.sperrzonen.splice(i, 1);
+        beschreibung = `Sperrzone ${aenderung.id} entfernt`;
+        break;
+      }
+      case 'entferne-pruefung': {
+        const i = e.pruefungen.findIndex((x) => x.id === aenderung.id);
+        if (i < 0) throw new RechtFehler('ungueltig', `Prüfauftrag ${String(aenderung.id)} existiert nicht`);
+        ziel = `pruefung:${aenderung.id}`;
+        pruefeDarf(e, fachmann, ziel, feldBesitz.pruefungen);
+        e.pruefungen.splice(i, 1);
+        beschreibung = `Prüfauftrag ${aenderung.id} entfernt`;
+        break;
+      }
+      case 'entferne-bedarf': {
+        const i = (e.bedarf ?? []).findIndex((x) => x.id === aenderung.id);
+        if (i < 0) throw new RechtFehler('ungueltig', `Bedarf ${String(aenderung.id)} existiert nicht`);
+        ziel = `bedarf:${aenderung.id}`;
+        pruefeDarf(e, fachmann, ziel, feldBesitz.bedarf);
+        e.bedarf.splice(i, 1);
+        beschreibung = `Bedarf ${aenderung.id} entfernt`;
+        break;
+      }
+      case 'entferne-formwunsch': {
+        const i = (e.formwuensche ?? []).findIndex((x) => x.id === aenderung.id);
+        if (i < 0) throw new RechtFehler('ungueltig', `Formwunsch ${String(aenderung.id)} existiert nicht`);
+        ziel = `formwunsch:${aenderung.id}`;
+        pruefeDarf(e, fachmann, ziel, feldBesitz.formwuensche);
+        e.formwuensche.splice(i, 1);
+        beschreibung = `Formwunsch ${aenderung.id} entfernt`;
+        break;
+      }
       case 'setze-formwunsch': {
         const w = aenderung.formwunsch;
         ziel = `formwunsch:${w?.id}`;

@@ -89,6 +89,7 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
       e = aendere(e, { art: 'setze-abschnitt', abschnitt: {
         id: a.id, name: a.name, reihenfolge: i + 1, huelle: { von: { ...a.huelle.von }, bis: { ...a.huelle.bis } },
         nach: [...(a.nach ?? [])].sort(), schnittstellen: (a.schnittstellen ?? []).map((s) => ({ ...s, an: { ...s.an }, gegen: { ...s.gegen } })),
+        ...(a.vorgabe ? { vorgabe: structuredClone(a.vorgabe) } : {}),
       } });
     });
     return e;
@@ -212,11 +213,12 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
    * Ist der Weg nicht möglich, wird nichts geraten: Der Bauleiter stellt Jonah eine Rückfrage.
    * @returns {{entwurf: object, teile: string[], pruefung: string|null, rueckfrage: object|null}}
    */
-  function verlege(entwurf, { abschnitt, von, nach, art }) {
+  function verlege(entwurf, { abschnitt, von, nach, art, name }) {
     if (!entwurf.abschnitte.some((a) => a.id === abschnitt)) throw new GliederungFehler(`Abschnitt ${String(abschnitt)} gibt es nicht`);
     if (!istPos(von) || !istPos(nach)) throw new GliederungFehler('von und nach brauchen x, y, z');
     const wege = new Set(entwurf.teile.filter((t) => t.weg).map((t) => t.weg));
-    const weg = `V${wege.size + 1}`;
+    if (name !== undefined && wege.has(name)) return { entwurf, teile: [], pruefung: null, rueckfrage: null }; // mit Namen ist Verlegen wiederholbar
+    const weg = name ?? `V${wege.size + 1}`;
     let plan;
     try { plan = plane(art, von, nach, weg, abschnitt); } catch (f) {
       const e = kopie(entwurf);
@@ -234,8 +236,8 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
     // Prüfauftrag: gehen bzw. fahren von Anfang bis Ende (eine Bahn nach unten wird vom unteren Ende aus geprüft)
     const pid = `P${weg}`;
     const pruefung = art === 'gang'
-      ? { id: pid, art: 'begehbar', weg, start: { ...von }, ziele: arten.map((a) => ({ pos: { ...nach }, art: a })) }
-      : { id: pid, art: 'lore', weg, start: { ...plan.start }, richtung: RICHTUNGEN[plan.richtung].name };
+      ? { id: pid, art: 'begehbar', abschnitt, weg, start: { ...von }, ziele: arten.map((a) => ({ pos: { ...nach }, art: a })) }
+      : { id: pid, art: 'lore', abschnitt, weg, start: { ...plan.start }, richtung: RICHTUNGEN[plan.richtung].name };
     e = aendere(e, { art: 'setze-pruefung', pruefung });
     return { entwurf: e, teile: ids, pruefung: pid, rueckfrage: null };
   }
@@ -271,8 +273,8 @@ export function erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 }) {
       if (n.befunde.length || !s.art) continue;
       const id = `PN-${n.abschnitt}-${s.id}`;
       const pruefung = s.art === 'gang'
-        ? { id, art: 'begehbar', naht: s.id, start: { ...s.an }, ziele: arten.map((a) => ({ pos: { ...s.gegen }, art: a })) }
-        : { id, art: 'lore', naht: s.id, start: { ...s.an }, richtung: RICHTUNGEN[richtungVon(s.gegen.x - s.an.x, s.gegen.z - s.an.z)]?.name ?? 'north' };
+        ? { id, art: 'begehbar', abschnitt: n.abschnitt, mit: n.mit, naht: s.id, start: { ...s.an }, ziele: arten.map((a) => ({ pos: { ...s.gegen }, art: a })) }
+        : { id, art: 'lore', abschnitt: n.abschnitt, mit: n.mit, naht: s.id, start: { ...s.an }, richtung: RICHTUNGEN[richtungVon(s.gegen.x - s.an.x, s.gegen.z - s.an.z)]?.name ?? 'north' };
       e = aendere(e, { art: 'setze-pruefung', pruefung });
     }
     return e;

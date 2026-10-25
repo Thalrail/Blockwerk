@@ -56,7 +56,7 @@ export function erzeugeTechniker({ regelwerk, fachleute, ebene1, ebene2, materia
     for (const b of liste) {
       if (arten[b.art]) for (const m of module(b)) huelleVon(m, b);
       e = aendere(e, { art: 'setze-bedarf', bedarf: b });
-      if (!arten[b.art]) {
+      if (!arten[b.art] && !(e.anfragen ?? []).some((a) => a.bedarf === b.id)) {
         const id = `S${(e.anfragen ?? []).length + 1}`;
         e = aendere(e, { art: 'setze-anfrage', anfrage: { id, bedarf: b.id, abschnitt: b.abschnitt, art: b.art } });
         e = kopie(e);

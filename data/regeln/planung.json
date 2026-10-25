@@ -287,14 +287,24 @@
         },
         "stimmungen": {
           "glanz": {
-            "wand": "minecraft:quartz_block",
+            "wand": {
+              "id": "minecraft:quartz_block",
+              "zustand": {
+                "pillar_axis": "y"
+              }
+            },
             "akzent": {
               "voll": "minecraft:gold_block",
               "treppe": "minecraft:quartz_stairs",
               "tuer": "minecraft:birch_door"
             },
             "boden": {
-              "voll": "minecraft:smooth_quartz",
+              "voll": {
+                "id": "minecraft:smooth_quartz",
+                "zustand": {
+                  "pillar_axis": "y"
+                }
+              },
               "treppe": "minecraft:smooth_quartz_stairs"
             },
             "licht": "minecraft:glowstone",
@@ -342,6 +352,62 @@
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Grobdesigner, Architekt, Designer)",
       "status": "simuliert",
       "simulationstest": "test/ebene3/gestaltung.test.js::Designer: Paletten und Stimmungen",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.ablauf",
+      "titel": "Ablauf je Abschnitt",
+      "regel": "Im Vorlauf gliedert der Konstrukteur, der Techniker prüft die Reihenfolge auf technische Abhängigkeiten (Einspruch, der Konstrukteur ergänzt die Abhängigkeit) und der Designer setzt die Gesamtpalette. Je Abschnitt, in der Reihenfolge des Konstrukteurs: Ansage, Zonenplan (Grobdesigner), Bedarf und Bedarfsprüfung (Techniker, bei Einwand plant der Grobdesigner neu), Module (Techniker), Formen (Architekt), Verbindungen (Konstrukteur), Abschnittspalette (Designer), Prüfer aus Ebene 1 über den Abschnitt und seine fertigen Nachbarn, Abschluss des Abschnitts, Nähte zu fertigen Nachbarn und Bilanz. Bleibt ein Einwand offen, wartet der Ablauf auf Jonah.",
+      "parameter": {
+        "schritte": [
+          "zonenplan",
+          "bedarf",
+          "module",
+          "formen",
+          "verbindungen",
+          "palette",
+          "pruefer",
+          "abschluss",
+          "naehte",
+          "bilanz"
+        ]
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Ablauf, Rückgriff)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/ablauf.test.js::Ablauf: ganzes Bauwerk Ende zu Ende",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.rueckgriff",
+      "titel": "Rückgriff auf fertige Abschnitte",
+      "regel": "Braucht ein späterer Abschnitt eine Änderung an einem fertigen, entscheidet der Bauleiter: den alten Abschnitt wieder öffnen (sein Ablauf läuft neu) oder den aktuellen anpassen. Bleibt nach den Runden ein Einwand gegen einen anderen, schon fertigen Abschnitt offen, öffnet der Bauleiter diesen höchstens zweimal wieder; danach fragt er Jonah. Beim Öffnen werden der Abschnitt, alle von ihm abhängigen und der laufende Abschnitt zurückgesetzt: Teile, Zonen, Sperrzonen, Prüfaufträge, Bedarf und Wünsche werden von ihren Besitzern entfernt, die Vorgabe des Abschnitts bleibt und baut alles neu auf. Fixierungen durch Jonah bleiben unverletzt.",
+      "parameter": {
+        "maximum": 2,
+        "optionen": [
+          "zulassen",
+          "abschnitt-neu",
+          "aendern"
+        ],
+        "aenderbar": [
+          "name",
+          "huelle",
+          "schnittstellen",
+          "vorgabe"
+        ]
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Ablauf, Rückgriff)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/ablauf.test.js::Ablauf: Rückgriff und Antworten von Jonah",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.abschluss",
+      "titel": "Abschluss: Gesamtprüfung",
+      "regel": "Sind alle Abschnitte fertig, prüft der Konstrukteur alle Nähte und Verbindungen (jede Verbindung hat ihren Prüfauftrag) und der vollständige Prüfer läuft über das ganze Bauwerk im Einwand-Protokoll. Offene Schaltungsanfragen werden gemeldet, blockieren den Abschluss aber nicht.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Ablauf, Rückgriff)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/ablauf.test.js::Ablauf: Abschluss",
       "ungeprueft": false
     }
   ]

@@ -409,6 +409,39 @@
       "status": "simuliert",
       "simulationstest": "test/ebene3/ablauf.test.js::Ablauf: Abschluss",
       "ungeprueft": false
+    },
+    {
+      "id": "plan.uebersetzung",
+      "titel": "Übersetzung der Spezifikation in die Vorgabe",
+      "regel": "Der Konstrukteur macht aus jedem Teil der freigegebenen Spezifikation einen Abschnitt. Die Hülle ist Form plus Streifen für die Technik (Mindestmaß einer Reihe aller Module) plus 4 Blöcke Rand rundum. Die Lage löst er aus den Beziehungen in fester Reihenfolge der Bezüge auf (Bauplatz ab Nullpunkt, x Ost, z Süd, y oben): Auf dem Bauplatz gelten „mitte“ und die Ecken (innen, Abstand = Einrückung); bei einem Teil gelten „neben-…“ (Lücke 8 Blöcke, mittig ausgerichtet), die Ecken (diagonal außen), „ueber“ (daraufgestapelt) und „unter“ (wie ein Keller, kommt in der Reihenfolge vor dem Bezug). Verbindungen laufen gerade von Hüllenrand zu Hüllenrand auf gleicher Bodenhöhe. Was sich nicht eindeutig übersetzen lässt (Bauplatz zu klein, Überschneidung, Höhenunterschied, nicht erlaubte Beziehung), wird eine Rückfrage an Jonah.",
+      "parameter": {
+        "rand": 4,
+        "luecke": 8,
+        "toleranz": 0.15,
+        "relationenProjekt": [
+          "mitte",
+          "ecke-nordwest",
+          "ecke-nordost",
+          "ecke-suedwest",
+          "ecke-suedost"
+        ],
+        "relationenTeil": [
+          "neben-norden",
+          "neben-osten",
+          "neben-sueden",
+          "neben-westen",
+          "ecke-nordwest",
+          "ecke-nordost",
+          "ecke-suedwest",
+          "ecke-suedost",
+          "ueber",
+          "unter"
+        ]
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Konstrukteur; Ebene 4: Regel 4, Grenzfälle)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/uebersetzung.test.js::Übersetzung: Lage und Hüllen",
+      "ungeprueft": false
     }
   ]
 }

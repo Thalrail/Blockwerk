@@ -200,5 +200,15 @@ export function erzeugeTechniker({ regelwerk, fachleute, ebene1, ebene2, materia
     return liste;
   }
 
-  return { setzeBedarf, plane, setzeModule, bilanz, einwaende, BedarfFehler };
+  /**
+   * Mindestmaß einer einzigen Reihe aller Module für einen Bedarf (ohne Entwurf): {breite, tiefe, hoehe} oder null, wenn kein Modul nötig ist.
+   * @param {object[]} bedarf  {id, art, anzahl|sorten, …}
+   */
+  function mindestmass(bedarf) {
+    const liste = [];
+    for (const b of bedarf.filter((x) => arten[x.art])) for (const m of module(b)) liste.push({ ...m, huelle: huelleVon(m, b) });
+    return liste.length ? anordne(liste, { von: { x: 0, y: 0, z: 0 }, bis: { x: 0, y: 0, z: 0 } }).mindest : null;
+  }
+
+  return { setzeBedarf, plane, setzeModule, bilanz, einwaende, mindestmass, BedarfFehler };
 }

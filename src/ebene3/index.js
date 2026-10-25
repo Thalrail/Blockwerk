@@ -10,6 +10,7 @@ import { erzeugeGrobdesigner } from './grobdesigner.js';
 import { erzeugeArchitekt } from './architekt.js';
 import { erzeugeDesigner, erzeugePaletten } from './designer.js';
 import { erzeugeAblauf } from './ablauf.js';
+import { erzeugeUebersetzung } from './uebersetzung.js';
 
 export { VERSION, neuerEntwurf, kopie, pruefeForm, entwurfZuJson, entwurfAusJson } from './entwurf.js';
 export { haengeAn, berichtAlsText } from './bericht.js';
@@ -23,6 +24,7 @@ export { erzeugeGrobdesigner, ZonenFehler } from './grobdesigner.js';
 export { erzeugeArchitekt, FormFehler } from './architekt.js';
 export { erzeugeDesigner, erzeugePaletten, GestaltungsFehler } from './designer.js';
 export { erzeugeAblauf, AblaufFehler } from './ablauf.js';
+export { erzeugeUebersetzung } from './uebersetzung.js';
 
 /**
  * @param {{ebene0: object, ebene1: object, ebene2: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
@@ -37,6 +39,7 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
   const architekt = erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierung });
   const designer = erzeugeDesigner({ fachleute, paletten });
   const einwaende = erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte: konstrukteur.naehte, zusaetze: (e) => [...techniker.einwaende(e), ...architekt.einwaende(e)] });
+  const uebersetzung = erzeugeUebersetzung({ regelwerk, ebene2, techniker });
   const ablauf = erzeugeAblauf({ regelwerk, fachleute, konstrukteur, techniker, grobdesigner, architekt, designer, einwaende });
   return {
     fachleute,
@@ -47,6 +50,7 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
     designer,
     paletten,
     ablauf,
+    uebersetzung,
     aendere: fachleute.aendere,
     fixiere: fachleute.fixiere,
     materialisiere: materialisierung.materialisiere,

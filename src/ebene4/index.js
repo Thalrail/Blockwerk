@@ -8,16 +8,18 @@ import { erzeugeZusammenfassung } from './zusammenfassung.js';
 import { erzeugeVersionen } from './version.js';
 import { erzeugeMessung } from './messung.js';
 import { erzeugeAbgleich } from './abgleich.js';
+import { erzeugeBau } from './bau.js';
 
 export { SpezifikationFehler, liesJson, zuJson, abdruck, kopie } from './spezifikation.js';
 export { FreigabeFehler } from './version.js';
 export { BildFehler } from './bild.js';
-export { erzeugeVokabular, erzeugePruefer, erzeugeBriefing, erzeugeZusammenfassung, erzeugeVersionen, erzeugeMessung, erzeugeAbgleich };
+export { BauFehler } from './bau.js';
+export { erzeugeVokabular, erzeugePruefer, erzeugeBriefing, erzeugeZusammenfassung, erzeugeVersionen, erzeugeMessung, erzeugeAbgleich, erzeugeBau };
 
 /**
- * @param {{ebene0: object, ebene2: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
+ * @param {{ebene0: object, ebene2: object, ebene3?: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
  */
-export function erzeugeEbene4({ ebene0, ebene2, regelwerk }) {
+export function erzeugeEbene4({ ebene0, ebene2, ebene3 = null, regelwerk }) {
   const vokabular = erzeugeVokabular({ regelwerk, ebene0, ebene2 });
   const pruefer = erzeugePruefer({ regelwerk, vokabular });
   const briefing = erzeugeBriefing({ vokabular });
@@ -34,5 +36,6 @@ export function erzeugeEbene4({ ebene0, ebene2, regelwerk }) {
     messung,
     abgleich: abgleich.abgleich,
     ...versionen,
+    ...(ebene3 ? (({ baue, aktualisiere, vorbereiten }) => ({ baue, aktualisiereBau: aktualisiere, vorbereiten }))(erzeugeBau({ ebene3, versionen, abgleich })) : {}),
   };
 }

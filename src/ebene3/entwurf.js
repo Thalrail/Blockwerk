@@ -42,7 +42,10 @@ export function pruefeForm(e) {
     ids.add(t.id);
     if (typeof t.baustein !== 'string' || !pos(t.lage) || !ganz(t.lage.drehung) || t.lage.drehung < 0 || t.lage.drehung > 3) fehler(`Teil ${t.id}: baustein oder lage ungültig`);
   }
-  for (const a of e.abschnitte) if (typeof a.id !== 'string') fehler('Abschnitt ohne ID');
+  for (const a of e.abschnitte) {
+    if (typeof a.id !== 'string') fehler('Abschnitt ohne ID');
+    if (a.huelle !== undefined && !(pos(a.huelle.von) && pos(a.huelle.bis))) fehler(`Abschnitt ${a.id}: huelle ungültig`);
+  }
   return e;
 }
 

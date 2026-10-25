@@ -125,6 +125,54 @@
       "status": "simuliert",
       "simulationstest": "test/ebene3/einwand.test.js::Einwand: Überschneidung, Sperrzone und Zone",
       "ungeprueft": false
+    },
+    {
+      "id": "plan.gliederung",
+      "titel": "Gliederung in Abschnitte und Ansage",
+      "regel": "Der Konstrukteur teilt das Projekt in Abschnitte mit Hüllquader, Abhängigkeiten (nach) und Schnittstellen. Die Reihenfolge folgt den Abhängigkeiten; bei Gleichstand kommt der Abschnitt zuerst, dessen Hüllquader dem Nullpunkt am nächsten liegt (von innen nach außen), dann die kleinere Id. Hüllquader dürfen sich nicht überschneiden, Abhängigkeiten keinen Kreis bilden. Angesagt wird immer nur ein Abschnitt, dessen Vorgänger fertig sind; solange einer in Arbeit ist, wird kein weiterer angesagt.",
+      "parameter": {
+        "gleichstand": "innen-zuerst"
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Konstrukteur, Ablauf: Vorlauf)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/konstrukteur.test.js::Konstrukteur: Gliederung, Reihenfolge und Ansage",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.verbindung",
+      "titel": "Verbindungen verlegen",
+      "regel": "Der Konstrukteur verlegt Verbindungen aus Einzelbausteinen der Ebene 2, ohne Hindernisse zu umgehen: Gänge nur gerade auf einer Höhe (Menschenmaß fest: lichte Breite 3, Höhe 3, Wandstärke 1); Schienenwege gerade oder mit einer Kurve, ebenflächig oder mit einer Rampe von höchstens 5 Blöcken. Antriebsstrecken bestehen aus Perioden zu 1 Antriebsschiene und bis zu 7 normalen Schienen (Periode 8, nur geprüfte Lorenwerte); die Restlänge ist eine letzte, kürzere Periode. Ein Weg, der so nicht möglich ist (Höhenunterschied über 5, schräg, kein Platz für die Kurve), wird nicht geraten: Der Bauleiter fragt Jonah.",
+      "parameter": {
+        "gang": {
+          "breite": 3,
+          "hoehe": 3,
+          "wandstaerke": 1
+        },
+        "schiene": {
+          "periode": 8,
+          "maxSteigung": 5,
+          "maxSchenkel": 16
+        },
+        "arten": [
+          "spieler",
+          "dorfbewohner",
+          "baby"
+        ]
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Konstrukteur, Ablauf: Vorlauf)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/konstrukteur.test.js::Konstrukteur: Verbindungen verlegen",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.naht",
+      "titel": "Nähte zwischen fertigen Abschnitten",
+      "regel": "Eine Schnittstelle verbindet zwei Abschnitte: ein Block „an“ am Rand der Hülle des einen, ein Block „gegen“ am Rand der Hülle des anderen, beide Seite an Seite. Ist die Naht von beiden Abschnitten fertig, prüft der Konstrukteur sie: Liegen die Blöcke nicht am Rand oder nicht nebeneinander, ist das ein Einwand an ihn; für Gänge wird zusätzlich die Begehbarkeit für Spieler, Dorfbewohner und Baby über die Naht geprüft, für Schienen die Lorenfahrt.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Konstrukteur, Ablauf: Vorlauf)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/konstrukteur.test.js::Konstrukteur: Nähte prüfen",
+      "ungeprueft": false
     }
   ]
 }

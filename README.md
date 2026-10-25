@@ -27,6 +27,7 @@ node tools/serve.js        # dann http://localhost:8080/ öffnen
 Auf GitHub Pages läuft sie ohne weitere Schritte (Einstellungen → Pages → Branch `main`, Ordner `/`). In Chrome oder Edge lässt sie
 sich über „Installieren“ als eigenes Fenster öffnen; der Kompaktmodus kann als kleines Fenster **immer im Vordergrund** bleiben.
 Bedienung: Beispielprojekt laden, Schichten abhaken (Leertaste), mit ← → blättern, mit M zwischen Voll- und Kompaktansicht wechseln,
+„3D-Ansicht“ zeigt das ganze Bauwerk (drehen mit der Maus; Etagenschnitt, Technik ausblenden, Baufortschritt eingefärbt),
 „Link kopieren“ schickt Plan und Fortschritt an Freunde.
 
 ## Tests

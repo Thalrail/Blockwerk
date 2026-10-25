@@ -135,6 +135,26 @@ test('Teilen: Link und Datei', async () => {
   assert.equal(langer.zuLang, true);
   assert.ok(langer.code.length > T.EMPFOHLEN_MAX);
   assert.equal((await T.dekodiere(langer.code)).spezifikation.teile.length, gross.teile.length, 'lang, aber vollständig lesbar');
+  // Sicherheit: fremde Links sind Eingabe. Eine Dekompressionsbombe (50 MB Nullen, komprimiert nur wenige KB) wird abgebrochen, ohne den Speicher zu füllen
+  const bytesZuCode = async (bytes) => { const s = new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))); const b = new Uint8Array(await s.arrayBuffer()); let x = ''; for (let i = 0; i < b.length; i += 8192) x += String.fromCharCode(...b.subarray(i, i + 8192)); return btoa(x).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, ''); };
+  const bombe = await bytesZuCode(new Uint8Array(50 * 1024 * 1024));
+  assert.ok(bombe.length < 100_000, `die Bombe ist klein (${bombe.length})`);
+  const vor = process.memoryUsage().rss;
+  const t0 = Date.now();
+  await assert.rejects(() => T.dekodiere(bombe), /zu groß/);
+  assert.ok(Date.now() - t0 < 5000, 'schnell abgebrochen');
+  assert.ok(process.memoryUsage().rss - vor < 200 * 1024 * 1024, 'ohne den Speicher zu füllen');
+  // genau an der Grenze: 2 MB entpackt sind erlaubt (kein gültiges Projekt, aber kein Größenfehler), ein Byte mehr nicht
+  const text = (n) => new TextEncoder().encode(JSON.stringify({ typ: T.TYP, version: 1, spezifikation: { name: 'x'.repeat(n) } }));
+  const rahmen = text(0).length;
+  const grenze = await T.dekodiere(await bytesZuCode(text(T.TEXT_MAX - rahmen)));
+  assert.equal(grenze.spezifikation.name.length, T.TEXT_MAX - rahmen);
+  await assert.rejects(async () => T.dekodiere(await bytesZuCode(text(T.TEXT_MAX - rahmen + 1))), /zu groß/);
+  // zu lange Codes werden schon vor dem Entpacken abgelehnt; zu große Dateien auch
+  await assert.rejects(() => T.dekodiere('A'.repeat(T.CODE_MAX + 1)), /zu lang/);
+  assert.throws(() => T.importDatei(' '.repeat(T.TEXT_MAX + 1)), /zu groß/);
+  assert.throws(() => T.importDatei(42), /zu groß/);
+
   // Datei: Rundreise und Fehler
   const datei = T.exportDatei({ spezifikation, fortschritt: fort });
   gleich(T.importDatei(datei).spezifikation, spezifikation);

@@ -6,7 +6,10 @@ import { erzeugeMaterial } from './material.js';
 
 export { ladeEngine } from './daten-browser.js';
 export { erzeugeDarstellung } from './darstellung.js';
-export { erzeugeBauplan, RICHTUNGEN, fnv } from './bauplan.js';
+export { erzeugeBauplan, RICHTUNGEN, ARTEN, fnv } from './bauplan.js';
+export { baueNetz } from './netz.js';
+export * as kamera from './kamera.js';
+export * as matrix from './matrix.js';
 export { erzeugeMaterial, umrechnen, umrechnungsText, KISTE } from './material.js';
 export * as fortschritt from './fortschritt.js';
 export * as teilen from './teilen.js';

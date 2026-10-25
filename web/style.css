@@ -84,3 +84,9 @@ body.pip { display: block; } body.pip #fuss, body.pip #toast { display: none; }
 #fuss { padding: 8px 16px; color: var(--leise); font-size: 12px; border-top: 1px solid var(--linie); background: var(--flaeche); }
 #toast { position: fixed; left: 50%; bottom: 44px; transform: translateX(-50%); background: var(--flaeche2); border: 1px solid var(--linie); border-radius: var(--radius); padding: 8px 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 80vw; }
 #toast.sichtbar { opacity: 1; }
+
+/* 3D-Ansicht */
+.leinwand.drei canvas.ansicht3d { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.regler { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; color: var(--leise); font-size: 13px; }
+.regler label { display: flex; align-items: center; gap: 6px; } .regler select { background: var(--flaeche2); border: 1px solid var(--linie); border-radius: var(--radius); padding: 3px 6px; }
+.mitte > .reiter { align-items: center; } .mitte > .reiter .abstand { flex: 1; }

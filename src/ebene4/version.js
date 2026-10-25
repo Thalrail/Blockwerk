@@ -19,10 +19,10 @@ function unterschiede(a, b, pfad = '') {
 /**
  * @param {{pruefer: {pruefe: Function}}} quellen
  */
-export function erzeugeVersionen({ pruefer }) {
-  /** Gibt frei: nur ohne offene Rückfragen. Liefert eine Kopie mit Freigabe (Version und Abdruck des Inhalts). */
-  function freigeben(spec, von = 'jonah') {
-    const { rueckfragen } = pruefer.pruefe(spec);
+export function erzeugeVersionen({ pruefer, abgleich = { abgleich: () => ({ rueckfragen: [], hinweise: [] }) } }) {
+  /** Gibt frei: nur ohne offene Rückfragen (auch aus dem Abgleich mit der Bildmessung). Liefert eine Kopie mit Freigabe (Version und Abdruck des Inhalts). */
+  function freigeben(spec, von = 'jonah', messungen = []) {
+    const rueckfragen = [...pruefer.pruefe(spec).rueckfragen, ...abgleich.abgleich(spec, messungen).rueckfragen];
     if (rueckfragen.length) throw new FreigabeFehler(`${rueckfragen.length} Rückfrage${rueckfragen.length === 1 ? '' : 'n'} sind noch offen`, rueckfragen);
     const s = kopie(spec);
     s.freigabe = { von, version: spec.version, abdruck: abdruck(spec) };

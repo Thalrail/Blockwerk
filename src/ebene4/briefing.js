@@ -44,11 +44,22 @@ export function erzeugeBriefing({ vokabular: V }) {
     ],
   };
 
+  const pr = (x) => `${Math.round(x * 100)} %`;
+  const komma = (x) => String(x).replace('.', ',');
+  /** Eine Zeile je Messung (Bildmessung ohne KI); der Teil ist nur eine Beschriftung. */
+  function messzeile(m) {
+    const was = `${m.bild ?? 'Bild'}${m.teil ? `, Teil „${m.teil}“` : ''}`;
+    const e = m.ergebnis;
+    if (m.art === 'grundriss') return `- ${was} (Grundriss): Form ${e.form}; Breite zu Tiefe ${komma(e.seitenverhaeltnis)}; ${e.kreise} Kreise; ${e.linien.length} gerade Linien`;
+    if (m.art === 'aufriss') return `- ${was} (Aufriss): Höhe zu Breite ${komma(e.verhaeltnis)}`;
+    return `- ${was} (Farben): ${e.map((x) => `${x.farbe} ${pr(x.anteil)}`).join(', ')}`;
+  }
+
   /**
-   * @param {{projekt?: string, bauplatz?: {breite: number, hoehe: number, tiefe: number}, bilder?: string[], text?: string}} [eingabe]
+   * @param {{projekt?: string, bauplatz?: {breite: number, hoehe: number, tiefe: number}, bilder?: string[], text?: string, messungen?: object[]}} [eingabe]
    * @returns {string}
    */
-  function prompt({ projekt = '', bauplatz = null, bilder = [], text = '' } = {}) {
+  function prompt({ projekt = '', bauplatz = null, bilder = [], text = '', messungen = [] } = {}) {
     const z = [];
     z.push('Du bist der „Leser“ von Blockwerk, einem Bauplaner für Minecraft Bedrock Edition. Deine einzige Aufgabe: Aus den beigefügten Bildern und dem Text am Ende eine Bauspezifikation als JSON zu erzeugen. Alles Weitere (Lage in Blöcken, Schaltungen, Material) rechnet Blockwerk selbst.');
     z.push('');
@@ -85,6 +96,11 @@ export function erzeugeBriefing({ vokabular: V }) {
     z.push(zuJson(beispiel()));
     z.push('```');
     z.push('');
+    if (messungen.length) {
+      z.push('GEMESSEN (deterministisch aus den Bildern, nicht geschätzt – bitte übernehmen und nicht widersprechen):');
+      z.push(...messungen.map(messzeile));
+      z.push('');
+    }
     z.push('EINGABE');
     z.push(`Projekt: ${projekt || '(bitte aus dem Text oder den Bildern ableiten)'}`);
     z.push(`Bauplatz: ${bauplatz ? `${bauplatz.breite} × ${bauplatz.hoehe} × ${bauplatz.tiefe} Blöcke (Breite × Höhe × Tiefe)` : '(nicht angegeben: schätze oder frage in „offeneFragen“)'}`);

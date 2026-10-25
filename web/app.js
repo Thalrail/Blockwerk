@@ -6,6 +6,7 @@ import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
 import * as Eingabe from './eingabe.js';
+import * as Tex from './texturen.js';
 
 const FLAECHEN_MAX = 3_000_000;
 
@@ -127,17 +128,18 @@ function zeichne(leinwand, a, s, kompakt) {
   const darunter = a.schichten[a.schichten.indexOf(s) - 1];
   if (darunter && !kompakt) {
     g.globalAlpha = 0.18;
-    for (let i = 0; i < darunter.n; i++) { if (darunter.x[i] < b.x0 || darunter.x[i] > b.x1 || darunter.z[i] < b.z0 || darunter.z[i] > b.z1) continue; g.fillStyle = a.legende[darunter.b[i]].farbe; g.fillRect(ox + (darunter.x[i] - b.x0) * cs, oy + (darunter.z[i] - b.z0) * cs, cs, cs); }
+    for (let i = 0; i < darunter.n; i++) { if (darunter.x[i] < b.x0 || darunter.x[i] > b.x1 || darunter.z[i] < b.z0 || darunter.z[i] > b.z1) continue; fuelle(g, a.legende[darunter.b[i]], ox + (darunter.x[i] - b.x0) * cs, oy + (darunter.z[i] - b.z0) * cs, cs); }
     g.globalAlpha = 1;
   }
   g.font = `bold ${Math.max(8, Math.floor(cs * 0.55))}px system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
   for (let i = 0; i < s.n; i++) {
     const l = a.legende[s.b[i]], x = ox + (s.x[i] - b.x0) * cs, y = oy + (s.z[i] - b.z0) * cs;
-    g.fillStyle = l.farbe; g.fillRect(x, y, cs, cs);
+    fuelle(g, l, x, y, cs);
     if (cs >= 9) {
-      const hell = luminanz(l.farbe) > 0.55;
-      g.fillStyle = hell ? '#000000cc' : '#ffffffdd';
-      g.fillText(s.r[i] ? PFEIL[s.r[i]] : l.symbol, x + cs / 2, y + cs / 2 + 1);
+      const text = s.r[i] ? PFEIL[s.r[i]] : l.symbol;
+      if (obenBild(l)) { g.lineWidth = Math.max(2, cs / 8); g.strokeStyle = '#000000cc'; g.strokeText(text, x + cs / 2, y + cs / 2 + 1); g.fillStyle = '#ffffff'; }
+      else g.fillStyle = luminanz(l.farbe) > 0.55 ? '#000000cc' : '#ffffffdd';
+      g.fillText(text, x + cs / 2, y + cs / 2 + 1);
     }
     if (cs >= 12) { g.strokeStyle = '#00000040'; g.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1); }
   }
@@ -147,6 +149,12 @@ function zeichne(leinwand, a, s, kompakt) {
     for (let x = b.x0; x <= b.x1; x++) if (x % 5 === 0) { g.textAlign = 'center'; g.fillText(String(x), ox + (x - b.x0) * cs + cs / 2, oy - 14); }
     for (let zz = b.z0; zz <= b.z1; zz++) if (zz % 5 === 0) { g.textAlign = 'right'; g.fillText(String(zz), ox - 4, oy + (zz - b.z0) * cs + cs / 2); }
   }
+}
+const obenBild = Tex.obenBild;
+/** Zelle füllen: Textur (scharfe Pixel) oder Ersatzfarbe. */
+function fuelle(g, l, x, y, cs) {
+  const bild = obenBild(l);
+  if (bild) { g.imageSmoothingEnabled = false; g.drawImage(bild, x, y, cs, cs); } else { g.fillStyle = l.farbe; g.fillRect(x, y, cs, cs); }
 }
 function luminanz(hex) { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; }
 
@@ -191,7 +199,7 @@ function abschnittsliste() {
   }).join('');
 }
 function tabelle(liste, mitStack = true) {
-  return `<table class="tabelle">${liste.map((m) => `<tr><td><span class="farbe ${m.ersatz ? 'ersatz' : ''}" style="background:${m.farbe}" title="${m.ersatz ? 'Ersatzfarbe (noch keine Zuordnung)' : ''}"></span>${esc(m.name)}</td><td class="zahl">${m.anzahl}</td>${mitStack ? `<td class="klein">${esc(m.text)}</td>` : ''}</tr>`).join('')}</table>`;
+  return `<table class="tabelle">${liste.map((m) => `<tr><td><span class="farbe ${m.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(m)}" title="${Tex.feldTitel(m)}"></span>${esc(m.name)}</td><td class="zahl">${m.anzahl}</td>${mitStack ? `<td class="klein">${esc(m.text)}</td>` : ''}</tr>`).join('')}</table>`;
 }
 function rechteSpalte() {
   const a = abschnitt(), s = schicht(), r = z.reiter;
@@ -202,7 +210,7 @@ function rechteSpalte() {
     inhalt = `<h3>Dieser Abschnitt</h3>${tabelle(m.abschnitte[z.a].liste)}${m.abschnitte[z.a].inhalte.length ? `<h3>In Behälter legen</h3>${tabelle(m.abschnitte[z.a].inhalte)}` : ''}<h3>Gesamt</h3>${tabelle(m.gesamt)}`;
     if (a.wesen.length) inhalt += `<h3>Wesen in diesem Abschnitt</h3><p class="klein">${a.wesen.length} (${[...new Set(a.wesen.map((w) => w.id))].map(esc).join(', ')}) – selbst mitbringen.</p>`;
   } else if (r === 'schicht') {
-    inhalt = `<h3>Legende</h3><table class="tabelle">${a.legende.filter((l) => s.summe[l.id]).map((l) => `<tr><td><span class="symbol">${l.symbol}</span><span class="farbe ${l.ersatz ? 'ersatz' : ''}" style="background:${l.farbe}"></span>${esc(l.name)}</td><td class="zahl">${s.summe[l.id]}</td></tr>`).join('')}</table>
+    inhalt = `<h3>Legende</h3><table class="tabelle">${a.legende.filter((l) => s.summe[l.id]).map((l) => `<tr><td><span class="symbol">${l.symbol}</span><span class="farbe ${l.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(l)}" title="${Tex.feldTitel(l)}"></span>${esc(l.name)}</td><td class="zahl">${s.summe[l.id]}</td></tr>`).join('')}</table>
       <p class="klein">Pfeile zeigen die Blickrichtung (↑ Norden, → Osten, ↓ Süden, ← Westen); Norden ist oben.</p>
       ${s.inhalte.length ? `<h3>Behälter in dieser Schicht</h3>${s.inhalte.map((i) => `<p class="klein">${esc(a.legende.find((l) => l.id === i.id).name)} bei x ${i.x}, z ${i.z}: ${i.inhalt.map((g) => `${g.anzahl}× ${esc(g.gegenstand.replace('minecraft:', ''))}`).join(', ')}</p>`).join('')}` : ''}
       ${a.wesen.filter((w) => w.y === s.y).length ? `<h3>Wesen</h3>${a.wesen.filter((w) => w.y === s.y).map((w) => `<p class="klein">${esc(w.id.replace('minecraft:', ''))}${w.baby ? ' (Baby)' : ''} bei x ${w.x}, z ${w.z}</p>`).join('')}` : ''}`;
@@ -259,7 +267,7 @@ function kompaktansicht() {
   return `<div class="kompakt">
     <div class="kopfzeile"><span class="gross">${esc(a.name)} · Höhe ${s.y}</span><span class="mittel">Schicht ${z.s + 1}/${a.schichten.length}${fertig(a, s) ? ' · fertig ✓' : ''}</span></div>
     <div class="leinwand"><canvas></canvas></div><div class="hinweis-zeile"></div>
-    <div class="bedarf">${liste.map((m) => `<div><span class="farbe ${m.ersatz ? 'ersatz' : ''}" style="background:${m.farbe}"></span>${m.anzahl}× ${esc(m.name)}${m.anzahl >= m.stapel && m.stapel > 1 ? ` <span class="mittel">(${esc(m.text)})</span>` : ''}</div>`).join('')}</div>
+    <div class="bedarf">${liste.map((m) => `<div><span class="farbe ${m.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(m)}" title="${Tex.feldTitel(m)}"></span>${m.anzahl}× ${esc(m.name)}${m.anzahl >= m.stapel && m.stapel > 1 ? ` <span class="mittel">(${esc(m.text)})</span>` : ''}</div>`).join('')}</div>
     <div class="zeile-unten"><button data-a="zurueck">←</button><button class="${fertig(a, s) ? '' : 'gut'}" data-a="haken">${fertig(a, s) ? 'Haken entfernen' : 'Abhaken'}</button><button data-a="vor">→</button>
       <div class="balken" title="Gesamtfortschritt"><i style="width:${Math.round(p.anteil * 100)}%"></i></div><span class="mittel">${prozentText(p)}</span></div></div>`;
 }
@@ -291,18 +299,20 @@ function sichtParameter() {
   return {
     maxY: q.maxY ?? undefined, abschnitte: q.abschnitte, gewaehlt: z.a, hervorheben: q.hervorheben,
     ausgeblendet: [...(q.technik ? [] : [2]), ...(q.verbindungen ? [] : [3])],
+    atlas: Tex.T.atlas,
     fortschritt: q.fortschritt ? (ai, si) => (fortschritt.istAbgehakt(z.fortschritt, fortschritt.schluessel(plan().abschnitte[ai].id, plan().abschnitte[ai].schichten[si])) ? 1 : (ai === z.a && si === z.s ? 2 : 0)) : null,
   };
 }
 /** Hängt die 3D-Zeichnung in die Seite und baut das Netz neu, wenn sich Sicht, Auswahl oder Fortschritt geändert haben. */
 function aktualisiere3d(einhaengen) {
   a3d ??= erzeugeAnsicht3d();
+  if (Tex.T.atlas && a3d.verfuegbar && a3d.atlasVon !== Tex.T.atlas) { a3d.setzeAtlas(Tex.T.canvas); a3d.atlasVon = Tex.T.atlas; }
   const platz = $app.querySelector('.leinwand.drei');
   if (!platz) return;
   if (!a3d.verfuegbar) { platz.textContent = 'Dein Browser kann kein WebGL2. Bitte Chrome, Edge oder Firefox in einer aktuellen Version benutzen.'; return; }
   if (einhaengen) platz.append(a3d.canvas);
   a3d.groesse(); // erst die Größe, dann einpassen: das Seitenverhältnis muss stimmen
-  const signatur = JSON.stringify([z.spec?.freigabe?.abdruck, z.a, z.s, z.sicht, z.fortschritt.uhr, Object.keys(z.fortschritt.eintraege).length]);
+  const signatur = JSON.stringify([!!Tex.T.atlas, z.spec?.freigabe?.abdruck, z.a, z.s, z.sicht, z.fortschritt.uhr, Object.keys(z.fortschritt.eintraege).length]);
   const neuesProjekt = a3d.projekt !== z.daten;
   if (signatur !== z.netzSignatur || neuesProjekt) {
     z.netzSignatur = signatur;
@@ -412,6 +422,13 @@ document.addEventListener('change', async (ev) => {
 });
 window.addEventListener('resize', () => { if (z.daten) render(); });
 
+/** Nennung der Texturen in der Fußzeile (Lizenzpflicht): Pack, Stand, Quelle, Lizenz. */
+function fussnote() {
+  const p = Tex.T.index?.pack; if (!p) return;
+  const f = document.getElementById('texturen-nennung'); if (!f) return;
+  f.innerHTML = `Texturen: <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.name)} (Bedrock)</a> von ${esc(p.autoren.join(', '))}, ${esc(p.version)}, <a href="${esc(p.quelle)}" target="_blank" rel="noopener">Quelle</a>, <a href="${esc(p.lizenz)}" target="_blank" rel="noopener">Lizenz</a>; nur die benötigten Texturen, unverändert.`;
+}
+
 // ---------- Start: Link, gespeichertes Projekt oder Startseite ----------
 /** Steckt in der Adresse ein Projekt (#p=…), wird es geöffnet; auch wenn der Link in ein schon offenes Fenster eingefügt wird. */
 async function linkPruefen() {
@@ -425,6 +442,7 @@ async function linkPruefen() {
 }
 window.addEventListener('hashchange', linkPruefen);
 (async () => {
+  Tex.lade().then(() => { fussnote(); if (z.daten && !z.status) render(); });
   render();
   if (await linkPruefen()) return;
   const gespeichert = speicher.lies('blockwerk.projekt');

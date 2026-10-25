@@ -16,7 +16,8 @@ let bereit = null;
 async function engine() {
   bereit ??= (async () => {
     const e = await ladeEngine(holeJson);
-    const e5 = erzeugeEbene5({ ebene0: e.ebene0, ebene3: e.ebene3, darstellungsdaten: await holeJson('data/darstellung.json') });
+    const texturen = await holeJson('data/texturen.json').catch(() => null); // ohne Index zeigt die Seite markierte Ersatzfarben
+    const e5 = erzeugeEbene5({ ebene0: e.ebene0, ebene3: e.ebene3, darstellungsdaten: await holeJson('data/darstellung.json'), texturen });
     return { ...e, e5 };
   })();
   return bereit;

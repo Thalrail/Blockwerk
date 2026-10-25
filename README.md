@@ -44,8 +44,13 @@ Benötigt Node 22 oder neuer. Die Tests laufen offline.
 - Erzeugen/Aktualisieren: `node tools/baue-register.mjs` (braucht Internet, nicht Teil der Tests).
 
 ## Texturen
-Die Oberfläche zeigt zurzeit Farbflächen mit Block-Namen; für die Darstellung vorgesehen ist das Texturpaket **Faithful 32x (Bedrock)** – <https://faithfulpack.net>,
-Lizenz: <https://faithfulpack.net/license>. Blockwerk ist kostenlos und kein offizielles Produkt von Mojang,
-Microsoft oder Faithful. Es liegen keine Original-Mojang-Texturen in diesem Repo.
+Die Darstellung benutzt die Texturen des Pakets **Faithful 32x (Bedrock)** – <https://faithfulpack.net>,
+Lizenz: <https://faithfulpack.net/license> (eine unveränderte Kopie liegt in `data/texturen/FAITHFUL-LICENSE.txt`).
+In `data/texturen/` liegen **nur die Texturen, die Blockwerk braucht** (unverändert, Herkunft in `data/texturen/LIZENZ.md` und `data/texturen.json`),
+Stand: Faithful-32x-Bedrock, Branch `bedrock-latest` vom 24.10.2026, <https://github.com/Faithful-Resource-Pack/Faithful-32x-Bedrock>.
+Blöcke ohne Textur (zurzeit Schleifstein und Strohbett) zeigen eine markierte Ersatzfarbe; Treppen, Platten, Türen u. a. sind in der Darstellung ganze Würfel (gekennzeichnet).
+Blockwerk ist kostenlos und kein offizielles Produkt von Mojang, Microsoft oder Faithful; die Texturen werden nicht für KI-Training benutzt.
+Es liegen keine Original-Mojang-Texturen in diesem Repo.
+Neu erzeugen (z. B. nach neuen Bausteinen): `node tools/texturen-extrahieren.js --liste` nennt die benötigten Dateien, `node tools/texturen-extrahieren.js <entpackter Pack-Ordner>` übernimmt sie.
 
 "Minecraft" ist eine Marke von Mojang AB. Blockwerk steht in keiner Verbindung zu Mojang oder Microsoft.

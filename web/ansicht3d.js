@@ -1,13 +1,13 @@
-// Blockwerk – 3D-Zeichnung mit WebGL2 (ohne Pakete): ein Netz aus src/ebene5/netz.js, Farben pro Ecke, Tiefenpuffer, Orbit-Kamera mit der Maus.
+// Blockwerk – 3D-Zeichnung mit WebGL2 (ohne Pakete): ein Netz aus src/ebene5/netz.js, Texturatlas (Faithful 32x) mal Tönung pro Ecke, Tiefenpuffer, Orbit-Kamera mit der Maus.
 // Maus: Ziehen = drehen, Umschalt-Ziehen oder rechte Taste = verschieben, Rad = zoomen, Doppelklick = einpassen.
 import * as K from '../src/ebene5/kamera.js';
 
 const VERTEX = `#version 300 es
-in vec3 p; in vec3 c; uniform mat4 m; out vec3 f;
-void main() { gl_Position = m * vec4(p, 1.0); f = c; }`;
+in vec3 p; in vec3 c; in vec2 t; uniform mat4 m; out vec3 f; out vec2 uv;
+void main() { gl_Position = m * vec4(p, 1.0); f = c; uv = t; }`;
 const FRAGMENT = `#version 300 es
-precision mediump float; in vec3 f; out vec4 farbe;
-void main() { farbe = vec4(f, 1.0); }`;
+precision mediump float; in vec3 f; in vec2 uv; uniform sampler2D atlas; out vec4 farbe;
+void main() { vec4 t = texture(atlas, uv); if (t.a < 0.5) discard; farbe = vec4(t.rgb * f, 1.0); }`;
 
 function programm(gl) {
   const s = (typ, text) => { const x = gl.createShader(typ); gl.shaderSource(x, text); gl.compileShader(x); if (!gl.getShaderParameter(x, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(x)); return x; };
@@ -23,14 +23,19 @@ export function erzeugeAnsicht3d() {
   const canvas = document.createElement('canvas');
   canvas.className = 'ansicht3d';
   const gl = canvas.getContext('webgl2', { antialias: true });
-  if (!gl) return { canvas, verfuegbar: false, setzeNetz() {}, einpassen() {}, groesse() {}, zeichne() {} };
+  if (!gl) return { canvas, verfuegbar: false, setzeNetz() {}, setzeAtlas() {}, einpassen() {}, groesse() {}, zeichne() {} };
   const prog = programm(gl);
-  const aP = gl.getAttribLocation(prog, 'p'), aC = gl.getAttribLocation(prog, 'c'), uM = gl.getUniformLocation(prog, 'm');
+  const aP = gl.getAttribLocation(prog, 'p'), aC = gl.getAttribLocation(prog, 'c'), aT = gl.getAttribLocation(prog, 't'), uM = gl.getUniformLocation(prog, 'm');
   const vao = gl.createVertexArray();
-  const bufPos = gl.createBuffer(), bufCol = gl.createBuffer(), bufIdx = gl.createBuffer();
+  const bufPos = gl.createBuffer(), bufCol = gl.createBuffer(), bufUv = gl.createBuffer(), bufIdx = gl.createBuffer();
+  const textur = gl.createTexture();
+  const weiss = new Uint8Array([255, 255, 255, 255]); // bis ein Atlas da ist: eine weiße Fläche (Farbe kommt dann nur aus der Tönung)
+  gl.bindTexture(gl.TEXTURE_2D, textur); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, weiss);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.bindVertexArray(vao);
   gl.bindBuffer(gl.ARRAY_BUFFER, bufPos); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 3, gl.FLOAT, false, 0, 0);
   gl.bindBuffer(gl.ARRAY_BUFFER, bufCol); gl.enableVertexAttribArray(aC); gl.vertexAttribPointer(aC, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufUv); gl.enableVertexAttribArray(aT); gl.vertexAttribPointer(aT, 2, gl.FLOAT, false, 0, 0);
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufIdx);
   gl.bindVertexArray(null);
 
@@ -47,6 +52,7 @@ export function erzeugeAnsicht3d() {
     gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); // die Dreiecke zeigen von außen gegen den Uhrzeigersinn
     gl.useProgram(prog);
     gl.uniformMatrix4fv(uM, false, K.matrizen(z.kamera, aspekt()).mvp);
+    gl.bindTexture(gl.TEXTURE_2D, textur);
     gl.bindVertexArray(vao);
     gl.drawElements(gl.TRIANGLES, z.anzahl, gl.UNSIGNED_INT, 0);
     gl.bindVertexArray(null);
@@ -71,10 +77,17 @@ export function erzeugeAnsicht3d() {
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, bufPos); gl.bufferData(gl.ARRAY_BUFFER, netz.positionen, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, bufCol); gl.bufferData(gl.ARRAY_BUFFER, netz.farben, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufUv); gl.bufferData(gl.ARRAY_BUFFER, netz.uvs, gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufIdx); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, netz.indizes, gl.STATIC_DRAW);
     gl.bindVertexArray(null);
     z.anzahl = netz.indizes.length; z.huelle = netz.huelle;
     if (passeEin) einpassen(); else plane();
+  }
+
+  /** Texturatlas (Canvas) als WebGL-Textur; scharfe Pixel. */
+  function setzeAtlas(bild) {
+    gl.bindTexture(gl.TEXTURE_2D, textur); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bild);
+    plane();
   }
 
   // Maus
@@ -94,5 +107,5 @@ export function erzeugeAnsicht3d() {
   canvas.addEventListener('dblclick', einpassen);
   canvas.style.cursor = 'grab';
 
-  return { canvas, verfuegbar: true, setzeNetz, einpassen, groesse, zeichne: plane };
+  return { canvas, verfuegbar: true, setzeNetz, setzeAtlas, einpassen, groesse, zeichne: plane };
 }

@@ -1,0 +1,4 @@
+{
+  "hinweis": "Blöcke, die Blockwerk setzen kann, aber nicht als Block-ID im Quelltext der Bausteine oder in den Paletten stehen (zusätzlich zu Berufsblöcken und Betten). Zurzeit leer; ein Test meldet jeden Block der Beispiel-Legende ohne Eintrag.",
+  "bloecke": []
+}

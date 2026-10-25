@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative, resolve, dirname } from 'node:path';
+import { join, relative, resolve, dirname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -80,7 +80,22 @@ test('CI-Workflow und README (mit Faithful-Nennung) sind vorhanden', () => {
   assert.match(readme, /faithfulpack\.net\/license/);
 });
 
-test('Keine Original-Mojang-Texturen im Repo', () => {
+test('Keine Original-Mojang-Texturen im Repo: Bilder nur als benötigte Faithful-Texturen mit Lizenz und Nennung', () => {
   const bilder = [...dateien(wurzel, '.png'), ...dateien(wurzel, '.tga')].filter((p) => !p.includes('node_modules') && !p.includes(`${join(wurzel, '.git')}`));
-  assert.deepEqual(bilder, []);
+  const erlaubt = join(wurzel, 'data', 'texturen');
+  assert.deepEqual(bilder.filter((p) => !p.startsWith(erlaubt)), []);
+  if (!bilder.length) return;
+  // Faithful-Lizenz: nur benötigte Texturen, deutliche Nennung, Lizenz (Kopie oder Link) liegt bei
+  const index = JSON.parse(readFileSync(join(wurzel, 'data', 'texturen.json'), 'utf8'));
+  const vorhanden = bilder.map((p) => p.slice(erlaubt.length + 1).split(sep).join('/').replace(/\.png$/, '')).sort();
+  assert.deepEqual(vorhanden, [...index.kacheln].sort());
+  const nutzer = new Set(Object.values(index.bloecke).flatMap((b) => [b.oben, b.unten, b.seite]));
+  assert.deepEqual([...nutzer].sort(), [...index.kacheln].sort(), 'jede Textur wird von mindestens einem Block gebraucht');
+  assert.match(index.pack.name, /Faithful 32x/);
+  assert.equal(index.pack.url, 'https://faithfulpack.net');
+  assert.equal(index.pack.lizenz, 'https://faithfulpack.net/license');
+  const lizenz = readFileSync(join(erlaubt, 'LIZENZ.md'), 'utf8');
+  assert.ok(lizenz.includes('https://faithfulpack.net/license'));
+  assert.match(readFileSync(join(erlaubt, 'FAITHFUL-LICENSE.txt'), 'utf8'), /FAITHFUL LICENSE/);
+  assert.ok(readFileSync(join(wurzel, 'index.html'), 'utf8').includes('https://faithfulpack.net/license'));
 });

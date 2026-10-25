@@ -1,0 +1,420 @@
+{
+  "pack": {
+    "name": "Faithful 32x",
+    "version": "Branch bedrock-latest, Stand 24.10.2026",
+    "autoren": [
+      "Vattic & Faithful Team"
+    ],
+    "url": "https://faithfulpack.net",
+    "lizenz": "https://faithfulpack.net/license",
+    "quelle": "https://github.com/Faithful-Resource-Pack/Faithful-32x-Bedrock",
+    "ausschnitt": "Nur die von Blockwerk benötigten Block-Texturen (Lizenz), unverändert übernommen."
+  },
+  "kacheln": [
+    "barrel_bottom",
+    "barrel_side",
+    "barrel_top",
+    "bed_head_side",
+    "bed_head_top",
+    "blackstone",
+    "blackstone_top",
+    "blast_furnace_side",
+    "blast_furnace_top",
+    "brewing_stand",
+    "cartography_table_side1",
+    "cartography_table_top",
+    "cauldron_bottom",
+    "cauldron_side",
+    "cauldron_top",
+    "chest_side",
+    "chest_top",
+    "cobblestone",
+    "comparator_off",
+    "composter_bottom",
+    "composter_side",
+    "composter_top",
+    "deepslate/deepslate_bricks",
+    "dirt",
+    "door_birch_lower",
+    "door_iron_lower",
+    "door_spruce_lower",
+    "door_wood_lower",
+    "fletcher_table_side1",
+    "fletcher_table_top",
+    "glass",
+    "glass_white",
+    "glowstone",
+    "gold_block",
+    "hopper_outside",
+    "hopper_top",
+    "lectern_base",
+    "lectern_sides",
+    "lectern_top",
+    "loom_bottom",
+    "loom_side",
+    "loom_top",
+    "planks_birch",
+    "planks_oak",
+    "planks_spruce",
+    "polished_blackstone",
+    "quartz_block_bottom",
+    "quartz_block_side",
+    "quartz_block_top",
+    "rail_golden",
+    "rail_normal",
+    "redstone_block",
+    "redstone_dust_cross",
+    "redstone_torch_on",
+    "repeater_off",
+    "sand",
+    "sea_lantern",
+    "shroomlight",
+    "smithing_table_bottom",
+    "smithing_table_side",
+    "smithing_table_top",
+    "smoker_bottom",
+    "smoker_side",
+    "smoker_top",
+    "stone",
+    "stone_slab_top",
+    "stonecutter_bottom",
+    "stonecutter_side",
+    "stonecutter_top"
+  ],
+  "bloecke": {
+    "minecraft:barrel": {
+      "oben": "barrel_top",
+      "unten": "barrel_bottom",
+      "seite": "barrel_side",
+      "angenaehert": false
+    },
+    "minecraft:bed": {
+      "oben": "bed_head_top",
+      "unten": "planks_oak",
+      "seite": "bed_head_side",
+      "angenaehert": true
+    },
+    "minecraft:birch_door": {
+      "oben": "door_birch_lower",
+      "unten": "door_birch_lower",
+      "seite": "door_birch_lower",
+      "angenaehert": true
+    },
+    "minecraft:birch_planks": {
+      "oben": "planks_birch",
+      "unten": "planks_birch",
+      "seite": "planks_birch",
+      "angenaehert": false
+    },
+    "minecraft:birch_stairs": {
+      "oben": "planks_birch",
+      "unten": "planks_birch",
+      "seite": "planks_birch",
+      "angenaehert": true
+    },
+    "minecraft:blackstone": {
+      "oben": "blackstone_top",
+      "unten": "blackstone_top",
+      "seite": "blackstone",
+      "angenaehert": false
+    },
+    "minecraft:blast_furnace": {
+      "oben": "blast_furnace_top",
+      "unten": "blast_furnace_top",
+      "seite": "blast_furnace_side",
+      "angenaehert": false
+    },
+    "minecraft:brewing_stand": {
+      "oben": "brewing_stand",
+      "unten": "brewing_stand",
+      "seite": "brewing_stand",
+      "angenaehert": true
+    },
+    "minecraft:cartography_table": {
+      "oben": "cartography_table_top",
+      "unten": "planks_oak",
+      "seite": "cartography_table_side1",
+      "angenaehert": false
+    },
+    "minecraft:cauldron": {
+      "oben": "cauldron_top",
+      "unten": "cauldron_bottom",
+      "seite": "cauldron_side",
+      "angenaehert": false
+    },
+    "minecraft:chest": {
+      "oben": "chest_top",
+      "unten": "chest_top",
+      "seite": "chest_side",
+      "angenaehert": true
+    },
+    "minecraft:cobblestone": {
+      "oben": "cobblestone",
+      "unten": "cobblestone",
+      "seite": "cobblestone",
+      "angenaehert": false
+    },
+    "minecraft:composter": {
+      "oben": "composter_top",
+      "unten": "composter_bottom",
+      "seite": "composter_side",
+      "angenaehert": false
+    },
+    "minecraft:deepslate_brick_stairs": {
+      "oben": "deepslate/deepslate_bricks",
+      "unten": "deepslate/deepslate_bricks",
+      "seite": "deepslate/deepslate_bricks",
+      "angenaehert": true
+    },
+    "minecraft:deepslate_bricks": {
+      "oben": "deepslate/deepslate_bricks",
+      "unten": "deepslate/deepslate_bricks",
+      "seite": "deepslate/deepslate_bricks",
+      "angenaehert": false
+    },
+    "minecraft:dirt": {
+      "oben": "dirt",
+      "unten": "dirt",
+      "seite": "dirt",
+      "angenaehert": false
+    },
+    "minecraft:fletching_table": {
+      "oben": "fletcher_table_top",
+      "unten": "planks_oak",
+      "seite": "fletcher_table_side1",
+      "angenaehert": false
+    },
+    "minecraft:glass": {
+      "oben": "glass",
+      "unten": "glass",
+      "seite": "glass",
+      "angenaehert": false
+    },
+    "minecraft:glass_pane": {
+      "oben": "glass",
+      "unten": "glass",
+      "seite": "glass",
+      "angenaehert": true
+    },
+    "minecraft:glowstone": {
+      "oben": "glowstone",
+      "unten": "glowstone",
+      "seite": "glowstone",
+      "angenaehert": false
+    },
+    "minecraft:gold_block": {
+      "oben": "gold_block",
+      "unten": "gold_block",
+      "seite": "gold_block",
+      "angenaehert": false
+    },
+    "minecraft:golden_rail": {
+      "oben": "rail_golden",
+      "unten": "rail_golden",
+      "seite": "rail_golden",
+      "angenaehert": true
+    },
+    "minecraft:hopper": {
+      "oben": "hopper_top",
+      "unten": "hopper_outside",
+      "seite": "hopper_outside",
+      "angenaehert": true
+    },
+    "minecraft:iron_door": {
+      "oben": "door_iron_lower",
+      "unten": "door_iron_lower",
+      "seite": "door_iron_lower",
+      "angenaehert": true
+    },
+    "minecraft:lectern": {
+      "oben": "lectern_top",
+      "unten": "lectern_base",
+      "seite": "lectern_sides",
+      "angenaehert": true
+    },
+    "minecraft:lit_blast_furnace": {
+      "oben": "blast_furnace_top",
+      "unten": "blast_furnace_top",
+      "seite": "blast_furnace_side",
+      "angenaehert": false
+    },
+    "minecraft:lit_smoker": {
+      "oben": "smoker_top",
+      "unten": "smoker_bottom",
+      "seite": "smoker_side",
+      "angenaehert": false
+    },
+    "minecraft:loom": {
+      "oben": "loom_top",
+      "unten": "loom_bottom",
+      "seite": "loom_side",
+      "angenaehert": false
+    },
+    "minecraft:polished_blackstone": {
+      "oben": "polished_blackstone",
+      "unten": "polished_blackstone",
+      "seite": "polished_blackstone",
+      "angenaehert": false
+    },
+    "minecraft:polished_blackstone_stairs": {
+      "oben": "polished_blackstone",
+      "unten": "polished_blackstone",
+      "seite": "polished_blackstone",
+      "angenaehert": true
+    },
+    "minecraft:quartz_block": {
+      "oben": "quartz_block_top",
+      "unten": "quartz_block_bottom",
+      "seite": "quartz_block_side",
+      "angenaehert": false
+    },
+    "minecraft:quartz_stairs": {
+      "oben": "quartz_block_top",
+      "unten": "quartz_block_bottom",
+      "seite": "quartz_block_side",
+      "angenaehert": true
+    },
+    "minecraft:rail": {
+      "oben": "rail_normal",
+      "unten": "rail_normal",
+      "seite": "rail_normal",
+      "angenaehert": true
+    },
+    "minecraft:redstone_block": {
+      "oben": "redstone_block",
+      "unten": "redstone_block",
+      "seite": "redstone_block",
+      "angenaehert": false
+    },
+    "minecraft:redstone_torch": {
+      "oben": "redstone_torch_on",
+      "unten": "redstone_torch_on",
+      "seite": "redstone_torch_on",
+      "angenaehert": true
+    },
+    "minecraft:redstone_wire": {
+      "oben": "redstone_dust_cross",
+      "unten": "redstone_dust_cross",
+      "seite": "redstone_dust_cross",
+      "angenaehert": true
+    },
+    "minecraft:sand": {
+      "oben": "sand",
+      "unten": "sand",
+      "seite": "sand",
+      "angenaehert": false
+    },
+    "minecraft:sea_lantern": {
+      "oben": "sea_lantern",
+      "unten": "sea_lantern",
+      "seite": "sea_lantern",
+      "angenaehert": false
+    },
+    "minecraft:shroomlight": {
+      "oben": "shroomlight",
+      "unten": "shroomlight",
+      "seite": "shroomlight",
+      "angenaehert": false
+    },
+    "minecraft:smithing_table": {
+      "oben": "smithing_table_top",
+      "unten": "smithing_table_bottom",
+      "seite": "smithing_table_side",
+      "angenaehert": false
+    },
+    "minecraft:smoker": {
+      "oben": "smoker_top",
+      "unten": "smoker_bottom",
+      "seite": "smoker_side",
+      "angenaehert": false
+    },
+    "minecraft:smooth_quartz": {
+      "oben": "quartz_block_bottom",
+      "unten": "quartz_block_bottom",
+      "seite": "quartz_block_bottom",
+      "angenaehert": false
+    },
+    "minecraft:smooth_quartz_stairs": {
+      "oben": "quartz_block_bottom",
+      "unten": "quartz_block_bottom",
+      "seite": "quartz_block_bottom",
+      "angenaehert": true
+    },
+    "minecraft:spruce_door": {
+      "oben": "door_spruce_lower",
+      "unten": "door_spruce_lower",
+      "seite": "door_spruce_lower",
+      "angenaehert": true
+    },
+    "minecraft:spruce_planks": {
+      "oben": "planks_spruce",
+      "unten": "planks_spruce",
+      "seite": "planks_spruce",
+      "angenaehert": false
+    },
+    "minecraft:spruce_stairs": {
+      "oben": "planks_spruce",
+      "unten": "planks_spruce",
+      "seite": "planks_spruce",
+      "angenaehert": true
+    },
+    "minecraft:stone": {
+      "oben": "stone",
+      "unten": "stone",
+      "seite": "stone",
+      "angenaehert": false
+    },
+    "minecraft:stone_stairs": {
+      "oben": "cobblestone",
+      "unten": "cobblestone",
+      "seite": "cobblestone",
+      "angenaehert": true
+    },
+    "minecraft:stonecutter_block": {
+      "oben": "stonecutter_top",
+      "unten": "stonecutter_bottom",
+      "seite": "stonecutter_side",
+      "angenaehert": true
+    },
+    "minecraft:unpowered_comparator": {
+      "oben": "comparator_off",
+      "unten": "stone_slab_top",
+      "seite": "stone_slab_top",
+      "angenaehert": true
+    },
+    "minecraft:unpowered_repeater": {
+      "oben": "repeater_off",
+      "unten": "stone_slab_top",
+      "seite": "stone_slab_top",
+      "angenaehert": true
+    },
+    "minecraft:white_stained_glass": {
+      "oben": "glass_white",
+      "unten": "glass_white",
+      "seite": "glass_white",
+      "angenaehert": false
+    },
+    "minecraft:white_stained_glass_pane": {
+      "oben": "glass_white",
+      "unten": "glass_white",
+      "seite": "glass_white",
+      "angenaehert": true
+    },
+    "minecraft:wooden_door": {
+      "oben": "door_wood_lower",
+      "unten": "door_wood_lower",
+      "seite": "door_wood_lower",
+      "angenaehert": true
+    }
+  },
+  "fehlend": [
+    {
+      "id": "minecraft:grindstone",
+      "grund": "keine Zuordnung in data/texturen-regeln.json"
+    },
+    {
+      "id": "minecraft:straw_bed",
+      "grund": "keine Zuordnung in data/texturen-regeln.json"
+    }
+  ]
+}

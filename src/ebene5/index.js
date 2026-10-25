@@ -13,13 +13,15 @@ export * as matrix from './matrix.js';
 export { erzeugeMaterial, umrechnen, umrechnungsText, KISTE } from './material.js';
 export * as fortschritt from './fortschritt.js';
 export * as teilen from './teilen.js';
+export { erzeugeAtlas, WEISS } from './atlas.js';
+export { benoetigteBloecke, erzeugeIndex, loeseAuf } from './texturen.js';
 export * as eingabe from './eingabe.js';
 
 /**
- * @param {{ebene0: object, ebene3: object, darstellungsdaten: {farben: object[], namen: object}}} quellen
+ * @param {{ebene0: object, ebene3: object, darstellungsdaten: {farben: object[], namen: object}, texturen?: object | null}} quellen
  */
-export function erzeugeEbene5({ ebene0, ebene3, darstellungsdaten }) {
-  const darstellung = erzeugeDarstellung(darstellungsdaten);
+export function erzeugeEbene5({ ebene0, ebene3, darstellungsdaten, texturen = null }) {
+  const darstellung = erzeugeDarstellung(darstellungsdaten, texturen);
   const { bauplan } = erzeugeBauplan({ ebene0, ebene3, darstellung });
   const material = erzeugeMaterial({ register: ebene0.register, darstellung });
   return { darstellung, bauplan, material: material.material, materialListe: material.liste };

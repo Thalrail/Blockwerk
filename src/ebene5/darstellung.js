@@ -1,6 +1,6 @@
-// Ebene 5 – Darstellung ohne Texturen: Farbfläche und lesbarer Name je Block (Daten: data/darstellung.json).
-// Fehlt eine Zuordnung, bekommt der Block eine Ersatzfarbe aus seiner Block-ID und wird als Ersatz markiert (Vorgabe aus Ebene 5: fehlende Texturen nie still weglassen).
-// Texturen (Faithful 32x) folgen später; diese Datei bleibt dann die Rückfallebene.
+// Ebene 5 – Darstellung: Textur (Faithful 32x, Index data/texturen.json), Farbfläche und lesbarer Name je Block (Daten: data/darstellung.json).
+// Mit Texturindex ist ein Block ohne Textur ein Ersatz: er bekommt eine Farbfläche (Regel oder Farbe aus der Block-ID) und wird markiert (Vorgabe aus Ebene 5: fehlende Texturen nie still weglassen).
+// Ohne Texturindex (Tests, Seite ohne Texturen) gilt wie bisher: Ersatz ist, was keine Farbregel hat.
 
 const hex = (n) => n.toString(16).padStart(2, '0');
 
@@ -21,16 +21,18 @@ function lesbar(id) {
 
 /**
  * @param {{farben: {muster: string, farbe: string}[], namen: Record<string, string>}} daten
+ * @param {{pack: object, kacheln: string[], bloecke: Record<string, {oben: string, unten: string, seite: string, angenaehert: boolean}>} | null} [texturen]
  */
-export function erzeugeDarstellung(daten) {
+export function erzeugeDarstellung(daten, texturen = null) {
   const regeln = daten.farben.map((r) => ({ re: new RegExp(r.muster), farbe: r.farbe }));
   const cache = new Map();
-  /** @returns {{id: string, name: string, farbe: string, ersatz: boolean}} */
+  /** @returns {{id: string, name: string, farbe: string, ersatz: boolean, textur: {oben: string, unten: string, seite: string, angenaehert: boolean} | null}} */
   function block(id) {
     let e = cache.get(id);
     if (!e) {
       const treffer = regeln.find((r) => r.re.test(id));
-      e = { id, name: daten.namen[id] ?? lesbar(id), farbe: treffer?.farbe ?? ersatzFarbe(id), ersatz: !treffer };
+      const textur = texturen?.bloecke[id] ?? null;
+      e = { id, name: daten.namen[id] ?? lesbar(id), farbe: treffer?.farbe ?? ersatzFarbe(id), ersatz: texturen ? !textur : !treffer, textur };
       cache.set(id, e);
     }
     return e;

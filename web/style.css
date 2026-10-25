@@ -90,3 +90,19 @@ body.pip { display: block; } body.pip #fuss, body.pip #toast { display: none; }
 .regler { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 8px; color: var(--leise); font-size: 13px; }
 .regler label { display: flex; align-items: center; gap: 6px; } .regler select { background: var(--flaeche2); border: 1px solid var(--linie); border-radius: var(--radius); padding: 3px 6px; }
 .mitte > .reiter { align-items: center; } .mitte > .reiter .abstand { flex: 1; }
+
+/* Eingabe (Teil 6c) */
+.eingabe { margin: 3vh auto; max-width: 860px; width: calc(100% - 32px); }
+.eingabe .schritt { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 12px; padding: 14px 18px; margin: 12px 0; }
+.eingabe h2 { margin: 0 0 8px; } .eingabe h3 { margin: 0 0 6px; font-size: 16px; } .eingabe h4 { margin: 10px 0 4px; }
+.eingabe textarea { width: 100%; background: var(--flaeche2); color: var(--text); border: 1px solid var(--linie); border-radius: var(--radius); padding: 8px 10px; font: inherit; resize: vertical; }
+.eingabe textarea.mono { font: 13px/1.4 ui-monospace, Consolas, monospace; }
+.eingabe .knoepfe { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0 2px; }
+.eingabe .frage { border: 1px solid var(--linie); border-left: 4px solid var(--warn); border-radius: var(--radius); padding: 8px 12px; margin: 10px 0; background: var(--flaeche2); }
+.eingabe .frage p { margin: 4px 0 8px; }
+.eingabe .optionen { display: flex; flex-wrap: wrap; gap: 8px; }
+.eingabe .optionen button.leise { opacity: .75; border-style: dashed; }
+.eingabe .arbeitet { color: var(--akzent); }
+.eingabe .gut-text { color: var(--gut); font-weight: 600; }
+.eingabe select { background: var(--flaeche2); border: 1px solid var(--linie); border-radius: var(--radius); padding: 5px 8px; }
+.eingabe pre.text { max-height: 40vh; overflow: auto; }

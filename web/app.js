@@ -5,6 +5,7 @@ import * as teilen from '../src/ebene5/teilen.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
+import * as Eingabe from './eingabe.js';
 
 const FLAECHEN_MAX = 3_000_000;
 
@@ -20,11 +21,23 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
+  seite: null, messungen: [], e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
 const worker = new Worker(new URL('./engine-worker.js', import.meta.url), { type: 'module' });
+const offeneAnfragen = new Map();
+let anfrageNr = 0;
+/** Schickt eine Nachricht an die Engine und wartet auf die Antwort mit derselben Nummer. */
+function anfrage(nachricht, uebertragen = []) {
+  return new Promise((ok, nein) => { const nr = ++anfrageNr; offeneAnfragen.set(nr, { ok, nein }); worker.postMessage({ ...nachricht, anfrage: nr }, uebertragen); });
+}
 worker.onmessage = ({ data }) => {
+  if (data.anfrage !== undefined) {
+    const a = offeneAnfragen.get(data.anfrage); offeneAnfragen.delete(data.anfrage);
+    if (data.typ === 'fehler') a?.nein(new Error(data.text)); else a?.ok(data);
+    return;
+  }
   if (data.typ === 'status') { z.status = data.text; render(); return; }
   z.status = null;
   if (data.typ === 'fehler') { z.fehler = data.text; z.daten = null; }
@@ -34,12 +47,13 @@ worker.onmessage = ({ data }) => {
 };
 worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebrochen: ${e.message ?? e}`; render(); };
 
-function startProjekt(spezifikation, empfangenerFortschritt = null) {
+function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = []) {
+  z.seite = null; z.messungen = messungen;
   z.spec = spezifikation; z.empfangen = empfangenerFortschritt; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird berechnet …';
   speicher.schreib('blockwerk.projekt', spezifikation);
   render();
-  worker.postMessage({ typ: 'baue', spezifikation });
+  worker.postMessage({ typ: 'baue', spezifikation, messungen });
 }
 
 const speicherSchluessel = () => `blockwerk.fortschritt.${z.spec?.freigabe?.abdruck ?? 'ohne'}`;
@@ -155,13 +169,14 @@ function kopf() {
     ${z.daten ? `<button data-a="modus" title="Taste M">${kompakt ? 'Vollansicht' : 'Kompaktmodus'}</button>
     <button data-a="pip" title="Kleines Fenster, das immer im Vordergrund bleibt (Chrome/Edge)">Immer im Vordergrund</button>
     <button data-a="link">Link kopieren</button><button data-a="sichern">Datei sichern</button>` : ''}
+    <button data-a="${z.seite === 'eingabe' ? 'eingabe-zu' : 'eingabe-offen'}">${z.seite === 'eingabe' ? (z.daten ? 'Zurück zum Bauplan' : 'Schließen') : 'Neue Vorlage'}</button>
     <button data-a="oeffnen">Datei öffnen</button><input id="datei" type="file" accept=".json,application/json" hidden>
   </header>`;
 }
 function startseite() {
   return `<section class="start"><h2>Bauplan öffnen</h2>
     <p>Blockwerk zeigt dir Schicht für Schicht, was du in Minecraft bauen musst – groß genug, um es vom Sofa aus neben der PS5 zu lesen.</p>
-    <div class="knoepfe"><button class="haupt" data-a="beispiel">Beispielprojekt laden (Zitadelle, klein)</button><button data-a="oeffnen">Projektdatei öffnen</button></div>
+    <div class="knoepfe"><button class="haupt" data-a="eingabe-offen">Neue Vorlage (Bilder und Text)</button><button data-a="beispiel">Beispielprojekt laden (Zitadelle, klein)</button><button data-a="oeffnen">Projektdatei öffnen</button></div>
     <p class="klein">Einen Link von einem Freund öffnest du einfach im Browser; er enthält die Spezifikation und seinen Fortschritt.</p></section>`;
 }
 function rechnet() {
@@ -253,11 +268,13 @@ function render() {
   const aktiv = document.activeElement?.id === 'name';
   let html = kopf();
   if (z.status) html += rechnet();
+  else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec });
   else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
   else if (z.rueckfragen) html += `<section class="start"><h2>Rückfragen vor dem Bauen</h2><p>Die Spezifikation hat noch offene Fragen. Das Beantworten kommt in einem nächsten Schritt; so lange gilt:</p><ul>${z.rueckfragen.map((q) => `<li>${esc(q.frage)}</li>`).join('')}</ul><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
   else if (!z.daten) html += startseite();
   else html += z.modus === 'kompakt' ? kompaktansicht() : vollansicht();
   $app.innerHTML = html;
+  if (z.seite === 'eingabe') { const f = z.fokus && document.getElementById(z.fokus); if (f) { f.focus(); if (z.fokusPos != null) f.setSelectionRange(z.fokusPos, z.fokusPos); } }
   if (aktiv) { const n = document.getElementById('name'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
   if (z.daten && !z.status && z.modus !== 'kompakt' && z.ansicht === '3d') aktualisiere3d(true);
   if (z.daten && !z.status && !(z.modus !== 'kompakt' && z.ansicht === '3d')) {
@@ -320,11 +337,18 @@ async function pip() {
 }
 
 // ---------- Aktionen ----------
+const kontextEingabe = () => ({
+  e: z.e, render, toast, anfrage, startProjekt, name: () => z.name, projekt: () => z.spec,
+  speichern: () => speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)),
+});
 async function datenLaden(pfad) { const r = await fetch(new URL(`../${pfad}`, import.meta.url)); if (!r.ok) throw new Error(`${pfad}: ${r.status}`); return r.json(); }
 async function aktion(name, el) {
   const d = el?.dataset ?? {};
   try {
-    if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
+    if (name.startsWith('e-')) await Eingabe.aktion(name, el, kontextEingabe());
+    else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
+    else if (name === 'eingabe-zu') { z.seite = null; render(); }
+    else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
     else if (name === 'oeffnen') document.getElementById('datei').click();
     else if (name === 'neu') { z.fehler = null; z.rueckfragen = null; z.daten = null; render(); }
     else if (name === 'modus') { z.modus = z.modus === 'kompakt' ? 'voll' : 'kompakt'; speicher.schreib('blockwerk.modus', z.modus); render(); }
@@ -365,7 +389,8 @@ document.addEventListener('click', klick);
 document.addEventListener('keydown', taste);
 document.addEventListener('input', (ev) => {
   const id = ev.target.id;
-  if (id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); }
+  if (id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); if (z.seite === 'eingabe') render(); }
+  else if (Eingabe.eingabeGeaendert(id, ev.target.value, z.e)) { speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)); if (id === 'e-text') { const b = document.querySelector('[data-a="e-pruefen"]'); if (b) b.disabled = !ev.target.value.trim(); } }
   else if (id === 's3-hoehe') { // der Regler bleibt beim Ziehen im Bild, darum kein komplettes Neuzeichnen der Seite
     const h = hoehen(), v = Number(ev.target.value);
     z.sicht.maxY = v >= h.hi ? null : v;
@@ -379,6 +404,8 @@ document.addEventListener('change', (ev) => {
   else if (['s3-technik', 's3-verbindungen', 's3-fortschritt', 's3-hervorheben'].includes(id)) { z.sicht[id.slice(3)] = ev.target.checked; render(); }
 });
 document.addEventListener('change', async (ev) => {
+  if (ev.target.id === 'e-bild' && ev.target.files[0]) { const f = ev.target.files[0]; ev.target.value = ''; await Eingabe.bildGewaehlt(f, kontextEingabe()); return; }
+  if (ev.target.id === 'e-teil' || ev.target.id === 'e-art') { Eingabe.eingabeGeaendert(ev.target.id, ev.target.value, z.e); return; }
   if (ev.target.id !== 'datei' || !ev.target.files[0]) return;
   try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null); } catch (f) { z.fehler = String(f.message ?? f); render(); }
   ev.target.value = '';

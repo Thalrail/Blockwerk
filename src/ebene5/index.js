@@ -13,6 +13,7 @@ export * as matrix from './matrix.js';
 export { erzeugeMaterial, umrechnen, umrechnungsText, KISTE } from './material.js';
 export * as fortschritt from './fortschritt.js';
 export * as teilen from './teilen.js';
+export * as eingabe from './eingabe.js';
 
 /**
  * @param {{ebene0: object, ebene3: object, darstellungsdaten: {farben: object[], namen: object}}} quellen

@@ -6,6 +6,9 @@ export const TYP = 'blockwerk-projekt';
 export const VERSION = 1;
 /** Ab dieser Länge des Codes schlägt die Oberfläche die Datei vor (Chat-Programme kürzen lange Links). */
 export const EMPFOHLEN_MAX = 4000;
+/** Grenzen für fremde Eingaben (Links, Dateien): größer ist kein Blockwerk-Projekt, sondern ein Fehler oder ein Angriff (Dekompressionsbombe). */
+export const CODE_MAX = 200_000;
+export const TEXT_MAX = 2 * 1024 * 1024;
 
 /** Fehler beim Teilen oder Lesen eines Links oder einer Datei: Jonah bekommt den Grund im Klartext. */
 export class TeilenFehler extends Error {
@@ -16,7 +19,23 @@ async function strom(bytes, transformation) {
   return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(transformation)).arrayBuffer());
 }
 const komprimiere = (bytes) => strom(bytes, new CompressionStream('deflate-raw'));
-const entkomprimiere = (bytes) => strom(bytes, new DecompressionStream('deflate-raw'));
+/** Entkomprimiert in Stücken und bricht ab, sobald mehr als TEXT_MAX Bytes herauskommen (statt erst den ganzen Speicher zu füllen). */
+async function entkomprimiere(bytes) {
+  const leser = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+  const stuecke = [];
+  let summe = 0;
+  for (;;) {
+    const { done, value } = await leser.read();
+    if (done) break;
+    summe += value.length;
+    if (summe > TEXT_MAX) { await leser.cancel(); throw new TeilenFehler(`der Link ist zu groß (mehr als ${TEXT_MAX / 1024 / 1024} MB entpackt); ein Blockwerk-Projekt ist viel kleiner`); }
+    stuecke.push(value);
+  }
+  const aus = new Uint8Array(summe);
+  let pos = 0;
+  for (const c of stuecke) { aus.set(c, pos); pos += c.length; }
+  return aus;
+}
 
 function zuBase64Url(bytes) {
   let s = '';
@@ -24,6 +43,7 @@ function zuBase64Url(bytes) {
   return btoa(s).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
 }
 function ausBase64Url(text) {
+  if (text.length > CODE_MAX) throw new TeilenFehler(`der Link ist zu lang (mehr als ${CODE_MAX} Zeichen)`);
   if (!/^[A-Za-z0-9_-]*$/.test(text)) throw new TeilenFehler('der Link enthält ungültige Zeichen (vielleicht wurde er abgeschnitten)');
   const b = atob(text.replaceAll('-', '+').replaceAll('_', '/') + '='.repeat((4 - (text.length % 4)) % 4));
   return Uint8Array.from(b, (c) => c.charCodeAt(0));
@@ -75,6 +95,7 @@ export async function ausLink(adresse) {
 /** Datei-Export (lesbares JSON) und -Import. */
 export const exportDatei = (projekt) => JSON.stringify(paket(projekt), null, 2);
 export function importDatei(text) {
+  if (typeof text !== 'string' || text.length > TEXT_MAX) throw new TeilenFehler(`die Datei ist zu groß (mehr als ${TEXT_MAX / 1024 / 1024} MB)`);
   let d;
   try { d = JSON.parse(text); } catch { throw new TeilenFehler('die Datei ist kein gültiges JSON'); }
   return pruefe(d);

@@ -20,3 +20,14 @@ export function rueckfrage(entwurf, einwand, { runden }) {
   haengeAn(entwurf, 'rueckfrage', { id, frage, optionen: r.optionen });
   return r;
 }
+
+/**
+ * Der Bauleiter fragt Jonah, wenn ein Fachmann einen Auftrag nicht ausführen kann (statt zu raten). Legt einen eskalierten Einwand und die Rückfrage an.
+ * @returns {{entwurf: object, rueckfrage: object}} neue Kopie des Entwurfs
+ */
+export function stelleFrage(entwurf, { regel, an, ort, text, abschnitt = null, schluessel }) {
+  const e = structuredClone(entwurf);
+  const ew = { id: `E${e.zaehler.einwand++}`, von: 'bauleiter', an, regel, ort: { ...ort }, schwere: 'verstoss', ziel: null, abschnitt, text, schluessel, runde: 0, status: 'eskaliert' };
+  e.einwaende.push(ew);
+  return { entwurf: e, rueckfrage: rueckfrage(e, ew, { runden: 0 }) };
+}

@@ -11,7 +11,7 @@ export class RechtFehler extends Error {
 /**
  * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
  */
-export function erzeugeFachleute({ regelwerk }) {
+export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
   const P = (id, name) => regelwerk.parameter(id, name);
   const reihenfolge = P('plan.rangfolge', 'reihenfolge');
   const bauleiter = P('plan.rangfolge', 'bauleiter');
@@ -19,6 +19,8 @@ export function erzeugeFachleute({ regelwerk }) {
   const feldBesitz = P('plan.besitz', 'felder');
   const teilBesitz = P('plan.besitz', 'teile');
   const praefixe = P('plan.besitz', 'bausteinPraefix');
+  const funktionen = P('plan.zonenplan', 'funktionen');
+  const anker = P('plan.formen', 'anker');
 
   /** Rang (0 = höchster). Fixierung durch Jonah steht darüber (−1); der Bauleiter hat keinen Rang (Infinity: er ändert nichts selbst). */
   function rang(f) {
@@ -90,6 +92,7 @@ export function erzeugeFachleute({ regelwerk }) {
       case 'setze-palette': {
         ziel = 'palette';
         pruefeDarf(e, fachmann, ziel, feldBesitz.palette);
+        pruefePalette(aenderung.palette);
         e.palette = { ...e.palette, ...aenderung.palette };
         beschreibung = `Palette für ${Object.keys(aenderung.palette).join(', ')} gesetzt`;
         break;
@@ -101,6 +104,39 @@ export function erzeugeFachleute({ regelwerk }) {
         pruefeDarf(e, fachmann, ziel, feldBesitz.pruefungen);
         ersetzeOderFuegeEin(e.pruefungen, p);
         beschreibung = `Prüfauftrag ${p.id} (${p.art}) gesetzt`;
+        break;
+      }
+      case 'entferne-zone': {
+        const i = e.zonen.findIndex((x) => x.id === aenderung.id);
+        if (i < 0) throw new RechtFehler('ungueltig', `Zone ${String(aenderung.id)} existiert nicht`);
+        ziel = `zone:${aenderung.id}`;
+        pruefeDarf(e, fachmann, ziel, feldBesitz.zonen);
+        e.zonen.splice(i, 1);
+        beschreibung = `Zone ${aenderung.id} entfernt`;
+        break;
+      }
+      case 'setze-formwunsch': {
+        const w = aenderung.formwunsch;
+        ziel = `formwunsch:${w?.id}`;
+        if (typeof w?.id !== 'string' || typeof w.baustein !== 'string') throw new RechtFehler('ungueltig', 'Formwunsch braucht id und baustein');
+        if (!['form.', 'bau.'].some((pr) => w.baustein.startsWith(pr))) throw new RechtFehler('ungueltig', `Formwunsch: ${w.baustein} ist keine Form und kein Bauelement`);
+        if (!e.abschnitte.some((a) => a.id === w.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${String(w.abschnitt)} existiert nicht`);
+        if (!funktionen.includes(w.zone)) throw new RechtFehler('ungueltig', `Formwunsch: Zone „${String(w.zone)}“ unbekannt (${funktionen.join(', ')})`);
+        if (!anker.includes(w.anker ?? 'mitte')) throw new RechtFehler('ungueltig', `Formwunsch: Anker „${String(w.anker)}“ unbekannt (${anker.join(', ')})`);
+        pruefeDarf(e, fachmann, ziel, feldBesitz.formwuensche);
+        e.formwuensche ??= [];
+        ersetzeOderFuegeEin(e.formwuensche, { anker: 'mitte', parameter: {}, ...w });
+        beschreibung = `Formwunsch ${w.id} (${w.baustein}, Zone ${w.zone}, Anker ${w.anker ?? 'mitte'}) gesetzt`;
+        break;
+      }
+      case 'setze-abschnittspalette': {
+        ziel = `palette:${aenderung.abschnitt}`;
+        if (!e.abschnitte.some((a) => a.id === aenderung.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${String(aenderung.abschnitt)} existiert nicht`);
+        pruefeDarf(e, fachmann, ziel, feldBesitz.paletten);
+        pruefePalette(aenderung.palette);
+        e.paletten ??= {};
+        e.paletten[aenderung.abschnitt] = { ...(e.paletten[aenderung.abschnitt] ?? {}), ...aenderung.palette };
+        beschreibung = `Abschnittspalette für ${Object.keys(aenderung.palette).join(', ')} gesetzt`;
         break;
       }
       case 'setze-bedarf': {

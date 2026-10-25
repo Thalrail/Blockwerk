@@ -15,7 +15,7 @@ const imQuader = (z, q) => z.x >= q.von.x && z.x <= q.bis.x && z.y >= q.von.y &&
 /**
  * @param {{regelwerk: object, fachleute: ReturnType<typeof import('./fachleute.js').erzeugeFachleute>, materialisierung: object}} quellen
  */
-export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte = () => [] }) {
+export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte = () => [], zusaetze = () => [] }) {
   const tabelle = regelwerk.parameter('plan.zustaendigkeit', 'tabelle');
   const standard = regelwerk.parameter('plan.zustaendigkeit', 'standard');
   const maximum = regelwerk.parameter('plan.runden', 'maximum');
@@ -60,7 +60,8 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
     // Zonen des Grobdesigners: Teile eines Abschnitts bleiben in dessen Zone
     for (const z of entwurf.zonen) {
       if (!z.abschnitt) continue;
-      for (const t of entwurf.teile.filter((x) => x.abschnitt === z.abschnitt)) {
+      // eine Technikzone gilt nur für Technikteile, jede andere Zone für alle Teile des Abschnitts
+      for (const t of entwurf.teile.filter((x) => x.abschnitt === z.abschnitt && (z.funktion !== 'technik' || x.art === 'technik'))) {
         const draussen = [...mat.teile.get(t.id).schluessel].filter((k) => !imQuader(zelleVon(k), z));
         if (!draussen.length) continue;
         liste.push({ regel: 'plan.geometrie', von: 'grobdesigner', an: fachleute.besitzer(t), ort: zelleVon(kleinste(draussen)), schwere: 'verstoss', ziel: `teil:${t.id}`, abschnitt: t.abschnitt, text: `${t.baustein} (${t.id}) ragt aus der Zone ${z.id} des Abschnitts ${z.abschnitt}`, schluessel: `plan.geometrie|zone|${z.id}|${t.id}` });
@@ -70,6 +71,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
     for (const n of naehte(entwurf)) {
       for (const b of n.befunde) liste.push({ regel: 'plan.naht', von: 'bauleiter', an: 'konstrukteur', ort: b.ort, schwere: 'verstoss', ziel: `abschnitt:${n.abschnitt}`, abschnitt: n.abschnitt, text: b.text, schluessel: `plan.naht|${n.schnittstelle.id}|${b.text}` });
     }
+    liste.push(...zusaetze(entwurf));
     return liste;
   }
 
@@ -139,7 +141,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
         const aenderung = f(ew, e);
         if (!aenderung) continue;
         try {
-          e = fachleute.aendere(e, ew.an, aenderung).entwurf;
+          for (const a of Array.isArray(aenderung) ? aenderung : [aenderung]) e = fachleute.aendere(e, ew.an, a).entwurf;
           if (ew.ziel) geaendert.add(ew.ziel);
         } catch (fehler) {
           if (!(fehler instanceof RechtFehler)) throw fehler;

@@ -5,6 +5,7 @@ import { erzeugeFachleute } from './fachleute.js';
 import { erzeugeMaterialisierung } from './materialisiere.js';
 import { erzeugeEinwaende } from './einwand.js';
 import { erzeugeKonstrukteur } from './konstrukteur.js';
+import { erzeugeTechniker } from './techniker.js';
 
 export { VERSION, neuerEntwurf, kopie, pruefeForm, entwurfZuJson, entwurfAusJson } from './entwurf.js';
 export { haengeAn, berichtAlsText } from './bericht.js';
@@ -13,6 +14,7 @@ export { rueckfrage } from './bauleiter.js';
 export { erzeugeMaterialisierung } from './materialisiere.js';
 export { erzeugeEinwaende } from './einwand.js';
 export { erzeugeKonstrukteur, GliederungFehler } from './konstrukteur.js';
+export { erzeugeTechniker, BedarfFehler } from './techniker.js';
 
 /**
  * @param {{ebene0: object, ebene1: object, ebene2: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
@@ -21,10 +23,12 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
   const fachleute = erzeugeFachleute({ regelwerk });
   const materialisierung = erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 });
   const konstrukteur = erzeugeKonstrukteur({ regelwerk, fachleute, ebene2 });
-  const einwaende = erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte: konstrukteur.naehte });
+  const techniker = erzeugeTechniker({ regelwerk, fachleute, ebene1, ebene2, materialisierung });
+  const einwaende = erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte: konstrukteur.naehte, zusaetze: techniker.einwaende });
   return {
     fachleute,
     konstrukteur,
+    techniker,
     aendere: fachleute.aendere,
     fixiere: fachleute.fixiere,
     materialisiere: materialisierung.materialisiere,

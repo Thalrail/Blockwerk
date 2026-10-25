@@ -103,6 +103,27 @@ export function erzeugeFachleute({ regelwerk }) {
         beschreibung = `Prüfauftrag ${p.id} (${p.art}) gesetzt`;
         break;
       }
+      case 'setze-bedarf': {
+        const b = aenderung.bedarf;
+        ziel = `bedarf:${b?.id}`;
+        if (typeof b?.id !== 'string' || typeof b.art !== 'string') throw new RechtFehler('ungueltig', 'Bedarf braucht id und art');
+        if (!e.abschnitte.some((a) => a.id === b.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${String(b.abschnitt)} existiert nicht`);
+        pruefeDarf(e, fachmann, ziel, feldBesitz.bedarf);
+        e.bedarf ??= [];
+        ersetzeOderFuegeEin(e.bedarf, b);
+        beschreibung = `Bedarf ${b.id} (${b.art}) im Abschnitt ${b.abschnitt} gesetzt`;
+        break;
+      }
+      case 'setze-anfrage': {
+        const a = aenderung.anfrage;
+        ziel = `anfrage:${a?.id}`;
+        if (typeof a?.id !== 'string' || typeof a.bedarf !== 'string') throw new RechtFehler('ungueltig', 'Schaltungsanfrage braucht id und bedarf');
+        pruefeDarf(e, fachmann, ziel, feldBesitz.anfragen);
+        e.anfragen ??= [];
+        ersetzeOderFuegeEin(e.anfragen, { status: 'offen', ...a });
+        beschreibung = `Schaltungsanfrage ${a.id} für ${a.bedarf} gesetzt`;
+        break;
+      }
       case 'setze-teil': {
         const t = { ...aenderung.teil };
         if (typeof t.baustein !== 'string' || typeof t.abschnitt !== 'string') throw new RechtFehler('ungueltig', 'Teil braucht baustein und abschnitt');

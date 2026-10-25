@@ -15,6 +15,8 @@ const SAETZE = {
   rueckfrage: (d) => `Frage an Jonah (${d.id}): ${d.frage} Optionen: ${d.optionen.map((o, i) => `${i + 1}) ${o.text}`).join('; ')}.`,
   entscheidung: (d) => `${name(d.von)} entscheidet: ${d.text}.`,
   fixierung: (d) => `${name(d.von)} fixiert ${d.ziel}: ${d.text}.`,
+  bilanz: (d) => `Gesamtbilanz nach ${d.abschnitte} fertigen Abschnitten: ${d.betten} gültige Betten, ${d.dorfbewohner} Dorfbewohner, ${d.berufsbloecke} Berufsblöcke, Iron Golem: ${d.golem}.`,
+  anfrage: (d) => `Schaltungsanfrage ${d.id}: für den Bedarf „${d.art}“ (${d.bedarf}) im Abschnitt ${d.abschnitt} gibt es noch kein Modul.`,
   abschnitt: (d) => `Abschnitt ${d.abschnitt}: ${d.text}.`,
 };
 

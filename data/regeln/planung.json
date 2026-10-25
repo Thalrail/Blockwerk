@@ -25,14 +25,16 @@
     {
       "id": "plan.besitz",
       "titel": "Jeder ändert nur seinen eigenen Teil",
-      "regel": "Der Konstrukteur besitzt Abschnitte, Prüfaufträge und Verbindungen (Teile mit „verbindung“: Gänge, Treppen, Schienen zwischen Abschnitten), der Grobdesigner die Zonen, der Techniker Technikteile und Sperrzonen, der Architekt Formen und Bauelemente, der Designer die Palette. Fremde Felder zu ändern ist ein Fehler. Die Art eines Teils folgt aus dem Baustein (form. = Form, bau. = Bauelement, tech. = Technik), außer es ist ausdrücklich eine Verbindung.",
+      "regel": "Der Konstrukteur besitzt Abschnitte, Prüfaufträge und Verbindungen (Teile mit „verbindung“: Gänge, Treppen, Schienen zwischen Abschnitten), der Grobdesigner die Zonen, der Techniker außerdem den Bedarf und die Schaltungsanfragen, Technikteile und Sperrzonen, der Architekt Formen und Bauelemente, der Designer die Palette. Fremde Felder zu ändern ist ein Fehler. Die Art eines Teils folgt aus dem Baustein (form. = Form, bau. = Bauelement, tech. = Technik), außer es ist ausdrücklich eine Verbindung.",
       "parameter": {
         "felder": {
           "abschnitte": "konstrukteur",
           "pruefungen": "konstrukteur",
           "zonen": "grobdesigner",
           "sperrzonen": "techniker",
-          "palette": "designer"
+          "palette": "designer",
+          "bedarf": "techniker",
+          "anfragen": "techniker"
         },
         "teile": {
           "form": "architekt",
@@ -98,7 +100,7 @@
     {
       "id": "plan.geometrie",
       "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
-      "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin. Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",
+      "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Technikzone gilt nur für Technikteile). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",
       "parameter": {
         "pruefstart": {
           "tech.antriebsstrecke": {
@@ -172,6 +174,55 @@
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Konstrukteur, Ablauf: Vorlauf)",
       "status": "simuliert",
       "simulationstest": "test/ebene3/konstrukteur.test.js::Konstrukteur: Nähte prüfen",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.bedarf",
+      "titel": "Bedarf wird zu Modulen oder zu einer Schaltungsanfrage",
+      "regel": "Der Techniker macht aus dem Bedarf eines Abschnitts Technikmodule aus Ebene 2: Handelsnischen (höchstens 256 je Modul) und Sortierlager (höchstens 48 Sorten je Modul); mehr Bedarf heißt mehr Module, nie größere (Technik skaliert über Anzahl). Für jeden anderen Bedarf gibt es noch keine Schaltung: Er stellt eine Schaltungsanfrage, statt eine zu erfinden. Die Module stehen deterministisch in Reihen in der Technikzone des Abschnitts (Zone des Grobdesigners mit Funktion „technik“), mit Abstand zueinander. Passt der Bedarf nicht hinein, erhebt er Einwand an den Grobdesigner mit dem Mindestmaß (eine Reihe aller Module). Um jede Handelsnische setzt er eine Sperrzone „keine Arbeitsblöcke“ im Umkreis, in dem Dorfbewohner Berufsblöcke beanspruchen (16 Blöcke waagerecht, 4 senkrecht).",
+      "parameter": {
+        "arten": {
+          "handelsnischen": {
+            "baustein": "tech.handelsnischen",
+            "menge": "anzahl",
+            "maximum": 256
+          },
+          "lager": {
+            "baustein": "tech.sortierlager",
+            "liste": "sorten",
+            "maximum": 48
+          }
+        },
+        "umkreis": {
+          "waagerecht": 16,
+          "senkrecht": 4
+        },
+        "abstand": 2,
+        "zonenfunktion": "technik"
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Techniker, Ablauf je Abschnitt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/techniker.test.js::Techniker: Bedarf, Module und Anfragen",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.bilanz",
+      "titel": "Gesamtbilanz über die fertigen Abschnitte",
+      "regel": "Nach jedem fertigen Abschnitt rechnet der Techniker über alle fertigen Abschnitte zusammen (Welt aus Ebene 0, Dorfmodell aus Ebene 1): gültige Betten, Dorfbewohner, Berufsblöcke und die Bedingung für Iron Golems (ja, nein oder unklar). Fordert ein Bedarf einen Iron Golem (oder ausdrücklich keinen) und die Bilanz widerspricht, ist das ein Einwand an den Techniker selbst.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Techniker, Ablauf je Abschnitt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/techniker.test.js::Techniker: Bilanz und Einspruch",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.einspruch",
+      "titel": "Einspruch gegen die Reihenfolge",
+      "regel": "Nennt ein Bedarf Abschnitte, die zuerst fertig sein müssen („braucht“, z. B. das Lager vor den Einwurfschächten), und die Gliederung stellt einen davon hinter den Abschnitt des Bedarfs, erhebt der Techniker Einwand an den Konstrukteur. Der Konstrukteur löst ihn mit einer zusätzlichen Abhängigkeit; ein Kreis wird abgelehnt.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 3: Techniker, Ablauf je Abschnitt)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/techniker.test.js::Techniker: Bilanz und Einspruch",
       "ungeprueft": false
     }
   ]

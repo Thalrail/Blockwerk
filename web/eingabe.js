@@ -25,7 +25,7 @@ function frageHtml(f, offen) {
 }
 
 /** Die ganze Seite als HTML. */
-export function seite(e, { name, hatProjekt }) {
+export function seite(e, { name, hatProjekt, raumAktiv = false }) {
   const p = e.pruef, spec = e.spec;
   const teile = spec?.teile ?? [];
   const busy = e.arbeitet ? `<div class="klein arbeitet">${esc(e.arbeitet)} …</div>` : '';
@@ -57,6 +57,7 @@ export function seite(e, { name, hatProjekt }) {
       <p class="klein">Version ${esc(spec.version)}${e.vorher ? ` (vorher ${esc(e.vorher.version)})` : ''}. So hat Blockwerk die Spezifikation verstanden:</p>
       ${p.vergleich ? vergleichHtml(p.vergleich) : ''}
       <pre class="text">${esc(p.zusammenfassung || 'Die Zusammenfassung erscheint, sobald die Spezifikation das Schema erfüllt.')}</pre>
+      ${raumAktiv ? `<label class="klein"><input id="e-im-raum" type="checkbox" ${e.imRaum !== false ? 'checked' : ''}> Auch im Live-Raum veröffentlichen (die Freunde bekommen die neue Version zum Übernehmen)</label>` : ''}
       <div class="knoepfe"><button class="gut" data-a="e-freigeben" ${p.freigebbar && name.trim() ? '' : 'disabled'}>Freigeben und Bauplan erstellen</button>
       <span class="klein">${!p.freigebbar ? 'Erst alle Rückfragen beantworten.' : name.trim() ? `Freigabe durch ${esc(name.trim())}.` : 'Bitte oben deinen Spielernamen eintragen.'}</span></div></div>` : '';
     rest = bilder + fragen + freigabe;
@@ -156,6 +157,7 @@ export async function aktion(name, el, k) {
     try {
       const r = await k.anfrage({ typ: 'freigebe', spezifikation: e.spec, von: k.name().trim(), messungen: e.messungen });
       e.arbeitet = null; k.speichern();
+      if (e.imRaum !== false && k.live?.istVerbunden()) k.live.veroeffentliche(r.spezifikation);
       k.startProjekt(r.spezifikation, null, e.messungen);
       return;
     } catch (f) { e.meldung = String(f.message ?? f); e.arbeitet = null; k.render(); }

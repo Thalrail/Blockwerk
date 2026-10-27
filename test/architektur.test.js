@@ -99,3 +99,29 @@ test('Keine Original-Mojang-Texturen im Repo: Bilder nur als benötigte Faithful
   assert.match(readFileSync(join(erlaubt, 'FAITHFUL-LICENSE.txt'), 'utf8'), /FAITHFUL LICENSE/);
   assert.ok(readFileSync(join(wurzel, 'index.html'), 'utf8').includes('https://faithfulpack.net/license'));
 });
+
+test('Dienst (dienst/): nur Verdrahtung – importiert nur die Live-Logik, hat keine Schlüssel oder Konto-Angaben im Repo', () => {
+  const importRe = /(?:import|export)\s[^;]*?from\s+['"]([^'"]+)['"]/g;
+  const erlaubt = new Set([join(wurzel, 'src', 'ebene5', 'live.js'), join(wurzel, 'dienst', 'raum.js')]);
+  for (const datei of [...dateien(join(wurzel, 'dienst')), join(wurzel, 'dienst', 'wrangler.toml')]) {
+    const text = readFileSync(datei, 'utf8');
+    if (datei.endsWith('.js')) for (const m of text.matchAll(importRe)) {
+      const ziel = m[1];
+      if (!ziel.startsWith('.')) { assert.equal(ziel, 'cloudflare:workers', `${datei} importiert ${ziel}`); continue; }
+      assert.ok(erlaubt.has(resolve(dirname(datei), ziel)), `${relative(wurzel, datei)} importiert ${ziel}`);
+    }
+    assert.doesNotMatch(text, /(api[_-]?key|secret|token|password|account_id|zone_id)\s*[=:]/i, relative(wurzel, datei));
+  }
+});
+
+test('Live-Logik (src/ebene5/live.js) hat feste Grenzen und kennt weder Netz noch Uhr', () => {
+  const text = readFileSync(join(wurzel, 'src', 'ebene5', 'live.js'), 'utf8');
+  assert.doesNotMatch(text, /WebSocket|fetch\(|setTimeout|setInterval|Date|Math\.random/);
+});
+
+test('Keine lokalen Cache- oder Konto-Dateien von Werkzeugen im Repo (.wrangler enthält Konto-Kennung und E-Mail)', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const getrackt = execFileSync('git', ['ls-files'], { cwd: wurzel, encoding: 'utf8' }).split('\n').filter(Boolean);
+  assert.deepEqual(getrackt.filter((p) => /(^|\/)\.wrangler\//.test(p)), []);
+  assert.match(readFileSync(join(wurzel, '.gitignore'), 'utf8'), /\.wrangler\//);
+});

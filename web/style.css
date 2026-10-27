@@ -106,3 +106,13 @@ body.pip { display: block; } body.pip #fuss, body.pip #toast { display: none; }
 .eingabe .gut-text { color: var(--gut); font-weight: 600; }
 .eingabe select { background: var(--flaeche2); border: 1px solid var(--linie); border-radius: var(--radius); padding: 5px 8px; }
 .eingabe pre.text { max-height: 40vh; overflow: auto; }
+
+/* Live mit Freunden (Teil 6e) */
+.live { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--linie); background: var(--flaeche2); }
+.live .abstand { flex: 1; }
+.live.status .punkt { width: 10px; height: 10px; border-radius: 50%; background: var(--leise); }
+.live.status.gut .punkt { background: var(--gut); } .live.status.warn .punkt { background: var(--warn); }
+.live.panel { display: block; } .live.panel p { margin: 4px 0; }
+.live.vorschlag { background: var(--flaeche); border-left: 4px solid var(--akzent); }
+.live.einladung { background: var(--flaeche); border-left: 4px solid var(--warn); }
+.live code { background: var(--flaeche); padding: 1px 5px; border-radius: 4px; }

@@ -1,0 +1,16 @@
+# Blockwerk-Dienst (Cloudflare Worker + Durable Object). Anleitung: dienst/README.md
+name = "blockwerk-live"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Erlaubte Seiten (Ursprung = Adresse ohne Pfad), kommagetrennt. Auf die Adresse eintragen, unter der Blockwerk läuft (GitHub Pages).
+ERLAUBTE_URSPRUENGE = "https://thalrail.github.io,http://localhost:8080,http://127.0.0.1:8080"
+
+[[durable_objects.bindings]]
+name = "RAUM"
+class_name = "Raum"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Raum"]

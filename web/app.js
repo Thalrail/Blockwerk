@@ -7,6 +7,7 @@ import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
 import * as Eingabe from './eingabe.js';
 import * as Tex from './texturen.js';
+import * as Live from './live.js';
 
 const FLAECHEN_MAX = 3_000_000;
 
@@ -22,7 +23,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, messungen: [], e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -73,7 +74,14 @@ function nachDemBauen() {
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
 }
 
-function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); }
+function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); live?.lokalGeaendert(z.fortschritt); }
+
+// ---------- Live mit Freunden ----------
+const live = Live.erzeugeLive({
+  z, render: () => render(), toast: (t) => toast(t), name: () => z.name, projekt: () => z.spec, fortschritt: () => z.fortschritt,
+  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a),
+  plan: () => z.daten?.plan ?? null, merke: (k, v) => speicher.schreib(k, v), gespeicherterDienst: () => speicher.lies('blockwerk.dienst', ''),
+});
 
 // ---------- Hilfen ----------
 const plan = () => z.daten.plan;
@@ -177,6 +185,7 @@ function kopf() {
     ${z.daten ? `<button data-a="modus" title="Taste M">${kompakt ? 'Vollansicht' : 'Kompaktmodus'}</button>
     <button data-a="pip" title="Kleines Fenster, das immer im Vordergrund bleibt (Chrome/Edge)">Immer im Vordergrund</button>
     <button data-a="link">Link kopieren</button><button data-a="sichern">Datei sichern</button>` : ''}
+    <button data-a="live-offen" title="Gemeinsam mit Freunden abhaken">Live</button>
     <button data-a="${z.seite === 'eingabe' ? 'eingabe-zu' : 'eingabe-offen'}">${z.seite === 'eingabe' ? (z.daten ? 'Zurück zum Bauplan' : 'Schließen') : 'Neue Vorlage'}</button>
     <button data-a="oeffnen">Datei öffnen</button><input id="datei" type="file" accept=".json,application/json" hidden>
   </header>`;
@@ -274,9 +283,9 @@ function kompaktansicht() {
 
 function render() {
   const aktiv = document.activeElement?.id === 'name';
-  let html = kopf();
+  let html = kopf() + live.leiste(z.liveOffen, z.einladung);
   if (z.status) html += rechnet();
-  else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec });
+  else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec, raumAktiv: live.istVerbunden() });
   else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
   else if (z.rueckfragen) html += `<section class="start"><h2>Rückfragen vor dem Bauen</h2><p>Die Spezifikation hat noch offene Fragen. Das Beantworten kommt in einem nächsten Schritt; so lange gilt:</p><ul>${z.rueckfragen.map((q) => `<li>${esc(q.frage)}</li>`).join('')}</ul><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
   else if (!z.daten) html += startseite();
@@ -347,7 +356,21 @@ async function pip() {
 }
 
 // ---------- Aktionen ----------
+/** Klicks der Live-Leiste. */
+function liveAktion(name) {
+  if (name === 'live-offen') { z.liveOffen = true; render(); }
+  else if (name === 'live-zu') { z.liveOffen = false; render(); }
+  else if (name === 'live-start') { z.liveOffen = false; live.start(document.getElementById('live-dienst')?.value); }
+  else if (name === 'live-verbinden') live.verbinde();
+  else if (name === 'live-trennen') live.trennen();
+  else if (name === 'live-link') navigator.clipboard.writeText(live.link()).then(() => toast('Raum-Link kopiert. Wer ihn öffnet, ist live dabei.'));
+  else if (name === 'live-uebernehmen') live.uebernehmen();
+  else if (name === 'live-spaeter') live.spaeter();
+  else if (name === 'live-beitreten') { const e = z.einladung; z.einladung = null; live.beitreten(e.raum, e.dienst); }
+  else if (name === 'live-einladung-weg') { z.einladung = null; render(); }
+}
 const kontextEingabe = () => ({
+  live,
   e: z.e, render, toast, anfrage, startProjekt, name: () => z.name, projekt: () => z.spec,
   speichern: () => speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)),
 });
@@ -355,7 +378,8 @@ async function datenLaden(pfad) { const r = await fetch(new URL(`../${pfad}`, im
 async function aktion(name, el) {
   const d = el?.dataset ?? {};
   try {
-    if (name.startsWith('e-')) await Eingabe.aktion(name, el, kontextEingabe());
+    if (name.startsWith('live-')) liveAktion(name);
+    else if (name.startsWith('e-')) await Eingabe.aktion(name, el, kontextEingabe());
     else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
     else if (name === 'eingabe-zu') { z.seite = null; render(); }
     else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
@@ -415,6 +439,7 @@ document.addEventListener('change', (ev) => {
 });
 document.addEventListener('change', async (ev) => {
   if (ev.target.id === 'e-bild' && ev.target.files[0]) { const f = ev.target.files[0]; ev.target.value = ''; await Eingabe.bildGewaehlt(f, kontextEingabe()); return; }
+  if (ev.target.id === 'e-im-raum') { z.e.imRaum = ev.target.checked; return; }
   if (ev.target.id === 'e-teil' || ev.target.id === 'e-art') { Eingabe.eingabeGeaendert(ev.target.id, ev.target.value, z.e); return; }
   if (ev.target.id !== 'datei' || !ev.target.files[0]) return;
   try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null); } catch (f) { z.fehler = String(f.message ?? f); render(); }
@@ -433,6 +458,13 @@ function fussnote() {
 /** Steckt in der Adresse ein Projekt (#p=…), wird es geöffnet; auch wenn der Link in ein schon offenes Fenster eingefügt wird. */
 async function linkPruefen() {
   try {
+    const r = Live.ausLink(location.href); // Einladung zu einem Live-Raum: erst nach Bestätigung verbinden
+    if (r) {
+      history.replaceState(null, '', location.pathname + location.search);
+      const saved = speicher.lies('blockwerk.live');
+      if (saved?.raum === r.raum && saved?.dienst === r.dienst) live.beitreten(r.raum, r.dienst); else { z.einladung = r; render(); }
+      return true;
+    }
     const p = await teilen.ausLink(location.href);
     if (!p) return false;
     history.replaceState(null, '', location.pathname + location.search);
@@ -447,4 +479,6 @@ window.addEventListener('hashchange', linkPruefen);
   if (await linkPruefen()) return;
   const gespeichert = speicher.lies('blockwerk.projekt');
   if (gespeichert) startProjekt(gespeichert);
+  const sitzung = speicher.lies('blockwerk.live'); // nach dem Neuladen wieder in den Raum
+  if (sitzung?.raum && sitzung?.dienst && z.name.trim()) live.beitreten(sitzung.raum, sitzung.dienst);
 })();

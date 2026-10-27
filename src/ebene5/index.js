@@ -16,6 +16,7 @@ export * as teilen from './teilen.js';
 export { erzeugeAtlas, WEISS } from './atlas.js';
 export { benoetigteBloecke, erzeugeIndex, loeseAuf } from './texturen.js';
 export * as eingabe from './eingabe.js';
+export * as live from './live.js';
 
 /**
  * @param {{ebene0: object, ebene3: object, darstellungsdaten: {farben: object[], namen: object}, texturen?: object | null}} quellen

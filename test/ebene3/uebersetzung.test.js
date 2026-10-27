@@ -174,3 +174,49 @@ test('Übersetzung: Vergleich zweier Fassungen', () => {
   const weg = U.vergleicheVorgaben(alt, U.uebersetze(spec([A, B('neben-osten')])).vorgabe);
   assert.deepEqual([weg.entfernt, weg.geaendert], [['c'], []]);
 });
+
+test('Übersetzung: strahlenförmige Lage (acht Richtungen, mittig auf dem Strahl, Lücke eingehalten)', () => {
+  const B = (relation, abstand) => teil('b', { bezug: 'a', relation, ...(abstand !== undefined ? { abstand } : {}) }, zyl(6, 6, 4)); // Hülle 14 × 14 × 4
+  const strahl = (richtung, abstand) => { const r = U.uebersetze(spec([A, B(`strahl-${richtung}`, abstand)])); assert.deepEqual(r.rueckfragen, [], richtung); return huelle(r.vorgabe, 'b'); };
+  const a = huelle(U.uebersetze(spec([A])).vorgabe, 'a'); // 101..118, 111..128
+  const frei = (h, g) => Math.max(h.von.x - a.bis.x - 1, a.von.x - h.bis.x - 1, h.von.z - a.bis.z - 1, a.von.z - h.bis.z - 1) >= g;
+  const mitten = (h) => [(h.von.x + h.bis.x) / 2, (h.von.z + h.bis.z) / 2];
+  const am = mitten(a), richtungen = { norden: [0, -1], nordost: [1, -1], osten: [1, 0], suedost: [1, 1], sueden: [0, 1], suedwest: [-1, 1], westen: [-1, 0], nordwest: [-1, -1] };
+  // gerade Richtungen = „neben“ (gleiche Lücke, mittig)
+  for (const [s, n] of [['norden', 'neben-norden'], ['osten', 'neben-osten'], ['sueden', 'neben-sueden'], ['westen', 'neben-westen']]) {
+    assert.deepEqual(strahl(s), huelle(U.uebersetze(spec([A, B(n)])).vorgabe, 'b'), `${s} wie ${n}`);
+  }
+  for (const g of [8, 3, 0]) {
+    const h = {};
+    for (const [r, [dx, dz]] of Object.entries(richtungen)) {
+      h[r] = strahl(r, g);
+      assert.ok(frei(h[r], g), `${r}: Lücke ${g} frei`);
+      assert.equal(h[r].von.y, a.von.y, 'gleiche Bodenhöhe');
+      // Mitte liegt auf dem Strahl (höchstens ein halber Block daneben durch die Rundung)
+      const [mx, mz] = mitten(h[r]), vx = mx - am[0], vz = mz - am[1], n = Math.hypot(dx, dz);
+      const quer = Math.abs(vx * (dz / n) - vz * (dx / n));
+      assert.ok(quer <= 1, `${r}: ${quer} neben dem Strahl`);
+      assert.ok(vx * dx + vz * dz > 0, `${r}: in der richtigen Richtung`);
+    }
+    // Gegenrichtungen spiegeln sich an der Mitte des Bezugs (bis auf Rundung)
+    for (const [r1, r2] of [['norden', 'sueden'], ['osten', 'westen'], ['nordost', 'suedwest'], ['nordwest', 'suedost']]) {
+      const m1 = mitten(h[r1]), m2 = mitten(h[r2]);
+      assert.ok(Math.abs(m1[0] + m2[0] - 2 * am[0]) <= 1 && Math.abs(m1[1] + m2[1] - 2 * am[1]) <= 1, `${r1}/${r2} symmetrisch`);
+    }
+    // so nah wie möglich: ein Block weiter innen wäre nicht mehr frei (Strahlenabstand um 1 verkleinert)
+    for (const r of Object.keys(richtungen)) {
+      const [dx, dz] = richtungen[r], n = Math.hypot(dx, dz), [mx, mz] = mitten(h[r]);
+      const s = Math.hypot(mx - am[0], mz - am[1]);
+      const px = Math.round(am[0] + (dx / n) * (s - 1) - 6.5), pz = Math.round(am[1] + (dz / n) * (s - 1) - 6.5);
+      assert.ok(!frei({ von: { x: px, z: pz }, bis: { x: px + 13, z: pz + 13 } }, g), `${r} g=${g}: nicht näher möglich`);
+    }
+  }
+  // Rückfrage statt Raten: auf dem Bauplatz gibt es keinen Strahl; unbekannte Richtung wird von Prüfer/Übersetzung abgelehnt
+  const r = U.uebersetze(spec([teil('a', { bezug: 'projekt', relation: 'strahl-norden' })]));
+  assert.equal(r.rueckfragen.length, 1);
+  assert.match(r.rueckfragen[0].frage, /passt nicht zum Bauplatz/);
+  const x = U.uebersetze(spec([A, B('strahl-oben')]));
+  assert.equal(x.rueckfragen.length, 1);
+  // deterministisch
+  assert.deepEqual(strahl('suedost', 5), strahl('suedost', 5));
+});

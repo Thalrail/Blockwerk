@@ -15,7 +15,7 @@ const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v =
  */
 export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
   const P = (name) => regelwerk.parameter('plan.uebersetzung', name);
-  const rand = P('rand'), luecke = P('luecke'), toleranz = P('toleranz'), erlaubtProjekt = P('relationenProjekt'), erlaubtTeil = P('relationenTeil');
+  const rand = P('rand'), luecke = P('luecke'), toleranz = P('toleranz'), erlaubtProjekt = P('relationenProjekt'), erlaubtTeil = P('relationenTeil'), strahlen = P('strahlen');
   const alleRelationen = Object.keys(regelwerk.parameter('leser.schema', 'relationen'));
   const rund = regelwerk.parameter('leser.messung', 'bausteinform').rund;
   void ID;
@@ -114,7 +114,15 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
         y0 = h.von.y;
         if (rel === 'ueber') { x0 = cx; z0 = cz; y0 = h.bis.y + 1 + (abstand ?? 0); }
         else if (rel === 'unter') { x0 = cx; z0 = cz; y0 = h.von.y - H - (abstand ?? 0); }
-        else if (rel.startsWith('neben')) {
+        else if (rel.startsWith('strahl-')) {
+          // mittig auf dem Strahl von der Mitte des Bezugs: so nah, dass die Hüllen mit Lücke g nicht überlappen (acht Richtungen, Richtungsvektoren als Daten)
+          const [dx, dz] = strahlen[rel.slice(7)], n = Math.hypot(dx, dz);
+          const bx = (h.von.x + h.bis.x) / 2, bz = (h.von.z + h.bis.z) / 2;
+          for (let s = 0; s < 8192; s++) {
+            const px = Math.round(bx + (dx / n) * s - (W - 1) / 2), pz = Math.round(bz + (dz / n) * s - (D - 1) / 2);
+            if (px + W - 1 + g < h.von.x || px > h.bis.x + g || pz + D - 1 + g < h.von.z || pz > h.bis.z + g) { x0 = px; z0 = pz; break; }
+          }
+        } else if (rel.startsWith('neben')) {
           x0 = cx; z0 = cz;
           if (rel === 'neben-osten') x0 = h.bis.x + 1 + g;
           if (rel === 'neben-westen') x0 = h.von.x - g - W;

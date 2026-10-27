@@ -15,8 +15,23 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   /** Palette des Entwurfs über der Testpalette (Rolle → Block oder Block je Form). */
   const paletteVon = (entwurf, abschnitt) => ({ ...TESTPALETTE, ...entwurf.palette, ...(entwurf.paletten?.[abschnitt] ?? {}) });
 
+  // Ein Teil ist eine reine Funktion von Baustein, Parametern, Lage und Palette: unveränderte Teile werden nicht in jeder Einwand-Runde neu gebaut
+  // (bei der Zitadelle waren das mehrere hundert Wiederholungen). Die Einträge werden nur gelesen; der Speicher ist auf wenige Dutzend Teile begrenzt.
+  const teilSpeicher = new Map();
+  const TEIL_SPEICHER_MAX = 96;
+
   /** Baut ein Teil: Paket, gedrehte und verschobene Blöcke, Blockschlüssel, Hülle, Startpunkt für die Lorenprüfung. */
   function baueTeil(entwurf, teil) {
+    const schluesselTeil = JSON.stringify([teil.baustein, teil.parameter, teil.lage, paletteVon(entwurf, teil.abschnitt)]);
+    const gemerkt = teilSpeicher.get(schluesselTeil);
+    if (gemerkt) { teilSpeicher.delete(schluesselTeil); teilSpeicher.set(schluesselTeil, gemerkt); return gemerkt; } // zuletzt benutzt nach hinten
+    const t = baueTeilNeu(entwurf, teil);
+    teilSpeicher.set(schluesselTeil, t);
+    if (teilSpeicher.size > TEIL_SPEICHER_MAX) teilSpeicher.delete(teilSpeicher.keys().next().value);
+    return t;
+  }
+
+  function baueTeilNeu(entwurf, teil) {
     const paket = ebene2.baue(teil.baustein, teil.parameter);
     const w = ebene0.neueWelt();
     ebene2.platziere(w, paket, paletteVon(entwurf, teil.abschnitt));

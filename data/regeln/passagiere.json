@@ -1,0 +1,68 @@
+{
+  "bereich": "passagiere",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "passagiere.art",
+      "titel": "Passagiere: Wesen, die in Loren sitzen",
+      "regel": "Eine Lore nimmt höchstens ein Wesen auf; das Wesen steht auf der Position der Lore und fährt mit. Blockwerk rechnet Passagiere für Dorfbewohner (erwachsen und Baby) und Spieler; für andere Arten gibt es noch keine Bewegungsregeln.",
+      "parameter": {
+        "dorfbewohnerIds": [
+          "minecraft:villager_v2",
+          "minecraft:villager"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Minecart (Mobs und Spieler als Passagiere)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene0/welt.test.js::Passagiere: ein Wesen sitzt in einer Lore (höchstens eines), fährt mit und überlebt Kopie, Ausschnitt, Drehen, Verschieben und Speichern",
+      "ungeprueft": false
+    },
+    {
+      "id": "passagiere.auswurf",
+      "titel": "Aktivierungsschiene wirft den Passagier aus (Reihenfolge der Austrittszellen)",
+      "regel": "Eine eingeschaltete Aktivierungsschiene wirft den Passagier einer Lore aus, die auf ihr steht oder über sie fährt. Der Passagier steigt in der ersten brauchbaren Zelle aus, in dieser Reihenfolge relativ zur Fahrtrichtung der Lore: rechts, links, hinten rechts, hinten links, vorn rechts, vorn links, hinten, vorn, dann eine Zelle höher, dann eine tiefer. Brauchbar heißt: Platz für den Körper (Dorfbewohner 2 Blöcke hoch, Baby 1) und, solange `bodenNoetig` gilt, tragender Boden oder Wasser. Keine brauchbare Zelle: der Passagier bleibt sitzen.",
+      "parameter": {
+        "reihenfolge": [
+          "rechts",
+          "links",
+          "hinten-rechts",
+          "hinten-links",
+          "vorn-rechts",
+          "vorn-links",
+          "hinten",
+          "vorn",
+          "oben",
+          "unten"
+        ]
+      },
+      "quelle": "https://minecraft.wiki/w/Minecart (Dismounting: Reihenfolge der acht Nachbarzellen, dann eine Zelle höher, dann tiefer; ob diese Reihenfolge in Bedrock gilt, nennt das Wiki nicht) und https://minecraft.wiki/w/Activator_Rail",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/passagiere.test.js::Passagiere: Auswurf in der Reihenfolge der Austrittszellen",
+      "ungeprueft": true,
+      "testanleitung": "Kreativwelt: gerade Schiene (Fahrtrichtung Ost), in der Mitte eine Aktivierungsschiene mit Redstone-Block daneben, auf beiden Seiten und davor/dahinter freie Plätze. Dorfbewohner in eine Lore setzen (mit einem Boot oder Spawn-Ei und Lore) und über die Aktivierungsschiene fahren. Auf welcher Seite steigt er aus (rechts = Süden bei Fahrt nach Osten)? Danach die rechte Seite mit einem Block sperren: nimmt er die linke? Alles bitte notieren."
+    },
+    {
+      "id": "passagiere.auswurf-ort",
+      "titel": "Austrittszelle: Boden nötig?",
+      "regel": "Der Passagier steigt nur in einer Zelle aus, in der ein tragender Boden oder Wasser ist (Java: die Zelle braucht einen sicheren Boden höchstens einen Block unter dem Austrittsort; ein Loch ohne Boden gilt als unsicher). Bedrock nennt dazu nichts. Der Baustein der Lorenbahn-Nische ist deshalb so gebaut, dass die Austrittszelle über der Deckenöffnung von einer geschlossenen Falltür getragen wird und die Falltür erst danach öffnet.",
+      "parameter": {
+        "bodenNoetig": true
+      },
+      "quelle": "https://minecraft.wiki/w/Minecart (Java-Platzhalter für die Dismount-Regeln; Bedrock: nicht dokumentiert)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/passagiere.test.js::Passagiere: Austrittszelle braucht Platz und (Regel) Boden",
+      "ungeprueft": true,
+      "testanleitung": "Kreativwelt: Aktivierungsschiene, rechts daneben ein 1×1-Loch (3 Blöcke tief) mit Boden unten, links eine Wand. Steigt der Dorfbewohner ins Loch aus (Bedrock) oder bleibt er sitzen / steigt vorn/hinten aus (Java-Verhalten)? Danach das Loch mit einer geschlossenen Falltür abdecken: steht er dann auf der Falltür? Ergebnis bitte melden."
+    },
+    {
+      "id": "passagiere.auswurf-ctick",
+      "titel": "Aktivierungsschiene schaltet nur im C-Tick",
+      "regel": "Eine Aktivierungsschiene (wie jede Antriebsschiene) schaltet in Bedrock nur im C-Tick (Verbraucher-Tick). Der Auswurf läuft deshalb als Mechanismus im C-Tick, nicht in jedem Spieltick.",
+      "parameter": {},
+      "quelle": "https://minecraft.wiki/w/Activator_Rail (Bedrock: nur im Input/Consumer-Redstone-Tick)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/passagiere.test.js::Passagiere: Mechanik wirft nur im C-Tick aus (und nur auf einer eingeschalteten Aktivierungsschiene)",
+      "ungeprueft": false
+    }
+  ]
+}

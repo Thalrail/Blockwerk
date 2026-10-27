@@ -306,5 +306,34 @@ export function erzeugeBewegung({ regelwerk, register }) {
     return { ok: false, grund: `Ziel nicht begehbar: ${t.grund}` };
   }
 
-  return { wesenArt, erreichbar, weg, fallschaden };
+  /**
+   * Freier Fall senkrecht von einer Stelle aus: wo kommt das Wesen an, wie tief fällt es, welchen Schaden nimmt es?
+   * `von` = Zelle, in der die Füße stehen (Fußhöhe = Unterkante der Zelle). Wasser fängt den Sturz ab (Schaden 0), Lava und unklare Blöcke werden als Grund genannt.
+   * @returns {{ok: true, ziel: {x:number,y:number,z:number}, Y: number, hoehe: number, art: 'boden'|'wasser', schaden: number} | {ok: false, grund: string, unklar?: boolean}}
+   */
+  function faellt(welt, von, artName) {
+    const art = wesenArt(artName);
+    const w = werkzeug(welt, art);
+    const Y0 = 2 * von.y;
+    for (let Y = Y0; Y >= 2 * HOEHE_MIN; Y--) {
+      const r = w.raum(von.x, Y, von.z);
+      if (!r.ok && (r.grund === 'Lava' || r.unklar)) return { ok: false, grund: r.grund, unklar: r.unklar };
+      const s = w.stelle(von.x, Y, von.z);
+      if (!s.ok) { if (s.unklar) return { ok: false, grund: s.grund, unklar: true }; continue; }
+      const hoehe = s.art === 'wasser' ? 0 : (Y0 - Y) / 2;
+      return { ok: true, ziel: { x: von.x, y: Math.floor(Y / 2), z: von.z }, Y, hoehe, art: s.art, schaden: s.art === 'wasser' ? 0 : fallschaden(hoehe) };
+    }
+    return { ok: false, grund: 'kein Boden unter der Stelle' };
+  }
+
+  /** Ist an der Stelle (Fußzelle, Fußhöhe in Halbblöcken Y) Platz für den Körper und trägt dort etwas? Für die Wahl von Austrittszellen. */
+  function stehstelle(welt, ort, artName) {
+    const art = wesenArt(artName);
+    const w = werkzeug(welt, art);
+    const Y = 2 * ort.y;
+    const r = w.raum(ort.x, Y, ort.z);
+    return { platz: r.ok, grund: r.ok ? null : r.grund, unklar: r.unklar === true, traegt: r.ok ? w.stelle(ort.x, Y, ort.z).ok : false };
+  }
+
+  return { wesenArt, erreichbar, weg, fallschaden, faellt, stehstelle };
 }

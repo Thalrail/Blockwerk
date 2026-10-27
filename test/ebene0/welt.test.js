@@ -238,3 +238,61 @@ test('Welt: alleBloecke wird zwischengespeichert, bleibt bei jeder Änderung ric
     if (i % 7 === 0) assert.deepEqual(JSON.stringify(v.alleBloecke()), JSON.stringify(v.kopie().alleBloecke()), `Schritt ${i}`);
   }
 });
+
+test('Passagiere: ein Wesen sitzt in einer Lore (höchstens eines), fährt mit und überlebt Kopie, Ausschnitt, Drehen, Verschieben und Speichern', async () => {
+  const { ebene0 } = await import('../hilfe.js');
+  const { weltZuJson, weltAusJson } = await import('../../src/ebene0/speichern.js');
+  const e = ebene0(), v = e.vermesser;
+  const LORE = 'minecraft:minecart', DORF = 'minecraft:villager_v2';
+  const w = e.neueWelt();
+  const dorf = w.fuegeWesenHinzu({ id: DORF, x: 5.5, y: 1, z: 5.5 });   // Nummer 1
+  const lore = w.fuegeWesenHinzu({ id: LORE, x: 2.5, y: 1, z: 3.5 });   // Nummer 2 (höher als der Passagier)
+  const lore2 = w.fuegeWesenHinzu({ id: LORE, x: 9.5, y: 1, z: 9.5 });
+  w.setzePassagier(dorf, lore);
+  assert.deepEqual([w.passagier(lore).nr, w.passagier(lore).x, w.passagier(lore).z], [dorf, 2.5, 3.5], 'steht auf der Position der Lore');
+  assert.equal(w.passagier(lore2), null);
+  // Fehler
+  const fehler = (f, muster) => assert.throws(f, muster);
+  const zweiter = w.fuegeWesenHinzu({ id: DORF, x: 0.5, y: 1, z: 0.5 });
+  fehler(() => w.setzePassagier(zweiter, lore), /schon besetzt/);
+  fehler(() => w.setzePassagier(zweiter, dorf), /kein Fahrzeug/);
+  fehler(() => w.setzePassagier(zweiter, 99), /Kein Fahrzeug/);
+  fehler(() => w.setzePassagier(lore2, lore2), /selbst|Loren nehmen keine Loren/);
+  fehler(() => w.setzePassagier(lore2, lore), /Loren nehmen keine Loren|schon besetzt/);
+  fehler(() => w.fuegeWesenHinzu({ id: DORF, x: 0, y: 1, z: 0, sitztIn: lore }), /schon besetzt/);
+  // die Lore fährt, der Passagier fährt mit
+  w.setzeWesenPosition(lore, { x: 4.5, y: 2, z: 3.5 });
+  assert.deepEqual([w.passagier(lore).x, w.passagier(lore).y], [4.5, 2]);
+  assert.throws(() => w.setzeWesenPosition(lore, { x: 0, y: 9999, z: 0 }), /Höhe/);
+  // Kopie und Speichern behalten die Beziehung (auch wenn die Lore die höhere Nummer hat)
+  assert.equal(w.kopie().passagier(lore).nr, dorf);
+  const geladen = weltAusJson(weltZuJson(w), e.register);
+  assert.equal(geladen.passagier(lore).nr, dorf);
+  assert.deepEqual(geladen.wesen(), w.wesen());
+  assert.equal(weltZuJson(geladen), weltZuJson(w), 'kanonisch');
+  // Ausschnitt → drehen → verschieben → einfügen: der Passagier sitzt weiter in der Lore
+  const bauteil = w.ausschnitt({ x: 0, y: 0, z: 0 }, { x: 20, y: 10, z: 20 });
+  assert.equal(bauteil.wesen.filter((x) => x.sitztIn !== undefined).length, 1);
+  for (const viertel of [0, 1, 2, 3]) {
+    const t = v.verschiebe(v.drehe(bauteil, viertel), { x: 100, y: 5, z: -40 });
+    const z = e.neueWelt();
+    z.fuegeBauteilEin(t);
+    const lz = z.wesen().find((x) => x.id === LORE && z.passagier(x.nr));
+    assert.ok(lz, `Drehung ${viertel}: Lore mit Passagier`);
+    const p = z.passagier(lz.nr);
+    assert.equal(p.id, DORF);
+    assert.deepEqual([p.x, p.y, p.z], [lz.x, lz.y, lz.z], 'Passagier steht in der Lore');
+  }
+  // ein Passagier ohne seine Lore im Ausschnitt sitzt dort nicht mehr
+  const nurDorf = w.ausschnitt({ x: 4, y: 0, z: 3 }, { x: 4, y: 5, z: 4 });
+  assert.equal(nurDorf.wesen.length, 2);
+  const ohneLore = w.ausschnitt({ x: 100, y: 0, z: 100 }, { x: 101, y: 1, z: 101 });
+  assert.equal(ohneLore.wesen.length, 0);
+  // Aussteigen und Entfernen der Lore
+  w.steigeAus(dorf);
+  assert.equal(w.passagier(lore), null);
+  assert.deepEqual([w.wesen().find((x) => x.nr === dorf).x], [4.5], 'bleibt an der Stelle');
+  w.setzePassagier(dorf, lore);
+  w.entferneWesen(lore);
+  assert.equal(w.wesen().find((x) => x.nr === dorf).sitztIn, undefined, 'Lore weg: der Passagier sitzt nicht mehr');
+});

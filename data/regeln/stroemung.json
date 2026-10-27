@@ -1,0 +1,33 @@
+{
+  "bereich": "stroemung",
+  "datenstand": "1.26.50",
+  "regeln": [
+    {
+      "id": "stroemung.wasser",
+      "titel": "Strömung trägt Wesen in Strömungsrichtung",
+      "regel": "Fließendes Wasser trägt Wesen in Strömungsrichtung mit etwa 1,39 Blöcken je Sekunde. Die Richtung einer Zelle ist die Summe der Zuflüsse der vier waagerechten Nachbarn (zum Nachbarn mit niedrigerer Oberfläche hin); fallendes Wasser mit Wasser darunter trägt nach unten. Blockwerk folgt der Hauptachse Zelle für Zelle (Gleichstand: Nord, Ost, Süd, West) bis zum Ende.",
+      "parameter": {
+        "blockProSekunde": 1.39,
+        "maxSchritte": 4096
+      },
+      "quelle": "https://minecraft.wiki/w/Water (Strömung: rund 1,39 m/s; Richtung als Vektorsumme der Nachbarn; Bedrock)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/stroemung.test.js::Strömung: Richtung, Weg und Zeit im Kanal",
+      "ungeprueft": true,
+      "testanleitung": "Kreativwelt: 1 Block hoher Wasserkanal, Wasserquelle am Anfang, nach 7 Blöcken ein Block tiefer (Wasserfall) und weiter. Dorfbewohner in den Kanal setzen und mit der Stoppuhr messen: Wie lange bis zum Ende, wird er auch über das Gefälle mitgetragen, bleibt er irgendwo hängen? Dasselbe mit einer Wasserquelle allein."
+    },
+    {
+      "id": "stroemung.quelle",
+      "titel": "Quellblöcke schieben in Bedrock nicht",
+      "regel": "Ein Wasser-Quellblock (liquid_depth 0) trägt kein Wesen; seine waagerechte Strömung ist in Bedrock nur optisch. Ein Wesen auf einer Quelle bleibt stehen.",
+      "parameter": {
+        "schiebt": false
+      },
+      "quelle": "https://minecraft.wiki/w/Water (Bedrock: Strömung von Quellblöcken nur visuell)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene1/stroemung.test.js::Strömung: Quelle schiebt nicht",
+      "ungeprueft": true,
+      "testanleitung": "Kreativwelt: Dorfbewohner auf einen Wasser-Quellblock neben fließendem Wasser setzen: bewegt er sich, obwohl der Block eine Quelle ist?"
+    }
+  ]
+}

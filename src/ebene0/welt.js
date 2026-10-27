@@ -124,7 +124,7 @@ export class Welt {
 
   // ---------- Wesen ----------
   /**
-   * @param {{id:string, x:number, y:number, z:number, yaw?:number, baby?:boolean, name?:string}} w
+   * @param {{id:string, x:number, y:number, z:number, yaw?:number, baby?:boolean, name?:string, sitztIn?:number}} w  `sitztIn` = Nummer einer Lore, in der das Wesen sitzt (höchstens ein Passagier je Lore)
    * @returns {number} laufende Nummer des Wesens
    */
   fuegeWesenHinzu(w) {
@@ -139,14 +139,61 @@ export class Welt {
     if (baby && !reg.kannBaby(w.id)) throw new Error(`${w.id} hat keine Babyform`);
     if (w.name !== undefined && typeof w.name !== 'string') throw new Error('Wesen: name muss ein Text sein');
     const nr = this._naechsteNr++;
+    if (w.sitztIn !== undefined) this._pruefeFahrzeug(w.sitztIn, null, w.id);
     const eintrag = { nr, id: w.id, x: w.x, y: w.y, z: w.z, yaw: normalisiereYaw(yaw), baby };
     if (w.name !== undefined) eintrag.name = w.name;
+    if (w.sitztIn !== undefined) eintrag.sitztIn = w.sitztIn;
     this._wesen.set(nr, eintrag);
     return nr;
   }
 
   entferneWesen(nr) {
     if (!this._wesen.delete(nr)) throw new Error(`Kein Wesen mit Nummer ${nr}`);
+    for (const w of this._wesen.values()) if (w.sitztIn === nr) delete w.sitztIn; // die Lore ist weg: der Passagier sitzt nicht mehr
+  }
+
+  // ---------- Passagiere (Wesen in Loren) ----------
+  /** Prüft, ob `fahrzeugNr` eine freie Lore ist (und `passagierNr`, falls schon vorhanden, kein Fahrzeug und nicht dasselbe Wesen). */
+  _pruefeFahrzeug(fahrzeugNr, passagierNr, passagierId) {
+    const f = this._wesen.get(fahrzeugNr);
+    if (!f) throw new Error(`Kein Fahrzeug mit Nummer ${fahrzeugNr}`);
+    if (!this.register.wesen.lore().includes(f.id)) throw new Error(`${f.id} ist kein Fahrzeug (nur Loren nehmen Passagiere auf)`);
+    if (f.sitztIn !== undefined) throw new Error('Eine Lore kann nicht selbst in einem Fahrzeug sitzen');
+    if (passagierNr !== null && passagierNr === fahrzeugNr) throw new Error('Ein Wesen kann nicht in sich selbst sitzen');
+    if (passagierId !== undefined && this.register.wesen.lore().includes(passagierId)) throw new Error('Loren nehmen keine Loren mit');
+    for (const w of this._wesen.values()) if (w.sitztIn === fahrzeugNr && w.nr !== passagierNr) throw new Error('Die Lore ist schon besetzt');
+  }
+
+  /** Setzt ein Wesen in eine Lore; es steht danach auf deren Position und fährt mit. */
+  setzePassagier(nr, fahrzeugNr) {
+    const w = this._wesen.get(nr);
+    if (!w) throw new Error(`Kein Wesen mit Nummer ${nr}`);
+    this._pruefeFahrzeug(fahrzeugNr, nr, w.id);
+    const f = this._wesen.get(fahrzeugNr);
+    w.sitztIn = fahrzeugNr; w.x = f.x; w.y = f.y; w.z = f.z;
+  }
+
+  /** Das Wesen steigt aus (bleibt an seiner Stelle). */
+  steigeAus(nr) {
+    const w = this._wesen.get(nr);
+    if (!w) throw new Error(`Kein Wesen mit Nummer ${nr}`);
+    delete w.sitztIn;
+  }
+
+  /** Passagier einer Lore (Kopie) oder null. */
+  passagier(fahrzeugNr) {
+    for (const w of this._wesen.values()) if (w.sitztIn === fahrzeugNr) return { ...w };
+    return null;
+  }
+
+  /** Versetzt ein Wesen; sein Passagier fährt mit. */
+  setzeWesenPosition(nr, { x, y, z }) {
+    const w = this._wesen.get(nr);
+    if (!w) throw new Error(`Kein Wesen mit Nummer ${nr}`);
+    for (const [k, v] of [['x', x], ['y', y], ['z', z]]) if (!Number.isFinite(v)) throw new Error(`Wesen: ${k} muss eine Zahl sein`);
+    if (y < HOEHE_MIN || y > HOEHE_MAX + 1) throw new Error(`Wesen: Höhe y=${y} außerhalb des Weltbereichs`);
+    w.x = x; w.y = y; w.z = z;
+    for (const p of this._wesen.values()) if (p.sitztIn === nr) { p.x = x; p.y = y; p.z = z; }
   }
 
   /** Alle Wesen, sortiert nach Nummer (Kopien). */
@@ -208,11 +255,12 @@ export class Welt {
     const y1 = Math.min(a.y, b.y), y2 = Math.max(a.y, b.y);
     const z1 = Math.min(a.z, b.z), z2 = Math.max(a.z, b.z);
     const innen = (x, y, z) => x >= x1 && x <= x2 && y >= y1 && y <= y2 && z >= z1 && z <= z2;
+    // Im Bauteil gibt es keine Nummern: ein Passagier verweist mit `sitztIn` auf die Stelle seiner Lore in der Liste (nur, wenn beide im Quader liegen)
+    const drin = this.wesen().filter((w) => innen(Math.floor(w.x), Math.floor(w.y), Math.floor(w.z)));
+    const stelle = new Map(drin.map((w, i) => [w.nr, i]));
     return {
       bloecke: this.alleBloecke().filter((e) => innen(e.x, e.y, e.z)),
-      wesen: this.wesen()
-        .filter((w) => innen(Math.floor(w.x), Math.floor(w.y), Math.floor(w.z)))
-        .map(({ nr, ...rest }) => rest),
+      wesen: drin.map(({ nr, sitztIn, ...rest }) => (sitztIn !== undefined && stelle.has(sitztIn) ? { ...rest, sitztIn: stelle.get(sitztIn) } : rest)),
     };
   }
 
@@ -221,9 +269,15 @@ export class Welt {
     // Erst alles prüfen, dann schreiben: bei einem Fehler bleibt die Welt unverändert.
     const probe = new Welt(this.register);
     for (const b of bauteil.bloecke) probe.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, b.id, b.zustand, b.inhalt ?? null);
-    for (const w of bauteil.wesen) probe.fuegeWesenHinzu({ ...w, x: w.x + versatz.x, y: w.y + versatz.y, z: w.z + versatz.z });
+    probe._fuegeWesenEin(bauteil.wesen, versatz);
     for (const b of bauteil.bloecke) this.setzeBlock(b.x + versatz.x, b.y + versatz.y, b.z + versatz.z, b.id, b.zustand, b.inhalt ?? null);
-    for (const w of bauteil.wesen) this.fuegeWesenHinzu({ ...w, x: w.x + versatz.x, y: w.y + versatz.y, z: w.z + versatz.z });
+    this._fuegeWesenEin(bauteil.wesen, versatz);
+  }
+
+  /** Fügt die Wesen eines Bauteils ein; `sitztIn` (Stelle in der Liste) wird zur Nummer der neuen Lore. Bei einem Fehler wirft es (der Aufrufer prüft vorher in einer Probe-Welt). */
+  _fuegeWesenEin(liste, versatz) {
+    const nummern = liste.map(({ sitztIn, ...w }) => this.fuegeWesenHinzu({ ...w, x: w.x + versatz.x, y: w.y + versatz.y, z: w.z + versatz.z }));
+    liste.forEach((w, i) => { if (w.sitztIn !== undefined) { if (!nummern[w.sitztIn]) throw new Error(`Wesen ${i}: sitztIn verweist auf kein Wesen im Bauteil`); this.setzePassagier(nummern[i], nummern[w.sitztIn]); } });
   }
 
   kopie() {

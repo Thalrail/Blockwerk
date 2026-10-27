@@ -9,7 +9,7 @@ Kurz: eine Kopie von Minecraft Bedrock ohne Simulation und ohne Weltgenerator.
 - Koordinaten & Richtungen: x = Ost, z = Süd, y = oben; 1 Block = 1 Einheit; Chunk = 16×16; feste Namen für Richtungen (north/east/south/west/up/down) und Nullpunkt.
 - Blockregister: alle Blöcke von Bedrock 1.26.50 mit ID, erlaubten Zuständen (facing, half, open …) und reinen Eigenschaften (Vollblock, durchsichtig, Lichtstärke, fällt, braucht Halt, ist Arbeitsblock).
 - Wesenregister: Lore (alle Arten), Dorfbewohner (erwachsen/Baby), Spieler, Item; je Wesen die Hitbox-Größe als Fakt.
-- Voxelwelt: Block setzen, lesen, löschen; Speicherung in Chunks; Luft als Standard. Speichert zusätzlich, wo welches Wesen steht.
+- Voxelwelt: Block setzen, lesen, löschen; Speicherung in Chunks; Luft als Standard. Speichert zusätzlich, wo welches Wesen steht (und welches Wesen in einer Lore sitzt).
 - Blockinhalt: Inhalte von Trichter, Fass, Truhe, Werfer, Spender usw. (Gegenstand + Anzahl je Slot).
 - Vermesser: Verschieben, Drehen, Spiegeln; alle Richtungswerte werden automatisch mitgedreht.
 - Speichern/Laden: Welt (Blöcke, Wesen, Blockinhalte) verlustfrei als Datei sichern und wiederherstellen.

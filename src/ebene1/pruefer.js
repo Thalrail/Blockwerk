@@ -354,6 +354,35 @@ function pruefeSchienen(welt, schienen, bloecke) {
   return meldungen;
 }
 
+/** Passagiere an Aktivierungsschienen und Wesen im Wasser: wo steigt wer aus, wie tief fällt er, wohin trägt ihn die Strömung? */
+function pruefePassagiere(welt, pa, stroemung) {
+  const meldungen = [];
+  const ort = (p) => `(${p.x}, ${p.y}, ${p.z})`;
+  for (const l of pa.ausloeser(welt)) {
+    const zelle = { x: Math.floor(l.x), y: Math.floor(l.y), z: Math.floor(l.z) };
+    let r;
+    try { r = pa.simuliereAuswurf(welt, l.nr); } catch (f) { meldungen.push({ regel: 'pruefer.passagiere', ort: zelle, schwere: 'hinweis', meldung: `Auswurf bei ${ort(zelle)} nicht berechenbar: ${f.message}` }); continue; }
+    if (!r.ok) {
+      meldungen.push({ regel: 'pruefer.passagiere', ort: zelle, schwere: 'verstoss', meldung: `Der Passagier kann an der Aktivierungsschiene bei ${ort(zelle)} nirgends aussteigen: ${r.grund} (${r.verworfen.map((v) => `${v.kandidat}: ${v.grund}`).join('; ')})` });
+      continue;
+    }
+    if (!r.fall.ok) meldungen.push({ regel: 'pruefer.passagiere', ort: r.ziel, schwere: 'verstoss', meldung: `Der Passagier steigt bei ${ort(r.ziel)} aus (${r.kandidat}) und kommt nicht sicher unten an: ${r.fall.grund}` });
+    else if (r.fall.schaden > 0) meldungen.push({ regel: 'pruefer.passagiere', ort: r.ziel, schwere: 'verstoss', meldung: `Der Passagier fällt nach dem Aussteigen bei ${ort(r.ziel)} ${r.fall.hoehe} Blöcke tief und nimmt ${r.fall.schaden} Schaden (frei bis 3 Blöcke)` });
+    if (r.ohneBoden) meldungen.push({ regel: 'pruefer.passagiere', ort: r.ziel, schwere: 'hinweis', meldung: `Die Austrittszelle ${ort(r.ziel)} hat keinen Boden: in Java bliebe der Passagier sitzen (Regel passagiere.auswurf-ort ungeprüft)` });
+  }
+  if (stroemung) {
+    for (const w of welt.wesen()) {
+      if (w.sitztIn !== undefined) continue;
+      const zelle = { x: Math.floor(w.x), y: Math.floor(w.y), z: Math.floor(w.z) };
+      const r = stroemung.richtung(welt, zelle);
+      if (r.art === 'kein-wasser' || r.art === 'quelle' || r.art === 'keine') continue;
+      const t = stroemung.treibe(welt, zelle);
+      meldungen.push({ regel: 'pruefer.stroemung', ort: zelle, schwere: 'hinweis', meldung: `${w.id.replace('minecraft:', '')} im Wasser bei ${ort(zelle)} wird nach ${ort(t.ende)} getrieben (${t.weg.length - 1} Zellen, ${t.sekunden} s; Ende: ${t.grund})` });
+    }
+  }
+  return meldungen;
+}
+
 /**
  * @param {import('../ebene0/welt.js').Welt} welt
  * @param {{register: object, richtungVon: (zustandName:string, wert:any) => string|null, tickbereich?: import('./tickbereich.js').Tickbereich, schienen?: ReturnType<typeof import('./schienen.js').erzeugeSchienen>, antrieb?: ReturnType<typeof import('./antrieb.js').erzeugeAntrieb>, stromQuellen?: Iterable<{x:number,y:number,z:number}>}} optionen
@@ -361,7 +390,7 @@ function pruefeSchienen(welt, schienen, bloecke) {
  *   richtungVon kommt vom Vermesser aus Ebene 0
  * @returns {{regel:string, ort:{x:number,y:number,z:number}, schwere:string, meldung:string}[]}
  */
-export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, trichterSperre = false, kolben = null, bewegung = null, begehbarkeit = null, dorf = null, dorfPruefen = false, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
+export function pruefe(welt, { register, richtungVon, tickbereich = null, schienen = null, antrieb = null, lore = null, loreStart = null, stromQuellen = undefined, fluessigkeit = null, fallen = null, trichter = null, redstone = null, redstoneZeit = null, trichterSperre = false, kolben = null, bewegung = null, begehbarkeit = null, dorf = null, dorfPruefen = false, passagiere = null, stroemung = null, loren = [], spawn = null, spawnBereich = null, himmel = 'nacht' }) {
   const bloecke = welt.alleBloecke();
   const meldungen = pruefeHalt(welt, register, richtungVon, bloecke);
   meldungen.push(...pruefeLicht(register, bloecke));
@@ -376,6 +405,7 @@ export function pruefe(welt, { register, richtungVon, tickbereich = null, schien
   if (dorf && dorfPruefen) meldungen.push(...pruefeDorf(welt, dorf));
   if (bewegung && begehbarkeit) meldungen.push(...pruefeBegehbarkeit(welt, bewegung, begehbarkeit));
   if (redstoneZeit) meldungen.push(...pruefeRedstoneZeit(welt, redstoneZeit, loren, 600, trichterSperre));
+  if (passagiere) meldungen.push(...pruefePassagiere(welt, passagiere, stroemung));
   if (spawn && spawnBereich) meldungen.push(...pruefeSpawn(welt, spawn, spawnBereich, himmel));
   if (tickbereich) meldungen.push(...pruefeTickbereich(welt, bloecke, tickbereich));
   return sortiert(meldungen);

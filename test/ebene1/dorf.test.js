@@ -252,3 +252,19 @@ test('Prüfer: Dorf', () => {
   const b = D.zuordnung(ziel).map((z) => z.beruf?.beruf ?? null);
   assert.deepEqual(a, b);
 });
+
+test('Dorf: die Zuordnung durchsucht die Welt nicht je Dorfbewohner (Zitadelle-Last: 160 Nischen, vorher über 3 Minuten)', () => {
+  const zaehle = (n) => {
+    const w = halle(30);
+    for (let i = 0; i < n; i++) { bett(w, -20 + i, 1, 5); bewohner(w, -20 + i, 1, 7); w.setzeBlock(-20 + i, 1, 9, LESEPULT, { 'minecraft:cardinal_direction': 'south' }); }
+    let aufrufe = 0;
+    const orig = w.alleBloecke.bind(w);
+    w.alleBloecke = () => { aufrufe++; return orig(); };
+    const z = D.zuordnung(w);
+    assert.equal(z.length, n);
+    return aufrufe;
+  };
+  const wenig = zaehle(2), viel = zaehle(40);
+  assert.equal(viel, wenig, `Zahl der Durchläufe hängt nicht von der Zahl der Dorfbewohner ab (${wenig} und ${viel})`);
+  assert.ok(viel <= 4, `höchstens ein paar Durchläufe, waren ${viel}`);
+});

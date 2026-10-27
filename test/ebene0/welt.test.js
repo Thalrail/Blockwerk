@@ -193,3 +193,48 @@ test('Kopie ist unabhängig vom Original', () => {
   assert.equal(w.wesen().length, 1);
   assert.equal(k.fuegeWesenHinzu({ id: 'minecraft:player', x: 0, y: 0, z: 0 }), 2);
 });
+
+test('Welt: alleBloecke wird zwischengespeichert, bleibt bei jeder Änderung richtig und gibt eingefrorene Einträge in frischen Listen', async () => {
+  const { ebene0 } = await import('../hilfe.js');
+  const w = ebene0().neueWelt();
+  assert.deepEqual(w.alleBloecke(), []);
+  w.setzeBlock(1, 0, 0, 'minecraft:stone');
+  w.setzeBlock(0, 0, 0, 'minecraft:dirt');
+  const a = w.alleBloecke();
+  assert.deepEqual(a.map((b) => b.id), ['minecraft:dirt', 'minecraft:stone'], 'sortiert nach y, z, x');
+  // zweiter Aufruf ohne Änderung: gleiche Einträge (Zwischenspeicher), aber eine neue Liste
+  const b = w.alleBloecke();
+  assert.notEqual(a, b);
+  assert.equal(a[0], b[0]);
+  b.pop(); b.sort(() => 1);
+  assert.equal(w.alleBloecke().length, 2, 'wer die Liste umbaut, stört niemanden');
+  // eingefroren: eine Änderung der Einträge wirft, statt den gemeinsamen Speicher zu verfälschen
+  assert.throws(() => { a[0].id = 'minecraft:air'; }, TypeError);
+  assert.throws(() => { a[0].zustand.x = 1; }, TypeError);
+  // jede Änderung macht die Liste ungültig: setzen, überschreiben, löschen, Inhalt
+  w.setzeBlock(2, 0, 0, 'minecraft:stone');
+  assert.equal(w.alleBloecke().length, 3);
+  w.setzeBlock(2, 0, 0, 'minecraft:gold_block');
+  assert.equal(w.alleBloecke().find((x) => x.x === 2).id, 'minecraft:gold_block');
+  w.loescheBlock(2, 0, 0);
+  assert.equal(w.alleBloecke().length, 2);
+  w.setzeBlock(0, 1, 0, 'minecraft:chest');
+  assert.deepEqual(w.alleBloecke().find((x) => x.y === 1).inhalt, undefined);
+  w.setzeInhalt(0, 1, 0, [{ slot: 0, gegenstand: 'minecraft:dirt', anzahl: 5 }]);
+  assert.equal(w.alleBloecke().find((x) => x.y === 1).inhalt[0].anzahl, 5);
+  w.setzeInhalt(0, 1, 0, []);
+  assert.equal(w.alleBloecke().find((x) => x.y === 1).inhalt, undefined);
+  // eine Kopie hat ihren eigenen Speicher und ändert die Quelle nicht
+  const k = w.kopie();
+  k.setzeBlock(5, 0, 0, 'minecraft:stone');
+  assert.equal(k.alleBloecke().length, w.alleBloecke().length + 1);
+  assert.equal(w.alleBloecke().some((x) => x.x === 5), false);
+  // Ergebnis ist immer gleich dem frischen Aufbau (Zufallsänderungen)
+  let s = 12345; const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 2 ** 32; };
+  const v = ebene0().neueWelt();
+  for (let i = 0; i < 300; i++) {
+    const x = Math.floor(rnd() * 20) - 10, y = Math.floor(rnd() * 5), z = Math.floor(rnd() * 20) - 10;
+    if (rnd() < 0.3) v.loescheBlock(x, y, z); else v.setzeBlock(x, y, z, rnd() < 0.5 ? 'minecraft:stone' : 'minecraft:dirt');
+    if (i % 7 === 0) assert.deepEqual(JSON.stringify(v.alleBloecke()), JSON.stringify(v.kopie().alleBloecke()), `Schritt ${i}`);
+  }
+});

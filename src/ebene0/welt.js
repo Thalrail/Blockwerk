@@ -22,6 +22,10 @@ export class Welt {
     /** @type {Map<number, object>} */
     this._wesen = new Map();
     this._naechsteNr = 1;
+    /** Zähler der Blockänderungen: solange er gleich bleibt, ist die sortierte Blockliste von `alleBloecke` noch gültig. */
+    this._version = 0;
+    this._liste = null;
+    this._listeVersion = -1;
   }
 
   // ---------- Hilfen ----------
@@ -51,6 +55,7 @@ export class Welt {
     if (id === LUFT) {
       if (inhaltNeu && inhaltNeu.length) throw new Error('Luft kann keinen Inhalt haben');
       this._entferne(schluessel, index);
+      this._version++;
       return;
     }
     let chunk = this._chunks.get(schluessel);
@@ -58,6 +63,7 @@ export class Welt {
     const eintrag = { id, zustand: kopieZustand(zustand) };
     if (inhaltNeu && inhaltNeu.length) eintrag.inhalt = inhaltNeu;
     chunk.set(index, eintrag);
+    this._version++;
   }
 
   loescheBlock(x, y, z) {
@@ -109,6 +115,7 @@ export class Welt {
     const neu = this._pruefeInhalt(e.id, inhalt);
     if (neu.length) e.inhalt = neu;
     else delete e.inhalt;
+    this._version++;
   }
 
   leseInhalt(x, y, z) {
@@ -162,8 +169,13 @@ export class Welt {
     return n;
   }
 
-  /** Alle Nicht-Luft-Blöcke, sortiert nach y, dann z, dann x (Schicht für Schicht). */
+  /**
+   * Alle Nicht-Luft-Blöcke, sortiert nach y, dann z, dann x (Schicht für Schicht).
+   * Die Liste wird zwischengespeichert, solange sich kein Block ändert (die Prüfer fragen sie hundertfach ab); die Einträge sind eingefroren,
+   * damit niemand den gemeinsamen Zwischenspeicher verändert (eine Änderung wirft einen Fehler). Die Liste selbst ist eine frische Kopie.
+   */
   alleBloecke() {
+    if (this._liste && this._listeVersion === this._version) return [...this._liste];
     const liste = [];
     for (const [schluessel, chunk] of this._chunks) {
       const [cx, cz] = schluessel.split(',').map(Number);
@@ -180,7 +192,10 @@ export class Welt {
         });
       }
     }
-    return liste.sort((a, b) => a.y - b.y || a.z - b.z || a.x - b.x);
+    liste.sort((a, b) => a.y - b.y || a.z - b.z || a.x - b.x);
+    for (const b of liste) { Object.freeze(b.zustand); if (b.inhalt) { for (const s of b.inhalt) Object.freeze(s); Object.freeze(b.inhalt); } Object.freeze(b); }
+    this._liste = liste; this._listeVersion = this._version;
+    return [...liste];
   }
 
   // ---------- Bauteile (Austausch mit dem Vermesser) ----------

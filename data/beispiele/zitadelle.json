@@ -1,0 +1,713 @@
+{
+  "offeneFragen": [],
+  "projekt": {
+    "bauplatz": {
+      "breite": 420,
+      "hoehe": 160,
+      "tiefe": 420
+    },
+    "massstab": 1,
+    "name": "Die Zitadelle (Stufe 1: Hülle und Handel)",
+    "nullpunkt": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  "schema": 1,
+  "teile": [
+    {
+      "art": "kuppelbau",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 33,
+          "hoehe": 36,
+          "tiefe": 33
+        }
+      },
+      "id": "rotunde",
+      "lage": {
+        "bezug": "projekt",
+        "relation": "mitte"
+      },
+      "name": "Zentralhalle (Rotunde)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "kuppelbau",
+      "form": {
+        "baustein": "form.kuppel",
+        "groesse": {
+          "breite": 33,
+          "hoehenverhaeltnis": 1.7,
+          "tiefe": 33
+        }
+      },
+      "id": "kuppel",
+      "lage": {
+        "bezug": "rotunde",
+        "relation": "ueber"
+      },
+      "name": "Kuppel der Zentralhalle",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "turm",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 25,
+          "hoehe": 110,
+          "tiefe": 25
+        }
+      },
+      "id": "hauptturm",
+      "lage": {
+        "bezug": "rotunde",
+        "relation": "neben-norden"
+      },
+      "name": "Hauptturm",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "turm",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 17,
+          "hoehe": 80,
+          "tiefe": 17
+        }
+      },
+      "id": "eckturm-nw",
+      "lage": {
+        "abstand": 4,
+        "bezug": "projekt",
+        "relation": "ecke-nordwest"
+      },
+      "name": "Eckturm Nordwest",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "turm",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 17,
+          "hoehe": 80,
+          "tiefe": 17
+        }
+      },
+      "id": "eckturm-no",
+      "lage": {
+        "abstand": 4,
+        "bezug": "projekt",
+        "relation": "ecke-nordost"
+      },
+      "name": "Eckturm Nordost",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "turm",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 17,
+          "hoehe": 80,
+          "tiefe": 17
+        }
+      },
+      "id": "eckturm-sw",
+      "lage": {
+        "abstand": 4,
+        "bezug": "projekt",
+        "relation": "ecke-suedwest"
+      },
+      "name": "Eckturm Südwest",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "turm",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 17,
+          "hoehe": 80,
+          "tiefe": 17
+        }
+      },
+      "id": "eckturm-so",
+      "lage": {
+        "abstand": 4,
+        "bezug": "projekt",
+        "relation": "ecke-suedost"
+      },
+      "name": "Eckturm Südost",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 44,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 8,
+          "menge": 20
+        }
+      ],
+      "id": "viertel-nord",
+      "lage": {
+        "bezug": "hauptturm",
+        "relation": "neben-norden"
+      },
+      "name": "Handelsviertel Nord (Bibliothekare)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 30,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 0,
+          "menge": 20
+        }
+      ],
+      "id": "viertel-nordost",
+      "lage": {
+        "abstand": 40,
+        "bezug": "rotunde",
+        "relation": "strahl-nordost"
+      },
+      "name": "Handelsviertel Nordost (Rüstungsschmiede)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 44,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 12,
+          "menge": 10
+        },
+        {
+          "art": "handelsnischen",
+          "beruf": 11,
+          "menge": 10
+        }
+      ],
+      "id": "viertel-ost",
+      "lage": {
+        "bezug": "rotunde",
+        "relation": "neben-osten"
+      },
+      "name": "Handelsviertel Ost (Waffen- und Werkzeugschmiede)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 30,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 4,
+          "menge": 10
+        },
+        {
+          "art": "handelsnischen",
+          "beruf": 1,
+          "menge": 10
+        }
+      ],
+      "id": "viertel-suedost",
+      "lage": {
+        "abstand": 40,
+        "bezug": "rotunde",
+        "relation": "strahl-suedost"
+      },
+      "name": "Handelsviertel Südost (Bauern und Fleischer)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 44,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "id": "viertel-sued",
+      "lage": {
+        "bezug": "rotunde",
+        "relation": "neben-sueden"
+      },
+      "name": "Eingangshalle (Süd, keine Stände)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 30,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 5,
+          "menge": 7
+        },
+        {
+          "art": "handelsnischen",
+          "beruf": 10,
+          "menge": 7
+        },
+        {
+          "art": "handelsnischen",
+          "beruf": 7,
+          "menge": 6
+        }
+      ],
+      "id": "viertel-suedwest",
+      "lage": {
+        "abstand": 40,
+        "bezug": "rotunde",
+        "relation": "strahl-suedwest"
+      },
+      "name": "Handelsviertel Südwest (Fischer, Schäfer und Gerber)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 44,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 9,
+          "menge": 10
+        },
+        {
+          "art": "handelsnischen",
+          "beruf": 2,
+          "menge": 10
+        }
+      ],
+      "id": "viertel-west",
+      "lage": {
+        "bezug": "rotunde",
+        "relation": "neben-westen"
+      },
+      "name": "Handelsviertel West (Steinmetze und Kartografen)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "halle",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 30,
+          "pfeilerhoehe": 12,
+          "spannweite": 23
+        }
+      },
+      "funktionen": [
+        {
+          "art": "handelsnischen",
+          "beruf": 3,
+          "menge": 10
+        },
+        {
+          "art": "handelsnischen",
+          "beruf": 6,
+          "menge": 10
+        }
+      ],
+      "id": "viertel-nordwest",
+      "lage": {
+        "abstand": 40,
+        "bezug": "rotunde",
+        "relation": "strahl-nordwest"
+      },
+      "name": "Handelsviertel Nordwest (Kleriker und Pfeilmacher)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "tor",
+      "form": {
+        "baustein": "form.bogen",
+        "groesse": {
+          "bogenstaerke": 2,
+          "pfeilerhoehe": 15,
+          "spannweite": 15,
+          "tiefe": 6
+        }
+      },
+      "id": "portal",
+      "lage": {
+        "bezug": "viertel-sued",
+        "relation": "neben-sueden"
+      },
+      "name": "Portal (Haupteingang)",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "bruecke",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 46,
+          "pfeilerhoehe": 4,
+          "spannweite": 13
+        }
+      },
+      "id": "bruecke-west",
+      "lage": {
+        "abstand": 130,
+        "bezug": "portal",
+        "relation": "neben-westen"
+      },
+      "name": "Brücke West",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "soll"
+    },
+    {
+      "art": "bruecke",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 46,
+          "pfeilerhoehe": 4,
+          "spannweite": 13
+        }
+      },
+      "id": "bruecke-ost",
+      "lage": {
+        "abstand": 130,
+        "bezug": "portal",
+        "relation": "neben-osten"
+      },
+      "name": "Brücke Ost",
+      "stil": {
+        "farben": [
+          "weiß",
+          "gold",
+          "blau"
+        ],
+        "stimmung": "glanz"
+      },
+      "wichtigkeit": "soll"
+    },
+    {
+      "art": "lager",
+      "form": {
+        "baustein": "form.tonnengewoelbe",
+        "groesse": {
+          "laenge": 60,
+          "pfeilerhoehe": 12,
+          "spannweite": 30
+        }
+      },
+      "funktionen": [
+        {
+          "art": "lager",
+          "sorten": [
+            "minecraft:oak_planks",
+            "minecraft:brick_block",
+            "minecraft:glass",
+            "minecraft:cobblestone",
+            "minecraft:stone",
+            "minecraft:andesite",
+            "minecraft:coal",
+            "minecraft:raw_iron",
+            "minecraft:raw_copper",
+            "minecraft:iron_ingot",
+            "minecraft:gold_ingot",
+            "minecraft:copper_ingot",
+            "minecraft:redstone",
+            "minecraft:repeater",
+            "minecraft:comparator",
+            "minecraft:oak_sapling",
+            "minecraft:wheat_seeds",
+            "minecraft:kelp",
+            "minecraft:bread",
+            "minecraft:carrot",
+            "minecraft:potato",
+            "minecraft:oak_log",
+            "minecraft:spruce_log",
+            "minecraft:birch_log",
+            "minecraft:white_wool",
+            "minecraft:lantern",
+            "minecraft:flower_pot",
+            "minecraft:netherrack",
+            "minecraft:quartz",
+            "minecraft:glowstone_dust",
+            "minecraft:end_stone",
+            "minecraft:ender_pearl",
+            "minecraft:chorus_fruit",
+            "minecraft:stick",
+            "minecraft:flint",
+            "minecraft:iron_nugget",
+            "minecraft:leather",
+            "minecraft:rabbit_hide",
+            "minecraft:phantom_membrane",
+            "minecraft:paper",
+            "minecraft:book",
+            "minecraft:gunpowder",
+            "minecraft:bone",
+            "minecraft:feather",
+            "minecraft:egg",
+            "minecraft:rotten_flesh",
+            "minecraft:spider_eye",
+            "minecraft:slime_ball"
+          ]
+        }
+      ],
+      "id": "hauptlager",
+      "lage": {
+        "bezug": "untergeschoss",
+        "relation": "unter"
+      },
+      "name": "Hauptlager mit Sortieranlage (16 Kategorien)",
+      "stil": {
+        "farben": [
+          "grau",
+          "gold"
+        ],
+        "stimmung": "dunkel-industriell"
+      },
+      "wichtigkeit": "muss"
+    },
+    {
+      "art": "keller",
+      "form": {
+        "baustein": "form.zylinder",
+        "groesse": {
+          "breite": 120,
+          "hoehe": 16,
+          "tiefe": 120
+        }
+      },
+      "funktionen": [
+        {
+          "art": "bruteranlage"
+        },
+        {
+          "art": "bahnhof"
+        },
+        {
+          "art": "entladestelle"
+        },
+        {
+          "art": "wohnbereich"
+        },
+        {
+          "art": "felder"
+        },
+        {
+          "art": "sammelbecken"
+        },
+        {
+          "art": "lorenbahn-netz"
+        },
+        {
+          "art": "aufzug"
+        },
+        {
+          "art": "wasserrueckfuehrung"
+        }
+      ],
+      "id": "untergeschoss",
+      "lage": {
+        "bezug": "rotunde",
+        "relation": "unter"
+      },
+      "name": "Untergeschoss: Dorfbewohner-Anlage und Lorenbahnnetz",
+      "stil": {
+        "farben": [
+          "grau",
+          "gold"
+        ],
+        "stimmung": "dunkel-industriell"
+      },
+      "wichtigkeit": "soll"
+    }
+  ],
+  "version": 1
+}

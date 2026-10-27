@@ -35,7 +35,7 @@ export function seite(e, { name, hatProjekt, raumAktiv = false }) {
       <div class="knoepfe"><button class="haupt" data-a="e-briefing">Briefing-Prompt kopieren</button></div></div>`;
   const schritt2 = `<div class="schritt"><h3>2 · Antwort aus dem Chat einfügen</h3>
       <textarea id="e-text" rows="7" placeholder="Hier die Antwort von Claude einfügen (mit oder ohne \`\`\`json-Zaun)">${esc(e.text)}</textarea>
-      <div class="knoepfe"><button class="haupt" data-a="e-pruefen" ${e.text.trim() ? '' : 'disabled'}>Prüfen</button>${hatProjekt ? '<button data-a="e-aus-projekt">Geladenes Projekt bearbeiten</button>' : ''}${spec ? '<button data-a="e-leeren">Von vorn beginnen</button>' : ''}</div></div>`;
+      <div class="knoepfe"><button class="haupt" data-a="e-pruefen" ${e.text.trim() ? '' : 'disabled'}>Prüfen</button>${hatProjekt ? '<button data-a="e-aus-projekt">Geladenes Projekt bearbeiten</button>' : ''}<button data-a="e-zitadelle" title="Der Entwurf der Zitadelle (Stufe 1: Hülle und Handel) aus den 14 Bildern; nach dem Freigeben dauert die Planung einige Minuten">Zitadelle (Stufe 1) laden</button>${spec ? '<button data-a="e-leeren">Von vorn beginnen</button>' : ''}</div></div>`;
   let rest = '';
   if (spec) {
     const bilder = `<div class="schritt"><h3>3 · Bilder messen (optional)</h3>
@@ -122,6 +122,14 @@ export async function aktion(name, el, k) {
     await pruefe({ text: e.text, vorher: e.vorher });
     if (e.spec && !e.teil) e.teil = e.spec.teile?.[0]?.id ?? '';
     k.render();
+  } else if (name === 'e-zitadelle') {
+    e.arbeitet = 'Die Zitadelle wird geladen'; k.render();
+    try {
+      const r = await fetch(new URL('../data/beispiele/zitadelle.json', import.meta.url));
+      if (!r.ok) throw new Error(`Die Zitadelle konnte nicht geladen werden (${r.status})`);
+      e.spec = await r.json(); e.vorher = null; e.ignoriert = []; e.messungen = []; e.teil = e.spec.teile?.[0]?.id ?? '';
+    } catch (f) { e.meldung = String(f.message ?? f); e.arbeitet = null; k.render(); return; }
+    await pruefe({ spezifikation: e.spec });
   } else if (name === 'e-neu-pruefen') {
     if (e.spec && !e.pruef) { if (!e.teil) e.teil = e.spec.teile?.[0]?.id ?? ''; await pruefe({ spezifikation: e.spec }); }
   } else if (name === 'e-aus-projekt') {

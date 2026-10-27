@@ -85,8 +85,8 @@ export function erzeugeDorf({ regelwerk, register, bewegung }) {
   }
 
   /** Berufsblöcke im Umkreis eines Dorfbewohners in der Reihenfolge der Liste (y, z, x). */
-  function berufsblockListe(welt, bewohner) {
-    return berufsbloecke(welt).filter((s) => imUmkreis(bewohner.pos, s));
+  function berufsblockListe(welt, bewohner, alle = berufsbloecke(welt)) {
+    return alle.filter((s) => imUmkreis(bewohner.pos, s));
   }
 
   /**
@@ -97,6 +97,7 @@ export function erzeugeDorf({ regelwerk, register, bewegung }) {
     const bewohner = dorfbewohner(welt);
     const erreich = sucher(welt, bewohner);
     const freieBetten = betten(welt).filter((b) => b.gueltig);
+    const berufsblockAlle = berufsbloecke(welt); // einmal für alle Dorfbewohner (nicht je Dorfbewohner die ganze Welt durchsuchen)
     const vergeben = new Set();
     const beansprucht = new Set();
     const ergebnis = [];
@@ -110,7 +111,7 @@ export function erzeugeDorf({ regelwerk, register, bewegung }) {
       else hinweise.push('kein freies, erreichbares Bett');
       let beruf = null;
       if (bett) {
-        const frei = berufsblockListe(welt, v).find((s) => !beansprucht.has(`${s.x},${s.y},${s.z}`));
+        const frei = berufsblockListe(welt, v, berufsblockAlle).find((s) => !beansprucht.has(`${s.x},${s.y},${s.z}`));
         if (frei) {
           beansprucht.add(`${frei.x},${frei.y},${frei.z}`);
           const kann = erreichtNeben(erg, frei);

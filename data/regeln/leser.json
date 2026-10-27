@@ -32,6 +32,14 @@
           "neben-osten": "östlich neben {bezug}",
           "neben-sueden": "südlich neben {bezug}",
           "neben-westen": "westlich neben {bezug}",
+          "strahl-norden": "strahlenförmig nach Norden von {bezug} weg",
+          "strahl-nordost": "strahlenförmig nach Nordost von {bezug} weg",
+          "strahl-osten": "strahlenförmig nach Osten von {bezug} weg",
+          "strahl-suedost": "strahlenförmig nach Südost von {bezug} weg",
+          "strahl-sueden": "strahlenförmig nach Süden von {bezug} weg",
+          "strahl-suedwest": "strahlenförmig nach Südwest von {bezug} weg",
+          "strahl-westen": "strahlenförmig nach Westen von {bezug} weg",
+          "strahl-nordwest": "strahlenförmig nach Nordwest von {bezug} weg",
           "innen": "innerhalb von {bezug}"
         },
         "wichtigkeiten": [
@@ -75,7 +83,13 @@
           "bruteranlage",
           "bahnhof",
           "entladestelle",
-          "mobfarm"
+          "mobfarm",
+          "wohnbereich",
+          "felder",
+          "sammelbecken",
+          "lorenbahn-netz",
+          "aufzug",
+          "wasserrueckfuehrung"
         ],
         "bauplatz": {
           "breite": {

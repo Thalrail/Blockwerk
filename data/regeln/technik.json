@@ -30,6 +30,22 @@
       "simulationstest": "test/ebene2/handelsnische.test.js::Handelsnischen: Dorfbewohner, Bett und Beruf mit Ebene 1",
       "ungeprueft": true,
       "testanleitung": "Eine Handelsnische nach dem Plan bauen (Dorfbewohner per Boot oder Ei hineinsetzen): Bleibt er in der Zelle, nimmt er den Beruf seines Berufsblocks an, und kann man durch die Scheiben mit ihm handeln? Bei mehreren Nischen nebeneinander: Nimmt jeder den Berufsblock seiner eigenen Zelle?"
+    },
+    {
+      "id": "tech.lorennische",
+      "titel": "Handelsnische an der Lorenbahn: Zufuhr per Lore von oben, Rückführung per Wasserkanal",
+      "regel": "Je Nische (Rastermaß 2) ein Stich der Lorenbahn auf Höhe 3 mit zwei Antriebsschienen und einer dauerhaft bestromten Aktivierungsschiene am Ende (Redstone-Block darunter); rechts der Fahrtrichtung liegt die Stehzelle (1 × 1, 3 hoch), abgedeckt von einer geschlossenen Deckenklappe, auf der der ausgeworfene Dorfbewohner steht. Ein Hebel öffnet die Deckenklappe (Fall 3 Blöcke, kein Schaden), ein zweiter Hebel an der Front die Bodenfalltür; darunter liegt ein Wasserkanal (1 Block hoch) mit Quelle am Anfang: nach je `kanalstufe` Zellen (gerade, höchstens 6) fällt das Wasser einen Block tiefer, das Loch des Wasserfalls liegt unter einer Nische. Der Berufsblock steht hinter der Stehzelle, davor eine Scheibe auf Kopfhöhe; es gibt kein Bett. Die Zuteilung der Loren an die Stiche (Weiche) gehört nicht zum Baustein: er hat nur die T-Stellen als Anschluss `weichen`.",
+      "parameter": {
+        "stichLaenge": 3,
+        "ejektionsHoehe": 3,
+        "kanalstufeMax": 6,
+        "antriebAbstandMax": 7
+      },
+      "quelle": "https://minecraft.wiki/w/Minecart und https://minecraft.wiki/w/Water und https://minecraft.wiki/w/Trapdoor (Java-Platzhalter, wo Bedrock schweigt); Entwurf nach Bild 07 der Zitadelle",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/handelsnische-lore.test.js::Handelsnischen an der Lorenbahn: Kette Auswurf → Stehzelle → Wasserkanal für Reihen von 1 bis 20 Nischen",
+      "ungeprueft": true,
+      "testanleitung": "Kreativwelt: eine Nische nach dem Plan bauen (Stich mit Antriebs- und Aktivierungsschiene, Deckenklappe, Stehzelle, Bodenfalltür, Wasserkanal mit Gefälle). Dorfbewohner in eine Lore setzen und in den Stich schieben: Steigt er rechts der Aktivierungsschiene auf die geschlossene Deckenklappe aus? Hebel oben: fällt er in die Stehzelle (Schaden?), Hebel an der Front: fällt er ins Wasser, und trägt ihn das Wasser durch den ganzen Kanal und über den Wasserfall? Bitte jeden Schritt und mögliche Abweichungen melden (Austrittsseite, Fallschaden, Schieben der Strömung)."
     }
   ]
 }

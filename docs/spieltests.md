@@ -206,6 +206,14 @@ Kreativwelt. Auch hier ist die Anordnung ein Blockwerk-Entwurf (Füller: vier ni
 2. **Dauerstrom:** Sortierlager mit 3 Sorten, in die Einwurfkiste gemischte volle Stapel legen (inklusive Fremdem). Liegt jede Sorte in ihrer Kiste, nichts Fremdes dort, der Rest in der Überlaufkiste, und behalten die Filtertrichter Haltemenge und Füller? (`lager.lager`)
 3. **Reihe:** Wird es bei mehr Sorten (zum Beispiel 10) nur länger, sonst gleich? (`lager.lager`)
 
+## Lorenbahn-Nische: Tests (Ebene 2)
+Kreativwelt, eine Nische nach dem Plan von `tech.handelsnischen-lore` (Anordnung ist Blockwerks Entwurf nach Bild 07). Bitte jeden Schritt einzeln beobachten und melden:
+1. **Auswurf:** Dorfbewohner in eine Lore setzen (Boot/Lore und Spawn-Ei), in den Stich schieben. Steigt er an der Aktivierungsschiene **rechts** der Fahrtrichtung aus und steht auf der geschlossenen Deckenklappe? Wenn er nicht aussteigt oder eine andere Seite nimmt, bitte die Seite melden. (`passagiere.auswurf`, `passagiere.auswurf-ort`)
+2. **Deckenklappe:** Hebel oben umlegen: fällt er in die Stehzelle? Nimmt er Schaden (Fallhöhe genau 3)? Bleibt die Bodenfalltür zu?
+3. **Bodenfalltür:** Hebel an der Front umlegen: fällt er in den Kanal, und trägt ihn das Wasser (Quelle am Anfang, Wasserfall nach 6 Zellen) bis zum Ende? Bleibt er an der Quelle oder in 1-Block-Höhe stecken? (`stroemung.wasser`, `stroemung.quelle`)
+4. **Berufsblock:** Nimmt er den Beruf an, obwohl kein Bett in der Nische steht? Kann man durch die Scheibe handeln?
+5. **Baby:** Kommt ein Baby-Dorfbewohner durch irgendeine Lücke an der Front hinaus?
+
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:
 1. **Berufsblock-Reichweite:** Dorfbewohner mit Bett, Lesepult 16 und 17 Blöcke entfernt, 4 und 5 Blöcke höher: Wird er Bibliothekar? (`dorf.berufsblock`)

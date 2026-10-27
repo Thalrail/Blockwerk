@@ -50,6 +50,7 @@
     "lectern_base",
     "lectern_sides",
     "lectern_top",
+    "lever",
     "loom_bottom",
     "loom_side",
     "loom_top",
@@ -60,6 +61,7 @@
     "quartz_block_bottom",
     "quartz_block_side",
     "quartz_block_top",
+    "rail_activator",
     "rail_golden",
     "rail_normal",
     "redstone_block",
@@ -79,9 +81,16 @@
     "stone_slab_top",
     "stonecutter_bottom",
     "stonecutter_side",
-    "stonecutter_top"
+    "stonecutter_top",
+    "trapdoor"
   ],
   "bloecke": {
+    "minecraft:activator_rail": {
+      "oben": "rail_activator",
+      "unten": "rail_activator",
+      "seite": "rail_activator",
+      "angenaehert": true
+    },
     "minecraft:barrel": {
       "oben": "barrel_top",
       "unten": "barrel_bottom",
@@ -232,6 +241,12 @@
       "seite": "lectern_sides",
       "angenaehert": true
     },
+    "minecraft:lever": {
+      "oben": "lever",
+      "unten": "lever",
+      "seite": "lever",
+      "angenaehert": true
+    },
     "minecraft:lit_blast_furnace": {
       "oben": "blast_furnace_top",
       "unten": "blast_furnace_top",
@@ -376,6 +391,12 @@
       "seite": "stonecutter_side",
       "angenaehert": true
     },
+    "minecraft:trapdoor": {
+      "oben": "trapdoor",
+      "unten": "trapdoor",
+      "seite": "trapdoor",
+      "angenaehert": true
+    },
     "minecraft:unpowered_comparator": {
       "oben": "comparator_off",
       "unten": "stone_slab_top",
@@ -414,6 +435,10 @@
     },
     {
       "id": "minecraft:straw_bed",
+      "grund": "keine Zuordnung in data/texturen-regeln.json"
+    },
+    {
+      "id": "minecraft:water",
       "grund": "keine Zuordnung in data/texturen-regeln.json"
     }
   ]

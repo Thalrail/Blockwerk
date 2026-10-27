@@ -9,7 +9,8 @@ const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/messungen-l
 const SCHIENE = 'minecraft:rail';
 const ANTRIEB = 'minecraft:golden_rail';
 const STROM = 'minecraft:redstone_block';
-const QUELLE_NISCHE = 'https://minecraft.wiki/w/Villager (Berufsblöcke, Betten) und docs/ebenen.md (Ebene 2: Technikmodule)';
+const QUELLE_LORENNISCHE = 'https://minecraft.wiki/w/Minecart (Aktivierungsschiene wirft Passagiere aus) und https://minecraft.wiki/w/Water (Strömung); Entwurf nach Bild 07 der Zitadelle (docs/zitadelle)';
+const QUELLE_NISCHE ='https://minecraft.wiki/w/Villager (Berufsblöcke, Betten) und docs/ebenen.md (Ebene 2: Technikmodule)';
 
 /**
  * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk, schienen: ReturnType<typeof import('../ebene1/schienen.js').erzeugeSchienen>, ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>}} quellen
@@ -158,5 +159,110 @@ export function erzeugeTechnik({ regelwerk, schienen, ebene0 }) {
     },
   });
 
-  return { antriebsstrecke, steigung, kurve, nischen, berufe, alle: [antriebsstrecke, steigung, kurve, nischen] };
+  // ---------- Handelsnischen an der Lorenbahn (Bild 07) ----------
+  // Eigenes Koordinatensystem: Front (Laufgang) nach Süden (z+), Reihe entlang x, Nische i steht bei x = 2i, Gehhöhe y = 0.
+  //   z = 0 Front (Scheibe; die Hebel hängen davor bei z = 1), z = −1 Stehzelle, z = −2 Berufsblock, z = −3 Rückwand, z = −4 Zufuhrbahn (y = 3).
+  //   y = 3: Decke mit Deckenklappe über der Stehzelle; der Stich (x = 2i + 1, z = −3…−1) fährt nach Süden, „rechts“ der letzten Schiene liegt die Stehzelle.
+  //   Unter dem Boden (y = −1…) liegt der Wasserkanal mit Gefälle: Quelle bei x = −2, nach je `kanalstufe` Zellen fällt das Wasser einen Block tiefer.
+  const falltuer = 'minecraft:trapdoor';
+  const hebel = 'minecraft:lever';
+  const aktivierungsschiene = 'minecraft:activator_rail';
+  const wasserQuelle = { id: 'minecraft:water', zustand: { liquid_depth: 0 } };
+  const lorenNische = definiere({
+    id: 'tech.handelsnischen-lore', titel: 'Handelsnischen an der Lorenbahn (Dorfbewohner kommen per Lore von oben, Rückführung per Wasserkanal)', quelle: QUELLE_LORENNISCHE,
+    parameter: [
+      param('anzahl', 'technik', { min: 1, max: 256, standard: 4, beschreibung: 'Zahl der Nischen in der Reihe (Technik skaliert über Anzahl, nie über Größe)' }),
+      param('beruf', 'technik', { min: 0, max: berufe.length - 1, standard: standardBeruf, beschreibung: `Nummer des Berufsblocks in der Liste ${berufe.map((id, i) => `${i} = ${bloecke.block(id).eigenschaften.beruf}`).join(', ')}` }),
+      param('kanalstufe', 'technik', { min: 2, max: 6, standard: 6, beschreibung: 'Zellen des Wasserkanals je Gefällestufe (gerade Zahl, höchstens 6: das Wasser fließt 7 Zellen weit, das Loch des Wasserfalls muss unter einer Nische liegen)' }),
+    ],
+    testszenario: { start: 'leere Welt, Reihe daraufgesetzt, Wasser simuliert; Lore mit Dorfbewohner am Stichanfang', erwartung: 'Auswurf auf die Deckenklappe, Hebel öffnet sie, Dorfbewohner fällt in die Stehzelle (Fall höchstens 3), zweiter Hebel öffnet die Bodenfalltür, die Strömung trägt ihn bis zum Kanalende; Prüfer meldet keinen Verstoß' },
+    baue: ({ anzahl, beruf, kanalstufe }) => {
+      if (kanalstufe % 2 !== 0) throw new Error(`tech.handelsnischen-lore: kanalstufe ${kanalstufe} muss gerade sein (das Loch des Wasserfalls liegt sonst nicht unter einer Nische)`);
+      const K = kanalstufe;
+      const xMax = 2 * anzahl - 1;
+      const kanal = kanalGeometrie(anzahl, K);
+      const karte = new Map();
+      const setze = (x, y, z, b) => karte.set(`${x},${y},${z}`, { x, y, z, ...b });
+      const wand = (x, y, z) => setze(x, y, z, { rolle: 'wand' });
+      const fest = (x, y, z, id, zustand) => setze(x, y, z, { technik: true, id, ...(zustand ? { zustand } : {}) });
+      const nordSued = form(ende('north'), ende('south'));
+      const ostWest = form(ende('east'), ende('west'));
+      const nischeX = (x) => x >= 0 && x % 2 === 0 && x / 2 < anzahl;
+
+      // Kanal: Boden, Seitenwände, Füllung über dem Wasser (nur unter den Nischen bleibt ein Schacht)
+      for (let s = 0; s < kanal.segmente; s++) {
+        const ys = kanal.y(s);
+        for (let x = kanal.x0(s); x <= kanal.xh(s) - (s === kanal.segmente - 1 ? 0 : 1); x++) setze(x, ys - 1, -1, { rolle: 'boden' });
+        wand(kanal.xh(s) + 1, ys, -1);
+      }
+      wand(kanal.xEnde + 1, kanal.y(kanal.segmente - 1) - 1, -1);
+      wand(-3, -1, -1); wand(-3, -2, -1);
+      for (let x = -3; x <= kanal.xEnde + 1; x++) {
+        for (let y = kanal.untenWand(x); y <= -1; y++) { wand(x, y, 0); wand(x, y, -2); }
+        if (x < -1) continue;
+        const ys = kanal.y(kanal.segmentOben(x));
+        if (!nischeX(x)) for (let y = ys + 1; y <= -1; y++) wand(x, y, -1);
+      }
+      fest(-2, -1, -1, wasserQuelle.id, wasserQuelle.zustand);
+
+      // Boden der Zufuhr- und Rückwandzeile, Zufuhrbahn
+      for (let x = -1; x <= xMax; x++) {
+        setze(x, -1, -3, { rolle: 'boden' }); setze(x, -1, -4, { rolle: 'boden' });
+        for (let y = 0; y <= 2; y++) wand(x, y, -4);
+        const angetrieben = (x + 1) % (maxAbstandEben + 1) === 0;
+        fest(x, 3, -4, angetrieben ? ANTRIEB : SCHIENE, { rail_direction: ostWest, ...(angetrieben ? { rail_data_bit: true } : {}) });
+        if (angetrieben) fest(x, 2, -4, STROM);
+      }
+      // Wandsäulen (ungerade x) zwischen den Nischen
+      for (let x = -1; x <= xMax; x += 2) for (let z = -3; z <= 0; z++) for (let y = 0; y <= 2; y++) wand(x, y, z);
+      for (let i = 0; i < anzahl; i++) {
+        const x = 2 * i, xs = x + 1;
+        // Stehzelle: Bodenfalltür (zu), Deckenklappe (zu), Hebel an der Front, Berufsblock dahinter
+        fest(x, 0, -1, falltuer, { open_bit: false, upside_down_bit: false, direction: 0 });
+        fest(x, 3, -1, falltuer, { open_bit: false, upside_down_bit: false, direction: 0 });
+        fest(x, 0, -2, berufe[beruf], richtungsZustand(berufe[beruf], 'south'));
+        for (const y of [1, 2]) wand(x, y, -2);
+        for (let y = 0; y <= 2; y++) wand(x, y, -3);
+        wand(x, 0, 0);
+        fest(x, 0, 1, hebel, { lever_direction: 'south', open_bit: false });
+        setze(x, 1, 0, { rolle: 'glas', form: 'scheibe' });
+        wand(x, 2, 0); wand(x, 3, 0); wand(x, 3, -2); wand(x, 3, -3);
+        fest(x, 3, 1, hebel, { lever_direction: 'south', open_bit: false });
+        // Stich: Antriebsschienen bis zur Aktivierungsschiene am Ende (rechts davon liegt die Deckenklappe), Prellbock davor
+        for (const z of [-3, -2]) { fest(xs, 3, z, ANTRIEB, { rail_direction: nordSued, rail_data_bit: true }); }
+        fest(xs, 3, -1, aktivierungsschiene, { rail_direction: nordSued, rail_data_bit: true });
+        fest(xs, 2, -3, STROM); fest(xs, 2, -1, STROM);
+        wand(xs, 3, 0);
+      }
+      return {
+        bloecke: [...karte.values()],
+        wesen: [],
+        anschluesse: [
+          { art: 'front', seite: 'sued', laenge: xMax + 2, nischen: anzahl },
+          { art: 'zufuhr', seite: 'west', x: -1, y: 3, z: -4, laenge: xMax + 2 },
+          { art: 'rueckfuehrung', seite: 'ost', x: kanal.xEnde, y: kanal.y(kanal.segmente - 1), z: -1, gefaelle: kanal.segmente - 1 },
+          { art: 'weichen', stellen: Array.from({ length: anzahl }, (_, i) => ({ x: 2 * i + 1, y: 3, z: -4 })) },
+        ],
+        sperrzonen: [],
+      };
+    },
+  });
+
+  /** Geometrie des Wasserkanals: Segment s deckt x0(s) … xh(s) ab (xh = Loch des Wasserfalls, zugleich Anfang von s + 1), Wasserhöhe y(s) = −1 − s. */
+  function kanalGeometrie(anzahl, K) {
+    const xMax = 2 * anzahl - 1;
+    const segmente = Math.max(1, Math.ceil((xMax + 2) / K));
+    const x0 = (s) => -2 + K * s;
+    const xh = (s) => -2 + K * (s + 1);
+    const y = (s) => -1 - s;
+    return {
+      segmente, x0, xh, y, xEnde: xh(segmente - 1),
+      /** Segment, dessen Wasser in Spalte x (x ≥ −1) liegt; die Lochspalte gehört zum oberen Segment. */
+      segmentOben: (x) => Math.min(segmente - 1, Math.floor((x + 1) / K)),
+      /** Tiefster Block der Seitenwand in Spalte x (Boden des unteren Segments, wenn dort zwei Segmente aneinanderstoßen). */
+      untenWand: (x) => y(Math.min(segmente - 1, Math.max(0, Math.floor((x + 2) / K)))) - 1,
+    };
+  }
+
+  return { antriebsstrecke, steigung, kurve, nischen, lorenNische, berufe, alle: [antriebsstrecke, steigung, kurve, nischen, lorenNische] };
 }

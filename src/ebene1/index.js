@@ -18,6 +18,8 @@ import { erzeugeRedstoneZeit } from './redstone-zeit.js';
 import { erzeugeKolben } from './kolben.js';
 import { erzeugeBewegung } from './bewegung.js';
 import { erzeugeDorf } from './dorf.js';
+import { erzeugePassagiere } from './passagiere.js';
+import { erzeugeStroemung } from './stroemung.js';
 
 export * from './weltzeit.js';
 export { Zufall, erwarteteTicks, erwarteteMinuten } from './zufall.js';
@@ -40,6 +42,8 @@ export { erzeugeRedstoneZeit } from './redstone-zeit.js';
 export { erzeugeKolben } from './kolben.js';
 export { erzeugeBewegung } from './bewegung.js';
 export { erzeugeDorf } from './dorf.js';
+export { erzeugePassagiere } from './passagiere.js';
+export { erzeugeStroemung } from './stroemung.js';
 
 /**
  * @param {{ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>, regeln: object[]}} quellen
@@ -61,6 +65,8 @@ export function erzeugeEbene1({ ebene0, regeln }) {
   const kolben = erzeugeKolben({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon });
   const bewegung = erzeugeBewegung({ regelwerk, register: ebene0.register });
   const dorf = erzeugeDorf({ regelwerk, register: ebene0.register, bewegung });
+  const passagiere = erzeugePassagiere({ regelwerk, register: ebene0.register, bewegung, aktivierung });
+  const stroemung = erzeugeStroemung({ regelwerk, fluessigkeit });
   const redstoneZeit = erzeugeRedstoneZeit({ regelwerk, register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, redstone, trichter, licht, kolben });
   return {
     regelwerk,
@@ -77,9 +83,11 @@ export function erzeugeEbene1({ ebene0, regeln }) {
     kolben,
     bewegung,
     dorf,
+    passagiere,
+    stroemung,
     aktivierung,
     neuerSandkasten: (welt) => new Sandkasten(welt),
     neuerTaktgeber: (sandkasten, optionen = {}) => new Taktgeber(sandkasten, { reihenfolge, ...optionen }),
-    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, spawn, lore, fallen, trichter, redstone, redstoneZeit, kolben, bewegung, dorf, ...optionen }),
+    pruefe: (welt, optionen = {}) => pruefe(welt, { register: ebene0.register, richtungVon: ebene0.vermesser.richtungVon, schienen, antrieb, fluessigkeit, spawn, lore, fallen, trichter, redstone, redstoneZeit, kolben, bewegung, dorf, passagiere, ...optionen }),
   };
 }

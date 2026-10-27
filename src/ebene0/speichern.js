@@ -52,12 +52,15 @@ export function weltAusObjekt(daten, register) {
     welt.setzeBlock(x, y, z, eintrag.id, eintrag.zustand, inhalt ?? null);
   }
   const hoechste = Math.max(0, ...daten.wesen.map((w) => w.nr));
-  for (const w of [...daten.wesen].sort((a, b) => a.nr - b.nr)) {
-    const { nr, ...rest } = w;
+  const sortiert = [...daten.wesen].sort((a, b) => a.nr - b.nr);
+  for (const w of sortiert) {
+    const { nr, sitztIn, ...rest } = w;
     welt._naechsteNr = nr; // Nummern bleiben beim Laden erhalten
     if (welt._wesen.has(nr)) throw new Error(`Wesen-Nummer ${nr} doppelt`);
     welt.fuegeWesenHinzu(rest);
   }
+  // Passagiere erst, wenn alle Wesen da sind (die Lore kann eine höhere Nummer haben als ihr Passagier)
+  for (const w of sortiert) if (w.sitztIn !== undefined) { const p = { ...welt._wesen.get(w.nr) }; welt.setzePassagier(w.nr, w.sitztIn); Object.assign(welt._wesen.get(w.nr), { x: p.x, y: p.y, z: p.z }); }
   if (!Number.isInteger(daten.naechsteWesenNr) || daten.naechsteWesenNr <= hoechste) throw new Error('naechsteWesenNr ungültig');
   welt._naechsteNr = daten.naechsteWesenNr;
   return welt;

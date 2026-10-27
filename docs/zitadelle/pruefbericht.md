@@ -58,7 +58,7 @@ Erzeugt mit `node tools/pruefstein.js` aus `data/beispiele/zitadelle.json`. Die 
 ## Bilanz (Dorfbewohner, Betten, Berufsblöcke)
 
 Aus allen fertigen Abschnitten (Ebene 1, Dorfmodell): **140 gültige Betten**, **140 Dorfbewohner**, **188 Berufsblöcke**, Iron Golem: **ja**.
-Die Zahl der Berufsblöcke enthält auch die Fässer des Sortierlagers (siehe Befund 7). Erwartung aus den Bildern: 140 bis 160 Handelsnischen (die Bilder widersprechen sich, Frage 7 in `beschreibung.md`), je mit einem Berufsblock. Blockwerks Nische hat ein Bett je Zelle.
+Die Zahl der Berufsblöcke enthält auch die Fässer des Sortierlagers (siehe Befund 7). Entschieden (Jonah, 27.10.2026): 140 Handelsnischen (sieben Viertel mit Ständen; die Kenndaten auf Bild 13 mit 160 stimmen nicht), je mit einem Berufsblock. Blockwerks Nische hat ein Bett je Zelle.
 
 ## Schaltungsanfragen (was es noch nicht gibt)
 

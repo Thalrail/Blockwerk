@@ -20,7 +20,7 @@ test('Zitadelle (Stufe 1): die Spezifikation besteht Prüfer und Übersetzung un
     assert.equal(ueber, false, `${u.vorgabe.abschnitte[i].id} und ${u.vorgabe.abschnitte[j].id} überschneiden sich`);
   }
   // Zahlen aus den Bildern. ACHTUNG: Bild 13 nennt „8 × 20 = 160 Nischen“, zeigt aber nur 7 Viertel mit Ständen (Händlerlisten 1–70 = 7 × 10) und die Eingangshalle ohne Stände: 7 × 20 = 140.
-  // Die Spezifikation folgt den Viertel-Karten (140); die Frage an Jonah steht in docs/zitadelle/beschreibung.md.
+  // Entschieden (Jonah, 27.10.2026): 140. Die Kenndaten auf Bild 13 (160) stimmen nicht (docs/zitadelle/beschreibung.md, Frage 7).
   const nischen = spec.teile.flatMap((t) => (t.funktionen ?? []).filter((f) => f.art === 'handelsnischen'));
   assert.equal(nischen.reduce((s, f) => s + f.menge, 0), 140);
   const viertel = spec.teile.filter((t) => t.id.startsWith('viertel-') && t.id !== 'viertel-sued');

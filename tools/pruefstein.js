@@ -69,7 +69,7 @@ z.push(`| … insgesamt ${material.gesamt.length} Blocksorten | ${zahl(gesamtBlo
 
 z.push('', '## Bilanz (Dorfbewohner, Betten, Berufsblöcke)', '');
 z.push(`Aus allen fertigen Abschnitten (Ebene 1, Dorfmodell): **${b.betten} gültige Betten**, **${b.dorfbewohner} Dorfbewohner**, **${b.berufsbloecke} Berufsblöcke**, Iron Golem: **${b.golem}**.`);
-z.push('Die Zahl der Berufsblöcke enthält auch die Fässer des Sortierlagers (siehe Befund 7). Erwartung aus den Bildern: 140 bis 160 Handelsnischen (die Bilder widersprechen sich, Frage 7 in `beschreibung.md`), je mit einem Berufsblock. Blockwerks Nische hat ein Bett je Zelle.');
+z.push('Die Zahl der Berufsblöcke enthält auch die Fässer des Sortierlagers (siehe Befund 7). Entschieden (Jonah, 27.10.2026): 140 Handelsnischen (sieben Viertel mit Ständen; die Kenndaten auf Bild 13 mit 160 stimmen nicht), je mit einem Berufsblock. Blockwerks Nische hat ein Bett je Zelle.');
 
 z.push('', '## Schaltungsanfragen (was es noch nicht gibt)', '', '| Nr. | Abschnitt | Gewünscht |', '|-----|-----------|-----------|');
 for (const q of r.offeneAnfragen) z.push(`| ${t(q.id)} | ${t(q.abschnitt)} | ${t(q.art)} |`);

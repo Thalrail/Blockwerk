@@ -7,7 +7,7 @@ import * as F from './fortschritt.js';
 import { abdruck } from '../ebene4/spezifikation.js';
 
 /** Grenzen (ein Ort für Dienst und Seite). */
-export const GRENZEN = Object.freeze({ spezifikation: 200_000, spieler: 12, eintraege: 5_000, name: 24, nachricht: 262_144, verfallTage: 30, uhrMax: 1_000_000_000, uhrSprung: 100_000 });
+export const GRENZEN = Object.freeze({ spezifikation: 200_000, spieler: 12, eintraege: 5_000, name: 24, nachricht: 262_144, verfallTage: 30, uhrMax: 1_000_000_000_000, uhrSprung: 1_000 }); // 1000 Schritte weit voraus sind für ehrliches Offline-Abhaken reichlich; bis zur Obergrenze brauchte ein Angreifer eine Milliarde Nachrichten (40 je 10 s je Verbindung)
 /** Schlüssel eines Hakens: Abschnitt|Höhe|Abdruck der Schicht (siehe fortschritt.schluessel). Alles andere ist Müll und füllt nur den Raum. */
 const SCHLUESSEL = /^[^|\s]{1,64}\|-?\d{1,4}\|[0-9a-f]{1,16}$/;
 const ARTEN = ['hallo', 'haken', 'plan', 'ping'];

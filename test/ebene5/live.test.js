@@ -291,3 +291,16 @@ test('Alle echten Haken-Schlüssel des Beispielprojekts bestehen die Schlüsselp
   assert.equal(a.post.length, 1, 'nur der Zustand, keine Ablehnung');
   assert.equal(Object.keys(d.raum.fortschritt.eintraege).length, n);
 });
+
+test('Uhr: Ein Mitglied kann die Raum-Uhr höchstens um 1000 je Nachricht vorschieben, ehrliche Haken (Uhr = Raum + 1) gehen immer durch', () => {
+  const d = new Dienst(), boese = d.verbinde(), ehrlich = new Spieler(d, 'Anna');
+  d.empfange(boese, '{"typ":"hallo","name":"Mallory"}');
+  ehrlich.pump();
+  const vorher = d.raum.fortschritt.uhr;
+  for (let i = 0; i < 50; i++) d.empfange(boese, JSON.stringify({ typ: 'haken', eintraege: { [`a|${i}|ab`]: { wert: true, uhr: d.raum.fortschritt.uhr + L.GRENZEN.uhrSprung, von: 'Mallory' } } }));
+  assert.equal(d.raum.fortschritt.uhr, vorher + 50 * L.GRENZEN.uhrSprung, 'Schritt für Schritt, nie mehr als der Sprung je Nachricht');
+  assert.ok(d.raum.fortschritt.uhr < L.GRENZEN.uhrMax / 1e6, 'weit unterhalb der Obergrenze');
+  ehrlich.pump();
+  ehrlich.haken(['b|1|cd'], true); // lokale Uhr = Stand des Raums + 1
+  assert.equal(F.istAbgehakt(d.raum.fortschritt, 'b|1|cd'), true, 'ehrliche Haken werden nicht ausgesperrt');
+});

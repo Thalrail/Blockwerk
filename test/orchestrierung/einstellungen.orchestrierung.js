@@ -170,7 +170,7 @@ test('Autonomer Auftragslauf (Jonah, 31.10.2026): die Git-Sperren bleiben unver�
   for (const erlaubt of e.permissions.allow ?? []) assert.ok(!/git (push|commit|add|switch|checkout|branch|merge|reset|stash|rebase|clean|tag)|\bgh\b|Bash\(\*\)|Bash\(node \*\)/.test(erlaubt), `allow öffnet kein Git-Schreiben und kein gh: ${erlaubt}`);
   // Minimale Erlaubnisliste: genau diese Einträge, keine Sammelregel für cli.js, kein beliebiges node oder npm, nur Bash-Befehle dieses Projekts und die zwei Codex-Aufrufe
   const cli = ['status', 'start', 'runde-ende', 'tore', 'paket', 'tests-ausfuehren', 'review-melden', 'befund-melden', 'uebernehmen', 'haupt-kontrolle', 'wiederherstellen', 'ende', 'abschluss'].map((b) => `Bash(node tools/orchestrierung/cli.js ${b} *)`);
-  assert.deepEqual([...(e.permissions.allow ?? [])].sort(), [...cli, 'Bash(node tools/karte.js *)', 'Bash(npm test)', 'Bash(npm run test:kurz)', 'Bash(npm run test:orchestrierung)', 'Bash(npm run test:pruefstein)', 'Bash(node --test test/*)',
+  assert.deepEqual([...(e.permissions.allow ?? [])].sort(), [...cli, 'Bash(node tools/karte.js *)', 'Bash(npm test)', 'Bash(npm run test:kurz)', 'Bash(npm run test:orchestrierung)', 'Bash(npm run test:pruefstein)',
     'mcp__codex-bridge__review_code', 'mcp__codex-bridge__review_status'].sort(), 'allow ist die vereinbarte minimale Liste');
   assert.ok(!e.permissions.allow.some((x) => /cli\.js \*\)|^Bash\(\*\)|^Bash\(node \*\)|^Bash\(npm \*\)|graphify|git |\bgh\b/.test(x)), 'keine Sammelregeln');
   const skill = lies('.claude/skills/blockwerk-auftrag/SKILL.md');

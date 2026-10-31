@@ -23,7 +23,6 @@
       "Bash(npm run test:kurz)",
       "Bash(npm run test:orchestrierung)",
       "Bash(npm run test:pruefstein)",
-      "Bash(node --test test/*)",
       "mcp__codex-bridge__review_code",
       "mcp__codex-bridge__review_status"
     ],

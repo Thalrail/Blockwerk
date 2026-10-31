@@ -18,7 +18,7 @@ Hinweis: Die Hauptsitzung ist der Koordinator (Skill `/blockwerk-auftrag`); die 
 - Ergebnis: alle drei Befunde bestätigt oder gestützt; **#1** (Statuszählung `geprüft`) und **#12** (Kommentar Weichensteuerung) behoben; **#7** (stiller Teststein) war ein echter Fehler und ist behoben (Rückfrage statt Teststein, strenge Materialisierung). Details: `docs/stand.md`, Abschnitt „Palette-Absicherung“, und `docs/entscheidungen.md`.
 - Lehre: Unveränderte Zeilen müssen im Kontext mitgegeben werden (Codex sieht nur Diff und Kontext), und der Diff muss exakt aus dem Repo kommen (beim ersten Mal hatte ich eine Zeile falsch übertragen).
 
-## Orchestrierung (30.10.2026): fertig, im echten Lauf nachgewiesen, uncommittet (Commit nur mit Jonahs Freigabe)
+## Orchestrierung (30.10.2026): fertig, im echten Lauf nachgewiesen, committet (`0c81668`, 31.10.2026; Push und PR nur mit Jonahs Freigabe)
 - **Ablauf:** Auftrag → Tore prüfen → Snapshot S0 des ganzen uncommitteten Stands → Sonnet-Entwickler im Hook-Worktree unter `.claude/worktrees/` → Runde sichern (Zwischen-Snapshot) → Tests durch den Koordinator → Haiku/Quellen/Rechnen bei Bedarf → Codex-Review über das isolierte Review-Paket → Befunde bestätigt/widerlegt/offen → Routinekorrekturen (höchstens drei Schleifen, Folgeagent sieht die Vorrunde) → sichere Übernahme (Journal, alles oder nichts) → Abschlussbericht. Commit, Push und PR nur mit Jonahs Freigabe.
 - **Nachweis:** zwei echte Läufe in frischen Claude-Code-Sitzungen (2.1.308): (1) kleiner Entwicklungsauftrag (`zaehleStatus` + `gesamt`) mit Entwickler, Tests, gültigem Codex-Einzelreview (`approve`) und Übernahme; (2) Schleifenmechanik mit drei Runden (jede Folgerunde sah die Arbeit der Vorrunde) und Wächter-Test (fünf verbotene Aufrufe gesperrt, `git status` erlaubt), Hauptbaum und Refs unverändert. Dazu `npm run test:orchestrierung` (46 Tests).
 - **Grenzen, die bleiben:** Hooks in `settings.json` wirken erst in einer **neuen** Sitzung (oder nach Überprüfung im `/hooks`-Menü); der Wächter ist eine zweite Schranke, kein Sandkasten; eine Datei, die der Snapshot nicht aufnimmt (verbotener Name, nicht erlaubter Ordner), meldet das Werkzeug als Tor „nicht-uebernommen“; die Wiederaufnahme per `SendMessage` wird nicht gebraucht (jede Runde bekommt einen neuen Worktree auf dem Zwischen-Snapshot).
@@ -36,7 +36,7 @@ Hinweis: Die Hauptsitzung ist der Koordinator (Skill `/blockwerk-auftrag`); die 
 `npm test` (422 Tests, einige Minuten), `npm run test:pruefstein` (Zitadelle, etwa 4 bis 6 Minuten), bei Änderungen an `tools/orchestrierung/` oder `.claude/` zusätzlich `npm run test:orchestrierung` (46 Tests, rund 2 Minuten), `git diff --check`, Mutationsproben für neue Regeln.
 
 ## Stand der Lorenbahn-Nische
-Schritte 1 bis 3 fertig; Schritt 3 liegt uncommittet auf `claude/lorenbahn-nische-planung`. Offen: Bauplatz 600 × 600 bestätigen, Spieltests aus `docs/spieltests.md`, Weichensteuerung, Beladen der Loren, Sammelbecken, Bahnhof/Entladestelle/Brüter (Brutkammer-Entwurf offen).
+Schritte 1 bis 3 fertig; Schritt 3 ist committet (`96e2aad`) auf `claude/lorenbahn-nische-planung`, noch nicht gepusht. Offen: Bauplatz 600 × 600 bestätigen, Spieltests aus `docs/spieltests.md`, Weichensteuerung, Beladen der Loren, Sammelbecken, Bahnhof/Entladestelle/Brüter (Brutkammer-Entwurf offen).
 
 ## Aufteilung der Arbeit
 Engine-Entwicklung (Ebenen 0 bis 4) · Oberfläche (Ebene 5) · unabhängige Prüfung (Codex-Review, Mutationen) · Doku und Spieltest-Anleitungen. Je Aufgabe ein eigener Branch; zwei Schreiber nie an denselben Dateien.

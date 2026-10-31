@@ -6,3 +6,5 @@ patches/
 .wrangler/
 **/.wrangler/
 reviews.db*
+.claude/worktrees/
+.claude/orchestrierung/

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --test \"test/**/*.test.js\"",
-    "test:pruefstein": "node --test \"test/pruefstein/*.pruefstein.js\""
+    "test:pruefstein": "node --test \"test/pruefstein/*.pruefstein.js\"",
+    "test:orchestrierung": "node --test \"test/orchestrierung/*.orchestrierung.js\""
   }
 }

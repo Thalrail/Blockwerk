@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "worktree": {
+    "baseRef": "head"
+  },
+  "permissions": {
+    "deny": [
+      "Bash(git push *)",
+      "Bash(gh pr *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(git stash *)",
+      "Bash(git rebase *)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Agent(blockwerk-entwickler-schwer)"
+    ]
+  },
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-hook.js\""
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/worktree-hook.js\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-wache.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -10,6 +10,8 @@ const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..');
 function dateien(ordner, endung = '.js') {
   return readdirSync(ordner).flatMap((n) => {
     const p = join(ordner, n);
+    // Worktree-Kopien und Laufzustand der Orchestrierung gehören nicht zum Repository-Inhalt (sonst sähe der Test die Texturen jeder Kopie)
+    if (p === join(wurzel, '.claude', 'worktrees') || p === join(wurzel, '.claude', 'orchestrierung')) return [];
     return statSync(p).isDirectory() ? dateien(p, endung) : p.endsWith(endung) ? [p] : [];
   });
 }

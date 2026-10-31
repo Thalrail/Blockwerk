@@ -37,6 +37,11 @@
 - Lizenzpflichten: sichtbare Nennung (Pack-Name + Link faithfulpack.net) in Oberfläche und README, Lizenz-Link beilegen,
   nur benötigte Texturen, Blockwerk bleibt kostenlos, nicht als offiziell darstellen. Quelle: https://faithfulpack.net/license
 
+## Freigabegrenzen und Sicherheit (gelten für alle Agenten, Details `docs/orchestrierung.md`)
+- Ohne Rückfrage: Umsetzung im Auftrag, Tests, Routinekorrekturen, Doku. **Vorher Jonahs Zustimmung:** fachliche Architektur, neue externe Abhängigkeiten, grundlegende Bedrock-Entscheidungen, Planungsverhalten außerhalb des Auftrags, **jeder Commit, Push und PR**, nicht sicher auflösbare Konflikte und Datenverlustrisiken, **jeder Einsatz von Opus**.
+- Keine Zugangsdaten lesen, ausgeben oder ins Repo legen. Keine globalen Claude-/Codex-Einstellungen ändern. Hooks, Wächter und Berechtigungssperren (`.claude/settings.json`) nie abschwächen oder umgehen; Agenten ändern `.claude/` und `tools/orchestrierung/` nie.
+- Codex ist der unabhängige Reviewer (Einzelmodus, nur über das Review-Paket), nie automatisch ein anderer Prüfer.
+
 ## Arbeitsweise (bei JEDER Aufgabe)
 1. Zuerst `docs/stand.md` lesen und kurz sagen, was du vorhast.
 2. Unklare Architekturfragen: Jonah mit konkreten Optionen fragen, nicht raten. Sonst Lösungen liefern, kein „geht nicht“.

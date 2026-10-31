@@ -162,3 +162,26 @@ test('Modell-Routing (Jonah, 31.10.2026): Haiku nur mechanisch, Sonnet direkt be
   // Opus bleibt hinter der Rückfrage-Berechtigung
   assert.ok(einst().permissions.ask.includes('Agent(blockwerk-entwickler-schwer)'));
 });
+
+test('Autonomer Auftragslauf (Jonah, 31.10.2026): die Git-Sperren bleiben unverändert; Commit, Push und Draft-PR gibt es nur über das Abschluss-Werkzeug; der Skill beschreibt den Ablauf', () => {
+  const e = einst();
+  assert.deepEqual(e.permissions.deny, ['Bash(git push *)', 'Bash(gh pr *)', 'Bash(git reset *)', 'Bash(git clean *)', 'Bash(git stash *)', 'Bash(git rebase *)'], 'deny unverändert');
+  assert.deepEqual(e.permissions.ask, ['Bash(git commit *)', 'Agent(blockwerk-entwickler-schwer)'], 'ask unverändert');
+  for (const erlaubt of e.permissions.allow ?? []) assert.ok(!/git (push|commit|add|switch|checkout|branch|merge|reset|stash|rebase|clean|tag)|\bgh\b|Bash\(\*\)|Bash\(node \*\)/.test(erlaubt), `allow öffnet kein Git-Schreiben und kein gh: ${erlaubt}`);
+  // Minimale Erlaubnisliste: genau diese Einträge, keine Sammelregel für cli.js, kein beliebiges node oder npm, nur Bash-Befehle dieses Projekts und die zwei Codex-Aufrufe
+  const cli = ['status', 'start', 'runde-ende', 'tore', 'paket', 'tests-ausfuehren', 'review-melden', 'befund-melden', 'uebernehmen', 'haupt-kontrolle', 'wiederherstellen', 'ende', 'abschluss'].map((b) => `Bash(node tools/orchestrierung/cli.js ${b} *)`);
+  assert.deepEqual([...(e.permissions.allow ?? [])].sort(), [...cli, 'Bash(node tools/karte.js *)', 'Bash(npm test)', 'Bash(npm run test:kurz)', 'Bash(npm run test:orchestrierung)', 'Bash(npm run test:pruefstein)', 'Bash(node --test test/*)',
+    'mcp__codex-bridge__review_code', 'mcp__codex-bridge__review_status'].sort(), 'allow ist die vereinbarte minimale Liste');
+  assert.ok(!e.permissions.allow.some((x) => /cli\.js \*\)|^Bash\(\*\)|^Bash\(node \*\)|^Bash\(npm \*\)|graphify|git |\bgh\b/.test(x)), 'keine Sammelregeln');
+  const skill = lies('.claude/skills/blockwerk-auftrag/SKILL.md');
+  for (const wort of ['Kritische Befunde (`critical`) gibst du nie selbst frei', 'nicht unabhängig geprüft', 'cli.js abschluss', 'Draft-PR', 'Gemergt wird nie', 'tests-ausfuehren', 'befund-melden', '--autonom', 'Codex prüft jede abgeschlossene Umsetzung', '**jede** neue externe Abhängigkeit',
+    'Änderungen des Auftragsumfangs', 'stoppen und Jonah berichten', 'drei Korrekturschleifen', 'Merge']) {
+    assert.ok(skill.includes(wort), `Skill nennt „${wort}“`);
+  }
+  assert.match(skill, /kein `gh`/, 'der Koordinator ruft gh nie selbst auf');
+  // der Wächter und die Kommandozeile halten Agenten vom Abschluss-Werkzeug fern
+  assert.ok(lies('.claude/hooks/git-wache.js').includes('bedient nur der Koordinator'));
+  assert.ok(lies('tools/orchestrierung/cli.js').includes('nur der Koordinator im Hauptverzeichnis'));
+  // die Agenten sind weiterhin vom Abschluss ausgeschlossen
+  for (const n of ['blockwerk-entwickler', 'blockwerk-entwickler-leicht', 'blockwerk-entwickler-schwer']) assert.ok(lies(`.claude/agents/${n}.md`).includes('allein der Koordinator'), n);
+});

@@ -2,9 +2,10 @@
 // Der Zustand liegt in `.claude/orchestrierung/` (nicht versioniert, nicht im Snapshot): `aktiv.json` für den laufenden Lauf, `laeufe/<id>/` für alles andere,
 // `sicherung/<id>/` für Journal und Kopien der Übernahme. Ohne aktiven Lauf legt der WorktreeCreate-Hook keinen Worktree an (fail-closed).
 import { randomBytes } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { git, gitStatus, zustand, zustandsUnterschiede } from './git.js';
+import { git, gitStatus, blobSha, zustand, zustandsUnterschiede } from './git.js';
 import { schnappschuss, seed } from './schnappschuss.js';
 import { aenderungen } from './delta.js';
 import { planen, anwenden, wiederherstellen, offeneJournale, KonfliktFehler } from './uebernehmen.js';
@@ -56,14 +57,29 @@ export function pruefeUnterbrochene(w) {
   return l;
 }
 
+/** Uncommittete Änderungen im Hauptbaum (geändert, gelöscht, gestaged, neu und nicht ignoriert), ohne Laufzustand und Worktrees. */
+export function fremdeAenderungen(w) {
+  const lies0 = (args) => git(w, args).split('\0').filter(Boolean);
+  const alle = new Set([...lies0(['ls-files', '-z', '-m', '-d', '-o', '--exclude-standard']), ...lies0(['diff', '--cached', '--name-only', '-z'])]);
+  return [...alle].map(vor).filter((p) => !AUSSER.some((x) => p === x || p.startsWith(`${x}/`))).sort();
+}
+
+/** Baum-Hash eines Snapshot-Commits. */
+const baumVon = (w, commit) => git(w, ['rev-parse', `${commit}^{tree}`]).trim();
+
 /**
  * Beginnt einen Lauf: prüft auf unterbrochene Übernahmen, erfasst den Zustand, legt den Snapshot S0 an.
- * @param {{auftrag: string, dateien?: string[], kontext?: string[], id?: string}} opt `dateien`: Globs der Dateien, die der Auftrag ändern darf
+ * @param {{auftrag: string, dateien?: string[], kontext?: string[], id?: string, autonom?: boolean}} opt `dateien`: Globs der Dateien, die der Auftrag ändern darf;
+ *   `autonom`: Lauf bis zur Draft-PR (`abschluss`); verlangt einen sauberen Arbeitsbaum, damit nie fremde uncommittete Änderungen in einen Commit geraten
  */
-export function starten(w, { auftrag, dateien = [], kontext = [], id = null }) {
+export function starten(w, { auftrag, dateien = [], kontext = [], id = null, autonom = false }) {
   if (!auftrag || !String(auftrag).trim()) throw new LaufFehler('Ein Lauf braucht einen Auftrag');
   const a0 = lies(w);
   if (a0?.status === 'aktiv') throw new LaufFehler(`Lauf ${a0.id} läuft noch. Zuerst: ende`);
+  if (autonom) {
+    const fremd = fremdeAenderungen(w);
+    if (fremd.length) throw new LaufFehler(`Ein autonomer Lauf braucht einen sauberen Arbeitsbaum (fremde uncommittete Änderungen würden sonst in den Commit geraten): ${fremd.slice(0, 8).join(', ')}${fremd.length > 8 ? ` … (${fremd.length} Dateien)` : ''}. Jonah fragen`);
+  }
   const wiederhergestellt = pruefeUnterbrochene(w);
   const laufId = id ?? `L${jetzt().replace(/[-:T]/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`;
   const vorher = zustand(w, { ausser: AUSSER });
@@ -71,6 +87,7 @@ export function starten(w, { auftrag, dateien = [], kontext = [], id = null }) {
   const a = {
     id: laufId, status: 'aktiv', auftrag, dateien, kontext, haupt: vor(w), head: vorher.head, zweig: vorher.zweig,
     s0: s0.commit, s0Baum: s0.tree, basis: s0.commit, runde: 0, runden: [], ausgeschlossen: s0.ausgeschlossen, erstellt: jetzt(), uebernommen: null,
+    autonom: Boolean(autonom), abschluss: null,
   };
   schreibeJson(path.join(laufDir(w, laufId), 'vorher.json'), vorher);
   schreibeJson(path.join(laufDir(w, laufId), 's0.json'), { commit: s0.commit, tree: s0.tree, aufgenommen: s0.aufgenommen, geloescht: s0.geloescht, ausgeschlossen: s0.ausgeschlossen });
@@ -125,16 +142,150 @@ export function paket(w, { kontext = [], hinweise = '', wurzel = null } = {}) {
   const a = brauche(w);
   if (a.runde < 1) throw new LaufFehler('Es gibt noch keine Runde mit Arbeit');
   const p = reviewPaket(w, a.s0, a.basis, wurzel ?? standardReviewVerzeichnis(), { id: `${a.id}-r${a.runde}`, kontext: [...a.kontext, ...kontext], hinweise: `${hinweise}\n\nAuftrag: ${a.auftrag}` });
-  anhaengen(path.join(laufDir(w, a.id), 'pakete.jsonl'), { runde: a.runde, dir: vor(p.dir), base: p.base, head: p.head, diffSha256: p.diffSha256, tokenSchaetzung: p.tokenSchaetzung, zeit: jetzt() });
+  anhaengen(path.join(laufDir(w, a.id), 'pakete.jsonl'), { runde: a.runde, baum: baumVon(w, a.basis), basis: a.basis, dir: vor(p.dir), base: p.base, head: p.head, diffSha256: p.diffSha256, tokenSchaetzung: p.tokenSchaetzung, zeit: jetzt() });
   return p;
 }
 
-/** Prüft und protokolliert die Kopffelder eines Codex-Ergebnisses. */
-export function reviewMelden(w, kopf) {
+const SCHWEREN = ['critical', 'major', 'minor', 'info'];
+const EINSTUFUNGEN = ['bestaetigt', 'widerlegt', 'hinweis'];
+const MIN_BELEG = 20;
+
+/**
+ * Prüft und protokolliert die Kopffelder eines Codex-Ergebnisses, gebunden an das Review-Paket des aktuellen Stands (Codezustand = Baum der Basis).
+ * `befunde`: alle Befunde, die das Ergebnis nennt, als [{id, schwere, kurz}]; jeder muss danach mit `befundMelden` eingestuft werden.
+ */
+export function reviewMelden(w, kopf, befunde = []) {
   const a = brauche(w);
+  const baum = baumVon(w, a.basis);
+  const paketEintrag = leseZeilen(path.join(laufDir(w, a.id), 'pakete.jsonl')).filter((x) => x.baum === baum).at(-1);
+  if (!paketEintrag) throw new LaufFehler('Für den aktuellen Codezustand gibt es kein Review-Paket (zuerst: paket). Ein Review zählt nur für genau den Stand, den das Paket enthielt');
+  if (!Array.isArray(befunde)) throw new LaufFehler('befunde muss eine Liste sein');
+  const ids = new Set();
+  for (const b of befunde) {
+    if (!b || typeof b.id !== 'string' || !b.id.trim()) throw new LaufFehler('Jeder Befund braucht eine id');
+    if (ids.has(b.id)) throw new LaufFehler(`Befund ${b.id} doppelt gemeldet`);
+    ids.add(b.id);
+    if (!SCHWEREN.includes(b.schwere)) throw new LaufFehler(`Befund ${b.id}: schwere muss eine von ${SCHWEREN.join(', ')} sein`);
+  }
   const r = pruefeReviewErgebnis(kopf);
-  anhaengen(path.join(laufDir(w, a.id), 'reviews.jsonl'), { runde: a.runde, gueltig: r.gueltig, gruende: r.gruende, verdict: kopf?.verdict ?? null, session_id: kopf?.session_id ?? null, zeit: jetzt() });
-  return r;
+  anhaengen(path.join(laufDir(w, a.id), 'reviews.jsonl'), {
+    runde: a.runde, baum, gueltig: r.gueltig, gruende: r.gruende, verdict: kopf?.verdict ?? null, session_id: kopf?.session_id ?? null,
+    befunde: befunde.map((b) => ({ id: b.id, schwere: b.schwere, kurz: String(b.kurz ?? '').slice(0, 200) })), zeit: jetzt(),
+  });
+  return { ...r, baum, befunde: befunde.length };
+}
+
+/**
+ * Stuft einen Befund des aktuellen Reviews ein: `bestaetigt` (echter Fehler: blockiert, muss in einer neuen Runde behoben werden),
+ * `widerlegt` (mit Beleg gegen den Code, mindestens 20 Zeichen) oder `hinweis` (nur bei minor/info, mit Beleg; blockiert nicht).
+ */
+export function befundMelden(w, { id, einstufung, beleg = '' }) {
+  const a = brauche(w);
+  const baum = baumVon(w, a.basis);
+  const rv = leseZeilen(path.join(laufDir(w, a.id), 'reviews.jsonl')).filter((x) => x.baum === baum).at(-1);
+  if (!rv) throw new LaufFehler('Für den aktuellen Codezustand gibt es noch kein gemeldetes Review (review-melden)');
+  const b = (rv.befunde ?? []).find((x) => x.id === id);
+  if (!b) throw new LaufFehler(`Befund „${String(id)}“ gehört nicht zum Review des aktuellen Codezustands`);
+  if (!EINSTUFUNGEN.includes(einstufung)) throw new LaufFehler(`einstufung muss eine von ${EINSTUFUNGEN.join(', ')} sein`);
+  if (einstufung !== 'bestaetigt' && String(beleg).trim().length < MIN_BELEG) throw new LaufFehler(`„${einstufung}“ braucht einen Beleg gegen den Code (mindestens ${MIN_BELEG} Zeichen)`);
+  if (einstufung === 'hinweis' && !['minor', 'info'].includes(b.schwere)) throw new LaufFehler(`Befund ${id} ist „${b.schwere}“: er kann nicht als bloßer Hinweis durchgehen (bestätigen oder mit Beleg widerlegen)`);
+  anhaengen(path.join(laufDir(w, a.id), 'befunde.jsonl'), { runde: a.runde, baum, session_id: rv.session_id, id, einstufung, beleg: String(beleg).slice(0, 1000), zeit: jetzt() });
+  return { id, einstufung, baum };
+}
+
+/** Stimmt jede Datei des Commit-Baums byteweise mit dem Verzeichnis überein? (zusätzliche Dateien im Verzeichnis, z. B. Testausgaben, stören nicht) */
+function gleichMitCommit(verzeichnis, commit) {
+  const abweichungen = [];
+  for (const e of git(verzeichnis, ['ls-tree', '-r', '-z', '--full-tree', commit]).split('\0').filter(Boolean)) {
+    const [meta, p] = e.split('\t'); const [, art, sha] = meta.split(' ');
+    if (art !== 'blob') continue;
+    const abs = path.join(verzeichnis, p);
+    if (!fs.existsSync(abs)) { abweichungen.push(`${p}: fehlt`); continue; }
+    if (blobSha(fs.readFileSync(abs)) !== sha) abweichungen.push(`${p}: Inhalt weicht ab`);
+  }
+  return abweichungen;
+}
+
+/** Die Testläufe, die das Werkzeug selbst startet (feste Argumente für Node, kein Shell-Text). `kurz` ist die vollständige Suite und für die Freigabe Pflicht. */
+export const SUITEN = Object.freeze({
+  kurz: ['--test', 'test/**/*.test.js'],
+  orchestrierung: ['--test', 'test/orchestrierung/*.orchestrierung.js'],
+  pruefstein: ['--test', 'test/pruefstein/*.pruefstein.js'],
+});
+
+/**
+ * Startet eine Testsuite im Worktree **selbst** und protokolliert das echte Ergebnis (Exit-Code und die Zahlen aus der Ausgabe von `node --test`),
+ * statt Zahlen des Koordinators zu glauben. Der Worktree muss vorher der gesicherten Basis entsprechen und danach unverändert sein
+ * (Tests dürfen den geprüften Stand nicht verändern).
+ */
+export function testsAusfuehren(w, { worktree, suite = 'kurz', timeoutMs = 1800000 }) {
+  const a = brauche(w);
+  if (!Object.hasOwn(SUITEN, suite)) throw new LaufFehler(`Unbekannte Suite „${String(suite)}“. Erlaubt: ${Object.keys(SUITEN).join(', ')}`);
+  const pfad = vor(path.resolve(worktree));
+  if (a.runde < 1) throw new LaufFehler('Es gibt noch keine Runde mit Arbeit');
+  if (!worktrees(w, a.id).some((x) => vor(path.resolve(x.pfad)) === pfad)) throw new LaufFehler(`${pfad} ist kein Worktree dieses Laufs`);
+  const vorher = gleichMitCommit(pfad, a.basis);
+  if (vorher.length) throw new LaufFehler(`Der Worktree weicht vom gesicherten Stand ab (zuerst runde-ende, dann testen): ${vorher.slice(0, 3).join('; ')}`);
+  const umgebung = { ...process.env };
+  delete umgebung.NODE_TEST_CONTEXT; // sonst schreibt ein verschachtelter Testlauf (z. B. aus einem Test heraus) kein lesbares Ergebnis
+  const r = spawnSync(process.execPath, SUITEN[suite], { cwd: pfad, encoding: 'utf8', timeout: timeoutMs, maxBuffer: 256 << 20, env: umgebung });
+  const zahl = (n) => { const m = (r.stdout ?? '').match(new RegExp(`ℹ ${n} ([0-9]+)`)); return m ? Number(m[1]) : null; };
+  const gruen = zahl('pass'), fehl = zahl('fail'), uebersprungen = zahl('skipped');
+  if (gruen === null || fehl === null) throw new LaufFehler(`Die Testausgabe war nicht lesbar (Exit ${r.status}, ${r.error ? r.error.message : 'ohne Zähler'}); es wird nichts protokolliert`);
+  const nachher = gleichMitCommit(pfad, a.basis);
+  if (nachher.length) throw new LaufFehler(`Die Tests haben den Worktree verändert (${nachher.slice(0, 3).join('; ')}); das Ergebnis gilt nicht für den gesicherten Stand`);
+  return testsMelden(w, { worktree, suite, gruen, fehlgeschlagen: fehl, uebersprungen: uebersprungen ?? 0, exit: r.status ?? 1, quelle: 'werkzeug' });
+}
+
+/**
+ * Protokolliert einen Testlauf für den aktuellen Codezustand. Der Worktree muss byteweise der gesicherten Basis entsprechen
+ * (sonst wären die Tests für einen anderen Stand gelaufen). Die Kommandozeile bietet nur `tests-ausfuehren` an (Ergebnis vom Werkzeug selbst gelesen).
+ */
+export function testsMelden(w, { worktree, suite, gruen, fehlgeschlagen, uebersprungen = 0, exit, quelle = 'gemeldet' }) {
+  const a = brauche(w);
+  if (a.runde < 1) throw new LaufFehler('Es gibt noch keine Runde mit Arbeit');
+  const pfad = vor(path.resolve(worktree));
+  if (!worktrees(w, a.id).some((x) => vor(path.resolve(x.pfad)) === pfad)) throw new LaufFehler(`${pfad} ist kein Worktree dieses Laufs`);
+  if (typeof suite !== 'string' || !suite.trim()) throw new LaufFehler('suite fehlt (z. B. "npm run test:kurz")');
+  for (const [k, v] of Object.entries({ gruen, fehlgeschlagen, uebersprungen, exit })) if (!Number.isInteger(v) || v < 0) throw new LaufFehler(`${k} muss eine ganze Zahl ab 0 sein`);
+  const abweichungen = gleichMitCommit(pfad, a.basis);
+  if (abweichungen.length) throw new LaufFehler(`Der Worktree weicht vom gesicherten Stand ab (zuerst runde-ende, dann testen): ${abweichungen.slice(0, 3).join('; ')}`);
+  const baum = baumVon(w, a.basis);
+  const eintrag = { runde: a.runde, baum, suite: suite.trim(), gruen, fehlgeschlagen, uebersprungen, exit, quelle, nachweis: 'worktree-gleich-basis', zeit: jetzt() };
+  anhaengen(path.join(laufDir(w, a.id), 'tests.jsonl'), eintrag);
+  return { ...eintrag, bestanden: exit === 0 && fehlgeschlagen === 0 && gruen > 0 };
+}
+
+/**
+ * Darf die Arbeit übernommen werden? Nur mit grünem Teststatus UND gültigem, vollständig eingestuftem Review, beide für exakt denselben Codezustand
+ * (Baum der aktuellen Basis). Jede neue Runde ändert den Stand und macht frühere Meldungen wirkungslos.
+ */
+export function freigabeStatus(w, a = brauche(w)) {
+  const baum = baumVon(w, a.basis);
+  const gruende = [];
+  const dir = laufDir(w, a.id);
+  // je Suite zählt der jüngste Lauf für genau diesen Codezustand; die vollständige Suite `kurz` ist Pflicht, weitere gestartete Suiten müssen ebenfalls grün sein
+  const jeSuite = new Map();
+  for (const x of leseZeilen(path.join(dir, 'tests.jsonl'))) if (x.baum === baum) jeSuite.set(x.suite, x);
+  const t = jeSuite.get('kurz') ?? null;
+  if (!t) gruende.push('Keine Testmeldung der Suite „kurz“ für exakt diesen Codezustand (tests-ausfuehren --worktree <pfad> nach runde-ende)');
+  for (const [name, x] of jeSuite) if (x.exit !== 0 || x.fehlgeschlagen !== 0 || !(x.gruen > 0)) gruende.push(`Tests „${name}“ nicht grün: ${x.gruen} grün, ${x.fehlgeschlagen} fehlgeschlagen, Exit ${x.exit}`);
+  const rv = leseZeilen(path.join(dir, 'reviews.jsonl')).filter((x) => x.baum === baum).at(-1) ?? null;
+  if (!rv) gruende.push('Kein Codex-Review für exakt diesen Codezustand (paket, review_code, review-melden)');
+  else if (!rv.gueltig) gruende.push(`Review ungültig: ${(rv.gruende ?? []).join('; ')}`);
+  else {
+    if (rv.verdict === 'reject') gruende.push('Das Review lautet „reject“');
+    if (rv.verdict !== 'approve' && !(rv.befunde ?? []).length) gruende.push(`Review „${rv.verdict}“ ohne gemeldete Befunde: Befunde mit review-melden --befunde erfassen`);
+    const eingestuft = new Map();
+    for (const e of leseZeilen(path.join(dir, 'befunde.jsonl'))) if (e.baum === baum && e.session_id === rv.session_id) eingestuft.set(e.id, e);
+    for (const b of rv.befunde ?? []) {
+      const e = eingestuft.get(b.id);
+      if (!e) gruende.push(`Befund ${b.id} (${b.schwere}) ist nicht eingestuft`);
+      else if (e.einstufung === 'bestaetigt') gruende.push(`Befund ${b.id} ist bestätigt und noch nicht behoben (neue Runde und neues Review nötig)`);
+      else if (b.schwere === 'critical') gruende.push(`Kritischer Befund ${b.id} ist nur eingestuft („${e.einstufung}“), nicht behoben: das Urteil über einen kritischen Befund trifft Jonah, nicht der Koordinator (Rückfrage; automatisch geht es erst mit einem neuen Review ohne diesen Befund weiter)`);
+    }
+  }
+  return { ok: gruende.length === 0, gruende, baum, tests: t, review: rv };
 }
 
 /** Zustand des Hauptrepositories gegenüber dem Start des Laufs: nur die Buchführung (HEAD, Zweig, Stash, Refs, Index) und optional erwartete Dateiänderungen. */
@@ -148,14 +299,21 @@ export function hauptKontrolle(w, { erwarteteDateien = [] } = {}) {
   return { unveraendert: buch.length === 0 && unerwartet.length === 0, buchfuehrung: buch, unerwarteteDateien: unerwartet, erwarteteDateien: dateien.filter((p) => erwarteteDateien.includes(p)) };
 }
 
-/** Übernimmt die geprüfte Arbeit in den Hauptarbeitsbaum (nur ohne offene Tore und ohne Konflikte). */
-export function uebernehmen(w, { erlaubt = [], vorSchritt } = {}) {
+/**
+ * Übernimmt die geprüfte Arbeit in den Hauptarbeitsbaum: nur ohne offene Tore, ohne Konflikte und mit Freigabe (grüne Tests und gültiges, eingestuftes Review
+ * für exakt diesen Codezustand). `freigabePruefen: false` gibt es nur für Tests der Mechanik; die Kommandozeile setzt es nie.
+ */
+export function uebernehmen(w, { erlaubt = [], vorSchritt, freigabePruefen = true } = {}) {
   const a = brauche(w);
   if (a.uebernommen) throw new LaufFehler('Die Arbeit dieses Laufs ist schon übernommen');
   if (a.runde < 1 || a.basis === a.s0) throw new LaufFehler('Es gibt nichts zu übernehmen');
   const { findings } = pruefeTore(w, a.s0, a.basis, { dateien: a.dateien.length ? a.dateien : null, ausgeschlossen: a.ausgeschlossen });
   const bew = bewerteTore(findings, erlaubt);
   if (!bew.frei) return { status: 'abgelehnt', grund: 'tore', stopp: bew.stopp, offen: bew.offen };
+  if (freigabePruefen) {
+    const f = freigabeStatus(w, a);
+    if (!f.ok) return { status: 'abgelehnt', grund: 'freigabe', gruende: f.gruende };
+  }
   let aktionen;
   try { aktionen = planen(w, a.s0, a.basis); } catch (f) { if (f instanceof KonfliktFehler) return { status: 'abgelehnt', grund: 'konflikt', konflikte: f.konflikte }; throw f; }
   const sicherung = path.join(sicherungsWurzel(w), a.id);
@@ -165,7 +323,7 @@ export function uebernehmen(w, { erlaubt = [], vorSchritt } = {}) {
   }
   const dateien = aktionen.map((x) => x.pfad);
   const kontrolle = hauptKontrolle(w, { erwarteteDateien: dateien });
-  a.uebernommen = { zeit: jetzt(), dateien, sicherung: vor(sicherung) };
+  a.uebernommen = { zeit: jetzt(), dateien, sicherung: vor(sicherung), erlaubt: [...erlaubt] };
   speichere(w, a);
   return { status: 'uebernommen', dateien, kontrolle, infos: findings.filter((x) => x.stufe === 'info') };
 }
@@ -193,7 +351,7 @@ export function beenden(w, { verwerfen = false } = {}) {
 export function status(w) {
   const a = lies(w);
   if (!a) return { aktiv: false, unterbrochen: offeneJournale(sicherungsWurzel(w)).map(vor) };
-  return { aktiv: a.status === 'aktiv', id: a.id, auftrag: a.auftrag, runde: a.runde, maxSchleifen: MAX_SCHLEIFEN, s0: a.s0.slice(0, 10), basis: a.basis.slice(0, 10), worktrees: worktrees(w, a.id).map((x) => x.pfad), runden: a.runden, uebernommen: Boolean(a.uebernommen), unterbrochen: offeneJournale(sicherungsWurzel(w)).map(vor) };
+  return { aktiv: a.status === 'aktiv', id: a.id, auftrag: a.auftrag, runde: a.runde, maxSchleifen: MAX_SCHLEIFEN, s0: a.s0.slice(0, 10), basis: a.basis.slice(0, 10), worktrees: worktrees(w, a.id).map((x) => x.pfad), runden: a.runden, uebernommen: Boolean(a.uebernommen), autonom: Boolean(a.autonom), abschluss: a.abschluss ?? null, unterbrochen: offeneJournale(sicherungsWurzel(w)).map(vor) };
 }
 
-export { wiederherstellen };
+export { wiederherstellen, brauche, speichere, laufDir, leseZeilen, baumVon, vor };

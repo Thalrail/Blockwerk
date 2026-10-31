@@ -23,7 +23,7 @@ test('Karte: abhängig findet Importeure über relative Pfade und Ordner-Index',
 
 test('Karte: abhängig ohne Funktionsoption bleibt unverändert', () => {
   const t = abhaengig('tools/orchestrierung/tore.js');
-  assert.match(t, /^test\/orchestrierung\/tore\.orchestrierung\.js:7\ntools\/orchestrierung\/lauf\.js:13$/);
+  assert.match(t, /^test\/orchestrierung\/tore\.orchestrierung\.js:7\ntools\/orchestrierung\/lauf\.js:\d+$/);
   assert.doesNotMatch(t, /Aufrufer auf Funktionsebene/);
 });
 

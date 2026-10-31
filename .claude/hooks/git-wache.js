@@ -17,6 +17,7 @@ const sonstVerboten = [
   [/\bnpx(\.cmd)?\s/i, 'npx ist für Agenten gesperrt'],
   [/\b(curl|wget|Invoke-WebRequest|iwr|certutil|bitsadmin)\b/i, 'Netz-Downloads sind für Agenten gesperrt'],
   [/\bclaude(\.exe)?\s/i, 'Agenten starten keine weiteren Claude-Sitzungen'],
+  [/tools[\\/]+orchestrierung[\\/]+(cli|abschluss|lauf|uebernehmen|schnappschuss|tore)(\.js)?\b|\bcli\.js\b/i, 'Das Orchestrierungs-Werkzeug (Übernahme, Abschluss mit Commit, Push und Draft-PR) bedient nur der Koordinator'],
   [/(^|[\s'"=(])\.\.(?=[/\\\s'";|&)]|$)/, 'Verlassen des Worktrees über „..“ ist gesperrt'],
 ];
 

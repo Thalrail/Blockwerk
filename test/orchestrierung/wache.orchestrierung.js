@@ -37,13 +37,13 @@ test('Wächter: Hauptsitzung bleibt unbeschränkt, unlesbare Eingabe blockiert n
 test('Wächter: Agenten dürfen lesen und prüfen, aber nicht in Git schreiben, installieren, laden oder ausbrechen', () => {
   const repo = neuesRepo();
   const bash = (command) => ruf(repo, agent(repo, 'Bash', { command }));
-  for (const ok of ['git status', 'git diff --stat', 'git log --oneline -5', 'git show HEAD:src/a.js', 'git rev-parse HEAD', 'git ls-files', 'npm test', 'node --test test/x.test.js', 'ls -a', 'cat package.json', 'git diff --check']) {
+  for (const ok of ['git status', 'git diff --stat', 'git log --oneline -5', 'git show HEAD:src/a.js', 'git rev-parse HEAD', 'git ls-files', 'npm test', 'node --test test/x.test.js', 'ls -a', 'cat package.json', 'git diff --check', 'node --test test/orchestrierung/abschluss.orchestrierung.js', 'node tools/karte.js datei tools/karte.js']) {
     assert.equal(gesperrt(bash(ok)), false, ok);
   }
   for (const nein of ['git commit -m x', 'git push origin main', 'git branch neu', 'git checkout -b x', 'git switch main', 'git merge x', 'git rebase main', 'git reset --hard',
     'git stash', 'git clean -fd', 'git tag v1', 'git worktree add x', 'git add -A', 'git apply p.patch', 'git config user.name x', 'git -C . commit -m x', 'git update-ref HEAD x',
     `node -e "require('child_process').execSync('git push')"`, 'gh pr create', 'gh api repos/x', 'npm install lodash', 'npm i x', 'npm ci', 'npx foo', 'curl https://x.de', 'wget https://x.de',
-    'claude -p hallo', 'cd .. && ls', 'cat ../../x', `cat ${vor(repo)}/package.json`]) {
+    'claude -p hallo', 'node tools/orchestrierung/cli.js abschluss --kurzname x', 'node tools/orchestrierung/cli.js uebernehmen', 'node ./tools/orchestrierung/cli', `node -e "import('./tools/orchestrierung/abschluss.js')"`, 'cd tools/orchestrierung && node cli.js uebernehmen', 'cd .. && ls', 'cat ../../x', `cat ${vor(repo)}/package.json`]) {
     assert.equal(gesperrt(bash(nein)), true, nein);
   }
   // der eigene Worktree unter dem Hauptverzeichnis ist ausdrücklich erlaubt

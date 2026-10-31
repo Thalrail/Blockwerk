@@ -86,14 +86,14 @@ test('Tore vor der Übernahme, Zustimmung, Übernahme, Kontrolle und Ende', () =
   w(wt, 'src/neu/dep.js', "import _ from 'lodash';\nexport default _;\n");
   const r = lauf.rundeEnde(repo, { worktree: wt });
   assert.equal(r.bewertung.frei, false);
-  const abgelehnt = lauf.uebernehmen(repo);
+  const abgelehnt = lauf.uebernehmen(repo, { freigabePruefen: false });
   assert.equal(abgelehnt.status, 'abgelehnt'); assert.equal(abgelehnt.grund, 'tore');
   assert.ok(abgelehnt.offen.some((x) => x.tor === 'abhaengigkeit'));
   assert.ok(!fs.existsSync(path.join(repo, 'src/neu/dep.js')), 'nichts übernommen');
   assert.deepEqual(buch(zustand(repo, { ausser: AUSSER })), buch(vorher));
   assert.throws(() => lauf.beenden(repo), /nicht übernommene Arbeit/);
   // Jonah stimmt zu → Übernahme
-  const ok = lauf.uebernehmen(repo, { erlaubt: ['abhaengigkeit'] });
+  const ok = lauf.uebernehmen(repo, { erlaubt: ['abhaengigkeit'], freigabePruefen: false });
   assert.equal(ok.status, 'uebernommen');
   assert.deepEqual(ok.dateien, ['src/neu/dep.js']);
   assert.equal(ok.kontrolle.unveraendert, true, 'HEAD, Zweig, Stash, Refs, Index unberührt; nur die erwartete Datei ist neu');
@@ -117,7 +117,7 @@ test('Stopp-Tore sind nie freizugeben; Konflikte im Hauptbaum lehnen ab; Verwerf
   w(wt, '.claude/hooks/boese.js', 'x\n'); w(wt, 'src/gut.js', 'x\n');
   const r = lauf.rundeEnde(repo, { worktree: wt });
   assert.ok(r.bewertung.stopp.some((x) => x.tor === 'sicherheit'));
-  assert.equal(lauf.uebernehmen(repo, { erlaubt: ['sicherheit', 'sicherheit:.claude/hooks/boese.js'] }).status, 'abgelehnt');
+  assert.equal(lauf.uebernehmen(repo, { erlaubt: ['sicherheit', 'sicherheit:.claude/hooks/boese.js'], freigabePruefen: false }).status, 'abgelehnt');
   assert.ok(!fs.existsSync(path.join(repo, 'src/gut.js')));
   lauf.beenden(repo, { verwerfen: true });
   // Konflikt: jemand ändert denselben Text im Hauptbaum, während der Agent arbeitet
@@ -126,7 +126,7 @@ test('Stopp-Tore sind nie freizugeben; Konflikte im Hauptbaum lehnen ab; Verwerf
   w(wt2, 'src/a.js', 'eins\nZWEI\ndrei\nAGENT\nfünf\n');
   lauf.rundeEnde(repo, { worktree: wt2 });
   w(repo, 'src/a.js', 'eins\nZWEI\ndrei\nMENSCH\nfünf\n');
-  const k = lauf.uebernehmen(repo);
+  const k = lauf.uebernehmen(repo, { freigabePruefen: false });
   assert.equal(k.status, 'abgelehnt'); assert.equal(k.grund, 'konflikt');
   assert.equal(text(repo, 'src/a.js'), 'eins\nZWEI\ndrei\nMENSCH\nfünf\n', 'die Änderung des Menschen ist unangetastet');
 });

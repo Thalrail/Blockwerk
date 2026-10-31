@@ -8,3 +8,4 @@ patches/
 reviews.db*
 .claude/worktrees/
 .claude/orchestrierung/
+.werkzeuge/

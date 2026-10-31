@@ -19,6 +19,11 @@ test('Zitadelle (Stufe 1): die Spezifikation besteht Prüfer und Übersetzung un
     const ueber = a.von.x <= b.bis.x && b.von.x <= a.bis.x && a.von.y <= b.bis.y && b.von.y <= a.bis.y && a.von.z <= b.bis.z && b.von.z <= a.bis.z;
     assert.equal(ueber, false, `${u.vorgabe.abschnitte[i].id} und ${u.vorgabe.abschnitte[j].id} überschneiden sich`);
   }
+  // Weichensteuerung: genau eine Anfrage je Teil mit Lorenbahn-Nischen (7 Viertel), sonst keine
+  const lorenTeile = spec.teile.filter((t) => t.funktionen?.some((f) => f.art === 'handelsnischen' && f.bauart === 'lorenbahn')).map((t) => t.id).sort();
+  assert.equal(lorenTeile.length, 7);
+  assert.deepEqual(u.vorgabe.abschnitte.filter((a) => a.bedarf?.some((b) => b.art === 'weichensteuerung')).map((a) => a.id).sort(), lorenTeile);
+  for (const a of u.vorgabe.abschnitte) assert.ok((a.bedarf ?? []).filter((b) => b.art === 'weichensteuerung').length <= 1, a.id);
   // Zahlen aus den Bildern. ACHTUNG: Bild 13 nennt „8 × 20 = 160 Nischen“, zeigt aber nur 7 Viertel mit Ständen (Händlerlisten 1–70 = 7 × 10) und die Eingangshalle ohne Stände: 7 × 20 = 140.
   // Entschieden (Jonah, 27.10.2026): 140. Die Kenndaten auf Bild 13 (160) stimmen nicht (docs/zitadelle/beschreibung.md, Frage 7).
   const nischen = spec.teile.flatMap((t) => (t.funktionen ?? []).filter((f) => f.art === 'handelsnischen'));

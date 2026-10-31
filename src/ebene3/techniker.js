@@ -31,8 +31,11 @@ export function erzeugeTechniker({ regelwerk, fachleute, ebene1, ebene2, materia
     if (art.menge) {
       if (!Number.isInteger(b[art.menge]) || b[art.menge] < 1) throw new BedarfFehler(`${b.id}: ${art.menge} braucht eine ganze Zahl ab 1`);
       const n = b[art.menge], teile = [];
-      for (let rest = n; rest > 0; rest -= art.maximum) teile.push({ [art.menge]: Math.min(rest, art.maximum), ...(b.beruf !== undefined ? { beruf: b.beruf } : {}) });
-      return teile.map((parameter) => ({ baustein: art.baustein, parameter }));
+      const bauart = b.bauart === undefined ? null : art.bauarten?.[b.bauart];
+      if (b.bauart !== undefined && !bauart) throw new BedarfFehler(`${b.id}: Bauart „${b.bauart}“ gibt es nicht (${Object.keys(art.bauarten ?? {}).join(', ')})`);
+      const { baustein, maximum } = bauart ?? art;
+      for (let rest = n; rest > 0; rest -= maximum) teile.push({ [art.menge]: Math.min(rest, maximum), ...(b.beruf !== undefined ? { beruf: b.beruf } : {}) });
+      return teile.map((parameter) => ({ baustein, parameter }));
     }
     if (!Array.isArray(b[art.liste]) || !b[art.liste].length) throw new BedarfFehler(`${b.id}: ${art.liste} braucht eine Liste mit mindestens einem Eintrag`);
     return teilen(b[art.liste], art.maximum).map((teil) => ({ baustein: art.baustein, parameter: { [art.liste]: teil } }));
@@ -130,7 +133,7 @@ export function erzeugeTechniker({ regelwerk, fachleute, ebene1, ebene2, materia
       e = aendere(e, { art: 'setze-teil', teil: { abschnitt, baustein: m.baustein, parameter: m.parameter, lage, bedarf: m.bedarf, anschluesse } });
       const id = e.teile.at(-1).id;
       ids.push(id);
-      if (m.baustein === 'tech.handelsnischen') {
+      if (m.baustein === 'tech.handelsnischen' || m.baustein === 'tech.handelsnischen-lore') {
         const h = verschoben(m.huelle, lage);
         e = aendere(e, { art: 'setze-sperrzone', sperrzone: {
           id: `SZ-${id}`, verbot: 'arbeitsblock',

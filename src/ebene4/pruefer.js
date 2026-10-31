@@ -167,7 +167,12 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
         if (fu.art === 'handelsnischen') {
           const m = regel.menge;
           if (!ganz(fu.menge) || fu.menge < m.min || fu.menge > m.max) frage(`${fp}.menge`, 'leser.schema', `Die Zahl der Handelsnischen von ${wer} (${JSON.stringify(fu.menge)}) ist nicht möglich (ganze Zahl von ${m.min} bis ${m.max}).`);
-          else if (fu.menge > regel.modul.maximum) hinweis(fp, `${wer}: ${fu.menge} Handelsnischen werden in ${Math.ceil(fu.menge / regel.modul.maximum)} Module zu höchstens ${regel.modul.maximum} geteilt.`);
+          else {
+            // das Höchstmaß je Modul hängt von der Bauart ab (wie beim Techniker: Daten plan.bedarf); unbekannte Bauart gilt als Standard
+            const max = (regel.modul.bauarten?.[fu.bauart] ?? regel.modul).maximum;
+            if (fu.menge > max) hinweis(fp, `${wer}: ${fu.menge} Handelsnischen werden in ${Math.ceil(fu.menge / max)} Module zu höchstens ${max} geteilt.`);
+          }
+          if (fu.bauart !== undefined && !regel.bauart.werte.includes(fu.bauart)) unbekannt(`${fp}.bauart`, 'leser.schema', `Die Bauart der Handelsnischen von ${wer}`, fu.bauart, regel.bauart.werte);
           if (fu.beruf !== undefined && !(ganz(fu.beruf) && fu.beruf >= regel.beruf.min && fu.beruf <= regel.beruf.max)) frage(`${fp}.beruf`, 'leser.schema', `Der Beruf ${JSON.stringify(fu.beruf)} ist nicht möglich (Nummer ${regel.beruf.min} bis ${regel.beruf.max}).`);
         } else if (fu.art === 'lager') {
           if (!Array.isArray(fu.sorten)) frage(`${fp}.sorten`, 'leser.schema', `Welche Gegenstandssorten soll das Lager von ${wer} aufnehmen${zahl(fu.menge) ? ` (genannt wurde nur die Zahl ${fu.menge})` : ''}? Blockwerk braucht die Liste, zum Beispiel „minecraft:cobblestone“.`);

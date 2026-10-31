@@ -251,3 +251,31 @@ test('Leser: Zusammenfassung, Freigabe und Versionen', () => {
   // die neue Version wird wieder geprüft und kann freigegeben werden
   assert.equal(L.freigeben(v2).freigabe.version, 2);
 });
+
+test('Leser: Bauart der Handelsnischen (Prüfer, Briefing, Zusammenfassung, Weichensteuerung ohne Modul)', () => {
+  const mit = (bauart) => { const s = gut(); s.teile[1].funktionen[0] = { art: 'handelsnischen', menge: 20, ...(bauart !== undefined ? { bauart } : {}) }; return s; };
+  assert.deepEqual(L.pruefe(mit('lorenbahn')).rueckfragen, []);
+  assert.deepEqual(L.pruefe(mit('zelle')).rueckfragen, []);
+  assert.deepEqual(L.pruefe(mit()).rueckfragen, []);
+  const f = L.pruefe(mit('lorenbahm')).rueckfragen;
+  assert.equal(f.length, 1);
+  assert.equal(f[0].pfad, 'teile[1].funktionen[0].bauart');
+  assert.ok(f[0].optionen.some((o) => o.wert === 'lorenbahn'), 'ähnlichste Bauart wird angeboten');
+  assert.match(L.briefing({ text: 'x' }), /bauart = zelle \| lorenbahn \(Standard zelle/);
+  assert.match(L.zusammenfassung(mit('lorenbahn')), /20 Handelsnischen, Bauart Lorenbahn/);
+  assert.ok(!L.zusammenfassung(mit('zelle')).includes('Bauart Lorenbahn'));
+  const s = gut(); s.teile[1].funktionen.push({ art: 'weichensteuerung' });
+  assert.deepEqual(L.pruefe(s).rueckfragen, []);
+  assert.ok(L.pruefe(s).hinweise.some((h) => /weichensteuerung.*kein Modul/.test(h.text)));
+});
+
+test('Leser: Hinweis zur Modulteilung folgt der Bauart (Zelle 256, Lorenbahn 64)', () => {
+  const hinweise = (menge, bauart) => { const s = gut(); s.teile[1].funktionen[0] = { art: 'handelsnischen', menge, ...(bauart ? { bauart } : {}) }; return L.pruefe(s).hinweise.map((h) => h.text).filter((x) => /Module zu höchstens/.test(x)); };
+  assert.deepEqual(hinweise(64, 'lorenbahn'), []);
+  assert.match(hinweise(65, 'lorenbahn')[0], /65 Handelsnischen werden in 2 Module zu höchstens 64 geteilt/);
+  assert.match(hinweise(300, 'lorenbahn')[0], /300 Handelsnischen werden in 5 Module zu höchstens 64 geteilt/);
+  assert.deepEqual(hinweise(256), []);
+  assert.deepEqual(hinweise(300, 'zelle').length, 1);
+  assert.match(hinweise(300, 'zelle')[0], /in 2 Module zu höchstens 256/);
+  assert.match(hinweise(300)[0], /in 2 Module zu höchstens 256/, 'ohne Angabe: Zelle');
+});

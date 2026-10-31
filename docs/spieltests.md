@@ -213,6 +213,9 @@ Kreativwelt, eine Nische nach dem Plan von `tech.handelsnischen-lore` (Anordnung
 3. **Bodenfalltür:** Hebel an der Front umlegen: fällt er in den Kanal, und trägt ihn das Wasser (Quelle am Anfang, Wasserfall nach 6 Zellen) bis zum Ende? Bleibt er an der Quelle oder in 1-Block-Höhe stecken? (`stroemung.wasser`, `stroemung.quelle`)
 4. **Berufsblock:** Nimmt er den Beruf an, obwohl kein Bett in der Nische steht? Kann man durch die Scheibe handeln?
 5. **Baby:** Kommt ein Baby-Dorfbewohner durch irgendeine Lücke an der Front hinaus?
+6. **Weiche:** Der Baustein enthält nur die T-Stelle (Stich zweigt von der Zufuhrbahn ab). Wohin fährt eine Lore an einer T-Stelle mit durchgehender Antriebsschiene? (Die Weichensteuerung ist eine Schaltungsanfrage, noch kein Baustein.)
+
+Stand: alle Regeln dieser Nische (`passagiere.*`, `stroemung.*`, `tech.lorennische`) sind **ungeprüft**; Java-Platzhalter, wo Bedrock schweigt. Nichts wird auf „geprüft“ gesetzt, bevor du es im Spiel gemeldet hast.
 
 ## Dorfbewohner: die wichtigsten Tests (Ebene 1)
 Kreativ-Testwelt, Dorfbewohner-Ei oder ein Dorf; alles Java-Platzhalter, nur prüfen, wenn dir im Spiel etwas anders vorkommt:

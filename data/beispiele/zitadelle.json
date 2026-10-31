@@ -2,9 +2,9 @@
   "offeneFragen": [],
   "projekt": {
     "bauplatz": {
-      "breite": 420,
+      "breite": 600,
       "hoehe": 160,
-      "tiefe": 420
+      "tiefe": 600
     },
     "massstab": 1,
     "name": "Die Zitadelle (Stufe 1: Hülle und Handel)",
@@ -215,6 +215,7 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 8,
           "menge": 20
         }
@@ -248,6 +249,7 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 0,
           "menge": 20
         }
@@ -282,11 +284,13 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 12,
           "menge": 10
         },
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 11,
           "menge": 10
         }
@@ -320,11 +324,13 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 4,
           "menge": 10
         },
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 1,
           "menge": 10
         }
@@ -385,16 +391,19 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 5,
           "menge": 7
         },
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 10,
           "menge": 7
         },
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 7,
           "menge": 6
         }
@@ -429,11 +438,13 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 9,
           "menge": 10
         },
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 2,
           "menge": 10
         }
@@ -467,11 +478,13 @@
       "funktionen": [
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 3,
           "menge": 10
         },
         {
           "art": "handelsnischen",
+          "bauart": "lorenbahn",
           "beruf": 6,
           "menge": 10
         }

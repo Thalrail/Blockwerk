@@ -38,7 +38,7 @@ export function erzeugeBriefing({ vokabular: V }) {
     relationen: () => Object.entries(V.relationen).map(([k, t]) => `- ${k}: ${t.replace('{bezug}', 'dem Bezug')}`),
     funktionen: () => [
       ...Object.entries(V.funktionen).map(([art, r]) => (art === 'handelsnischen'
-        ? `- handelsnischen: menge = ganze Zahl ${r.menge.min}–${r.menge.max} (Dorfbewohner-Handelszellen); optional beruf = Nummer ${r.beruf.min}–${r.beruf.max}`
+        ? `- handelsnischen: menge = ganze Zahl ${r.menge.min}–${r.menge.max} (Dorfbewohner-Handelszellen); optional beruf = Nummer ${r.beruf.min}–${r.beruf.max}; optional bauart = ${r.bauart.werte.join(' | ')} (Standard ${r.bauart.standard}: zelle = geschlossene Zelle mit Bett, lorenbahn = Zufuhr per Lore von oben, Rückführung per Wasserkanal)`
         : `- lager: sorten = Liste von Gegenstands-IDs wie "minecraft:cobblestone" (${r.sorten.min}–${r.sorten.max}); nenne immer die Sorten, nicht nur die Zahl`)),
       ...V.funktionenOhneModul.map((a) => `- ${a}: nur die Art nennen (dafür gibt es noch kein fertiges Modul)`),
     ],

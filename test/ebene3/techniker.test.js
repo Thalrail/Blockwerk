@@ -234,3 +234,31 @@ test('Techniker: Bilanz und Einspruch', () => {
   assert.match(fehler(GliederungFehler, () => K.ergaenzeAbhaengigkeit(laufend, 'halle', 'lager')), /Rückgriff/);
   assert.match(fehler(GliederungFehler, () => K.ergaenzeAbhaengigkeit(g, 'halle', 'zz')), /gibt es nicht/);
 });
+
+test('Techniker: Bauart Lorenbahn wählt den Baustein der Lorenbahn-Nische (Teilung bei 64, Sperrzone, Fehler)', () => {
+  const lore = (id, anzahl, extra = {}) => nischen(id, anzahl, { bauart: 'lorenbahn', ...extra });
+  const teilung = (b) => T.plane(T.setzeBedarf(halle(), [b]), 'halle').liste.map((m) => [m.baustein, m.parameter.anzahl]);
+  assert.deepEqual(teilung(lore('N', 20)), [['tech.handelsnischen-lore', 20]]);
+  assert.deepEqual(teilung(lore('N', 64)), [['tech.handelsnischen-lore', 64]]);
+  assert.deepEqual(teilung(lore('N', 65)), [['tech.handelsnischen-lore', 64], ['tech.handelsnischen-lore', 1]]);
+  assert.deepEqual(teilung(nischen('N', 20, { bauart: 'zelle' })), [['tech.handelsnischen', 20]], 'Zelle bleibt wie bisher');
+  assert.deepEqual(teilung(nischen('N', 20)), [['tech.handelsnischen', 20]], 'ohne Angabe: Zelle');
+  assert.deepEqual(T.plane(T.setzeBedarf(halle(), [lore('N', 3, { beruf: 4 })]), 'halle').liste[0].parameter, { anzahl: 3, beruf: 4 });
+  const msg = fehler(BedarfFehler, () => T.setzeBedarf(halle(), [lore('N', 3, { bauart: 'schwebend' })]));
+  assert.match(msg, /Bauart „schwebend“ gibt es nicht \(zelle, lorenbahn\)/);
+
+  // gesetzt: Modul in der Technikzone, Sperrzone um die Nische, Anschlüsse in Weltkoordinaten
+  const e0_ = T.setzeBedarf(zone(halle(), { von: { x: 0, y: -5, z: -30 }, bis: { x: 100, y: 20, z: 30 } }), [lore('B1', 20)]);
+  const r = T.setzeModule(e0_, 'halle');
+  assert.equal(r.passt, true);
+  const t = r.entwurf.teile.find((x) => x.baustein === 'tech.handelsnischen-lore');
+  assert.ok(t);
+  assert.ok(innen(weltHuelle(t), r.entwurf.zonen[0]), 'Hülle liegt in der Technikzone');
+  assert.deepEqual(r.entwurf.sperrzonen.map((s) => [s.id, s.verbot]), [[`SZ-${t.id}`, 'arbeitsblock']]);
+  assert.deepEqual(t.anschluesse.map((a) => a.art), ['front', 'zufuhr', 'rueckfuehrung', 'weichen']);
+  assert.equal(t.anschluesse[2].x >= t.lage.x, true);
+  // zu schmale Zone: Einwand an den Grobdesigner mit dem Mindestmaß der Lorenbahn-Nische
+  const eng = T.setzeBedarf(zone(halle(), { von: { x: 0, y: -5, z: -30 }, bis: { x: 20, y: 20, z: 30 } }), [lore('B1', 20)]);
+  assert.equal(T.setzeModule(eng, 'halle').passt, false);
+  assert.match(T.einwaende(eng)[0].text, /reicht für den Bedarf nicht, nötig sind in einer Reihe mindestens 45 × 6 × 12 Blöcke/);
+});

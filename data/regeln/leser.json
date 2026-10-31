@@ -70,6 +70,13 @@
             "beruf": {
               "min": 0,
               "max": 12
+            },
+            "bauart": {
+              "werte": [
+                "zelle",
+                "lorenbahn"
+              ],
+              "standard": "zelle"
             }
           },
           "lager": {
@@ -88,6 +95,7 @@
           "felder",
           "sammelbecken",
           "lorenbahn-netz",
+          "weichensteuerung",
           "aufzug",
           "wasserrueckfuehrung"
         ],

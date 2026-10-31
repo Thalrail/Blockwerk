@@ -39,7 +39,7 @@
   nur benötigte Texturen, Blockwerk bleibt kostenlos, nicht als offiziell darstellen. Quelle: https://faithfulpack.net/license
 
 ## Freigabegrenzen und Sicherheit (gelten für alle Agenten, Details `docs/orchestrierung.md`)
-- Ohne Rückfrage: Umsetzung im Auftrag, Tests, Routinekorrekturen, Doku. **Vorher Jonahs Zustimmung:** fachliche Architektur, neue externe Abhängigkeiten, grundlegende Bedrock-Entscheidungen, Planungsverhalten außerhalb des Auftrags, **jeder Commit, Push und PR**, nicht sicher auflösbare Konflikte und Datenverlustrisiken, **jeder Einsatz von Opus**.
+- Ohne Rückfrage: Umsetzung im Auftrag, Tests, Routinekorrekturen, Doku und, mit der Freigabe eines Auftrags über `/blockwerk-auftrag`, **Commit, Push und Draft-PR** auf einem eigenen Branch `claude/<name>` (nur über das Abschluss-Werkzeug, nur mit grünen Tests und gültigem Codex-Review für denselben Codezustand). **Vorher Jonahs Zustimmung:** fachliche Architektur, jede neue externe Abhängigkeit, grundlegende Bedrock-Entscheidungen, Änderungen des Auftragsumfangs, Planungsverhalten außerhalb des Auftrags, nicht sicher auflösbare Konflikte und Datenverlustrisiken, **jeder Einsatz von Opus**. **Merge, Force-Push und Push auf `main` gibt es nie automatisch** (nur Jonah).
 - Keine Zugangsdaten lesen, ausgeben oder ins Repo legen. Keine globalen Claude-/Codex-Einstellungen ändern. Hooks, Wächter und Berechtigungssperren (`.claude/settings.json`) nie abschwächen oder umgehen; Agenten ändern `.claude/` und `tools/orchestrierung/` nie.
 - Codex ist der unabhängige Reviewer (Einzelmodus, nur über das Review-Paket), nie automatisch ein anderer Prüfer.
 

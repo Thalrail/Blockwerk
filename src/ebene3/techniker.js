@@ -149,7 +149,7 @@ export function erzeugeTechniker({ regelwerk, fachleute, ebene1, ebene2, materia
   function bilanz(entwurf) {
     const fertig = new Set(entwurf.abschnitte.filter((a) => a.status === 'fertig').map((a) => a.id));
     const teil = { ...kopie(entwurf), teile: kopie(entwurf).teile.filter((t) => fertig.has(t.abschnitt)) };
-    const welt = materialisierung.materialisiere(teil).welt;
+    const welt = materialisierung.materialisiere(teil, { testmaterial: true }).welt;
     const d = ebene1.dorf;
     const werte = {
       abschnitte: fertig.size,

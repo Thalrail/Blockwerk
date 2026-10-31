@@ -16,7 +16,7 @@ const istOffen = (r) => r.status === undefined || r.status === 'offen';
 /**
  * @param {{regelwerk: object, fachleute: object, konstrukteur: object, techniker: object, grobdesigner: object, architekt: object, designer: object, einwaende: object}} quellen
  */
-export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende }) {
+export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung }) {
   const maxRueckgriffe = regelwerk.parameter('plan.rueckgriff', 'maximum');
   const antwortOptionen = regelwerk.parameter('plan.rueckgriff', 'optionen');
   const aenderbar = regelwerk.parameter('plan.rueckgriff', 'aenderbar');
@@ -35,6 +35,23 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
 
   const offeneRueckfragen = (e) => e.rueckfragen.filter(istOffen);
   const ergebnis = (e, status) => ({ entwurf: e, status, rueckfragen: offeneRueckfragen(e), offeneAnfragen: (e.anfragen ?? []).filter((a) => a.status === 'offen') });
+
+  /**
+   * Hat jeder Abschnitt eine vollständige Palette (alle Rollen)? Wenn nicht, fragt der Bauleiter Jonah nach der Stimmung (Optionen: nur die unterstützten),
+   * statt zu raten oder Testmaterial einzusetzen. Gibt den Entwurf mit der Rückfrage zurück oder null, wenn alles belegt ist.
+   */
+  function paletteFrage(e) {
+    const luecken = materialisierung.paletteLuecken(e);
+    if (!luecken.length) return null;
+    const optionen = [...D.stimmungen()].sort().map((n) => ({ id: `stimmung:${n}`, text: `Stimmung „${n}“ für das ganze Bauwerk wählen` }));
+    const wo = luecken.map((x) => `${x.abschnitt} (${x.rollen.join(', ')})`).join('; ');
+    return stelleFrage(e, {
+      regel: 'plan.palette', an: 'designer', ort: e.projekt.nullpunkt, art: 'palette', optionen,
+      text: `Es gibt keine vollständige Palette: es fehlen Materialrollen bei ${wo}`,
+      frage: `Für das Bauwerk ist keine vollständige Palette festgelegt (es fehlen Materialrollen bei ${wo}). Welche Stimmung soll gelten? Ich rate nicht und setze kein Testmaterial ein.`,
+      schluessel: `plan.palette|${e.zaehler.einwand}`,
+    }).entwurf;
+  }
 
   /** Abschnitt und alle von ihm (auch mittelbar) abhängigen. */
   function abhaengige(e, id) {
@@ -201,6 +218,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
   function abschliessen(entwurf, optionen = {}) {
     const handler = { ...standardHandler, ...(optionen.handler ?? {}) };
     if (!entwurf.abschnitte.every((a) => a.status === 'fertig')) throw new AblaufFehler('Es sind noch nicht alle Abschnitte fertig');
+    const ohnePalette = paletteFrage(entwurf);
+    if (ohnePalette) return ergebnis(ohnePalette, 'wartet');
     let e = K.pruefeNaehte(entwurf);
     const fehlend = [...new Set(e.teile.filter((t) => t.weg).map((t) => t.weg))].filter((w) => !e.pruefungen.some((p) => p.weg === w));
     if (fehlend.length) {
@@ -220,6 +239,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     let e = entwurf;
     for (let schutz = 0; schutz < 500; schutz++) {
       if (offeneRueckfragen(e).length) return ergebnis(e, 'wartet');
+      const ohnePalette = paletteFrage(e);
+      if (ohnePalette) return ergebnis(ohnePalette, 'wartet');
       let id = e.abschnitte.find((a) => a.status === 'in-arbeit')?.id;
       if (!id) {
         const n = K.naechster(e);
@@ -290,6 +311,15 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     const r = entwurf.rueckfragen.find((x) => x.id === rueckfrageId);
     if (!r) throw new AblaufFehler(`Rückfrage ${String(rueckfrageId)} gibt es nicht`);
     if (!istOffen(r)) throw new AblaufFehler(`Rückfrage ${rueckfrageId} ist schon beantwortet`);
+    if (r.art === 'palette') {
+      const name = /^stimmung:(.+)$/.exec(String(option))?.[1];
+      if (!name || !D.stimmungen().includes(name)) throw new AblaufFehler(`Option „${String(option)}“ unbekannt (${r.optionen.map((o) => o.id).join(', ')})`);
+      const e = D.setzePalette(entwurf, name);
+      e.rueckfragen.find((x) => x.id === rueckfrageId).status = 'beantwortet';
+      e.einwaende.find((x) => x.id === r.einwand).status = 'beantwortet';
+      haengeAn(e, 'entscheidung', { von: 'jonah', text: `wählt die Stimmung „${name}“ für die Gesamtpalette` });
+      return e;
+    }
     if (!antwortOptionen.includes(option)) throw new AblaufFehler(`Option „${String(option)}“ unbekannt (${antwortOptionen.join(', ')})`);
     const ew = entwurf.einwaende.find((x) => x.id === r.einwand);
     if (option !== 'zulassen' && !ew?.abschnitt) throw new AblaufFehler(`Der Einwand ${r.einwand} gehört zu keinem Abschnitt; er lässt sich nur zulassen`);

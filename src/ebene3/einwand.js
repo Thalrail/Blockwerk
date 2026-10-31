@@ -77,7 +77,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
 
   /** Sammelt alle Einwände (nur Verstöße) und die Hinweise des Prüfers. Sortiert nach Rang des Erhebenden, dann nach Schlüssel. */
   function sammle(entwurf) {
-    const mat = materialisierung.materialisiere(entwurf);
+    const mat = materialisierung.materialisiere(entwurf, { testmaterial: true });
     const einwaende = [], hinweise = [];
     for (const m of materialisierung.pruefeEntwurf(entwurf, mat)) {
       if (m.schwere !== 'verstoss') { hinweise.push(m); continue; }

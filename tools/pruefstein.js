@@ -6,6 +6,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ladeEngine, erzeugeEbene5 } from '../src/ebene5/index.js';
 import { berichtAlsText } from '../src/ebene3/index.js';
+import { zaehleStatus } from './regelstatus.js';
 
 const wurzel = join(dirname(fileURLToPath(import.meta.url)), '..');
 const holeJson = async (pfad) => JSON.parse(readFileSync(join(wurzel, pfad), 'utf8'));
@@ -37,8 +38,7 @@ const tAbschluss = Date.now() - t3;
 const b = e.ebene3.techniker.bilanz(r.entwurf).werte;
 
 const regeln = e.ebene1.regelwerk.alle();
-const zaehl = { simuliert: 0, entworfen: 0, geprueft: 0, ungeprueft: 0 };
-for (const x of regeln) { zaehl[x.status] = (zaehl[x.status] ?? 0) + 1; if (x.ungeprueft) zaehl.ungeprueft++; }
+const zaehl = zaehleStatus(regeln);
 const bausteine = [...e.ebene2.bausteine.values()].map((x) => ({ id: x.id, status: x.status ?? 'entworfen' }));
 const benutzt = [...new Set(r.entwurf.teile.map((t) => t.baustein))].sort();
 const rueckgriffe = r.entwurf.bericht.filter((x) => x.art === 'rueckgriff' || /öffnet den Abschnitt/.test(x.satz)).length;
@@ -83,7 +83,7 @@ for (const h of pr.hinweise.slice(0, 12)) z.push(`- ${h.pfad}: ${h.text}`);
 
 z.push('', '## Benutzte Bausteine und Stand der Regeln', '');
 z.push(`Bausteine: ${benutzt.map((id) => `\`${id}\` (${bausteine.find((x) => x.id === id)?.status ?? '?'})`).join(', ')}.`);
-z.push(`Regeln insgesamt ${regeln.length}: ${zaehl.simuliert} simuliert, ${zaehl.entworfen} entworfen, ${zaehl.geprueft} im Spiel geprüft; **${zaehl.ungeprueft} enthalten ungeprüfte Annahmen** (Testanleitungen: \`docs/spieltests.md\`). Nichts davon ist im Spiel bestätigt, bis Jonah es meldet.`);
+z.push(`Regeln insgesamt ${regeln.length}: ${zaehl.simuliert} simuliert, ${zaehl.entworfen} entworfen, ${zaehl.geprueft} im Spiel geprüft; **${zaehl.ungeprueft} enthalten ungeprüfte Annahmen** (Testanleitungen: \`docs/spieltests.md\`). Im Spiel bestätigt hat Jonah nur die ${zaehl.geprueft} Regeln mit dem Status „geprüft“; die ${zaehl.simuliert} simulierten und ${zaehl.entworfen} entworfenen Regeln sind nur im Test (Ebene 1) belegt, nicht im Spiel. Auch die Zitadelle-Planung selbst ist im Spiel noch nicht vollständig bestätigt, bis Jonah es meldet.`);
 
 z.push('', '## Befunde: wo die Planung heute an ihre Grenzen stößt', '');
 z.push('1. **Jedes Teil ist ein eigener Kasten.** Die Zitadelle ist verschachtelt (Handelsviertel, Rotunde, Ecktürme im selben Gebäude). Blockwerk plant Teile als getrennte, sich nicht überschneidende Hüllen, die Technik steht daneben. Die acht Handelsviertel liegen deshalb als Kästen um die Zentralhalle und nicht als gemeinsames Hauptgebäude. Die Himmelsrichtungen und Maße stimmen, die Geometrie des Bildes nicht.');

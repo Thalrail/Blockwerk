@@ -94,7 +94,7 @@ test('Techniker: Platz, Zone und Sperrzone', () => {
   assert.deepEqual([h1.von.x, h1.von.y, h1.von.z], [0, 0, -30]);
   assert.ok(h2.von.x === h1.bis.x + 1 + 2 || h2.von.x === 0, 'daneben mit Abstand oder in der nächsten Reihe');
   // Ebene 1: jeder der 24 Dorfbewohner hat Bett und erreichbaren Beruf
-  const welt = e3.materialisiere(e).welt;
+  const welt = e3.materialisiere(e, { testmaterial: true }).welt;
   const zu = e1.dorf.zuordnung(welt);
   assert.equal(zu.length, 24);
   assert.ok(zu.every((z) => z.bett && z.beruf?.erreichbar));
@@ -131,7 +131,7 @@ test('Techniker: Platz, Zone und Sperrzone', () => {
   // ein fremder Berufsblock genau 16 Blöcke entfernt ist ein Einwand, bei 17 nicht
   const fremd = (abstand) => {
     const probe = { id: 'P', abschnitt: 'halle', baustein: 'tech.handelsnischen', parameter: { anzahl: 1 }, lage: { x: 0, y: 0, z: 0, drehung: 0 }, verbindung: true };
-    const mat = e3.materialisiere(aendere(e, 'konstrukteur', { art: 'setze-teil', teil: probe }));
+    const mat = e3.materialisiere(aendere(e, 'konstrukteur', { art: 'setze-teil', teil: probe }), { testmaterial: true });
     const ab = [...mat.teile.get('P').arbeitsbloecke].map((k) => k.split(',').map(Number));
     const maxX = Math.max(...ab.map((c) => c[0]));
     const lage = { x: h1.von.x - abstand - maxX, y: h1.von.y + 0, z: h1.von.z, drehung: 0 };

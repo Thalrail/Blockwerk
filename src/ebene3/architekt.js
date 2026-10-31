@@ -81,7 +81,7 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     const platzierungen = [], fehler = [];
     if (!offen.length) return { platzierungen, fehler };
     const belegt = [];
-    if (entwurf.teile.length) for (const t of materialisierung.materialisiere(entwurf).teile.values()) if (t.huelle) belegt.push(t.huelle);
+    if (entwurf.teile.length) for (const t of materialisierung.materialisiere(entwurf, { testmaterial: true }).teile.values()) if (t.huelle) belegt.push(t.huelle);
     for (const w of offen) {
       const h = huelleVon(w), m = maß(h);
       const zone = entwurf.zonen.find((z) => z.abschnitt === abschnitt && z.funktion === w.zone) ?? null;
@@ -118,7 +118,7 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     if (!teil) throw new FormFehler(`Teil ${String(teilId)} gibt es nicht`);
     const wunsch = (entwurf.formwuensche ?? []).find((w) => w.id === teil.wunsch);
     const soll = wunsch?.soll ?? {};
-    const bloecke = [...(mat ?? materialisierung.materialisiere(entwurf)).teile.get(teilId).schluessel].map((k) => k.split(',').map(Number));
+    const bloecke = [...(mat ?? materialisierung.materialisiere(entwurf, { testmaterial: true })).teile.get(teilId).schluessel].map((k) => k.split(',').map(Number));
     const min = [0, 1, 2].map((i) => Math.min(...bloecke.map((b) => b[i]))), max = [0, 1, 2].map((i) => Math.max(...bloecke.map((b) => b[i])));
     const menge = new Set(bloecke.map((b) => key(...b)));
     const symmetrie = {};
@@ -152,7 +152,7 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     }
     const mitSoll = entwurf.teile.filter((t) => t.wunsch && (entwurf.formwuensche ?? []).find((w) => w.id === t.wunsch)?.soll);
     if (mitSoll.length) {
-      const mat = materialisierung.materialisiere(entwurf);
+      const mat = materialisierung.materialisiere(entwurf, { testmaterial: true });
       for (const t of mitSoll) {
         const r = miss(entwurf, t.id, mat);
         for (const text of r.abweichungen) liste.push({ regel: 'plan.mass', von: 'bauleiter', an: FACHMANN, ort: { ...mat.teile.get(t.id).huelle.von }, schwere: 'verstoss', ziel: `teil:${t.id}`, abschnitt: t.abschnitt, text, schluessel: `plan.mass|${t.id}|${text}` });

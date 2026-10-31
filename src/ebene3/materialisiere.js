@@ -6,14 +6,36 @@ import { TESTPALETTE } from '../ebene2/index.js';
 
 const key = (x, y, z) => `${x},${y},${z}`;
 
+/** Die Palette reicht für einen produktiven Bauplan nicht aus (Rollen fehlen oder eine Form fehlt). Es wird nie mit Testmaterial ergänzt. */
+export class PaletteFehler extends Error {
+  /** @param {string} nachricht @param {Array<{abschnitt: string, rollen: string[]}>} fehlend */
+  constructor(nachricht, fehlend = []) { super(`Palette: ${nachricht}`); this.name = 'PaletteFehler'; this.fehlend = fehlend; }
+}
+
 /**
  * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk, ebene0: object, ebene1: object, ebene2: object}} quellen
  */
 export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   const pruefstart = regelwerk.parameter('plan.geometrie', 'pruefstart');
+  const rollen = regelwerk.parameter('plan.palette', 'rollen');
 
-  /** Palette des Entwurfs über der Testpalette (Rolle → Block oder Block je Form). */
-  const paletteVon = (entwurf, abschnitt) => ({ ...TESTPALETTE, ...entwurf.palette, ...(entwurf.paletten?.[abschnitt] ?? {}) });
+  /**
+   * Palette eines Abschnitts: Gesamtpalette, darüber die Abschnittspalette (Rolle → Block oder Block je Form).
+   * Die TESTPALETTE kommt nur dazu, wenn der Aufrufer es mit `testmaterial: true` ausdrücklich verlangt (Planungsgeometrie, Tests); ein Bauplan nie.
+   */
+  const paletteVon = (entwurf, abschnitt, { testmaterial = false } = {}) => ({ ...(testmaterial ? TESTPALETTE : {}), ...entwurf.palette, ...(entwurf.paletten?.[abschnitt] ?? {}) });
+
+  /** Rollen, die für den Abschnitt keinen Block haben (leer = vollständig belegt). */
+  const fehlendeRollen = (entwurf, abschnitt) => {
+    const p = paletteVon(entwurf, abschnitt);
+    return rollen.filter((r) => !p[r]);
+  };
+
+  /** Abschnitte mit unvollständiger Palette: Abschnitte, die Teile haben (oder, ohne `nurMitTeilen`, alle). */
+  function paletteLuecken(entwurf, { nurMitTeilen = false } = {}) {
+    const ids = nurMitTeilen ? [...new Set(entwurf.teile.map((t) => t.abschnitt))] : entwurf.abschnitte.map((a) => a.id);
+    return ids.map((abschnitt) => ({ abschnitt, rollen: fehlendeRollen(entwurf, abschnitt) })).filter((x) => x.rollen.length);
+  }
 
   // Ein Teil ist eine reine Funktion von Baustein, Parametern, Lage und Palette: unveränderte Teile werden nicht in jeder Einwand-Runde neu gebaut
   // (bei der Zitadelle waren das mehrere hundert Wiederholungen). Die Einträge werden nur gelesen; der Speicher ist auf wenige Dutzend Teile begrenzt.
@@ -21,20 +43,24 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   const TEIL_SPEICHER_MAX = 96;
 
   /** Baut ein Teil: Paket, gedrehte und verschobene Blöcke, Blockschlüssel, Hülle, Startpunkt für die Lorenprüfung. */
-  function baueTeil(entwurf, teil) {
-    const schluesselTeil = JSON.stringify([teil.baustein, teil.parameter, teil.lage, paletteVon(entwurf, teil.abschnitt)]);
+  function baueTeil(entwurf, teil, optionen) {
+    const schluesselTeil = JSON.stringify([teil.baustein, teil.parameter, teil.lage, paletteVon(entwurf, teil.abschnitt, optionen)]);
     const gemerkt = teilSpeicher.get(schluesselTeil);
     if (gemerkt) { teilSpeicher.delete(schluesselTeil); teilSpeicher.set(schluesselTeil, gemerkt); return gemerkt; } // zuletzt benutzt nach hinten
-    const t = baueTeilNeu(entwurf, teil);
+    const t = baueTeilNeu(entwurf, teil, optionen);
     teilSpeicher.set(schluesselTeil, t);
     if (teilSpeicher.size > TEIL_SPEICHER_MAX) teilSpeicher.delete(teilSpeicher.keys().next().value);
     return t;
   }
 
-  function baueTeilNeu(entwurf, teil) {
+  function baueTeilNeu(entwurf, teil, optionen) {
     const paket = ebene2.baue(teil.baustein, teil.parameter);
     const w = ebene0.neueWelt();
-    ebene2.platziere(w, paket, paletteVon(entwurf, teil.abschnitt));
+    try { ebene2.platziere(w, paket, paletteVon(entwurf, teil.abschnitt, optionen)); } catch (f) {
+      // fehlt dem Bauplan ein Block (Rolle oder Form), sagt die Meldung, bei welchem Teil; mit Testmaterial kann das nicht passieren
+      if (!optionen.testmaterial && /^Palette kennt/.test(f.message)) throw new PaletteFehler(`Teil ${teil.id} (${teil.baustein}, Abschnitt ${teil.abschnitt}): ${f.message}`, [{ abschnitt: teil.abschnitt, rollen: [] }]);
+      throw f;
+    }
     const h = paket.platzbedarf.huelle;
     let bauteil = w.ausschnitt(h.von, h.bis);
     bauteil = ebene0.vermesser.drehe(bauteil, teil.lage.drehung);
@@ -68,13 +94,22 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
 
   /**
    * Entwurf → Welt. Gibt die Welt und je Teil die belegten Blöcke zurück.
+   * Ohne `testmaterial: true` verlangt sie, dass die Palette jedes Abschnitts mit Teilen alle Rollen belegt, und wirft sonst `PaletteFehler`, bevor etwas gebaut wird
+   * (nie ein halber Bauplan, nie stilles Testmaterial). `testmaterial: true` ist nur für Planungsgeometrie und Tests: fehlende Rollen füllt dann die TESTPALETTE.
+   * @param {object} entwurf
+   * @param {{testmaterial?: boolean}} [optionen]
    * @returns {{welt: object, teile: Map<string, {schluessel: Set<string>, arbeitsbloecke: Set<string>, start: object|null, huelle: object|null}>}}
    */
-  function materialisiere(entwurf) {
+  function materialisiere(entwurf, optionen = {}) {
+    optionen = { testmaterial: optionen.testmaterial === true };
+    if (!optionen.testmaterial) {
+      const luecken = paletteLuecken(entwurf, { nurMitTeilen: true });
+      if (luecken.length) throw new PaletteFehler(`${luecken.map((x) => `Abschnitt „${x.abschnitt}“ ohne Block für die Rollen ${x.rollen.join(', ')}`).join('; ')}. Ein Bauplan entsteht nicht aus Testmaterial; zuerst eine Stimmung wählen.`, luecken);
+    }
     const welt = ebene0.neueWelt();
     const teile = new Map();
     for (const teil of teileInReihenfolge(entwurf)) {
-      const t = baueTeil(entwurf, teil);
+      const t = baueTeil(entwurf, teil, optionen);
       welt.fuegeBauteilEin(t.bauteil);
       teile.set(teil.id, { schluessel: t.schluessel, arbeitsbloecke: t.arbeitsbloecke, start: t.start, huelle: t.huelle });
     }
@@ -100,7 +135,7 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
     const meldungen = [];
     const gesehen = new Set();
     const nimm = (liste) => { for (const m of liste) { const k = `${m.regel}|${key(m.ort.x, m.ort.y, m.ort.z)}|${m.meldung}`; if (!gesehen.has(k)) { gesehen.add(k); meldungen.push(m); } } };
-    const hatNischen = entwurf.teile.some((t) => t.baustein === 'tech.handelsnischen');
+    const hatNischen = entwurf.teile.some((t) => t.baustein === 'tech.handelsnischen' || t.baustein === 'tech.handelsnischen-lore');
     nimm(ebene1.pruefe(mat.welt, { schienen: ebene1.schienen, ...(hatNischen ? { dorf: ebene1.dorf, dorfPruefen: true } : {}) }));
     for (const t of mat.teile.values()) {
       // liegt am Start keine Schiene mehr (von einem anderen Teil überbaut), meldet das die Überschneidung
@@ -114,5 +149,5 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
     return meldungen;
   }
 
-  return { materialisiere, pruefeEntwurf, teilBei, paletteVon };
+  return { materialisiere, pruefeEntwurf, teilBei, paletteVon, paletteLuecken };
 }

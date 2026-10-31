@@ -1,0 +1,38 @@
+# Entscheidungen – Kurzfassung (Volltext mit Begründungen: `docs/entscheidungen.md`)
+Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwort bis zum ersten Doppelpunkt) muss identisch sein (Wächter: `test/dokumentation.test.js`).
+- Programmname: **Blockwerk**; GitHub-Konto Thalrail, Repo blockwerk (eigenes, neues Repo).
+- Server: Aternos, Bedrock; Bauwerke werden NICHT eingespielt, sondern von Hand nach Bauplan (Schicht für Schicht) gebaut.
+- Oberfläche: nur Desktop, keine Handy-App; gespielt wird auf der PS5, Blockwerk läuft daneben als Bauplan-Bildschirm.
+- Texturen: Faithful 32x (Bedrock); Pflichten in `docs/ebenen.md`, Ebene 5.
+- Ebenenmodell: `docs/ebenen.md` (Ebene 0–5 bestätigt).
+- Seed: später einpflegbar (Platzprüfung, Gelände/Biom über Messpunkte).
+- Leser (einzige KI-Stelle): zunächst über den Claude-Chat (Briefing-Prompt → JSON zurück); API-Schlüssel später optional.
+- Tester: Jonah, jederzeit, auch mobil (Minecraft Pocket).
+- Zitadelle-Bilder (14) legt Jonah im Repo unter `docs/zitadelle/bilder/` ab.
+- Reihenfolge: allgemeine Engine zuerst, Zitadelle als Prüfstein.
+- Neubeginn (19.10.2026): komplett neu nach dem Ebenenmodell; früherer Prototyp und Blockplan nicht übernommen.
+- Technik: reines JavaScript (ES-Module), keine Abhängigkeiten, `npm test` (Node 22), GitHub Pages ohne Build.
+- Offen: Desktop-Umsetzung (später entschieden: Webseite, siehe 25.10.2026).
+- Arbeitsweg: Claude Code, eigener Branch, Abnahme per Pull Request durch Jonah.
+- Sicherheit: keine Zugangsschlüssel (Token, Passwörter) im Chat oder im Repo; GitHub-Zugang über die Claude GitHub App.
+- Aternos-Server (Angabe von Jonah, 20.10.2026): Simulationsdistanz 4 Chunks, 20 Ticks/s (`data/server.json`).
+- Händler (Angabe von Jonah, 21.10.2026): Händler geben Items beim Handel direkt ins Inventar, keine Auffang-Technik nötig.
+- Wasser/Lava vor Trichter & Blockinhalten (Jonah, 21.10.2026): Reihenfolge der Arbeit in Ebene 1.
+- Java-Platzhalter für Wasser/Lava (Jonah, 21.10.2026): vorläufig Java-Logik, weil Bedrock nichts dokumentiert; `ungeprüft`.
+- Wasser/Lava-Logik (Jonah, 21.10.2026): Java-Logik „passt 1 zu 1“ (aus Erfahrung); Status bleibt `ungeprüft` bis zum Spieltest.
+- Java als Ersatz, wo Bedrock schweigt (Jonah, 24.10.2026): Java-Regel als Platzhalter mit `ungeprüft` und Quelle; Fehler im Spiel gezielt korrigieren; ausdrückliche Bedrock-Angaben gehen vor (Licht: dünne Blöcke wie Luft, Treppen/Halbstufen nach Form, Fackel 14/13).
+- Brüter und Dorfbewohner-Transport (Jonah, 25.10.2026): Brüter = Dorfbewohner-Brüter; Berufsblock geht an irgendeinen arbeitslosen Dorfbewohner; Brutkammer-Entwurf offen, Bahnhof/Entladestelle/Brüter bis dahin nicht gebaut (`docs/offene-fragen.md`).
+- Desktop-Umsetzung (Jonah, 25.10.2026): Webseite (GitHub Pages, ohne Build), als Fenster installierbar, Kompaktmodus über Document Picture-in-Picture; keine Electron-App.
+- Reihenfolge der Oberfläche (Jonah, 25.10.2026): Bauplan zuerst, dann 3D, Eingabe mit Rückfragen, Faithful-Texturen.
+- Texturen (Jonah, 25.10.2026): Faithful 32x grundlegend; im Repo nur benötigte Texturen (`data/texturen/`) mit Lizenzkopie und Nennung; fehlende = markierte Ersatzfarbe.
+- Live-Transport (Jonah, 25.10.2026): eigener kleiner Dienst auf Cloudflare (Worker + Durable Object), Probedienst lokal; keine Zugangsdaten im Repo.
+- Teilen und Live-Abhaken (Jonah, 25.10.2026): erst Teilen per Link oder Datei, Live später; Fortschritt als mischbares Datenmodell (Abdruck je Schicht).
+- Prüfstein Zitadelle (Jonah, 27.10.2026): Stufe 1 = Hülle und Handel, Rest als Anfragen; 16 Kategorien × 3 Gegenstände; Lage „strahlenförmig“; Nische von Bild 07 wird eigener Baustein.
+- Zitadelle, Nischenzahl (Jonah, 27.10.2026): 140 Handelsnischen (sieben Viertel), nicht 160.
+- Lorenbahn-Nische (Jonah, 27.10.2026): Baustein `tech.handelsnischen-lore`; Aktivierungsschienen dauerhaft an, Weiche je Nische (Steuerung = Schaltungsanfrage), Wasserkanal mit Gefälle.
+- Weichensteuerung im Bedarf (Jonah, 30.10.2026): ausdrückliche bleiben einzeln erhalten; automatisch höchstens eine je Teil, nur bei Bauart `lorenbahn` ohne ausdrückliche.
+- Keine stillen Testmaterialien (Jonah, 30.10.2026, nach dem Codex-Review): unvollständige Palette → Rückfrage statt eigener Materialwahl; `TESTPALETTE` nur mit `testmaterial: true`, nie in einem Bauplan.
+- Multi-Agenten-Orchestrierung (Jonah, 30.10.2026): Snapshot + Seed, Koordinator als Skill `/blockwerk-auftrag`, risikobasierte Freigabegrenzen (ohne Rückfrage: Umsetzung im Auftrag, Tests, Routinekorrekturen, Doku; mit Zustimmung: Architektur, neue Abhängigkeiten, Bedrock-Grundsatz, Planungsverhalten außerhalb des Auftrags, Commit/Push/PR, Konflikte, Datenverlustrisiken); Codex nur über das isolierte Review-Paket im Einzelmodus. Technik: `docs/orchestrierung.md`.
+- Ponytail und Agent Skills (Jonah, 30.10.2026): Ponytail nur als Regeln (Skill `einfachheit`), sieben Agent Skills projektlokal und angepasst; Blockwerk-Freigabegrenzen haben Vorrang; Graphify und OmniRoute bleiben deaktiviert (Lizenzen: `docs/fremdlizenzen/`).
+- Token-Effizienz (Jonah, 31.10.2026): höchste Priorität (bis 10 Stunden täglich im Claude-Pro-Limit). Schlanker Sitzungsstart (Kurzfassungen statt Volltexte als Importe), Skills nur bei Bedarf (Entwickler lädt nur `einfachheit` vor), Haiku für kleine, Sonnet für normale Aufgaben, Opus nur nach ausdrücklicher Freigabe von Jonah, Codex risikobasiert, Repo-Karte `tools/karte.js`. Graphify nur isolierter Test im Scratchpad; OmniRoute deaktiviert. Messwerte: `docs/token-effizienz.md`.
+- Modell-Routing (Jonah, 31.10.2026): Haiku nur für rein mechanische Änderungen ohne eigene Entscheidungslogik; Sonnet direkt bei Heuristik, Regex, Zustandslogik, Architekturentscheidung oder Korrektheitsgarantie; nach fehlgeschlagener Haiku-Umsetzung zu Sonnet wechseln statt mehrere Haiku-Korrekturschleifen; Opus weiter nur mit ausdrücklicher Zustimmung von Jonah.

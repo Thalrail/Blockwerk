@@ -187,7 +187,17 @@
           "handelsnischen": {
             "baustein": "tech.handelsnischen",
             "menge": "anzahl",
-            "maximum": 256
+            "maximum": 256,
+            "bauarten": {
+              "zelle": {
+                "baustein": "tech.handelsnischen",
+                "maximum": 256
+              },
+              "lorenbahn": {
+                "baustein": "tech.handelsnischen-lore",
+                "maximum": 64
+              }
+            }
           },
           "lager": {
             "baustein": "tech.sortierlager",

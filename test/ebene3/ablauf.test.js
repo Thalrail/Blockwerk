@@ -41,7 +41,7 @@ const GROSS = () => ({
 
 /** Kleines Bauwerk für Rückgriff und Abschluss. */
 const KLEIN = (naht = { x: 10, y: -1, z: 15 }, extra = []) => ({
-  name: 'Klein',
+  name: 'Klein', stimmung: 'glanz',
   abschnitte: [
     { id: 'keller', name: 'Keller', huelle: huelle(0, -12, 0, 59, -1, 30), zonen: [{ funktion: 'technik', anteil: 60 }, { funktion: 'optik', anteil: 40 }],
       bedarf: [{ art: 'handelsnischen', anzahl: 3 }, ...extra],
@@ -101,7 +101,7 @@ test('Ablauf: ganzes Bauwerk Ende zu Ende', () => {
 
 test('Ablauf: Vorlauf und Einspruch', () => {
   const vorgabe = () => ({
-    name: 'Vorlauf',
+    name: 'Vorlauf', stimmung: 'glanz',
     abschnitte: [
       { id: 'halle', name: 'Halle', huelle: huelle(-10, 0, -10, 20, 12, 20), zonen: [{ funktion: 'technik', anteil: 100 }], bedarf: [{ art: 'lager', sorten: SORTEN.slice(0, 2), braucht: ['lager'] }] },
       { id: 'lager', name: 'Lagerraum', huelle: huelle(100, 0, 0, 130, 12, 30), zonen: [{ funktion: 'optik', anteil: 100 }] },
@@ -221,7 +221,7 @@ test('Ablauf: Abschluss', () => {
   const e = r.entwurf;
 
   // eine Verbindung ohne Prüfauftrag fällt im Abschluss auf
-  const mitVerb = AB.starte({ name: 'V', abschnitte: [{ id: 'a', name: 'A', huelle: huelle(0, -3, 0, 40, 10, 20), zonen: [{ funktion: 'optik', anteil: 100 }], verbindungen: [{ von: { x: 5, y: 0, z: 5 }, nach: { x: 20, y: 0, z: 5 }, art: 'gang' }] }] });
+  const mitVerb = AB.starte({ name: 'V', stimmung: 'glanz', abschnitte: [{ id: 'a', name: 'A', huelle: huelle(0, -3, 0, 40, 10, 20), zonen: [{ funktion: 'optik', anteil: 100 }], verbindungen: [{ von: { x: 5, y: 0, z: 5 }, nach: { x: 20, y: 0, z: 5 }, art: 'gang' }] }] });
   assert.equal(mitVerb.status, 'fertig');
   assert.equal(mitVerb.entwurf.pruefungen.length, 1);
   const ohnePruefung = structuredClone(mitVerb.entwurf);

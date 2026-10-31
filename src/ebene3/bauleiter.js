@@ -11,10 +11,10 @@ const OPTIONEN = [
 const ort = (o) => (o ? `(${o.x}, ${o.y}, ${o.z})` : 'ohne Ort');
 
 /** Erzeugt die Rückfrage zu einem eskalierten Einwand und trägt sie in Entwurf und Baubericht ein (verändert die übergebene Kopie). */
-export function rueckfrage(entwurf, einwand, { runden }) {
+export function rueckfrage(entwurf, einwand, { runden, optionen = OPTIONEN, frage: frageText = null, art = null }) {
   const id = `R${entwurf.zaehler.rueckfrage++}`;
-  const frage = `${einwand.text} (bei ${ort(einwand.ort)}, Regel ${einwand.regel}). Wie soll es weitergehen?`;
-  const r = { id, status: 'offen', einwand: einwand.id, ort: einwand.ort, ziel: einwand.ziel ?? null, frage, optionen: OPTIONEN.map((o) => ({ ...o })) };
+  const frage = frageText ?? `${einwand.text} (bei ${ort(einwand.ort)}, Regel ${einwand.regel}). Wie soll es weitergehen?`;
+  const r = { id, status: 'offen', einwand: einwand.id, ort: einwand.ort, ziel: einwand.ziel ?? null, frage, optionen: optionen.map((o) => ({ ...o })), ...(art ? { art } : {}) };
   entwurf.rueckfragen.push(r);
   haengeAn(entwurf, 'eskalation', { einwand: einwand.id, regel: einwand.regel, ort: einwand.ort, runden });
   haengeAn(entwurf, 'rueckfrage', { id, frage, optionen: r.optionen });
@@ -25,9 +25,9 @@ export function rueckfrage(entwurf, einwand, { runden }) {
  * Der Bauleiter fragt Jonah, wenn ein Fachmann einen Auftrag nicht ausführen kann (statt zu raten). Legt einen eskalierten Einwand und die Rückfrage an.
  * @returns {{entwurf: object, rueckfrage: object}} neue Kopie des Entwurfs
  */
-export function stelleFrage(entwurf, { regel, an, ort, text, abschnitt = null, schluessel }) {
+export function stelleFrage(entwurf, { regel, an, ort, text, abschnitt = null, schluessel, optionen, frage, art }) {
   const e = structuredClone(entwurf);
   const ew = { id: `E${e.zaehler.einwand++}`, von: 'bauleiter', an, regel, ort: { ...ort }, schwere: 'verstoss', ziel: null, abschnitt, text, schluessel, runde: 0, status: 'eskaliert' };
   e.einwaende.push(ew);
-  return { entwurf: e, rueckfrage: rueckfrage(e, ew, { runden: 0 }) };
+  return { entwurf: e, rueckfrage: rueckfrage(e, ew, { runden: 0, optionen, frage, art }) };
 }

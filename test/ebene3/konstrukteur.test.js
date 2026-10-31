@@ -106,13 +106,13 @@ test('Konstrukteur: Verbindungen verlegen', () => {
       assert.deepEqual([r.entwurf.teile[0].parameter.breite, r.entwurf.teile[0].parameter.hoehe], [3, 3]);
       ohneEinwand(r.entwurf);
       // der Gang liegt wirklich zwischen Start und Ziel: Blockdichte an beiden Enden
-      const welt = e3.materialisiere(r.entwurf).welt;
+      const welt = e3.materialisiere(r.entwurf, { testmaterial: true }).welt;
       assert.equal(e1.bewegung.weg(welt, start, wohin(d, laenge - 1), 'dorfbewohner').ok, true);
     }
   }
 
   // Schienenwege: ebenflächig, alle Richtungen, Längen um die Periode 8 herum
-  const bahnEnde = (e, von, d) => e1.lore.bahn(e3.materialisiere(e).welt, von, ['north', 'east', 'south', 'west'][d]).schienen.at(-1).pos;
+  const bahnEnde = (e, von, d) => e1.lore.bahn(e3.materialisiere(e, { testmaterial: true }).welt, von, ['north', 'east', 'south', 'west'][d]).schienen.at(-1).pos;
   for (const laenge of [2, 7, 8, 9, 15, 16, 17, 24, 33, 100]) {
     for (let d = 0; d < 4; d++) {
       const ziel = wohin(d, laenge - 1);

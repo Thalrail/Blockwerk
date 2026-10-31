@@ -59,11 +59,18 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       try { huelle = ebene2.baue(bs, groesse).platzbedarf.huelle; } catch (f) { frage(`${pf}.form.groesse`, `${t.name}: ${f.message}`); return; }
       const form = { w: huelle.bis.x - huelle.von.x + 1, d: huelle.bis.z - huelle.von.z + 1, h: huelle.bis.y - huelle.von.y + 1 };
       const bedarf = [];
+      let braucheWeiche = false;
       for (const f of t.funktionen ?? []) {
-        if (f.art === 'handelsnischen') bedarf.push({ art: 'handelsnischen', anzahl: f.menge, ...(f.beruf !== undefined ? { beruf: f.beruf } : {}) });
+        if (f.art === 'handelsnischen') {
+          bedarf.push({ art: 'handelsnischen', anzahl: f.menge, ...(f.beruf !== undefined ? { beruf: f.beruf } : {}), ...(f.bauart ? { bauart: f.bauart } : {}) });
+          if (f.bauart === 'lorenbahn') braucheWeiche = true;
+        }
         else if (f.art === 'lager') bedarf.push({ art: 'lager', sorten: f.sorten });
         else bedarf.push({ art: f.art });
       }
+      // die Lorenbahn-Nische braucht eine Weiche je Stich: die Steuerung ist noch kein Modul (Schaltungsanfrage). Ausdrücklich genannte Weichensteuerungen bleiben einzeln erhalten;
+      // automatisch wird höchstens eine je Teil ergänzt, und nur wenn keine ausdrückliche angegeben ist
+      if (braucheWeiche && !bedarf.some((b) => b.art === 'weichensteuerung')) bedarf.push({ art: 'weichensteuerung' });
       let mind = null;
       try { mind = techniker.mindestmass(bedarf.map((b, k) => ({ id: `${t.id}-${k}`, ...b }))); } catch (f) { frage(`${pf}.funktionen`, `${t.name}: ${f.message}`); return; }
       const wt = mind?.breite ?? 0;
@@ -120,7 +127,9 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
           const bx = (h.von.x + h.bis.x) / 2, bz = (h.von.z + h.bis.z) / 2;
           for (let s = 0; s < 8192; s++) {
             const px = Math.round(bx + (dx / n) * s - (W - 1) / 2), pz = Math.round(bz + (dz / n) * s - (D - 1) / 2);
-            if (px + W - 1 + g < h.von.x || px > h.bis.x + g || pz + D - 1 + g < h.von.z || pz > h.bis.z + g) { x0 = px; z0 = pz; break; }
+            const frei = (o) => px + W - 1 + g < o.von.x || px > o.bis.x + g || pz + D - 1 + g < o.von.z || pz > o.bis.z + g || y0 + H - 1 < o.von.y || y0 > o.bis.y;
+            // frei vom Bezug (immer, auch in der Höhe) und von allen schon gesetzten Hüllen auf gleicher Höhe: sonst weiter hinaus auf dem Strahl
+            if (frei({ ...h, von: { ...h.von, y: -Infinity }, bis: { ...h.bis, y: Infinity } }) && [...huellen.values()].every(frei)) { x0 = px; z0 = pz; break; }
           }
         } else if (rel.startsWith('neben')) {
           x0 = cx; z0 = cz;

@@ -400,6 +400,8 @@
     "minecraft:rail": "Schiene",
     "minecraft:detector_rail": "Sensorschiene",
     "minecraft:activator_rail": "Aktivierungsschiene",
+    "minecraft:lever": "Hebel",
+    "minecraft:trapdoor": "Falltür",
     "minecraft:bed": "Bett",
     "minecraft:lectern": "Lesepult",
     "minecraft:smoker": "Räucherofen",

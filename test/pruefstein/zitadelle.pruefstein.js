@@ -12,7 +12,12 @@ test('Zitadelle: die Planung läuft durch, hat die erwarteten Schaltungsanfragen
   assert.equal(r.status, 'fertig', JSON.stringify(r.rueckfragen?.slice(0, 3)));
   assert.equal(r.entwurf.abschnitte.length, 20);
   assert.deepEqual(r.rueckfragen, []);
-  assert.deepEqual(r.offeneAnfragen.map((a) => a.art).sort(), ['aufzug', 'bahnhof', 'bruteranlage', 'entladestelle', 'felder', 'lorenbahn-netz', 'sammelbecken', 'wasserrueckfuehrung', 'wohnbereich']);
+  // 9 Anfragen des Untergeschosses + je Handelsviertel mit Lorenbahn-Nischen eine Weichensteuerung (7)
+  const viertel = spec.teile.filter((t) => t.funktionen?.some((f) => f.art === 'handelsnischen' && f.bauart === 'lorenbahn')).map((t) => t.id).sort();
+  assert.equal(viertel.length, 7);
+  assert.deepEqual(r.offeneAnfragen.map((a) => a.art).sort(), ['aufzug', 'bahnhof', 'bruteranlage', 'entladestelle', 'felder', 'lorenbahn-netz', 'sammelbecken', ...Array(7).fill('weichensteuerung'), 'wasserrueckfuehrung', 'wohnbereich'].sort());
+  assert.deepEqual(r.offeneAnfragen.filter((a) => a.art === 'weichensteuerung').map((a) => a.abschnitt).sort(), viertel, 'eine Weichensteuerung je Handelsviertel');
+  assert.deepEqual([...new Set(r.offeneAnfragen.filter((a) => a.art !== 'weichensteuerung').map((a) => a.abschnitt))], ['untergeschoss']);
   assert.equal(r.entwurf.einwaende.filter((w) => w.schwere === 'verstoss' && w.status === 'offen').length, 0);
   const plan = e.e5.bauplan(r.entwurf);
   assert.ok(plan.bloecke > 50_000 && plan.bloecke < 200_000, `Blockzahl ${plan.bloecke}`);

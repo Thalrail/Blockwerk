@@ -220,3 +220,66 @@ test('Übersetzung: strahlenförmige Lage (acht Richtungen, mittig auf dem Strah
   // deterministisch
   assert.deepEqual(strahl('suedost', 5), strahl('suedost', 5));
 });
+
+test('Übersetzung: Bauart Lorenbahn kommt als Bedarf an, die Weichensteuerung wird einmal je Teil angefragt', () => {
+  const t = (funktionen) => teil('v', { bezug: 'projekt', relation: 'mitte' }, zyl(10, 10, 8), { funktionen });
+  const bedarf = (funktionen) => { const r = U.uebersetze(spec([t(funktionen)])); assert.deepEqual(r.rueckfragen, []); return r.vorgabe.abschnitte[0].bedarf; };
+  assert.deepEqual(bedarf([{ art: 'handelsnischen', menge: 20, beruf: 3, bauart: 'lorenbahn' }]), [
+    { art: 'handelsnischen', anzahl: 20, beruf: 3, bauart: 'lorenbahn' }, { art: 'weichensteuerung' },
+  ]);
+  const zwei = bedarf([{ art: 'handelsnischen', menge: 10, bauart: 'lorenbahn' }, { art: 'handelsnischen', menge: 10, beruf: 1, bauart: 'lorenbahn' }]);
+  assert.equal(zwei.filter((b) => b.art === 'weichensteuerung').length, 1);
+  assert.deepEqual(bedarf([{ art: 'handelsnischen', menge: 5 }]).map((b) => b.art), ['handelsnischen']);
+  assert.equal(bedarf([{ art: 'handelsnischen', menge: 5 }])[0].bauart, undefined, 'ohne Angabe bleibt es die Zelle');
+});
+
+test('Übersetzung: Strahlen weichen schon gesetzten Hüllen aus (breite Teile an Nachbarstrahlen)', () => {
+  const breit = zyl(40, 10, 8), A0 = teil('a', { bezug: 'projekt', relation: 'mitte' }, zyl(6, 6, 4));
+  const B = (id, relation) => teil(id, { bezug: 'a', relation }, breit);
+  const r = U.uebersetze(spec([A0, B('n', 'strahl-norden'), B('nw', 'strahl-nordwest'), B('w', 'strahl-westen')], { bauplatz: { breite: 400, hoehe: 60, tiefe: 400 } }));
+  assert.deepEqual(r.rueckfragen, []);
+  const hs = r.vorgabe.abschnitte.map((a) => a.huelle);
+  for (let i = 0; i < hs.length; i++) for (let j = i + 1; j < hs.length; j++) {
+    const a = hs[i], b = hs[j];
+    assert.equal(a.von.x <= b.bis.x && b.von.x <= a.bis.x && a.von.y <= b.bis.y && b.von.y <= a.bis.y && a.von.z <= b.bis.z && b.von.z <= a.bis.z, false, `${i}/${j}`);
+  }
+});
+
+test('Übersetzung: ausdrückliche Weichensteuerung und Lorenbahn-Nischen ergeben genau einen Bedarf (beide Reihenfolgen, 65 Nischen)', () => {
+  const t = (funktionen) => teil('v', { bezug: 'projekt', relation: 'mitte' }, zyl(10, 10, 8), { funktionen });
+  const nischen = { art: 'handelsnischen', menge: 65, bauart: 'lorenbahn' }, weiche = { art: 'weichensteuerung' };
+  for (const liste of [[nischen, weiche], [weiche, nischen]]) {
+    const r = U.uebersetze(spec([t(liste)]));
+    assert.deepEqual(r.rueckfragen, []);
+    const b = r.vorgabe.abschnitte[0].bedarf;
+    assert.equal(b.filter((x) => x.art === 'weichensteuerung').length, 1, JSON.stringify(liste.map((x) => x.art)));
+    assert.equal(b.filter((x) => x.art === 'handelsnischen').length, 1);
+  }
+  // ohne Lorenbahn-Nischen entsteht keine Weichensteuerung von selbst
+  assert.equal(U.uebersetze(spec([t([{ art: 'handelsnischen', menge: 65 }])])).vorgabe.abschnitte[0].bedarf.some((x) => x.art === 'weichensteuerung'), false);
+});
+
+test('Übersetzung: Weichensteuerung – ausdrückliche Angaben bleiben einzeln, automatisch höchstens eine und nur ohne ausdrückliche (Entscheidung Jonah)', () => {
+  const t = (funktionen) => teil('v', { bezug: 'projekt', relation: 'mitte' }, zyl(10, 10, 8), { funktionen });
+  const loren = { art: 'handelsnischen', menge: 10, bauart: 'lorenbahn' }, loren2 = { art: 'handelsnischen', menge: 5, beruf: 2, bauart: 'lorenbahn' };
+  const zelle = { art: 'handelsnischen', menge: 10 }, weiche = { art: 'weichensteuerung' };
+  const anzahl = (funktionen) => { const r = U.uebersetze(spec([t(funktionen)])); assert.deepEqual(r.rueckfragen, []); return (r.vorgabe.abschnitte[0].bedarf ?? []).filter((b) => b.art === 'weichensteuerung').length; };
+  // alle Reihenfolgen einer Funktionsliste (Einfügen an jeder Stelle)
+  const alle = (liste) => liste.reduce((p, x) => p.flatMap((a) => Array.from({ length: a.length + 1 }, (_, i) => [...a.slice(0, i), x, ...a.slice(i)])), [[]]);
+  // zwei ausdrückliche bleiben zwei (jede Reihenfolge), auch mit Lorenbahn-Nischen
+  for (const f of alle([weiche, weiche])) assert.equal(anzahl(f), 2);
+  for (const f of alle([loren, weiche, weiche])) assert.equal(anzahl(f), 2, 'keine zusätzliche automatische');
+  // eine ausdrückliche: keine zusätzliche
+  for (const f of alle([loren, weiche])) assert.equal(anzahl(f), 1);
+  for (const f of alle([loren, loren2, weiche])) assert.equal(anzahl(f), 1);
+  // ohne ausdrückliche: genau eine automatische je Teil, egal wie viele Lorenbahn-Funktionen und in welcher Reihenfolge
+  assert.equal(anzahl([loren]), 1);
+  for (const f of alle([loren, loren2])) assert.equal(anzahl(f), 1);
+  for (const f of alle([loren, zelle])) assert.equal(anzahl(f), 1);
+  // ohne Lorenbahn nie automatisch
+  assert.equal(anzahl([zelle]), 0);
+  assert.equal(anzahl([]), 0);
+  // je Teil einzeln gerechnet
+  const r = U.uebersetze(spec([t([loren]), teil('w', { bezug: 'v', relation: 'neben-osten' }, zyl(10, 10, 8), { funktionen: [loren, weiche, weiche] })]));
+  assert.deepEqual(r.vorgabe.abschnitte.map((a) => [a.id, a.bedarf.filter((b) => b.art === 'weichensteuerung').length]), [['v', 1], ['w', 2]]);
+});

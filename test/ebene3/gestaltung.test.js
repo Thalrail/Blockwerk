@@ -176,9 +176,9 @@ test('Architekt: Formen setzen und messen', () => {
   }
   // ein fehlender Block wird erkannt (Symmetrie), eine falsche Proportion auch
   const mess = A.setzeFormen(A.setzeFormwuensche(plan(), [wunsch('M', 'mitte', { soll: { symmetrie: ['x', 'z'], verhaeltnis: { hoehe_zu_breite: 1.2 } } })]), 'halle').entwurf;
-  const mat = e3.materialisiere(mess);
+  const mat = e3.materialisiere(mess, { testmaterial: true });
   assert.deepEqual(A.miss(mess, 'T1', mat).abweichungen, []);
-  const kaputt = e3.materialisiere(mess);
+  const kaputt = e3.materialisiere(mess, { testmaterial: true });
   kaputt.teile.get('T1').schluessel.delete([...kaputt.teile.get('T1').schluessel][0]);
   assert.match(A.miss(mess, 'T1', kaputt).abweichungen.join(), /nicht symmetrisch zur Mittelachse/);
   assert.match(fehler(FormFehler, () => A.miss(mess, 'T9')), /gibt es nicht/);

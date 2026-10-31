@@ -92,6 +92,7 @@ test('Bauplan: Blickrichtungen drehen mit dem Bauteil', async () => {
   const { neuerEntwurf } = await import('../../src/ebene3/index.js');
   const richtungen = (drehung) => {
     let en = t.konstrukteur.gliedere(neuerEntwurf({ name: 'Treppe' }), [{ id: 'a', name: 'A', huelle: { von: { x: -20, y: -2, z: -20 }, bis: { x: 20, y: 20, z: 20 } } }]);
+    en = t.designer.setzePalette(en, 'glanz'); // ein Bauplan braucht eine vollständige Palette (kein stilles Testmaterial)
     en = t.aendere(en, 'architekt', { art: 'setze-teil', teil: { abschnitt: 'a', baustein: 'bau.treppe', parameter: { stufen: 4, breite: 3 }, lage: { x: 0, y: 0, z: 0, drehung } } }).entwurf;
     const p = e.e5.bauplan(en);
     const gezaehlt = {};

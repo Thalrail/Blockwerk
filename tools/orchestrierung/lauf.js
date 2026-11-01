@@ -1,9 +1,10 @@
 // Orchestrierung: Zustand eines Entwicklungslaufs (Auftrag → Snapshot → Runden mit Agenten → Review → Übernahme → Ende).
 // Der Zustand liegt in `.claude/orchestrierung/` (nicht versioniert, nicht im Snapshot): `aktiv.json` für den laufenden Lauf, `laeufe/<id>/` für alles andere,
 // `sicherung/<id>/` für Journal und Kopien der Übernahme. Ohne aktiven Lauf legt der WorktreeCreate-Hook keinen Worktree an (fail-closed).
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { git, gitStatus, blobSha, zustand, zustandsUnterschiede } from './git.js';
 import { schnappschuss, seed } from './schnappschuss.js';
@@ -156,6 +157,7 @@ const MIN_BELEG = 20;
  */
 export function reviewMelden(w, kopf, befunde = []) {
   const a = brauche(w);
+  nichtGesperrt(w, a);
   const baum = baumVon(w, a.basis);
   const paketEintrag = leseZeilen(path.join(laufDir(w, a.id), 'pakete.jsonl')).filter((x) => x.baum === baum).at(-1);
   if (!paketEintrag) throw new LaufFehler('Für den aktuellen Codezustand gibt es kein Review-Paket (zuerst: paket). Ein Review zählt nur für genau den Stand, den das Paket enthielt');
@@ -181,6 +183,7 @@ export function reviewMelden(w, kopf, befunde = []) {
  */
 export function befundMelden(w, { id, einstufung, beleg = '' }) {
   const a = brauche(w);
+  nichtGesperrt(w, a);
   const baum = baumVon(w, a.basis);
   const rv = leseZeilen(path.join(laufDir(w, a.id), 'reviews.jsonl')).filter((x) => x.baum === baum).at(-1);
   if (!rv) throw new LaufFehler('Für den aktuellen Codezustand gibt es noch kein gemeldetes Review (review-melden)');
@@ -206,11 +209,82 @@ function gleichMitCommit(verzeichnis, commit) {
   return abweichungen;
 }
 
+/** Umgebungsvariablen, die ein Testprozess bekommt (Positivliste, Namen ohne Beachtung der Groß-/Kleinschreibung wie unter Windows). Nichts anderes wird weitergereicht. */
+export const TEST_UMGEBUNG_ERLAUBT = Object.freeze(['PATH', 'SystemRoot', 'windir', 'ComSpec', 'PATHEXT']);
+
+/**
+ * Umgebung für die Tests des Agenten: nur die Positivliste, dazu ein leeres privates Verzeichnis als Home und Temp (damit keine Konfigurationen des Benutzers gelesen werden)
+ * und ohne Git-Konfiguration. Das ist **Bereinigung, keine Isolation**: der Prozess läuft weiter unter dem Benutzerkonto und kann Dateien erreichen, die dieses Konto erreicht.
+ */
+export function testUmgebung(quelle, privat) {
+  const erlaubt = new Set(TEST_UMGEBUNG_ERLAUBT.map((n) => n.toLowerCase()));
+  const env = {};
+  for (const [k, v] of Object.entries(quelle)) if (erlaubt.has(k.toLowerCase()) && typeof v === 'string') env[k] = v;
+  Object.assign(env, {
+    HOME: privat, USERPROFILE: privat, TEMP: privat, TMP: privat, TMPDIR: privat,
+    GIT_CONFIG_GLOBAL: path.join(privat, 'gitconfig'), GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0',
+  });
+  return env;
+}
+
+/**
+ * Liest die Zusammenfassung von `node --test` aus der Ausgabe. Gilt nur der **letzte** Block `ℹ tests …` (die echte Zusammenfassung kommt zuletzt; was ein Test früher ausgibt, zählt nicht),
+ * und nur, wenn er vollständig ist und rechnet (tests = pass + fail + cancelled + skipped + todo). Sonst `null`.
+ */
+export function liesTestZaehler(ausgabe) {
+  const zeilen = String(ausgabe ?? '').split(/\r?\n/);
+  let start = -1;
+  zeilen.forEach((z, i) => { if (/^ℹ tests [0-9]+$/.test(z)) start = i; });
+  if (start < 0) return null;
+  const w = {};
+  for (let i = start; i < zeilen.length; i++) {
+    const m = zeilen[i].match(/^ℹ (tests|suites|pass|fail|cancelled|skipped|todo) ([0-9]+)$/);
+    if (m) w[m[1]] = Number(m[2]);
+    else if (!/^ℹ duration_ms /.test(zeilen[i])) break;
+  }
+  for (const k of ['tests', 'pass', 'fail', 'cancelled', 'skipped', 'todo']) if (!Number.isInteger(w[k])) return null;
+  if (w.tests !== w.pass + w.fail + w.cancelled + w.skipped + w.todo) return null;
+  return w;
+}
+
+/** Abdruck des Laufzustands: jede Datei unter `.claude/orchestrierung` (Pfad → Hash). */
+export function laufAbdruck(w) {
+  const m = {};
+  const geh = (dir, rel) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name); const r = rel ? `${rel}/${e.name}` : e.name;
+      if (e.isDirectory()) geh(p, r);
+      else { try { m[r] = createHash('sha256').update(fs.readFileSync(p)).digest('hex'); } catch { m[r] = 'unlesbar'; } }
+    }
+  };
+  if (fs.existsSync(orchDir(w))) geh(orchDir(w), '');
+  return m;
+}
+const abdruckUnterschiede = (a, b) => [...new Set([...Object.keys(a), ...Object.keys(b)])].sort().filter((p) => a[p] !== b[p]).map((p) => `lauf:${p}`);
+
+const sperrDatei = (w, id) => path.join(laufDir(w, id), 'gesperrt.json');
+/** Grund der Sperre oder null. Ein gesperrter Lauf wird nie wieder vertrauenswürdig: weder Tests noch Review noch Übernahme noch Abschluss sind möglich (nur `ende`, dann ein neuer Lauf nach Prüfung durch Jonah). */
+export function sperrGrund(w, a) {
+  if (a?.gesperrt) return a.gesperrt.grund;
+  if (a?.id && fs.existsSync(sperrDatei(w, a.id))) { try { return leseJson(sperrDatei(w, a.id)).grund; } catch { return 'Sperrdatei unlesbar'; } }
+  return null;
+}
+const nichtGesperrt = (w, a) => {
+  const g = sperrGrund(w, a);
+  if (g) throw new LaufFehler(`Der Lauf ist gesperrt (${g}). Er wird nicht wieder vertrauenswürdig: Jonah informieren, den Lauf mit „ende“ beenden und nach seiner Prüfung neu starten`);
+};
+function sperren(w, a, grund) {
+  const eintrag = { grund, zeit: jetzt() };
+  try { schreibeJson(sperrDatei(w, a.id), eintrag); } catch { /* der Eintrag in aktiv.json unten genügt */ }
+  a.gesperrt = eintrag;
+  try { speichere(w, a); } catch { /* Sperrdatei ist schon geschrieben, sonst bleibt der Lauf ohnehin unbrauchbar */ }
+}
+
 /** Die Testläufe, die das Werkzeug selbst startet (feste Argumente für Node, kein Shell-Text). `kurz` ist die vollständige Suite und für die Freigabe Pflicht. */
 export const SUITEN = Object.freeze({
-  kurz: ['--test', 'test/**/*.test.js'],
-  orchestrierung: ['--test', 'test/orchestrierung/*.orchestrierung.js'],
-  pruefstein: ['--test', 'test/pruefstein/*.pruefstein.js'],
+  kurz: ['--test', '--test-reporter=spec', 'test/**/*.test.js'],
+  orchestrierung: ['--test', '--test-reporter=spec', 'test/orchestrierung/*.orchestrierung.js'],
+  pruefstein: ['--test', '--test-reporter=spec', 'test/pruefstein/*.pruefstein.js'],
 });
 
 /**
@@ -220,21 +294,35 @@ export const SUITEN = Object.freeze({
  */
 export function testsAusfuehren(w, { worktree, suite = 'kurz', timeoutMs = 1800000 }) {
   const a = brauche(w);
+  nichtGesperrt(w, a);
   if (!Object.hasOwn(SUITEN, suite)) throw new LaufFehler(`Unbekannte Suite „${String(suite)}“. Erlaubt: ${Object.keys(SUITEN).join(', ')}`);
   const pfad = vor(path.resolve(worktree));
   if (a.runde < 1) throw new LaufFehler('Es gibt noch keine Runde mit Arbeit');
   if (!worktrees(w, a.id).some((x) => vor(path.resolve(x.pfad)) === pfad)) throw new LaufFehler(`${pfad} ist kein Worktree dieses Laufs`);
   const vorher = gleichMitCommit(pfad, a.basis);
   if (vorher.length) throw new LaufFehler(`Der Worktree weicht vom gesicherten Stand ab (zuerst runde-ende, dann testen): ${vorher.slice(0, 3).join('; ')}`);
-  const umgebung = { ...process.env };
-  delete umgebung.NODE_TEST_CONTEXT; // sonst schreibt ein verschachtelter Testlauf (z. B. aus einem Test heraus) kein lesbares Ergebnis
-  const r = spawnSync(process.execPath, SUITEN[suite], { cwd: pfad, encoding: 'utf8', timeout: timeoutMs, maxBuffer: 256 << 20, env: umgebung });
-  const zahl = (n) => { const m = (r.stdout ?? '').match(new RegExp(`ℹ ${n} ([0-9]+)`)); return m ? Number(m[1]) : null; };
-  const gruen = zahl('pass'), fehl = zahl('fail'), uebersprungen = zahl('skipped');
-  if (gruen === null || fehl === null) throw new LaufFehler(`Die Testausgabe war nicht lesbar (Exit ${r.status}, ${r.error ? r.error.message : 'ohne Zähler'}); es wird nichts protokolliert`);
+  // Abdruck von Hauptbaum, HEAD und Laufzustand vor den Tests; die Tests sind Code des Agenten und laufen unter dem Benutzerkonto
+  const z0 = zustand(w, { ausser: AUSSER }); const l0 = laufAbdruck(w);
+  const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'bw-test-'));
+  let r;
+  try {
+    fs.writeFileSync(path.join(privat, 'gitconfig'), '');
+    r = spawnSync(process.execPath, SUITEN[suite], { cwd: pfad, encoding: 'utf8', timeout: timeoutMs, maxBuffer: 256 << 20, env: testUmgebung(process.env, privat) });
+  } finally {
+    try { fs.rmSync(privat, { recursive: true, force: true, maxRetries: 3 }); } catch { /* egal */ }
+  }
+  const verdacht = [...zustandsUnterschiede(z0, zustand(w, { ausser: AUSSER })), ...abdruckUnterschiede(l0, laufAbdruck(w))];
+  if (verdacht.length) {
+    sperren(w, a, `Manipulationsverdacht: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees: ${verdacht.slice(0, 5).join('; ')}`);
+    throw new LaufFehler(`MANIPULATIONSVERDACHT: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees (${verdacht.slice(0, 5).join('; ')}). Der Lauf ist gesperrt, das Ergebnis wird nicht protokolliert. Stoppen und Jonah berichten`);
+  }
+  const z = liesTestZaehler(r.stdout);
+  if (!z) throw new LaufFehler(`Die Testausgabe war nicht lesbar oder nicht stimmig (Exit ${r.status}, ${r.error ? r.error.message : 'keine vollständige, rechnende Zusammenfassung'}); es wird nichts protokolliert`);
+  const exit = r.status ?? 1;
+  if (exit === 0 && (z.fail > 0 || z.cancelled > 0)) throw new LaufFehler('Die Testausgabe widerspricht dem Exit-Code (Exit 0, aber fehlgeschlagene Tests gemeldet); es wird nichts protokolliert');
   const nachher = gleichMitCommit(pfad, a.basis);
   if (nachher.length) throw new LaufFehler(`Die Tests haben den Worktree verändert (${nachher.slice(0, 3).join('; ')}); das Ergebnis gilt nicht für den gesicherten Stand`);
-  return testsMelden(w, { worktree, suite, gruen, fehlgeschlagen: fehl, uebersprungen: uebersprungen ?? 0, exit: r.status ?? 1, quelle: 'werkzeug' });
+  return testsMelden(w, { worktree, suite, gruen: z.pass, fehlgeschlagen: z.fail + z.cancelled, uebersprungen: z.skipped, exit, quelle: 'werkzeug' });
 }
 
 /**
@@ -243,6 +331,7 @@ export function testsAusfuehren(w, { worktree, suite = 'kurz', timeoutMs = 18000
  */
 export function testsMelden(w, { worktree, suite, gruen, fehlgeschlagen, uebersprungen = 0, exit, quelle = 'gemeldet' }) {
   const a = brauche(w);
+  nichtGesperrt(w, a);
   if (a.runde < 1) throw new LaufFehler('Es gibt noch keine Runde mit Arbeit');
   const pfad = vor(path.resolve(worktree));
   if (!worktrees(w, a.id).some((x) => vor(path.resolve(x.pfad)) === pfad)) throw new LaufFehler(`${pfad} ist kein Worktree dieses Laufs`);
@@ -263,6 +352,8 @@ export function testsMelden(w, { worktree, suite, gruen, fehlgeschlagen, uebersp
 export function freigabeStatus(w, a = brauche(w)) {
   const baum = baumVon(w, a.basis);
   const gruende = [];
+  const sperre = sperrGrund(w, a);
+  if (sperre) gruende.push(`Lauf gesperrt: ${sperre}`);
   const dir = laufDir(w, a.id);
   // je Suite zählt der jüngste Lauf für genau diesen Codezustand; die vollständige Suite `kurz` ist Pflicht, weitere gestartete Suiten müssen ebenfalls grün sein
   const jeSuite = new Map();

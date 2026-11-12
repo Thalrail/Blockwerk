@@ -80,8 +80,9 @@ export const abdruckUnterschiede = (a, b, praefix = 'git') => [...new Set([...Ob
 
 /** Credential-Helper, die Git mitliefert oder das Betriebssystem stellt (Git Credential Manager, wincred, osxkeychain, libsecret, store, cache). Alles andere – vor allem Shell-Aufrufe mit „!“ – wird abgelehnt. */
 const HELPER_NAME = /^(?:manager|manager-core|wincred|osxkeychain|libsecret)$/i;
-const HELPER_STORE_CACHE = /^(?:store|cache)(?: --[A-Za-z-]+(?:=\S+)?)*$/i;
-const HELPER_PFAD = /^"?(?:[A-Za-z]:)?[\\/][^"!]*git-credential-(?:manager(?:-core)?|wincred|osxkeychain|libsecret)(?:\.exe)?"?$/i;
+const HELPER_STORE_CACHE = /^(?:store|cache)(?: --timeout=[0-9]+)?$/i; // keine anderen Argumente (kein --file=…)
+// Pfade nur unter den üblichen Installationsorten (Programme-Ordner mit Git bzw. Git Credential Manager, Systemverzeichnisse von Linux/macOS), ohne Leerzeichen außer in den festen Ordnernamen, ohne Sonderzeichen und ohne „..“:
+const HELPER_PFAD = /^(?!.*\.\.)"?(?:[A-Za-z]:[\\/]Program Files(?: \(x86\))?[\\/](?:Git|Git Credential Manager)[\\/]|\/usr\/(?:local\/)?(?:lib|libexec)\/git-core\/|\/opt\/homebrew\/(?:lib|libexec)\/git-core\/)[A-Za-z0-9_.\\/-]*git-credential-(?:manager(?:-core)?|wincred|osxkeychain|libsecret)(?:\.exe)?"?$/i;
 const helperErlaubt = (wert) => wert === '' || HELPER_NAME.test(wert) || HELPER_STORE_CACHE.test(wert) || HELPER_PFAD.test(wert);
 
 /**

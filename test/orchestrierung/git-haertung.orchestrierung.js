@@ -115,6 +115,32 @@ test('pruefeGitKonfiguration: das gewöhnliche Anmeldeverfahren und die Systemko
   assert.deepEqual(pruefeGitKonfiguration(y), [], 'fsmonitor=false und sslBackend sind erlaubt');
 });
 
+test('pruefeGitKonfiguration: ein Credential-Helper-Pfad muss unter einem üblichen Installationsort liegen; beliebige Pfade, „..“, Sonderzeichen und Argumente wie --file= werden abgelehnt', () => {
+  const erlaubt = [
+    'C:/Program Files/Git/mingw64/bin/git-credential-manager.exe', 'C:\\Program Files\\Git\\mingw64\\bin\\git-credential-manager.exe', 'C:/Program Files/Git/mingw64/libexec/git-core/git-credential-manager.exe',
+    'C:/Program Files/Git Credential Manager/git-credential-manager.exe', 'C:/Program Files (x86)/Git/mingw32/bin/git-credential-wincred.exe',
+    '/usr/lib/git-core/git-credential-libsecret', '/usr/libexec/git-core/git-credential-osxkeychain', '/usr/local/libexec/git-core/git-credential-osxkeychain', '/opt/homebrew/libexec/git-core/git-credential-osxkeychain',
+    'store', 'cache', 'cache --timeout=3600', 'manager',
+  ];
+  const abgelehnt = [
+    '/tmp/evil/git-credential-manager', 'C:/Users/jonah/AppData/Local/Temp/x/git-credential-manager.exe', 'C:/evil/git-credential-manager.exe', './git-credential-manager', 'git-credential-manager',
+    'C:/Program Files/Git/../../tmp/x/git-credential-manager.exe', '/usr/lib/git-core/../../../tmp/x/git-credential-libsecret',
+    'C:/Program Files/Git/mingw64/bin/git-credential-manager.exe; evil', 'C:/Program Files/Git/bin/x y/git-credential-manager.exe', '/usr/lib/git-core/git-credential-libsecret && evil', '/usr/lib/git-core/$(evil)/git-credential-libsecret',
+    '"C:/Program Files/Git/mingw64/bin/git-credential-manager.exe" --extra', '!/usr/lib/git-core/git-credential-libsecret',
+    'store --file=/tmp/fremd', 'store --file /tmp/fremd', 'cache --socket=/tmp/x', 'cache --timeout=3600 --socket=/tmp/x', 'manager --evil',
+  ];
+  for (const helper of erlaubt) {
+    const x = repo();
+    git(x, ['config', '--local', 'credential.helper', helper]);
+    assert.deepEqual(pruefeGitKonfiguration(x), [], `„${helper}“ ist erlaubt`);
+  }
+  for (const helper of abgelehnt) {
+    const x = repo();
+    git(x, ['config', '--local', 'credential.helper', helper]);
+    assert.ok(pruefeGitKonfiguration(x).some((p) => p.startsWith('credential.helper')), `„${helper}“ wird abgelehnt`);
+  }
+});
+
 const GEFAEHRLICH = [
   ['credential.helper', '!evil'], ['credential.helper', 'evil-helper'], ['credential.https://github.com.helper', '!evil'],
   ['filter.evil.clean', 'evil'], ['filter.evil.smudge', 'evil'], ['filter.lfs.clean', 'evil'],

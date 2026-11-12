@@ -94,7 +94,7 @@ Eigene, zukünftige Aufgabe (noch keine Entscheidung zur Technik): Tests des Age
 Keine automatische Freigabe bei: Urteil `reject`; Befund nicht eingestuft; Befund `bestätigt` (neue Runde, neues Review); **kritischer Befund (`critical`) in jeder Einstufung** – auch „widerlegt“ genügt nicht, das Urteil über einen kritischen Befund trifft Jonah; `approve` ändert daran nichts. Bleibt ein Befund, geht es nur mit einem neuen Review für einen neuen Codezustand weiter (höchstens drei Korrekturschleifen), sonst Rückfrage.
 
 ## Tests
-`npm run test:orchestrierung` (113 Tests, einige Minuten, eigene Wegwerf-Repositories und ein lokales Test-Remote; `gh` ist dort eine Attrappe): Snapshot, Seed, Runden, Delta, Übernahme mit Fehlern und Absturz, Tore, Review-Paket und Einzelmodus, Hooks als echte Prozesse, Wächter, Kommandozeile, Einstellungen, Freigabe-Gate und autonomer Abschluss. Nicht Teil von `npm test` (Prozessstarts unter Windows sind langsam).
+`npm run test:orchestrierung` (114 Tests, einige Minuten, eigene Wegwerf-Repositories und ein lokales Test-Remote; `gh` ist dort eine Attrappe): Snapshot, Seed, Runden, Delta, Übernahme mit Fehlern und Absturz, Tore, Review-Paket und Einzelmodus, Hooks als echte Prozesse, Wächter, Kommandozeile, Einstellungen, Freigabe-Gate und autonomer Abschluss. Nicht Teil von `npm test` (Prozessstarts unter Windows sind langsam).
 
 ## Bekannte Grenzen und offene Punkte
 - Hooks aus `settings.json` greifen in einer bereits laufenden Sitzung erst nach Überprüfung im `/hooks`-Menü; ein neuer Lauf in einer neuen Sitzung braucht nichts.

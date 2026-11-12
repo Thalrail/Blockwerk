@@ -57,3 +57,14 @@ test('Modell-Routing (Jonah, 31.10.2026) steht in CLAUDE.md und in beiden Entsch
   for (const wort of ['rein mechanische Änderungen ohne eigene Entscheidungslogik', 'Heuristik', 'Korrektheitsgarantie', 'zu Sonnet wechseln']) assert.ok(claude.includes(wort), `CLAUDE.md nennt „${wort}“`);
   assert.ok(lies('docs/entscheidungen.md').includes('- Modell-Routing (Jonah, 31.10.2026):') && lies('docs/kurz/entscheidungen-kurz.md').includes('- Modell-Routing (Jonah, 31.10.2026):'));
 });
+
+test('Codex-Review gilt für jeden Auftrag, auch reine Doku (Jonah, 31.10.2026): kein Dokument nennt es mehr „risikobasiert“ oder nimmt Doku aus', () => {
+  for (const datei of ['CLAUDE.md', 'docs/entscheidungen.md', 'docs/kurz/entscheidungen-kurz.md', 'docs/token-effizienz.md', 'docs/orchestrierung.md', '.claude/skills/blockwerk-auftrag/SKILL.md']) {
+    const t = lies(datei);
+    assert.doesNotMatch(t, /Codex(-Review)? risikobasiert(?! *\(auch)/, `${datei}: Codex ist nicht mehr nur risikobasiert`);
+    assert.doesNotMatch(t, /kein Review bei reiner Doku|kein Review bei reinen/i, `${datei}: keine Ausnahme für Doku`);
+  }
+  const skill = lies('.claude/skills/blockwerk-auftrag/SKILL.md');
+  assert.match(skill, /Codex prüft jede abgeschlossene Umsetzung\*\* \(Jonah, 31\.10\.2026\), auch reine Doku und Tests/);
+  assert.match(skill, /Nur die \*\*Stufe\*\* richtet sich nach dem Risiko/);
+});

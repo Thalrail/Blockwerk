@@ -5,7 +5,8 @@ Zuletzt aktualisiert: 31.10.2026. **Diese Datei wird bei jeder Sitzung und jedem
 ## Lage
 - Neubeginn nach dem Ebenenmodell (`docs/kurz/ebenen-kurz.md`). Der frühere Prototyp und Blockplan sind verworfen.
 - Ebene 0 bis 5 sind gebaut und bis PR #46 gemergt. Auf dem Branch `claude/lorenbahn-nische-planung` liegen sechs weitere, **committete** Stände (31.10.2026, HEAD `b227685`, **noch nicht gepusht, kein PR**): Lorenbahn-Nische Schritt 3 (`96e2aad`), Korrekturen #1/#7 (`40e0182`), Skills (`1a21f62`), Multi-Agenten-Orchestrierung samt Modell-Routing (`0c81668`), Token-Optimierung und Repo-Karte (`5e523e2`), optionale Graphify-Anbindung (`b227685`). **Die Infrastrukturphase (Orchestrierung, Skills, Token-Optimierung) ist damit abgeschlossen.** Push und PR nur mit Jonahs Freigabe.
-- Tests: `npm test` (Stand 31.10.2026: 446 grün; kurze Ausgabe: `npm run test:kurz`), `npm run test:orchestrierung` (47, rund 2 Minuten), `npm run test:pruefstein` (Zitadelle, 4 bis 6 Minuten).
+- **Autonomer Auftragslauf (31.10.2026, uncommittet):** `/blockwerk-auftrag` führt einen freigegebenen Auftrag bis zur Draft-PR (Codex-Review jeder Umsetzung, Gates für Tests und Review, `cli.js abschluss`; die Sperren für `git push` und `gh pr` bleiben). Umgesetzt und mit Wegwerf-Repositories samt lokalem Test-Remote getestet. Minimale Erlaubnisliste (`allow`) eingetragen, kritische Befunde nie automatisch freigegeben. **Offen: Phase 6, der echte Probelauf mit Push und PR (nur mit Jonahs gesonderter Freigabe)**. Details: `docs/orchestrierung.md`.
+- Tests: `npm test` (Stand 31.10.2026: 447 grün; kurze Ausgabe: `npm run test:kurz`), `npm run test:orchestrierung` (114, einige Minuten), `npm run test:pruefstein` (Zitadelle, 4 bis 6 Minuten).
 - Spieltests von Jonah (20.–24.10.2026): 7 Drehregeln, die Lorenmessungen und einige Wasser-/Schienen-Regeln stehen auf `geprüft`, alles andere `ungeprüft` (siehe `docs/spieltests.md`). Der Status `geprüft` setzt nur Jonah nach einem Spieltest.
 - Datenstand Bedrock 1.26.50; Wo Bedrock schweigt, gilt die Java-Regel als Platzhalter mit Status `ungeprüft`, Quelle und Testanleitung.
 
@@ -31,3 +32,4 @@ Zuletzt aktualisiert: 31.10.2026. **Diese Datei wird bei jeder Sitzung und jedem
 - Brutkammer-Entwurf und Transport der Dorfbewohner in die Zellen (`docs/offene-fragen.md`).
 - Graphify ist optional angebunden (`tools/graphify.js`, nur auf Bedarf, Entscheidung 31.10.2026; Nutzung in `docs/token-effizienz.md`), OmniRoute bleibt deaktiviert; Ponytail-Umfang und weitere Skills (`docs/orchestrierung-erweiterungen.md`).
 - Opus-Einsatz nur nach ausdrücklicher Freigabe von Jonah (je Fall).
+- Sicherheit: Testumgebung ist bereinigt und Manipulation wird erkannt, aber **keine Prozessisolation**; echte Isolation der Agenten-Tests ist eine eigene zukünftige Aufgabe, der Abgleich der Codex-Reviews mit der Bridge-Datenbank ist zurückgestellt (`docs/orchestrierung.md`).

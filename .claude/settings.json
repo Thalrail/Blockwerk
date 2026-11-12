@@ -4,6 +4,28 @@
     "baseRef": "head"
   },
   "permissions": {
+    "allow": [
+      "Bash(node tools/orchestrierung/cli.js status *)",
+      "Bash(node tools/orchestrierung/cli.js start *)",
+      "Bash(node tools/orchestrierung/cli.js runde-ende *)",
+      "Bash(node tools/orchestrierung/cli.js tore *)",
+      "Bash(node tools/orchestrierung/cli.js paket *)",
+      "Bash(node tools/orchestrierung/cli.js tests-ausfuehren *)",
+      "Bash(node tools/orchestrierung/cli.js review-melden *)",
+      "Bash(node tools/orchestrierung/cli.js befund-melden *)",
+      "Bash(node tools/orchestrierung/cli.js uebernehmen *)",
+      "Bash(node tools/orchestrierung/cli.js haupt-kontrolle *)",
+      "Bash(node tools/orchestrierung/cli.js wiederherstellen *)",
+      "Bash(node tools/orchestrierung/cli.js ende *)",
+      "Bash(node tools/orchestrierung/cli.js abschluss *)",
+      "Bash(node tools/karte.js *)",
+      "Bash(npm test)",
+      "Bash(npm run test:kurz)",
+      "Bash(npm run test:orchestrierung)",
+      "Bash(npm run test:pruefstein)",
+      "mcp__codex-bridge__review_code",
+      "mcp__codex-bridge__review_status"
+    ],
     "deny": [
       "Bash(git push *)",
       "Bash(gh pr *)",

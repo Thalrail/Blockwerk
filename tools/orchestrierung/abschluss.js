@@ -9,8 +9,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { git, gitStatus } from './git.js';
-import { AUSSER, brauche, speichere, laufDir, leseZeilen, freigabeStatus, fremdeAenderungen, baumVon, vor } from './lauf.js';
+import { git, gitStatus, mitHaertung, haerteUmgebung, konfigUmgebung, haerteEinstellungen, haertePfad } from './git.js';
+import { pruefeGitKonfiguration, aktiveHooks } from './git-abdruck.js';
+import { AUSSER, brauche, speichere, laufDir, leseZeilen, freigabeStatus, fremdeAenderungen, baumVon, vor, integritaetPruefen, integritaetGitNeu, integritaetVerletzt } from './lauf.js';
 import { vergleicheMitPlatte, pruefeGeheimnisse } from './schnappschuss.js';
 
 export const GITHUB_REPO = 'Thalrail/Blockwerk';
@@ -75,8 +76,18 @@ function pruefeVoraussetzungen(w, a, { kurzname, titel, einschraenkungen, basis 
   const f = freigabeStatus(w, a);
   if (!f.ok) return { fehler: abgelehnt('freigabe', { gruende: f.gruende }) };
 
-  const remote = git(w, ['remote', 'get-url', 'origin']).trim();
-  if (!(umgebung.erlaubteRemotes ?? ERLAUBTE_REMOTES).map((x) => x.toLowerCase()).includes(remote.toLowerCase())) return { fehler: abgelehnt('remote-nicht-erlaubt', { remote }) };
+  // unmittelbar vor dem Abschluss: Git-Konfiguration, Hooks, Info und Nachweisdateien seit dem Start des Laufs unverändert? (sonst wird der Lauf gesperrt)
+  const verstoss = integritaetPruefen(w, a);
+  if (verstoss.length) return { fehler: integritaetVerletzt(w, a, verstoss, 'vor dem Abschluss') };
+  const hooks = aktiveHooks(w);
+  if (hooks.length) return { fehler: abgelehnt('git-hooks', { hooks, hinweis: 'Im Repository liegen aktive Git-Hooks; ein autonomer Abschluss verweigert das (Jonah entscheidet, ob sie entfernt werden)' }) };
+  const konfig = pruefeGitKonfiguration(w);
+  if (konfig.length) return { fehler: abgelehnt('git-konfiguration', { probleme: konfig, hinweis: 'Die wirksame Git-Konfiguration enthält Einträge, die Programme starten oder das Push-Ziel ändern könnten' }) };
+  const erlaubteRemotes = (umgebung.erlaubteRemotes ?? ERLAUBTE_REMOTES).map((x) => x.toLowerCase());
+  const remotes = [git(w, ['remote', 'get-url', 'origin']).trim(), git(w, ['remote', 'get-url', '--push', 'origin']).trim()];
+  const remote = remotes[0];
+  const fremdesZiel = remotes.find((x) => !erlaubteRemotes.includes(x.toLowerCase()));
+  if (fremdesZiel) return { fehler: abgelehnt('remote-nicht-erlaubt', { remote: fremdesZiel }) };
   if (!git(w, ['config', 'user.name']).trim() || !git(w, ['config', 'user.email']).trim()) return { fehler: abgelehnt('git-identitaet', { hinweis: 'user.name und user.email fehlen' }) };
 
   const kopf = git(w, ['rev-parse', 'HEAD']).trim();
@@ -123,6 +134,10 @@ export function stagingStimmt(gestaged, erwartet) {
   return JSON.stringify(gestaged) === JSON.stringify(erwartet);
 }
 
+/** Umgebung für `gh`: wie bei Git nur die Positivliste, dazu die Anmeldeverfahren von gh (Token-Variablen, Konfigurationsort); Git-Einstellungen gelten auch für die Git-Aufrufe, die gh selbst startet. */
+export const GH_UMGEBUNG_ZUSATZ = Object.freeze(['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GH_HOST', 'GH_CONFIG_DIR', 'XDG_CONFIG_HOME']);
+const ghUmgebung = (extra = {}) => ({ ...haerteUmgebung(process.env, GH_UMGEBUNG_ZUSATZ), ...konfigUmgebung(haerteEinstellungen(haertePfad())), GIT_TERMINAL_PROMPT: '0', GH_PROMPT_DISABLED: '1', ...extra });
+
 function blockiert(w, a, f, schritt, grund) {
   speichere(w, a);
   return { status: 'blockiert', schritt, grund, fortschritt: f.schritte, branch: f.branch, commit: f.commit ?? null, hinweis: 'Stoppen und Jonah berichten; ein erneuter Aufruf setzt beim fehlgeschlagenen Schritt fort' };
@@ -133,7 +148,9 @@ function blockiert(w, a, f, schritt, grund) {
  * @param {{kurzname: string, titel: string, einschraenkungen: string, basis?: string, trocken?: boolean}} p
  * @param {{erlaubteRemotes?: string[], gh?: string[]}} umgebung nur für Tests (die Kommandozeile reicht nichts davon durch)
  */
-export function abschliessen(w, { kurzname, titel, einschraenkungen = '', basis = BASIS_ZWEIG, trocken = false }, umgebung = {}) {
+export function abschliessen(w, parameter, umgebung = {}) { return mitHaertung(() => abschliessenIntern(w, parameter, umgebung)); }
+
+function abschliessenIntern(w, { kurzname, titel, einschraenkungen = '', basis = BASIS_ZWEIG, trocken = false }, umgebung = {}) {
   const a = brauche(w);
   const gh = umgebung.gh ?? ['gh'];
   let f = a.abschluss;
@@ -153,14 +170,18 @@ export function abschliessen(w, { kurzname, titel, einschraenkungen = '', basis 
 
   if (f.schritte.includes('pr')) return { status: 'fertig', bereitsErledigt: true, branch: f.branch, commit: f.commit, pr: f.pr };
 
+  // vor jedem schreibenden Schritt noch einmal (auch beim Fortsetzen nach „blockiert“)
+  const vorSchritt = (schritt) => { const v = integritaetPruefen(w, a); return v.length ? integritaetVerletzt(w, a, v, `vor dem Schritt „${schritt}“`) : null; };
   // 1. Branch
   if (!f.schritte.includes('branch')) {
+    const v1 = vorSchritt('branch'); if (v1) return v1;
     const r = gitStatus(w, ['switch', '-c', f.branch]);
     if (r.status !== 0) { a.abschluss = null; speichere(w, a); return abgelehnt('branch-anlegen-fehlgeschlagen', { meldung: kurz(r.stderr) }); }
     f.schritte.push('branch'); speichere(w, a);
   }
   // 2. Commit (nur die übernommenen Pfade; danach muss der Baum exakt der geprüfte sein)
   if (!f.schritte.includes('commit')) {
+    const v2 = vorSchritt('commit'); if (v2) return v2;
     const aktuell = gitStatus(w, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.toString().trim();
     if (aktuell !== f.branch) return blockiert(w, a, f, 'commit', `Aktueller Branch ist „${aktuell}“, erwartet „${f.branch}“`);
     const pfade = `${f.dateien.join('\0')}\0`;
@@ -181,20 +202,23 @@ export function abschliessen(w, { kurzname, titel, einschraenkungen = '', basis 
   }
   // 3. Push (nur der eigene Branch, ausdrücklicher Refspec, nie Force)
   if (!f.schritte.includes('push')) {
+    const v3 = vorSchritt('push'); if (v3) return v3;
     if (git(w, ['rev-parse', 'HEAD']).trim() !== f.commit) return blockiert(w, a, f, 'push', 'HEAD ist nicht mehr der erstellte Commit');
     const p = gitStatus(w, ['push', '-u', 'origin', `refs/heads/${f.branch}:refs/heads/${f.branch}`]);
     if (p.status !== 0) return blockiert(w, a, f, 'push', kurz(p.stderr) || kurz(p.stdout));
     const ls = gitStatus(w, ['ls-remote', '--heads', 'origin', `refs/heads/${f.branch}`]).stdout.toString();
     if (!ls.startsWith(f.commit)) return blockiert(w, a, f, 'push', 'Der Remote-Branch zeigt nicht auf den Commit');
     f.schritte.push('push'); speichere(w, a);
+    integritaetGitNeu(w, a); // `push -u` schreibt Zweig-Einträge in die Konfiguration: das ist die eigene, erwartete Änderung
   }
   // 4. Draft-PR (immer --draft, feste Basis und fester Kopf)
   if (!f.schritte.includes('pr')) {
+    const v4 = vorSchritt('pr'); if (v4) return v4;
     const dateiListe = git(w, ['diff', '--name-status', `${f.commit}~1`, f.commit]).trim().split('\n').filter(Boolean).map((z) => z.replace('\t', ' '));
     const bodyDatei = path.join(os.tmpdir(), `bw-pr-${a.id}.md`);
     fs.writeFileSync(bodyDatei, prText(a, frei, dateiListe, f.einschraenkungen, befundZeilen(w, a, frei)));
     const [exe, ...vorn] = gh;
-    const r = spawnSync(exe, [...vorn, 'pr', 'create', '--draft', '--repo', GITHUB_REPO, '--base', f.basis, '--head', f.branch, '--title', f.titel, '--body-file', bodyDatei], { cwd: w, encoding: 'utf8', env: process.env });
+    const r = spawnSync(exe, [...vorn, 'pr', 'create', '--draft', '--repo', GITHUB_REPO, '--base', f.basis, '--head', f.branch, '--title', f.titel, '--body-file', bodyDatei], { cwd: w, encoding: 'utf8', env: ghUmgebung(umgebung.ghEnv) });
     fs.rmSync(bodyDatei, { force: true });
     if (r.status !== 0) return blockiert(w, a, f, 'pr', kurz(r.stderr) || kurz(r.stdout) || `Exit ${r.status}`);
     f.pr = (r.stdout.split('\n').map((z) => z.trim()).filter((z) => /^https?:\/\/\S+$/.test(z)).at(-1)) ?? null;

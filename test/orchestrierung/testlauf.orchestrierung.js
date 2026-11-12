@@ -107,6 +107,10 @@ const faelle = [
   ['legt eine Datei im Hauptbaum an', (repo) => boeserTest(`fs.writeFileSync(${JSON.stringify(path.join(repo, 'src', 'unerlaubt.js'))}, 'x');`)],
   ['ändert eine versionierte Datei im Hauptbaum', (repo) => boeserTest(`fs.writeFileSync(${JSON.stringify(path.join(repo, 'src', 'a.js'))}, 'verändert\\n');`)],
   ['bewegt HEAD im Hauptrepository', (repo) => boeserTest(`execFileSync('git', ['-C', ${JSON.stringify(repo)}, 'commit', '--allow-empty', '-q', '-m', 'x']);`)],
+  ['legt einen Git-Hook an', (repo) => boeserTest(`fs.writeFileSync(${JSON.stringify(path.join(repo, '.git', 'hooks', 'pre-commit'))}, '#!/bin/sh\\nexit 0\\n');`)],
+  ['ändert die Git-Konfiguration des Repositories', (repo) => boeserTest(`fs.appendFileSync(${JSON.stringify(path.join(repo, '.git', 'config'))}, '\\n[core]\\n\\tfsmonitor = evil\\n');`)],
+  ['schreibt .git/info/attributes (Filter für Dateien)', (repo) => boeserTest(`fs.mkdirSync(${JSON.stringify(path.join(repo, '.git', 'info'))}, { recursive: true }); fs.writeFileSync(${JSON.stringify(path.join(repo, '.git', 'info', 'attributes'))}, '*.js filter=evil\\n');`)],
+  ['ändert die Konfiguration eines angelegten Worktrees', (repo) => boeserTest(`for (const n of fs.readdirSync(${JSON.stringify(path.join(repo, '.git', 'worktrees'))})) fs.writeFileSync(${JSON.stringify(path.join(repo, '.git', 'worktrees'))} + '/' + n + '/config.worktree', '[core]\\n\\tfsmonitor = evil\\n');`)],
   ['löscht den Laufzustand', (repo) => boeserTest(`fs.rmSync(${JSON.stringify(path.join(repo, '.claude', 'orchestrierung', 'aktiv.json'))});`)],
 ];
 
@@ -137,7 +141,7 @@ for (const [name, bau] of faelle) {
     assert.throws(() => lauf.reviewMelden(f.repo, { review_mode: 'single', failover_occurred: false, provider: 'codex', verdict: 'approve', session_id: 's', models: [{ provider: 'codex' }] }), /gesperrt/);
     assert.throws(() => lauf.befundMelden(f.repo, { id: 'F1', einstufung: 'bestaetigt' }), /gesperrt/);
     const u = lauf.uebernehmen(f.repo);
-    assert.equal(u.status, 'abgelehnt'); assert.equal(u.grund, 'freigabe');
+    assert.equal(u.status, 'abgelehnt'); assert.equal(u.grund, 'gesperrt');
     // auch wer die Sperre in aktiv.json entfernt, hebt sie nicht auf (Sperrdatei im Laufverzeichnis)
     const aktiv = path.join(f.repo, '.claude', 'orchestrierung', 'aktiv.json');
     const j = JSON.parse(fs.readFileSync(aktiv, 'utf8')); delete j.gesperrt; fs.writeFileSync(aktiv, JSON.stringify(j));
@@ -156,4 +160,18 @@ test('Manipulationserkennung: ein harmloser Testlauf löst keinen Alarm aus und 
   assert.equal(git(f.repo, ['status', '--porcelain']).trim(), '');
   // und dasselbe zweimal hintereinander
   assert.equal(lauf.testsAusfuehren(f.repo, { worktree: f.wt }).bestanden, true);
+});
+
+test('Manipulationserkennung: ein Test, der die globale Git-Konfiguration (außerhalb von .git) anlegt, sperrt den Lauf', () => {
+  const home = neuerName('home'); fs.mkdirSync(home, { recursive: true });
+  const alt = { HOME: process.env.HOME, USERPROFILE: process.env.USERPROFILE };
+  process.env.HOME = home; process.env.USERPROFILE = home;
+  try {
+    const f = lauf1(() => boeserTest(`fs.writeFileSync(${JSON.stringify(path.join(home, '.gitconfig'))}, '[credential]\\n\\thelper = !evil\\n');`));
+    assert.throws(() => lauf.testsAusfuehren(f.repo, { worktree: f.wt }), /MANIPULATIONSVERDACHT/);
+    assert.match(lauf.sperrGrund(f.repo, lauf.lies(f.repo)), /\.gitconfig/);
+    assert.throws(() => lauf.testsAusfuehren(f.repo, { worktree: f.wt }), /gesperrt/);
+  } finally {
+    for (const [k, v] of Object.entries(alt)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  }
 });

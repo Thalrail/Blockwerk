@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { git, gitStatus } from '../../tools/orchestrierung/git.js';
+import { git, gitStatus, haerteUmgebung } from '../../tools/orchestrierung/git.js';
 import * as lauf from '../../tools/orchestrierung/lauf.js';
 import { abschliessen, stagingStimmt, ERLAUBTE_REMOTES, GITHUB_REPO, TRAILER } from '../../tools/orchestrierung/abschluss.js';
 import { fuehreAus } from '../../tools/orchestrierung/cli.js';
@@ -20,7 +20,7 @@ const GH_SKRIPT = path.join(WURZEL, 'gh-attrappe.mjs');
 fs.writeFileSync(GH_SKRIPT, `import fs from 'node:fs';
 const args = process.argv.slice(2);
 const i = args.indexOf('--body-file');
-fs.appendFileSync(process.env.GH_LOG, JSON.stringify({ args, body: i >= 0 ? fs.readFileSync(args[i + 1], 'utf8') : null }) + '\\n');
+fs.appendFileSync(process.env.GH_LOG, JSON.stringify({ args, env: Object.keys(process.env), configAnzahl: process.env.GIT_CONFIG_COUNT, body: i >= 0 ? fs.readFileSync(args[i + 1], 'utf8') : null }) + '\\n');
 if (process.env.GH_FAIL === '1') { console.error('gh: kaputt'); process.exit(1); }
 console.log('https://example.test/Thalrail/Blockwerk/pull/1');
 `);
@@ -28,7 +28,7 @@ console.log('https://example.test/Thalrail/Blockwerk/pull/1');
 function ghUmgebung(bare, { scheitern = false } = {}) {
   const log = neuerName('gh-log');
   process.env.GH_LOG = log; process.env.GH_FAIL = scheitern ? '1' : '0';
-  return { umgebung: { erlaubteRemotes: [bare], gh: [process.execPath, GH_SKRIPT] }, aufrufe: () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\n').filter(Boolean).map((z) => JSON.parse(z)) : []) };
+  return { umgebung: { erlaubteRemotes: [bare], gh: [process.execPath, GH_SKRIPT], ghEnv: { GH_LOG: log, GH_FAIL: scheitern ? '1' : '0' } }, aufrufe: () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8').split('\n').filter(Boolean).map((z) => JSON.parse(z)) : []) };
 }
 
 /** Sauberes Arbeitsrepository mit lokalem Bare-Remote `origin`, Branch main gepusht. */
@@ -295,7 +295,7 @@ test('Abschluss: Trockenlauf prüft alles und ändert nichts', () => {
   const f = fluss();
   const g = ghUmgebung(f.bare);
   const r = abschliessen(f.repo, { ...ABSCHLUSS, trocken: true }, g.umgebung);
-  assert.equal(r.status, 'bereit'); assert.equal(r.branch, 'claude/karte-funktionen');
+  assert.equal(r.status, 'bereit', JSON.stringify(r)); assert.equal(r.branch, 'claude/karte-funktionen');
   assert.deepEqual(r.dateien, ['src/a.js', 'src/neu.js']);
   assert.equal(git(f.repo, ['symbolic-ref', '--short', 'HEAD']).trim(), 'main');
   assert.equal(gitStatus(f.repo, ['show-ref', '--verify', '--quiet', 'refs/heads/claude/karte-funktionen']).status, 1, 'kein Branch angelegt');
@@ -415,16 +415,13 @@ test('Abschluss: scheitert gh, steht „blockiert“ (Branch, Commit und Push bl
 });
 
 test('Abschluss: wird der Push abgelehnt, steht „blockiert“, es gibt keinen PR und keinen zweiten Versuch mit anderen Mitteln', () => {
-  const f = fluss({ vorStart: (r, bare) => {
-    const hook = path.join(bare, 'hooks', 'pre-receive');
-    fs.mkdirSync(path.dirname(hook), { recursive: true });
-    fs.writeFileSync(hook, '#!/bin/sh\necho "abgelehnt von Test" >&2\nexit 1\n', { mode: 0o755 });
-  } });
+  // Die Ablehnung kommt vom Remote ohne Hook (Hooks sind im gehärteten Modus aus): ein Zweig `claude` verhindert `claude/<name>` (Verzeichnis/Datei-Konflikt der Refs)
+  const f = fluss({ vorStart: (r, bare) => { git(bare, ['update-ref', 'refs/heads/claude', git(bare, ['rev-parse', 'main']).trim()]); } });
   const g = ghUmgebung(f.bare);
   const r = abschliessen(f.repo, ABSCHLUSS, g.umgebung);
   assert.equal(r.status, 'blockiert', JSON.stringify(r)); assert.equal(r.schritt, 'push'); assert.deepEqual(r.fortschritt, ['branch', 'commit']);
   assert.equal(g.aufrufe().length, 0, 'ohne Push kein PR');
-  assert.deepEqual(remoteZweige(f.bare).map((z) => z.split(' ')[0]), ['main']);
+  assert.deepEqual(remoteZweige(f.bare).map((z) => z.split(' ')[0]).sort(), ['claude', 'main'], 'nur der vorbereitete Zweig `claude` und main, kein neuer Branch');
   assert.match(r.hinweis, /Jonah berichten/);
 });
 
@@ -498,4 +495,155 @@ test('tests-ausfuehren: das Werkzeug startet die Tests selbst und liest das echt
   f = lauf1((wt) => w(wt, 'src/a.js', 'anders\n'));
   lauf.testsAusfuehren(f.repo, { worktree: f.wt, suite: 'orchestrierung' }).bestanden;
   assert.match(lauf.freigabeStatus(f.repo).gruende.join(' | '), /Suite „kurz“/);
+});
+
+// ---- Integritätsprüfung zwischen Testende, Übernahme und Abschluss (Git-Konfiguration, Hooks, Info, Nachweisdateien, Hauptbaum) ----
+
+const gitDir = (repo) => path.join(repo, '.git');
+/** Hook, der beim Ausführen eine Markierungsdatei schreibt (er darf nie laufen). */
+function hook(repo, name, marker) {
+  const datei = path.join(gitDir(repo), 'hooks', name);
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  fs.writeFileSync(datei, `#!/bin/sh\necho gelaufen > "${marker.replace(/\\/g, '/')}"\nexit 0\n`, { mode: 0o755 });
+}
+/** Wie ein Nachweis, der nach dem Testende am Werkzeug vorbei angehängt wird: die jüngste Testmeldung noch einmal (das Gate bliebe grün). */
+function nachweisFaelschen(repo) {
+  const a = lauf.lies(repo);
+  const datei = path.join(lauf.laufDir(repo, a.id), 'tests.jsonl');
+  const zeilen = fs.readFileSync(datei, 'utf8').split('\n').filter(Boolean);
+  fs.appendFileSync(datei, `${zeilen.at(-1)}\n`);
+}
+
+const EINGRIFFE = [
+  ['ein neuer Git-Hook', (repo, marker) => hook(repo, 'pre-commit', marker), /git:git\/hooks\/pre-commit/],
+  ['ein Hook für Referenzänderungen', (repo, marker) => hook(repo, 'reference-transaction', marker), /git:git\/hooks\/reference-transaction/],
+  ['eine geänderte Git-Konfiguration (fsmonitor)', (repo) => git(repo, ['config', '--local', 'core.fsmonitor', 'evil']), /git:git\/config/],
+  ['ein umgeleitetes Push-Ziel (url.insteadOf)', (repo) => git(repo, ['config', '--local', 'url.https://evil.example/.insteadOf', 'https://github.com/']), /git:git\/config/],
+  ['ein Credential-Helper mit Shell', (repo) => git(repo, ['config', '--local', 'credential.helper', '!evil']), /git:git\/config/],
+  ['Filter-Attribute in .git/info', (repo) => { fs.mkdirSync(path.join(gitDir(repo), 'info'), { recursive: true }); fs.writeFileSync(path.join(gitDir(repo), 'info', 'attributes'), '*.js filter=evil\n'); }, /git:git\/info\/attributes/],
+  ['ein nachträglich angehängter Testnachweis', (repo) => nachweisFaelschen(repo), /protokoll:tests\.jsonl/],
+];
+
+for (const [name, eingriff, erwartet] of EINGRIFFE) {
+  test(`Integrität vor der Übernahme: ${name} zwischen Testende und uebernehmen sperrt den Lauf; nichts wird übernommen`, () => {
+    const f = fluss({ uebernehmen: false });
+    const marker = neuerName('marker') + '.txt';
+    eingriff(f.repo, marker);
+    const u = lauf.uebernehmen(f.repo);
+    assert.equal(u.status, 'abgelehnt'); assert.equal(u.grund, 'integritaet', JSON.stringify(u));
+    assert.match(u.verstoss.join(' | '), erwartet);
+    assert.equal(text(f.repo, 'src/a.js'), 'eins\nzwei\n', 'nichts übernommen');
+    assert.equal(fs.existsSync(marker), false, 'kein Hook ist gelaufen');
+    assert.equal(lauf.lies(f.repo).uebernommen, null);
+    // gesperrt: auch ohne jede Spur des Eingriffs bleibt es dabei
+    assert.match(lauf.sperrGrund(f.repo, lauf.lies(f.repo)), /Integritätsverletzung vor der Übernahme/);
+    assert.equal(lauf.freigabeStatus(f.repo).ok, false);
+    assert.equal(lauf.uebernehmen(f.repo).grund, 'gesperrt');
+  });
+}
+
+test('Integrität vor der Übernahme: eine Änderung im Hauptbaum zwischen Testende und uebernehmen sperrt einen autonomen Lauf', () => {
+  const f = fluss({ uebernehmen: false });
+  w(f.repo, 'docs/unerwartet.md', 'von jemand anderem\n');
+  const u = lauf.uebernehmen(f.repo);
+  assert.equal(u.grund, 'integritaet'); assert.match(u.verstoss.join(' | '), /haupt:datei:docs\/unerwartet\.md/);
+  assert.equal(text(f.repo, 'src/a.js'), 'eins\nzwei\n');
+  assert.notEqual(lauf.sperrGrund(f.repo, lauf.lies(f.repo)), null);
+  // und HEAD bewegen
+  const g = fluss({ uebernehmen: false });
+  git(g.repo, ['commit', '--allow-empty', '-q', '-m', 'dazwischen']);
+  const v = lauf.uebernehmen(g.repo);
+  assert.equal(v.grund, 'integritaet'); assert.match(v.verstoss.join(' | '), /haupt:head/);
+});
+
+for (const [name, eingriff, erwartet] of EINGRIFFE) {
+  test(`Integrität vor dem Abschluss: ${name} zwischen Übernahme und abschluss sperrt den Lauf; kein Branch, kein Commit, kein Push, keine PR, kein Hook`, () => {
+    const f = fluss();
+    assert.equal(f.u.status, 'uebernommen');
+    const marker = neuerName('marker') + '.txt';
+    eingriff(f.repo, marker);
+    const kopf = git(f.repo, ['rev-parse', 'HEAD']).trim();
+    const g = ghUmgebung(f.bare);
+    const r = abschliessen(f.repo, ABSCHLUSS, g.umgebung);
+    assert.equal(r.status, 'abgelehnt'); assert.equal(r.grund, 'integritaet', JSON.stringify(r));
+    assert.match(r.verstoss.join(' | '), erwartet);
+    assert.equal(git(f.repo, ['rev-parse', 'HEAD']).trim(), kopf, 'kein Commit');
+    assert.equal(git(f.repo, ['symbolic-ref', '--short', 'HEAD']).trim(), 'main');
+    assert.equal(gitStatus(f.repo, ['show-ref', '--verify', '--quiet', 'refs/heads/claude/karte-funktionen']).status, 1, 'kein Branch');
+    assert.deepEqual(remoteZweige(f.bare).map((z) => z.split(' ')[0]), ['main'], 'kein Push');
+    assert.equal(g.aufrufe().length, 0, 'keine PR');
+    assert.equal(fs.existsSync(marker), false, 'kein Hook ist gelaufen');
+    // gesperrt, keine automatische Wiederfreigabe
+    assert.notEqual(lauf.sperrGrund(f.repo, lauf.lies(f.repo)), null);
+    assert.equal(abschliessen(f.repo, ABSCHLUSS, g.umgebung).grund, 'freigabe');
+    assert.equal(abschliessen(f.repo, { ...ABSCHLUSS, trocken: true }, g.umgebung).grund, 'freigabe');
+    assert.equal(g.aufrufe().length, 0);
+  });
+}
+
+test('Integrität zwischen den Schritten: scheitert gh und wird danach ein Hook angelegt, setzt der erneute Aufruf nicht fort, sondern sperrt den Lauf', () => {
+  const f = fluss();
+  const marker = neuerName('marker') + '.txt';
+  const schlecht = ghUmgebung(f.bare, { scheitern: true });
+  const r1 = abschliessen(f.repo, ABSCHLUSS, schlecht.umgebung);
+  assert.equal(r1.status, 'blockiert'); assert.equal(r1.schritt, 'pr');
+  assert.deepEqual(r1.fortschritt, ['branch', 'commit', 'push']);
+  assert.deepEqual(lauf.integritaetPruefen(f.repo, lauf.lies(f.repo)), [], 'nach dem eigenen push -u ist die Basislinie neu festgelegt');
+  const gut = ghUmgebung(f.bare);
+  hook(f.repo, 'post-commit', marker);
+  const r2 = abschliessen(f.repo, ABSCHLUSS, gut.umgebung);
+  assert.equal(r2.status, 'abgelehnt'); assert.equal(r2.grund, 'integritaet'); assert.match(r2.verstoss.join(' | '), /git:git\/hooks\/post-commit/);
+  assert.equal(gut.aufrufe().length, 0, 'gh wird nicht mehr aufgerufen');
+  assert.equal(fs.existsSync(marker), false);
+  assert.equal(abschliessen(f.repo, ABSCHLUSS, gut.umgebung).grund, 'freigabe', 'auch der nächste Aufruf bleibt abgelehnt');
+});
+
+test('Abschluss: vorhandene Hooks oder gefährliche Git-Konfiguration schon beim Start des Laufs → Ablehnung (kein Commit, kein Push), auch im Trockenlauf', () => {
+  const marker = neuerName('marker') + '.txt';
+  let f = fluss({ vorStart: (r) => hook(r, 'pre-commit', marker) });
+  let g = ghUmgebung(f.bare);
+  let r = abschliessen(f.repo, { ...ABSCHLUSS, trocken: true }, g.umgebung);
+  assert.equal(r.status, 'abgelehnt'); assert.equal(r.grund, 'git-hooks'); assert.deepEqual(r.hooks, ['pre-commit']);
+  assert.equal(abschliessen(f.repo, ABSCHLUSS, g.umgebung).grund, 'git-hooks');
+  assert.equal(fs.existsSync(marker), false); assert.equal(remoteZweige(f.bare).length, 1); assert.equal(g.aufrufe().length, 0);
+
+  for (const [k, v] of [['url.https://evil.example/.insteadOf', 'https://github.com/'], ['credential.helper', '!evil'], ['core.hooksPath', '/x'], ['filter.x.clean', 'evil'], ['remote.origin.pushurl', 'https://evil.example/x.git']]) {
+    f = fluss({ vorStart: (rp) => git(rp, ['config', '--local', k, v]) });
+    g = ghUmgebung(f.bare);
+    r = abschliessen(f.repo, ABSCHLUSS, g.umgebung);
+    assert.equal(r.status, 'abgelehnt'); assert.equal(r.grund, 'git-konfiguration', `${k}: ${JSON.stringify(r)}`);
+    assert.match(r.probleme.join(' | '), new RegExp(k.split('.').slice(0, 2).join('\\.'), 'i'));
+    assert.equal(remoteZweige(f.bare).length, 1, 'kein Push'); assert.equal(g.aufrufe().length, 0, 'keine PR');
+    assert.equal(gitStatus(f.repo, ['show-ref', '--verify', '--quiet', 'refs/heads/claude/karte-funktionen']).status, 1);
+  }
+});
+
+test('Abschluss: der Weg über den Git Credential Manager bleibt nutzbar – die gehärtete Umgebung behält das Benutzerprofil, die Konfiguration mit dem Helper „manager“ wird akzeptiert und der Erfolgsweg läuft durch', () => {
+  const f = fluss({ vorStart: (r) => git(r, ['config', '--local', 'credential.helper', 'manager']), uebernehmen: true });
+  const g = ghUmgebung(f.bare);
+  const r = abschliessen(f.repo, ABSCHLUSS, g.umgebung);
+  assert.equal(r.status, 'fertig', JSON.stringify(r));
+  assert.deepEqual(lauf.integritaetPruefen(f.repo, lauf.lies(f.repo)), [], 'die Basislinie wurde nach push -u neu festgelegt');
+  // und die Umgebung, die Git im Abschluss bekommt, enthält die Variablen, die der Credential Manager braucht
+  const e = haerteUmgebung({ USERPROFILE: 'C:\\Users\\j', APPDATA: 'C:\\a', LOCALAPPDATA: 'C:\\l', ProgramData: 'C:\\p', Path: 'x', SystemRoot: 'C:\\Windows', GIT_ASKPASS: 'evil' });
+  for (const k of ['USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'ProgramData', 'Path', 'SystemRoot']) assert.ok(e[k], k);
+  assert.equal(e.GIT_ASKPASS, undefined);
+});
+
+test('Abschluss: gh läuft mit gesäuberter Umgebung (keine GIT_*-, Proxy-, Askpass-, Claude-/Anthropic-Variablen), aber mit Git-Einstellungen für die Git-Aufrufe, die gh selbst startet', () => {
+  const gesetzt = { GIT_ASKPASS: 'evil', GIT_SSH_COMMAND: 'evil', GIT_EXEC_PATH: 'evil', HTTPS_PROXY: 'http://evil', SSH_ASKPASS: 'evil', ANTHROPIC_API_KEY: 'geheim', CLAUDE_CODE_MESSAGING_TOKEN: 'geheim', GH_PAGER: 'evil', PAGER: 'evil' };
+  const alt = {};
+  for (const [k, v] of Object.entries(gesetzt)) { alt[k] = process.env[k]; process.env[k] = v; }
+  try {
+    const f = fluss();
+    const g = ghUmgebung(f.bare);
+    assert.equal(abschliessen(f.repo, ABSCHLUSS, g.umgebung).status, 'fertig');
+    const [aufruf] = g.aufrufe();
+    for (const k of Object.keys(gesetzt)) assert.ok(!aufruf.env.includes(k), `${k} erreicht gh nicht`);
+    assert.ok(aufruf.env.includes('GIT_CONFIG_COUNT') && Number(aufruf.configAnzahl) >= 5, 'Git-Einstellungen (Hooks aus, fsmonitor aus, …) gelten auch für Git-Aufrufe von gh');
+    assert.ok(aufruf.env.some((k) => /^path$/i.test(k)), 'PATH bleibt');
+    assert.ok(aufruf.env.includes('GH_PROMPT_DISABLED'));
+  } finally {
+    for (const [k, v] of Object.entries(alt)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
+  }
 });

@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { git, gitStatus, blobSha, zustand, zustandsUnterschiede } from './git.js';
+import { git, gitStatus, blobSha, zustand, zustandsUnterschiede, mitHaertung } from './git.js';
+import { gitAbdruck, abdruckUnterschiede as gitUnterschiede } from './git-abdruck.js';
 import { schnappschuss, seed } from './schnappschuss.js';
 import { aenderungen } from './delta.js';
 import { planen, anwenden, wiederherstellen, offeneJournale, KonfliktFehler } from './uebernehmen.js';
@@ -34,7 +35,18 @@ function schreibeJson(datei, obj) {
   fs.renameSync(t, datei);
 }
 const leseJson = (datei) => JSON.parse(fs.readFileSync(datei, 'utf8'));
-const anhaengen = (datei, obj) => { fs.mkdirSync(path.dirname(datei), { recursive: true }); fs.appendFileSync(datei, `${JSON.stringify(obj)}\n`); };
+/** Nachweisdateien, auf die sich die Freigabe stützt. Jeder Eintrag geht durch `anhaengen`, das ihren Hash in `integritaet.json` (Protokoll) mitführt. */
+const NACHWEISE = Object.freeze(['tests.jsonl', 'reviews.jsonl', 'befunde.jsonl', 'pakete.jsonl']);
+const dateiSha = (p) => { try { return createHash('sha256').update(fs.readFileSync(p)).digest('hex'); } catch { return null; } };
+const anhaengen = (datei, obj) => {
+  fs.mkdirSync(path.dirname(datei), { recursive: true });
+  fs.appendFileSync(datei, `${JSON.stringify(obj)}\n`);
+  const n = path.basename(datei);
+  if (!NACHWEISE.includes(n)) return;
+  const f = path.join(path.dirname(datei), 'integritaet.json');
+  let j = {}; try { j = JSON.parse(fs.readFileSync(f, 'utf8')); } catch { /* wird neu angelegt; ohne Git-Basislinie gilt der Lauf später als unprüfbar */ }
+  schreibeJson(f, { ...j, ledger: { ...(j.ledger ?? {}), [n]: dateiSha(datei) } });
+};
 const leseZeilen = (datei) => (fs.existsSync(datei) ? fs.readFileSync(datei, 'utf8').split('\n').filter(Boolean).map((z) => JSON.parse(z)) : []);
 
 /** Wurzel des Hauptrepositories zu einem beliebigen Verzeichnis (auch aus einem Worktree heraus). */
@@ -91,6 +103,7 @@ export function starten(w, { auftrag, dateien = [], kontext = [], id = null, aut
     autonom: Boolean(autonom), abschluss: null,
   };
   schreibeJson(path.join(laufDir(w, laufId), 'vorher.json'), vorher);
+  schreibeJson(path.join(laufDir(w, laufId), 'integritaet.json'), { git: mitHaertung(() => gitAbdruck(w)), ledger: {}, zeit: jetzt() });
   schreibeJson(path.join(laufDir(w, laufId), 's0.json'), { commit: s0.commit, tree: s0.tree, aufgenommen: s0.aufgenommen, geloescht: s0.geloescht, ausgeschlossen: s0.ausgeschlossen });
   speichere(w, a);
   return { id: laufId, s0: s0.commit, aufgenommen: s0.aufgenommen, geloescht: s0.geloescht, ausgeschlossen: s0.ausgeschlossen, wiederhergestellt };
@@ -280,6 +293,30 @@ function sperren(w, a, grund) {
   try { speichere(w, a); } catch { /* Sperrdatei ist schon geschrieben, sonst bleibt der Lauf ohnehin unbrauchbar */ }
 }
 
+/**
+ * Prüft die Basislinie des Laufs (`integritaet.json`, beim Start festgelegt): Git-Konfiguration, Hooks, Info und globale Konfigurationsdateien müssen unverändert sein,
+ * und die Nachweisdateien (Tests, Reviews, Befunde, Pakete) müssen genau dem entsprechen, was das Werkzeug zuletzt geschrieben hat. Liefert die Abweichungen (leer = in Ordnung).
+ * Die Basislinie liegt im Laufverzeichnis und schützt daher gegen versehentliche und nachträgliche Änderungen, nicht gegen einen Prozess, der beides konsistent umschreibt.
+ */
+export function integritaetPruefen(w, a) {
+  let b;
+  try { b = leseJson(path.join(laufDir(w, a.id), 'integritaet.json')); } catch { return ['integritaet:Basislinie fehlt oder ist unlesbar']; }
+  const probleme = gitUnterschiede(b.git ?? {}, mitHaertung(() => gitAbdruck(w)), 'git');
+  for (const n of NACHWEISE) if ((b.ledger?.[n] ?? null) !== dateiSha(path.join(laufDir(w, a.id), n))) probleme.push(`protokoll:${n}`);
+  return probleme;
+}
+/** Legt die Git-Basislinie neu fest, nachdem das Werkzeug selbst etwas geändert hat (z. B. `push -u` schreibt Zweig-Einträge in die Konfiguration). */
+export function integritaetGitNeu(w, a) {
+  const f = path.join(laufDir(w, a.id), 'integritaet.json');
+  let b = {}; try { b = leseJson(f); } catch { /* wird neu angelegt */ }
+  schreibeJson(f, { ...b, git: mitHaertung(() => gitAbdruck(w)), zeit: jetzt() });
+}
+/** Sperrt den Lauf wegen unerwarteter Änderungen und liefert den Ablehnungsbefund. */
+export function integritaetVerletzt(w, a, verstoss, wo) {
+  sperren(w, a, `Integritätsverletzung ${wo}: ${verstoss.slice(0, 5).join('; ')}`);
+  return { status: 'abgelehnt', grund: 'integritaet', verstoss, hinweis: 'Der Lauf ist gesperrt und wird nicht wieder vertrauenswürdig. Stoppen und Jonah berichten' };
+}
+
 /** Die Testläufe, die das Werkzeug selbst startet (feste Argumente für Node, kein Shell-Text). `kurz` ist die vollständige Suite und für die Freigabe Pflicht. */
 export const SUITEN = Object.freeze({
   kurz: ['--test', '--test-reporter=spec', 'test/**/*.test.js'],
@@ -292,7 +329,8 @@ export const SUITEN = Object.freeze({
  * statt Zahlen des Koordinators zu glauben. Der Worktree muss vorher der gesicherten Basis entsprechen und danach unverändert sein
  * (Tests dürfen den geprüften Stand nicht verändern).
  */
-export function testsAusfuehren(w, { worktree, suite = 'kurz', timeoutMs = 1800000 }) {
+export function testsAusfuehren(w, optionen) { return mitHaertung(() => testsAusfuehrenIntern(w, optionen)); }
+function testsAusfuehrenIntern(w, { worktree, suite = 'kurz', timeoutMs = 1800000 }) {
   const a = brauche(w);
   nichtGesperrt(w, a);
   if (!Object.hasOwn(SUITEN, suite)) throw new LaufFehler(`Unbekannte Suite „${String(suite)}“. Erlaubt: ${Object.keys(SUITEN).join(', ')}`);
@@ -302,7 +340,7 @@ export function testsAusfuehren(w, { worktree, suite = 'kurz', timeoutMs = 18000
   const vorher = gleichMitCommit(pfad, a.basis);
   if (vorher.length) throw new LaufFehler(`Der Worktree weicht vom gesicherten Stand ab (zuerst runde-ende, dann testen): ${vorher.slice(0, 3).join('; ')}`);
   // Abdruck von Hauptbaum, HEAD und Laufzustand vor den Tests; die Tests sind Code des Agenten und laufen unter dem Benutzerkonto
-  const z0 = zustand(w, { ausser: AUSSER }); const l0 = laufAbdruck(w);
+  const z0 = zustand(w, { ausser: AUSSER }); const l0 = laufAbdruck(w); const g0 = gitAbdruck(w, { mitWorktrees: true });
   const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'bw-test-'));
   let r;
   try {
@@ -311,7 +349,7 @@ export function testsAusfuehren(w, { worktree, suite = 'kurz', timeoutMs = 18000
   } finally {
     try { fs.rmSync(privat, { recursive: true, force: true, maxRetries: 3 }); } catch { /* egal */ }
   }
-  const verdacht = [...zustandsUnterschiede(z0, zustand(w, { ausser: AUSSER })), ...abdruckUnterschiede(l0, laufAbdruck(w))];
+  const verdacht = [...gitUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, { ausser: AUSSER })), ...abdruckUnterschiede(l0, laufAbdruck(w))];
   if (verdacht.length) {
     sperren(w, a, `Manipulationsverdacht: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees: ${verdacht.slice(0, 5).join('; ')}`);
     throw new LaufFehler(`MANIPULATIONSVERDACHT: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees (${verdacht.slice(0, 5).join('; ')}). Der Lauf ist gesperrt, das Ergebnis wird nicht protokolliert. Stoppen und Jonah berichten`);
@@ -394,8 +432,11 @@ export function hauptKontrolle(w, { erwarteteDateien = [] } = {}) {
  * Übernimmt die geprüfte Arbeit in den Hauptarbeitsbaum: nur ohne offene Tore, ohne Konflikte und mit Freigabe (grüne Tests und gültiges, eingestuftes Review
  * für exakt diesen Codezustand). `freigabePruefen: false` gibt es nur für Tests der Mechanik; die Kommandozeile setzt es nie.
  */
-export function uebernehmen(w, { erlaubt = [], vorSchritt, freigabePruefen = true } = {}) {
+export function uebernehmen(w, optionen = {}) { return mitHaertung(() => uebernehmenIntern(w, optionen)); }
+function uebernehmenIntern(w, { erlaubt = [], vorSchritt, freigabePruefen = true } = {}) {
   const a = brauche(w);
+  const gesperrt = sperrGrund(w, a);
+  if (gesperrt) return { status: 'abgelehnt', grund: 'gesperrt', hinweis: gesperrt };
   if (a.uebernommen) throw new LaufFehler('Die Arbeit dieses Laufs ist schon übernommen');
   if (a.runde < 1 || a.basis === a.s0) throw new LaufFehler('Es gibt nichts zu übernehmen');
   const { findings } = pruefeTore(w, a.s0, a.basis, { dateien: a.dateien.length ? a.dateien : null, ausgeschlossen: a.ausgeschlossen });
@@ -405,6 +446,10 @@ export function uebernehmen(w, { erlaubt = [], vorSchritt, freigabePruefen = tru
     const f = freigabeStatus(w, a);
     if (!f.ok) return { status: 'abgelehnt', grund: 'freigabe', gruende: f.gruende };
   }
+  // unmittelbar vor der Übernahme noch einmal: Git-Konfiguration und Hooks, Nachweisdateien, bei autonomen Läufen auch Hauptbaum, HEAD und Zweig seit dem Start
+  const haupt = a.autonom ? hauptKontrolle(w) : null;
+  const verstoss = [...integritaetPruefen(w, a), ...(haupt && !haupt.unveraendert ? [...haupt.buchfuehrung.map((x) => `haupt:${x}`), ...haupt.unerwarteteDateien.map((x) => `haupt:datei:${x}`)] : [])];
+  if (verstoss.length) return integritaetVerletzt(w, a, verstoss, 'vor der Übernahme');
   let aktionen;
   try { aktionen = planen(w, a.s0, a.basis); } catch (f) { if (f instanceof KonfliktFehler) return { status: 'abgelehnt', grund: 'konflikt', konflikte: f.konflikte }; throw f; }
   const sicherung = path.join(sicherungsWurzel(w), a.id);

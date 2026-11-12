@@ -31,7 +31,7 @@ test('Karte: abhängig mit funktionen nennt die umschließende Funktion mit Zeil
   const t = abhaengig('tools/orchestrierung/tore.js', true);
   assert.match(t, /Aufrufer auf Funktionsebene:/);
   assert.match(t, /tools\/orchestrierung\/lauf\.js:rundeEnde:\d+\b/);
-  assert.match(t, /tools\/orchestrierung\/lauf\.js:uebernehmen:\d+\b/);
+  assert.match(t, /tools\/orchestrierung\/lauf\.js:uebernehmen(Intern)?:\d+\b/);
 });
 
 test('Karte: abhängig mit funktionen markiert Aufrufe aus Testcallbacks als (unklar)', () => {

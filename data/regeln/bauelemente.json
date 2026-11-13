@@ -41,6 +41,17 @@
       "testanleitung": "Einen Raum mit Tür (Süd) und je einem Fenster in den anderen Wänden bauen (Raum 5 × 5, Höhe 3): Ist er ringsum dicht (keine Lücke, nichts spawnt innen bei Licht), geht man durch die Tür hinein, sitzen Tür und Scheiben in der äußersten Wandschicht, schaut die Tür nach außen? Danach dasselbe mit Wandstärke 2 (Laibung innen frei) und einer Doppeltür."
     },
     {
+      "id": "bau.wand",
+      "titel": "Wand: frei stehende Trennwand mit Einbauzone",
+      "regel": "Eine Wand ist ein massiver Quader aus Länge (West-Ost), Höhe und Dicke (Nord-Süd), Nullpunkt in der Mitte der Grundfläche. Sie meldet ihren ganzen Wandkörper als Einbauzone \"wand\" (Platz für Türen und Fenster als eigene Bauteile).",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/architektur-einbau.md (Einbau-Architektur B + C, Paket P2)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/einbaufelder.test.js::bau.wand: Maße, Zone deckt den ganzen Wandkörper, Grenzen, deterministisch",
+      "ungeprueft": true,
+      "testanleitung": "Eine Wand 6 lang, 3 hoch, 1 dick auf den Boden bauen: Stimmen Länge, Höhe und Dicke, ist sie lückenlos? (Die Tür in der Wand folgt mit dem nächsten Paket.)"
+    },
+    {
       "id": "bau.tuer",
       "titel": "Tür 2 Blöcke hoch",
       "regel": "Eine Tür ist 2 Blöcke hoch (unten und oben) und 1 Block breit je Flügel; Doppeltüren haben die Scharniere außen.",

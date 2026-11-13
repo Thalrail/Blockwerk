@@ -29,6 +29,53 @@ export function listeParam(name, groessenart, { min, max, standard, beschreibung
   return Object.freeze({ name, groessenart, min, max, standard, beschreibung, liste: true });
 }
 
+export const ZONENARTEN = Object.freeze(['innenraum', 'wand', 'decke', 'boden']);
+export const AUSSPARUNGSARTEN = Object.freeze(['oeffnung', 'freihaltung']);
+const SEITEN = ['nord', 'ost', 'sued', 'west'];
+/** Obergrenze für die Zellen einer Zone oder Aussparung (schützt vor versehentlich riesigen Quadern). */
+export const MAX_ZELLEN = 262144;
+
+/** Prüft einen Quader {von, bis} (ganze Zahlen, von ≤ bis, höchstens MAX_ZELLEN Zellen). */
+export function pruefeQuader(q, was, fehler) {
+  if (!q || typeof q !== 'object') fehler(`${was}: von und bis fehlen`);
+  for (const ende of ['von', 'bis']) if (![q[ende]?.x, q[ende]?.y, q[ende]?.z].every(Number.isSafeInteger)) fehler(`${was}: ${ende} braucht ganze Zahlen x, y, z`);
+  let n = 1;
+  for (const a of ['x', 'y', 'z']) {
+    if (q.von[a] > q.bis[a]) fehler(`${was}: von.${a} liegt hinter bis.${a}`);
+    n *= q.bis[a] - q.von[a] + 1;
+  }
+  if (n > MAX_ZELLEN) fehler(`${was}: ${n} Zellen sind zu viel (höchstens ${MAX_ZELLEN})`);
+}
+
+/**
+ * Einbaufelder (alle optional): `einbauzonen` (Platz für Kinder: Innenraum, Wand, Decke, Boden) und `aussparungen` (`oeffnung` oder `freihaltung`).
+ * Zonen liegen innerhalb der Blöcke des Pakets (Paketbegrenzung); Aussparungen dürfen sie verlassen (z. B. Kopffreiheit über der obersten Stufe).
+ * Beide sind Quader in Paketkoordinaten; der Referenzrahmen (`zellen.js`) hängt nur an den Blöcken.
+ */
+function pruefeEinbaufelder(p, fehler) {
+  if (p.einbauzonen !== undefined) {
+    if (!Array.isArray(p.einbauzonen)) fehler('einbauzonen muss eine Liste sein');
+    const ids = new Set();
+    const rahmen = p.bloecke.length ? huelleVon(p.bloecke) : null;
+    for (const z of p.einbauzonen) {
+      if (typeof z?.id !== 'string' || !z.id) fehler('Einbauzone braucht eine id');
+      if (ids.has(z.id)) fehler(`Einbauzone "${z.id}" kommt doppelt vor`);
+      ids.add(z.id);
+      if (!ZONENARTEN.includes(z.art)) fehler(`Einbauzone ${z.id}: Art "${z.art}" unbekannt`);
+      if (z.seite !== undefined && (z.art !== 'wand' || !SEITEN.includes(z.seite))) fehler(`Einbauzone ${z.id}: seite nur bei Art wand (nord, ost, sued, west)`);
+      pruefeQuader(z, `Einbauzone ${z.id}`, fehler);
+      if (!rahmen || ['x', 'y', 'z'].some((a) => z.von[a] < rahmen.von[a] || z.bis[a] > rahmen.bis[a])) fehler(`Einbauzone ${z.id} liegt nicht innerhalb der Blöcke des Pakets`);
+    }
+  }
+  if (p.aussparungen !== undefined) {
+    if (!Array.isArray(p.aussparungen)) fehler('aussparungen muss eine Liste sein');
+    for (const [i, a] of p.aussparungen.entries()) {
+      if (!AUSSPARUNGSARTEN.includes(a?.art)) fehler(`Aussparung ${i}: Art "${a?.art}" unbekannt (oeffnung oder freihaltung)`);
+      pruefeQuader(a, `Aussparung ${i}`, fehler);
+    }
+  }
+}
+
 /** Prüft ein fertiges Paket auf Vollständigkeit und Form. Wirft bei Fehlern. */
 export function pruefePaket(p) {
   const fehler = (m) => { throw new Error(`Baustein ${String(p?.id)}: ${m}`); };
@@ -70,6 +117,7 @@ export function pruefePaket(p) {
       if (![w.x, w.y, w.z].every(Number.isFinite)) fehler('Wesen braucht Koordinaten x, y, z');
     }
   }
+  pruefeEinbaufelder(p, fehler);
   const h = p.platzbedarf?.huelle;
   if (!h?.von || !h?.bis) fehler('Platzbedarf (Hüllquader) fehlt');
   if (!Array.isArray(p.platzbedarf.sperrzonen)) fehler('Sperrzonen fehlen');
@@ -118,7 +166,7 @@ export function definiere(def) {
       const huelle = huelleVon(bloecke) ?? { von: { x: 0, y: 0, z: 0 }, bis: { x: -1, y: -1, z: -1 } };
       return pruefePaket({
         id: def.id, titel: def.titel, status: baustein.status, quelle: def.quelle, parameter: werte, bloecke,
-        anschluesse: erg.anschluesse ?? [], ...(erg.wesen ? { wesen: erg.wesen } : {}), platzbedarf: { huelle, sperrzonen: erg.sperrzonen ?? [] }, testszenario: def.testszenario,
+        anschluesse: erg.anschluesse ?? [], ...(erg.wesen ? { wesen: erg.wesen } : {}), ...(erg.einbauzonen ? { einbauzonen: erg.einbauzonen } : {}), ...(erg.aussparungen ? { aussparungen: erg.aussparungen } : {}), platzbedarf: { huelle, sperrzonen: erg.sperrzonen ?? [] }, testszenario: def.testszenario,
       });
     },
   };

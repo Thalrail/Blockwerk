@@ -149,7 +149,30 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
           }
         }
       }
-      return { bloecke: [...bloecke.values()], anschluesse };
+      // Einbauzonen (Platz für Kinder, Paketkoordinaten): lichter Innenraum, je Wand der Wandkörper (Länge innen × Wandstärke × lichte Höhe), Decke und Boden
+      const quader = (a, b) => ({ von: { x: Math.min(a[0], b[0]) - ox, y: Math.min(a[1], b[1]), z: Math.min(a[2], b[2]) - oz }, bis: { x: Math.max(a[0], b[0]) - ox, y: Math.max(a[1], b[1]), z: Math.max(a[2], b[2]) - oz } });
+      const einbauzonen = [{ id: 'innenraum', art: 'innenraum', ...quader([t, 0, t], [t + bw - 1, h - 1, t + bt - 1]) }];
+      for (let w = 0; w < 4; w++) einbauzonen.push({ id: `wand-${wandName(w)}`, art: 'wand', seite: wandName(w), ...quader(zelle(w, 0, 0, 0), zelle(w, lang(w) - 1, t - 1, h - 1)) });
+      if (p.decke) einbauzonen.push({ id: 'decke', art: 'decke', ...quader([0, h, 0], [Bx - 1, h + t - 1, Bz - 1]) });
+      if (p.boden) einbauzonen.push({ id: 'boden', art: 'boden', ...quader([0, -t, 0], [Bx - 1, -1, Bz - 1]) });
+      return { bloecke: [...bloecke.values()], anschluesse, einbauzonen };
+    },
+  });
+
+  const wand = definiere({
+    id: 'bau.wand', titel: 'Wand (frei stehende Trennwand, läuft von West nach Ost)', quelle: QUELLE_RAUM,
+    parameter: [
+      param('laenge', 'geometrie', { min: 1, max: 128, standard: 5, beschreibung: 'Länge in Blöcken (West-Ost)' }),
+      param('hoehe', 'menschenmass', { min: 1, max: 32, standard: 3, beschreibung: 'Höhe in Blöcken' }),
+      param('dicke', 'menschenmass', { min: 1, max: 4, standard: 1, beschreibung: 'Dicke in Blöcken (Nord-Süd)' }),
+    ],
+    testszenario: { start: 'leere Welt mit Boden, Wand daraufgesetzt', erwartung: 'Die Wand ist lückenlos, Zone "wand" deckt den ganzen Wandkörper' },
+    baue: ({ laenge: L, hoehe: H, dicke: D }) => {
+      const ox = Math.floor(L / 2), oz = Math.floor(D / 2);
+      const bloecke = [];
+      for (let j = 0; j < H; j++) for (let k = 0; k < D; k++) for (let i = 0; i < L; i++) bloecke.push({ x: i - ox, y: j, z: k - oz, rolle: 'wand' });
+      const von = { x: -ox, y: 0, z: -oz }, bis = { x: L - 1 - ox, y: H - 1, z: D - 1 - oz };
+      return { bloecke, anschluesse: [{ art: 'auflage', seite: 'unten' }], einbauzonen: [{ id: 'wand', art: 'wand', von, bis }] };
     },
   });
 
@@ -241,5 +264,5 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
     },
   });
 
-  return { gang, raum, treppe, wendeltreppe, tuer, fenster, saeule, alle: [gang, raum, treppe, wendeltreppe, tuer, fenster, saeule] };
+  return { gang, raum, wand, treppe, wendeltreppe, tuer, fenster, saeule, alle: [gang, raum, wand, treppe, wendeltreppe, tuer, fenster, saeule] };
 }

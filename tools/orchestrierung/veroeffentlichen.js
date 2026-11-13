@@ -14,7 +14,7 @@ import { pruefeGeheimnisse } from './schnappschuss.js';
 import { reviewPaket, standardReviewVerzeichnis } from './review-paket.js';
 import { pruefeReviewErgebnis } from './review-pruefung.js';
 import {
-  LaufFehler, AUSSER, SUITEN, orchDir, lies, leseZeilen, leseJson, schreibeJson, jetzt, vor, bewerteNachweise, pruefeBefundListe, pruefeEinstufung, testUmgebung, liesTestZaehler,
+  LaufFehler, AUSSCHLUSS, SUITEN, orchDir, lies, leseZeilen, leseJson, schreibeJson, jetzt, vor, bewerteNachweise, pruefeBefundListe, pruefeEinstufung, testUmgebung, liesTestZaehler,
 } from './lauf.js';
 import { GITHUB_REPO, ERLAUBTE_REMOTES, BASIS_ZWEIG, ZWEIG_PRAEFIX, TRAILER, geschuetzterPfad, abgelehnt, kurz, ghUmgebung } from './abschluss.js';
 
@@ -88,9 +88,12 @@ function ermittleStand(w, umgebung) {
   const erlaubt = (umgebung.erlaubteRemotes ?? ERLAUBTE_REMOTES).map((x) => x.toLowerCase());
   // alle URLs (Fetch und Push): ein Push geht an jede eingetragene URL, nicht nur an die erste
   const urlListe = (args) => git(w, args).split('\n').map((x) => x.trim()).filter(Boolean);
-  const urls = [...urlListe(['remote', 'get-url', '--all', 'origin']), ...urlListe(['remote', 'get-url', '--all', '--push', 'origin'])];
-  const fremd = urls.find((x) => !erlaubt.includes(x.toLowerCase()));
+  const abrufUrls = urlListe(['remote', 'get-url', '--all', 'origin']);
+  const pushUrls = urlListe(['remote', 'get-url', '--all', '--push', 'origin']);
+  const fremd = [...abrufUrls, ...pushUrls].find((x) => !erlaubt.includes(x.toLowerCase()));
   if (fremd) return { fehler: abgelehnt('remote-nicht-erlaubt', { remote: fremd }) };
+  // genau ein Ziel: `ls-remote origin` fragt den Abruf-Endpunkt, `git push origin` geht an jede Push-URL; nur bei Gleichheit gilt der geprüfte Stand auch für den Push
+  if (abrufUrls.length !== 1 || pushUrls.length !== 1 || abrufUrls[0].toLowerCase() !== pushUrls[0].toLowerCase()) return { fehler: abgelehnt('remote-nicht-eindeutig', { abruf: abrufUrls, push: pushUrls, hinweis: 'origin braucht genau eine Abruf-URL und genau eine gleiche Push-URL (kein pushurl, keine zweite URL)' }) };
 
   const hole = gitStatus(w, ['fetch', '--no-tags', 'origin', `+refs/heads/${BASIS_ZWEIG}:refs/remotes/origin/${BASIS_ZWEIG}`]);
   if (hole.status !== 0) return { fehler: abgelehnt('fetch-fehlgeschlagen', { meldung: kurz(hole.stderr) }) };
@@ -136,7 +139,7 @@ function ermittleStand(w, umgebung) {
   } catch (f) { return { fehler: abgelehnt('geheimnis-pruefung', { hinweis: `Die zu pushenden Objekte ließen sich nicht vollständig prüfen: ${String(f.message).slice(0, 200)}` }) }; }
   const stat = git(w, ['diff', '--stat', `${ref}...HEAD`]).trim().split('\n');
   const commits = git(w, ['log', '--format=%h %s', `${ref}..HEAD`]).trim().split('\n').filter(Boolean);
-  return { werte: { ursprung: [...new Set(urls)].join(' '), zweig, kopf, baum, basis, mergeBase, voraus, hinterher, remoteSpitze, push, dateien, commits, stat, diffSha256: sha256(diff) } };
+  return { werte: { ursprung: [...new Set([...abrufUrls, ...pushUrls])].join(' '), zweig, kopf, baum, basis, mergeBase, voraus, hinterher, remoteSpitze, push, dateien, commits, stat, diffSha256: sha256(diff) } };
 }
 
 // ---------------------------------------------------------------- Nachweise (Tests, Review, Befunde)
@@ -162,14 +165,14 @@ function bewerte(w, zweig, baum) {
 
 /** Startet die Suite `kurz` im Hauptbaum selbst (bereinigte Umgebung wie `tests-ausfuehren`) und protokolliert das echte Ergebnis für den Baum von HEAD. */
 function testeSelbst(w, zweig, baum, timeoutMs = 1800000) {
-  const z0 = zustand(w, { ausser: AUSSER }); const g0 = gitAbdruck(w, { mitWorktrees: true });
+  const z0 = zustand(w, AUSSCHLUSS); const g0 = gitAbdruck(w, { mitWorktrees: true });
   const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'bw-test-'));
   let r;
   try {
     fs.writeFileSync(path.join(privat, 'gitconfig'), '');
     r = spawnSync(process.execPath, SUITEN.kurz, { cwd: w, encoding: 'utf8', timeout: timeoutMs, maxBuffer: 256 << 20, env: testUmgebung(process.env, privat) });
   } finally { try { fs.rmSync(privat, { recursive: true, force: true, maxRetries: 3 }); } catch { /* egal */ } }
-  const verdacht = [...abdruckUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, { ausser: AUSSER }))];
+  const verdacht = [...abdruckUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, AUSSCHLUSS))];
   if (verdacht.length) throw new LaufFehler(`MANIPULATIONSVERDACHT: Während der Tests änderten sich ${verdacht.length} Stelle(n) (${verdacht.slice(0, 5).join('; ')}). Es wird nichts protokolliert und nichts veröffentlicht; Jonah berichten`);
   const z = liesTestZaehler(r.stdout);
   if (!z) throw new LaufFehler(`Die Testausgabe war nicht lesbar oder nicht stimmig (Exit ${r.status}, ${r.error ? r.error.message : 'keine vollständige, rechnende Zusammenfassung'}); es wird nichts protokolliert`);
@@ -383,8 +386,11 @@ function veroeffentlichenIntern(w, { branch, bestaetigt }, umgebung) {
   const holeChecks = (zusatz) => {
     const r = gh(w, umgebung, ['pr', 'checks', String(nummer), '--repo', GITHUB_REPO, ...zusatz, '--json', 'name,state,bucket,workflow,link']);
     const liste = jsonVon(r.stdout);
-    if (Array.isArray(liste) && [0, 1, 8].includes(r.status)) return { liste }; // 0 grün, 1 fehlgeschlagen, 8 ausstehend; jeder andere Exit ist ein Fehler, auch mit parsebarem JSON
-    if (/no (required )?checks (reported|found)/i.test(`${r.stderr} ${r.stdout}`)) return { liste: [] };
+    // „keine Checks“ zuerst und nur mit leerer oder fehlender Liste erkennen
+    if (/no (required )?checks (reported|found)/i.test(`${r.stderr} ${r.stdout}`) && (!Array.isArray(liste) || !liste.length)) return { liste: [] };
+    const vollstaendig = Array.isArray(liste) && liste.every((c) => c && typeof c.name === 'string' && typeof c.bucket === 'string');
+    if (vollstaendig && (r.status === 0 || r.status === 8 || (r.status === 1 && liste.some((c) => ['fail', 'cancel'].includes(c.bucket))))) return { liste };
+    // Exit 1 ohne fehlgeschlagenen Check, unvollständige Einträge oder jeder andere Exit: Abfragefehler, auch mit parsebarem JSON
     return { fehler: kurz(r.stderr) || kurz(r.stdout) || `Exit ${r.status}` };
   };
   let bew;

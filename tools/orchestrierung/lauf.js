@@ -17,10 +17,13 @@ import { pruefeTore, bewerteTore } from './tore.js';
 
 export class LaufFehler extends Error { constructor(m) { super(m); this.name = 'LaufFehler'; } }
 
-/** Pfade, die im Abdruck des Hauptbaums nicht mitzählen: zwei Verzeichnisse des Werkzeugs selbst und genau eine Datei. */
-// Die Datei (kein Muster): die kurzlebige Sperrdatei der Planer-Funktion von Claude Code. Herkunft und Semantik sind nicht offiziell bestätigt,
-// das Restrisiko hat Jonah am 12.11.2026 bewusst akzeptiert (`docs/orchestrierung.md`); `scheduled_tasks.json` und `settings.json` bleiben überwacht.
-export const AUSSER = Object.freeze(['.claude/worktrees', '.claude/orchestrierung', '.claude/scheduled_tasks.lock']);
+/** Pfade, die im Abdruck des Hauptbaums nicht mitzählen: zwei Verzeichnisse des Werkzeugs selbst (samt Inhalt) und genau eine Datei. */
+export const AUSSER = Object.freeze(['.claude/worktrees', '.claude/orchestrierung']);
+// Die Datei (kein Muster, nur als Datei: ein Verzeichnis dieses Namens wird durchsucht): die kurzlebige Sperrdatei der Planer-Funktion von Claude Code.
+// Herkunft und Semantik sind nicht offiziell bestätigt, das Restrisiko hat Jonah am 12.11.2026 bewusst akzeptiert (`docs/orchestrierung.md`);
+// `scheduled_tasks.json` und `settings.json` bleiben überwacht.
+export const AUSSER_DATEIEN = Object.freeze(['.claude/scheduled_tasks.lock']);
+export const AUSSCHLUSS = Object.freeze({ ausser: AUSSER, ausserDateien: AUSSER_DATEIEN });
 export const MAX_SCHLEIFEN = 3;
 
 const vor = (p) => p.replace(/\\/g, '/');
@@ -76,7 +79,7 @@ export function pruefeUnterbrochene(w) {
 export function fremdeAenderungen(w) {
   const lies0 = (args) => git(w, args).split('\0').filter(Boolean);
   const alle = new Set([...lies0(['ls-files', '-z', '-m', '-d', '-o', '--exclude-standard']), ...lies0(['diff', '--cached', '--name-only', '-z'])]);
-  return [...alle].map(vor).filter((p) => !AUSSER.some((x) => p === x || p.startsWith(`${x}/`))).sort();
+  return [...alle].map(vor).filter((p) => !AUSSER.some((x) => p === x || p.startsWith(`${x}/`)) && !AUSSER_DATEIEN.includes(p)).sort();
 }
 
 /** Baum-Hash eines Snapshot-Commits. */
@@ -97,7 +100,7 @@ export function starten(w, { auftrag, dateien = [], kontext = [], id = null, aut
   }
   const wiederhergestellt = pruefeUnterbrochene(w);
   const laufId = id ?? `L${jetzt().replace(/[-:T]/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`;
-  const vorher = zustand(w, { ausser: AUSSER });
+  const vorher = zustand(w, AUSSCHLUSS);
   const s0 = schnappschuss(w, { id: `${laufId}-s0` });
   const a = {
     id: laufId, status: 'aktiv', auftrag, dateien, kontext, haupt: vor(w), head: vorher.head, zweig: vorher.zweig,
@@ -352,7 +355,7 @@ function testsAusfuehrenIntern(w, { worktree, suite = 'kurz', timeoutMs = 180000
   const vorher = gleichMitCommit(pfad, a.basis);
   if (vorher.length) throw new LaufFehler(`Der Worktree weicht vom gesicherten Stand ab (zuerst runde-ende, dann testen): ${vorher.slice(0, 3).join('; ')}`);
   // Abdruck von Hauptbaum, HEAD und Laufzustand vor den Tests; die Tests sind Code des Agenten und laufen unter dem Benutzerkonto
-  const z0 = zustand(w, { ausser: AUSSER }); const l0 = laufAbdruck(w); const g0 = gitAbdruck(w, { mitWorktrees: true });
+  const z0 = zustand(w, AUSSCHLUSS); const l0 = laufAbdruck(w); const g0 = gitAbdruck(w, { mitWorktrees: true });
   const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'bw-test-'));
   let r;
   try {
@@ -361,7 +364,7 @@ function testsAusfuehrenIntern(w, { worktree, suite = 'kurz', timeoutMs = 180000
   } finally {
     try { fs.rmSync(privat, { recursive: true, force: true, maxRetries: 3 }); } catch { /* egal */ }
   }
-  const verdacht = [...gitUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, { ausser: AUSSER })), ...abdruckUnterschiede(l0, laufAbdruck(w))];
+  const verdacht = [...gitUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, AUSSCHLUSS)), ...abdruckUnterschiede(l0, laufAbdruck(w))];
   if (verdacht.length) {
     sperren(w, a, `Manipulationsverdacht: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees: ${verdacht.slice(0, 5).join('; ')}`);
     throw new LaufFehler(`MANIPULATIONSVERDACHT: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees (${verdacht.slice(0, 5).join('; ')}). Der Lauf ist gesperrt, das Ergebnis wird nicht protokolliert. Stoppen und Jonah berichten`);
@@ -442,7 +445,7 @@ export function bewerteNachweise(dir, baum) {
 export function hauptKontrolle(w, { erwarteteDateien = [] } = {}) {
   const a = brauche(w);
   const vorher = leseJson(path.join(laufDir(w, a.id), 'vorher.json'));
-  const unterschiede = zustandsUnterschiede(vorher, zustand(w, { ausser: AUSSER }));
+  const unterschiede = zustandsUnterschiede(vorher, zustand(w, AUSSCHLUSS));
   const buch = unterschiede.filter((u) => !u.startsWith('datei:'));
   const dateien = unterschiede.filter((u) => u.startsWith('datei:')).map((u) => u.slice(6));
   const unerwartet = dateien.filter((p) => !erwarteteDateien.includes(p));

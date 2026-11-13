@@ -57,8 +57,17 @@ test('Nur der exakte Pfad ist ausgenommen: scheduled_tasks.json, settings.json u
   assert.ok(lauf.hauptKontrolle(repo).unerwarteteDateien.includes('.claude/scheduled_tasks.json'));
 });
 
-test('Die Ausnahme steht als genau ein Pfad ohne Muster in AUSSER', () => {
-  assert.ok(lauf.AUSSER.includes(SPERRE));
-  assert.deepEqual(lauf.AUSSER.filter((p) => p !== '.claude/worktrees' && p !== '.claude/orchestrierung'), [SPERRE]);
-  assert.ok(lauf.AUSSER.every((p) => !/[*?[\]{}]/.test(p)), 'keine Muster');
+test('Die Ausnahme steht als genau ein Dateipfad ohne Muster in AUSSER_DATEIEN, nicht bei den Verzeichnissen', () => {
+  assert.deepEqual([...lauf.AUSSER_DATEIEN], [SPERRE]);
+  assert.ok(!lauf.AUSSER.includes(SPERRE));
+  assert.ok([...lauf.AUSSER, ...lauf.AUSSER_DATEIEN].every((p) => !/[*?[\]{}]/.test(p)), 'keine Muster');
+});
+
+test('Ein Verzeichnis namens scheduled_tasks.lock samt Inhalt ist keine Ausnahme', () => {
+  const repo = neuesRepo();
+  start(repo);
+  w(repo, '.claude/scheduled_tasks.lock/inhalt', 'x\n');
+  const k = lauf.hauptKontrolle(repo);
+  assert.equal(k.unveraendert, false);
+  assert.ok(k.unerwarteteDateien.includes('.claude/scheduled_tasks.lock/inhalt'), JSON.stringify(k.unerwarteteDateien));
 });

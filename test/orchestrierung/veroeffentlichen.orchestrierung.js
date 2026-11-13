@@ -51,7 +51,8 @@ if (sub === 'list') {
 } else if (sub === 'checks') {
   if (args.includes('--required') && st.requiredLeerMitFehler) { console.log('[]'); console.error('HTTP 401: Bad credentials'); process.exit(4); }
   if (args.includes('--required') ? st.requiredError : st.checksError) { console.error('HTTP 401: Bad credentials'); process.exit(4); }
-  const l = args.includes('--required') ? st.required : st.checks;
+  if (st.exit1OhneFehler) { console.log(JSON.stringify(st.checks)); console.error('gh: unerwarteter Fehler'); process.exit(1); }
+  const l =args.includes('--required') ? st.required : st.checks;
   if (args.includes('--required') && st.noRequired) { console.error('no required checks reported'); process.exit(1); }
   aus(l); process.exit(l.some((c) => c.bucket === 'fail') ? 1 : l.some((c) => c.bucket === 'pending') ? 8 : 0);
 } else { console.error('unbekannt ' + sub); process.exit(2); }
@@ -148,6 +149,14 @@ test('Vorprüfung lehnt ab: main, unsauberer Baum, aktiver Lauf, fehlende oder s
   // mehrere Remote-URLs: ein Push ginge an jede; eine nicht erlaubte zweite URL wird abgelehnt
   { const f = vorbereitet(); nachweise(f.repo); const g = ghAttrappe(f.bare); git(f.repo, ['config', '--add', 'remote.origin.url', 'https://example.org/fremd/repo.git']);
     const r = v.vorpruefung(f.repo, { titel: TITEL, einschraenkungen: EINSCHR }, g.umgebung); assert.equal(r.status, 'abgelehnt', JSON.stringify(r)); assert.ok(['remote-nicht-erlaubt', 'git-konfiguration'].includes(r.grund), JSON.stringify(r)); }
+  // abweichende oder zusätzliche Push-URL (auch mit erlaubtem Wortlaut): `git push origin` ginge an ein anderes Ziel als `ls-remote origin`
+  for (const [schluessel, wert] of [['remote.origin.pushurl', 'https://github.com/thalrail/blockwerk'], ['remote.origin.pushurl', 'https://example.org/fremd/repo.git']]) {
+    const f = vorbereitet(); nachweise(f.repo); const g = ghAttrappe(f.bare); git(f.repo, ['config', '--add', schluessel, wert]);
+    const r = v.vorpruefung(f.repo, { titel: TITEL, einschraenkungen: EINSCHR }, g.umgebung);
+    assert.equal(r.status, 'abgelehnt', JSON.stringify(r)); // schon die Konfigurationsprüfung lehnt jede pushurl ab; geprüft wird, dass es überhaupt vor jedem gh-Aufruf und Push endet
+    assert.equal(r.grund, 'git-konfiguration', `${wert}: ${JSON.stringify(r)}`); assert.match(JSON.stringify(r.probleme), /pushurl/);
+    assert.equal(g.aufrufe().length, 0, 'kein gh-Aufruf');
+  }
   // fremder Remote
   { const f = vorbereitet(); nachweise(f.repo); const g = ghAttrappe(f.bare); const r = v.vorpruefung(f.repo, { titel: TITEL, einschraenkungen: EINSCHR }, { ...g.umgebung, erlaubteRemotes: ['https://github.com/thalrail/blockwerk.git'] }); assert.equal(r.grund, 'remote-nicht-erlaubt'); }
   // Remote-Branch weicht ab (andere Historie): nie Force
@@ -285,6 +294,8 @@ test('Checks: rot, fehlender Job test, ausstehend, Pflichtcheck plus test und Gi
   lauf1({ checksError: true }, { status: 'blockiert', schritt: 'checks', grund: /nicht abfragbar: HTTP 401/ });
   // parsebares JSON bei einem Fehler-Exit (hier `[]` mit Exit 4) ist keine leere Pflichtcheck-Liste
   lauf1({ requiredLeerMitFehler: true }, { status: 'blockiert', schritt: 'checks', grund: /nicht abfragbar/ });
+  // Exit 1 bedeutet „Check fehlgeschlagen“; ohne fehlgeschlagenen Check in der Liste ist es ein allgemeiner gh-Fehler
+  lauf1({ exit1OhneFehler: true }, { status: 'blockiert', schritt: 'checks', grund: /nicht abfragbar/ });
   // Mergebarkeit unbekannt oder nicht bestimmt: keine Fertigmeldung
   lauf1({ mergeable: 'UNKNOWN' }, { status: 'blockiert', schritt: 'github-regel', grund: /mergeable UNKNOWN/ });
   lauf1({ mergeable: null }, { status: 'blockiert', schritt: 'github-regel' });
@@ -380,7 +391,7 @@ test('Quelltext der Veröffentlichung: nur Push mit ausdrücklichem Refspec auf 
 
 test('Schutzliste: Schreibweisen, Windows-Kurznamen, Unicode-Gleichwertigkeit und unsichtbare Zeichen treffen geschützte Pfade; gewöhnliche Pfade (auch mit Umlauten) nicht', () => {
   for (const p of ['.claude/settings.json', '.Claude/x', '.GITHUB/workflows/a.yml', 'Tools/Orchestrierung/lauf.js', '.GitIgnore', 'TOOLS~1/x.js', 'src/PROGRA~1/x.js', 'src/datei.', 'src/datei ', 'src/a:b', 'src/ds:strom',
-    '.cla​ude/x', '.‍github/x', 'tools/orche⁠strierung/x', '．claude/x', 'tools／orchestrierung/x'.replace('／', '/'), 'src/‮evil.js', 'src/a\u0000b']) {
+    '.cla​ude/x', '.‍github/x', 'tools/orche⁠strierung/x', '．claude/x', 'tools／orchestrierung/x', 'tools\\orchestrierung\\x','src/‮evil.js', 'src/a\u0000b']) {
     assert.ok(geschuetzterPfad(p), `muss geschützt sein: ${JSON.stringify(p)}`);
   }
   for (const p of ['src/a.js', 'docs/stand.md', 'docs/Übersicht/größe.md', 'data/regeln/wasser.json', 'test/orchestrierung/x.orchestrierung.js', 'src/ebene2/bogen~.js', 'docs/zitadelle/bilder/07-nische.png']) {

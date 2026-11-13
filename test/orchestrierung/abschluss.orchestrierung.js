@@ -341,7 +341,8 @@ test('Abschluss: Ablehnungen ohne jede Änderung (kein autonomer Lauf, nicht üb
   { const z = fluss(); const gz = ghUmgebung(z.bare);
     git(z.repo, ['config', '--add', 'remote.origin.url', 'https://example.org/fremd/repo.git']);
     const r = abschliessen(z.repo, ABSCHLUSS, gz.umgebung);
-    assert.equal(r.status, 'abgelehnt', JSON.stringify(r)); assert.ok(['remote-nicht-erlaubt', 'git-konfiguration', 'integritaet'].includes(r.grund), JSON.stringify(r));
+    assert.equal(r.status, 'abgelehnt', JSON.stringify(r)); // die zusätzliche URL ändert auch die Git-Konfiguration; welche Prüfung zuerst greift, ist egal, wichtig ist: vor jedem gh-Aufruf und Push
+    assert.ok(['remote-nicht-erlaubt', 'git-konfiguration', 'integritaet'].includes(r.grund), JSON.stringify(r));
     assert.equal(gz.aufrufe().length, 0, 'kein gh-Aufruf'); assert.deepEqual(remoteZweige(z.bare).map((x) => x.split(' ')[0]), ['main'], 'nichts gepusht'); }
   // Freigabe nachträglich entwertet (neuer Codezustand ohne neue Meldungen)
   f = fluss({ uebernehmen: false }); g = ghUmgebung(f.bare);

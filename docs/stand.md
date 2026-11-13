@@ -26,6 +26,7 @@ Zuletzt aktualisiert: 31.10.2026. **Diese Datei wird bei jeder Sitzung und jedem
 | Token-Optimierung (31.10.2026): schlanker Start, Skills bei Bedarf, Routing, Repo-Karte | umgesetzt und committet (`5e523e2`), Startkontext 96.944 → 33.927 Tokens; Graphify optional (`b227685`) | `docs/token-effizienz.md` |
 
 ## Nächster Schritt
+**Produktvision (13.11.2026): universeller Bauplaner, Zitadelle nur Referenz; Roadmap in `docs/roadmap.md`, Phase 1 zuerst (zwei weitere Referenzbauten, Spezifikation erweitern, Eingabe ohne KI).**
 **Jonah:** Push und PR der sechs Commits freigeben; Bauplatz der Zitadelle 600 × 600 bestätigen; Beschreibung und Prüfbericht in `docs/zitadelle/` ansehen; GitHub Pages einschalten und mit einem Freund live testen. **Danach:** Prüfer auf Abschnitte eingrenzen (schnellere Planung), erste Bauetappe im Spiel (Spieltest-Schleife), Testanleitungen und -ergebnisse in der Oberfläche eingeben. Nebenbei die offenen Lore-Tests aus `docs/spieltests.md` (Abstand 9, Rampen über 5 Blöcken, Rampe mitten in der Antriebsstrecke).
 
 ## Offene Entscheidungen

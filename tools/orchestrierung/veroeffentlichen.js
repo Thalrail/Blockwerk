@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { git, gitStatus, mitHaertung, sha256, zustand, zustandsUnterschiede } from './git.js';
+import { git, gitStatus, blob, mitHaertung, sha256, zustand, zustandsUnterschiede } from './git.js';
 import { gitAbdruck, abdruckUnterschiede, pruefeGitKonfiguration, aktiveHooks } from './git-abdruck.js';
 import { pruefeGeheimnisse } from './schnappschuss.js';
 import { reviewPaket, standardReviewVerzeichnis } from './review-paket.js';
@@ -86,7 +86,9 @@ function ermittleStand(w, umgebung) {
   const konfig = pruefeGitKonfiguration(w);
   if (konfig.length) return { fehler: abgelehnt('git-konfiguration', { probleme: konfig }) };
   const erlaubt = (umgebung.erlaubteRemotes ?? ERLAUBTE_REMOTES).map((x) => x.toLowerCase());
-  const urls = [git(w, ['remote', 'get-url', 'origin']).trim(), git(w, ['remote', 'get-url', '--push', 'origin']).trim()];
+  // alle URLs (Fetch und Push): ein Push geht an jede eingetragene URL, nicht nur an die erste
+  const urlListe = (args) => git(w, args).split('\n').map((x) => x.trim()).filter(Boolean);
+  const urls = [...urlListe(['remote', 'get-url', '--all', 'origin']), ...urlListe(['remote', 'get-url', '--all', '--push', 'origin'])];
   const fremd = urls.find((x) => !erlaubt.includes(x.toLowerCase()));
   if (fremd) return { fehler: abgelehnt('remote-nicht-erlaubt', { remote: fremd }) };
 
@@ -121,14 +123,17 @@ function ermittleStand(w, umgebung) {
   const dateien = git(w, ['diff', '--name-only', '-z', `${ref}...HEAD`]).split('\0').filter(Boolean).map(vor).sort();
   const gesperrt = dateien.filter((p) => SICHERHEITSDATEIEN.some((r) => r.test(p)));
   if (gesperrt.length) return { fehler: abgelehnt('sicherheitsdateien', { dateien: gesperrt, hinweis: 'Änderungen an .claude/, .github/, tools/orchestrierung/ und .gitignore veröffentlicht dieser Ablauf nie; dafür braucht es eine eigene, ausdrücklich beschlossene Freigabe (siehe docs/orchestrierung.md)' }) };
-  for (const p of dateien) {
-    const abs = path.join(w, p);
-    if (!fs.existsSync(abs)) continue;
-    try { pruefeGeheimnisse(p, fs.readFileSync(abs)); } catch (f) { return { fehler: abgelehnt('geheimnis', { hinweis: String(f.message) }) }; }
+  // Geheimnisse in jedem Commit, der mitgepusht wird (auch wenn ein späterer Commit die Datei wieder entfernt: die Historie geht ins Remote)
+  for (const c of git(w, ['rev-list', `${ref}..HEAD`]).split('\n').filter(Boolean)) {
+    for (const p of git(w, ['diff-tree', '-m', '-r', '--no-commit-id', '--name-only', '--diff-filter=AM', '-z', c]).split('\0').filter(Boolean)) {
+      const inhalt = blob(w, c, p);
+      if (!inhalt) continue;
+      try { pruefeGeheimnisse(p, inhalt); } catch (f) { return { fehler: abgelehnt('geheimnis', { commit: c.slice(0, 7), datei: p, hinweis: String(f.message) }) }; }
+    }
   }
   const stat = git(w, ['diff', '--stat', `${ref}...HEAD`]).trim().split('\n');
   const commits = git(w, ['log', '--format=%h %s', `${ref}..HEAD`]).trim().split('\n').filter(Boolean);
-  return { werte: { ursprung: urls.join(' '), zweig, kopf, baum, basis, mergeBase, voraus, hinterher, remoteSpitze, push, dateien, commits, stat, diffSha256: sha256(diff) } };
+  return { werte: { ursprung: [...new Set(urls)].join(' '), zweig, kopf, baum, basis, mergeBase, voraus, hinterher, remoteSpitze, push, dateien, commits, stat, diffSha256: sha256(diff) } };
 }
 
 // ---------------------------------------------------------------- Nachweise (Tests, Review, Befunde)

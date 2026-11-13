@@ -135,10 +135,18 @@ test('Vorprüfung lehnt ab: main, unsauberer Baum, aktiver Lauf, fehlende oder s
   { const f = vorbereitet(); nachweise(f.repo, { review: { ...GUT, verdict: 'request_changes' }, befunde: [{ id: 'F1', schwere: 'major', kurz: 'x' }], einstufungen: [{ id: 'F1', einstufung: 'widerlegt', beleg: 'abschluss.js Zeile 5 prüft das bereits ausdrücklich' }] });
     bereit(f.repo, ghAttrappe(f.bare)); }
   // Sicherheitsdateien und Geheimnis
-  for (const pfad of ['.claude/settings.json', '.github/workflows/x.yml', 'tools/orchestrierung/lauf.js', '.gitignore']) {
-    const f = vorbereitet({ aendere: (r) => { w(r, 'src/a.js', 'x\n'); w(r, pfad, pfad === '.gitignore' ? '.claude/worktrees/\n.claude/orchestrierung/\nextra\n' : 'x\n'); } }); nachweise(f.repo); const x = abl(f, 'sicherheitsdateien'); assert.deepEqual(x.r.dateien, [pfad]);
+  for (const pfad of ['.claude/settings.json', '.github/workflows/x.yml', 'tools/orchestrierung/lauf.js', '.gitignore', '.Claude/Settings.json', '.GITHUB/workflows/x.yml', 'Tools/Orchestrierung/lauf.js', '.GitIgnore']) {
+    const f = vorbereitet({ aendere: (r) => { w(r, 'src/a.js', 'x\n'); w(r, pfad, pfad.toLowerCase() === '.gitignore' ?'.claude/worktrees/\n.claude/orchestrierung/\nextra\n' : 'x\n'); } }); nachweise(f.repo); const x = abl(f, 'sicherheitsdateien'); assert.deepEqual(x.r.dateien.map((d) => d.toLowerCase()), [pfad.toLowerCase()]);
   }
   { const f = vorbereitet({ aendere: (r) => w(r, 'data/schluessel.pem', '-----BEGIN PRIVATE KEY-----\nabc\n') }); abl(f, 'geheimnis'); }
+  // Geheimnis, das ein Commit einführt und ein späterer wieder entfernt: die Historie würde mitgepusht
+  { const f = vorbereitet(); w(f.repo, 'data/schluessel.pem', '-----BEGIN PRIVATE KEY-----\nabc\n'); git(f.repo, ['add', '-A']); git(f.repo, ['commit', '-q', '-m', 'Schlüssel']);
+    fs.rmSync(path.join(f.repo, 'data/schluessel.pem')); git(f.repo, ['add', '-A']); git(f.repo, ['commit', '-q', '-m', 'Schlüssel entfernt']);
+    assert.ok(!git(f.repo, ['diff', '--name-only', 'origin/main...HEAD']).includes('schluessel'), 'im Netto-Diff nicht mehr sichtbar');
+    const x = abl(f, 'geheimnis'); assert.equal(x.r.datei, 'data/schluessel.pem'); }
+  // mehrere Remote-URLs: ein Push ginge an jede; eine nicht erlaubte zweite URL wird abgelehnt
+  { const f = vorbereitet(); nachweise(f.repo); const g = ghAttrappe(f.bare); git(f.repo, ['config', '--add', 'remote.origin.url', 'https://example.org/fremd/repo.git']);
+    const r = v.vorpruefung(f.repo, { titel: TITEL, einschraenkungen: EINSCHR }, g.umgebung); assert.equal(r.status, 'abgelehnt', JSON.stringify(r)); assert.ok(['remote-nicht-erlaubt', 'git-konfiguration'].includes(r.grund), JSON.stringify(r)); }
   // fremder Remote
   { const f = vorbereitet(); nachweise(f.repo); const g = ghAttrappe(f.bare); const r = v.vorpruefung(f.repo, { titel: TITEL, einschraenkungen: EINSCHR }, { ...g.umgebung, erlaubteRemotes: ['https://github.com/thalrail/blockwerk.git'] }); assert.equal(r.grund, 'remote-nicht-erlaubt'); }
   // Remote-Branch weicht ab (andere Historie): nie Force
@@ -357,9 +365,10 @@ test('Kommandozeile: unbekannte Optionen werden abgelehnt, Remote, gh-Programm u
 test('Quelltext der Veröffentlichung: nur Push mit ausdrücklichem Refspec auf den eigenen Branch, nur fünf gh-Unterbefehle, nie Merge, Force, api, Löschen oder Shell-Text', () => {
   const code = fs.readFileSync(path.resolve(import.meta.dirname, '../../tools/orchestrierung/veroeffentlichen.js'), 'utf8');
   const ohneKommentare = code.split('\n').filter((z) => !/^\s*\/\//.test(z)).join('\n');
-  for (const verboten of [/--force/, /--force-with-lease/, /'-f'/, /--delete/, /--mirror/, /'--all'/, /pr merge/, /'merge'/, /'api'/, /--admin/, /'close'/, /'edit'/, /'tag'/, /exec\(/, /shell:\s*true/, /'rebase'/, /'reset'/, /'clean'/, /'stash'/, /'commit'/, /'branch'\s*,\s*'-D'/]) {
+  for (const verboten of [/--force/, /--force-with-lease/, /'-f'/, /--delete/, /--mirror/, /pr merge/, /'merge'/, /'api'/, /--admin/, /'close'/, /'edit'/, /'tag'/, /exec\(/, /shell:\s*true/, /'rebase'/, /'reset'/, /'clean'/, /'stash'/, /'commit'/, /'branch'\s*,\s*'-D'/]) {
     assert.ok(!verboten.test(ohneKommentare), `nicht erlaubt: ${verboten}`);
   }
+  assert.ok((ohneKommentare.match(/'--all'/g) ?? []).length === 2 && ohneKommentare.split('\n').filter((z) => /'--all'/.test(z)).every((z) => /'get-url'/.test(z)), '`--all` nur bei `remote get-url`, nie bei push');
   assert.match(code, /const GH_ERLAUBT = Object\.freeze\(\['list', 'create', 'view', 'ready', 'checks'\]\)/);
   const pushs = ohneKommentare.match(/\['push'[^\]]*\]/g) ?? [];
   assert.deepEqual(pushs, ["['push', '-u', 'origin', `refs/heads/${branch}:refs/heads/${branch}`]"], 'genau ein Push, ausdrücklicher Refspec ohne +');

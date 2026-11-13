@@ -20,7 +20,8 @@ export const BASIS_ZWEIG = 'main';
 export const ZWEIG_PRAEFIX = 'claude/';
 export const TRAILER = 'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>';
 const KURZNAME = /^[a-z0-9][a-z0-9-]{2,40}$/;
-export const SICHERHEITSDATEIEN = [/^\.claude\//, /^\.github\//, /^tools\/orchestrierung\//, /^\.gitignore$/];
+// ohne Rücksicht auf Groß-/Kleinschreibung: unter Windows und macOS meint `.Claude/` dieselbe Datei wie `.claude/`
+export const SICHERHEITSDATEIEN = [/^\.claude\//i, /^\.github\//i, /^tools\/orchestrierung\//i, /^\.gitignore$/i];
 const SCHRITTE = ['branch', 'commit', 'push', 'pr'];
 
 export const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });

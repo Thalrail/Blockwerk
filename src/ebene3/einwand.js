@@ -57,7 +57,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       };
       for (const [kindId, k] of [...mat.einbau.kinder].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
         const kind = nachId(kindId), traeger = nachId(k.traeger);
-        const draussen = [...mat.teile.get(kindId).schluessel].filter((c) => !k.zone.has(c) && !k.ersetzt.has(c));
+        const draussen = [...mat.teile.get(kindId).schluessel].filter((c) => !imQuader(zelleVon(c), k.zone) && !k.ersetzt.has(c));
         if (!draussen.length) continue;
         const wer = fachleute.besitzer(kind);
         liste.push({ regel: 'plan.geometrie', von: 'bauleiter', an: wer, ort: zelleVon(kleinste(draussen)), schwere: 'verstoss', ziel: `teil:${kind.id}`, abschnitt: kind.abschnitt, text: `${kind.baustein} (${kind.id}) liegt mit ${draussen.length} Blöcken außerhalb der Einbauzone "${kind.einbau.zone}" von ${traeger.baustein} (${traeger.id})`, schluessel: `plan.geometrie|einbau|${kind.id}` });
@@ -65,12 +65,13 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       // Freihaltungen: in einer Freihaltezelle steht kein Block irgendeines Teils (auch nicht des Kindes selbst)
       const verletzt = new Map(); // "kind|blockierer" → Zellen
       for (const [c, kindIds] of mat.einbau.freihaltung) {
-        const blockierer = mat.besitz.get(c);
-        if (blockierer === undefined) continue;
-        for (const kindId of kindIds) {
-          const paar = `${kindId}|${blockierer}`;
-          if (!verletzt.has(paar)) verletzt.set(paar, new Set());
-          verletzt.get(paar).add(c);
+        for (const t of entwurf.teile) { // jedes Teil, das die Zelle belegt (nicht nur das erste), wird einzeln gemeldet
+          if (!mat.teile.get(t.id).schluessel.has(c)) continue;
+          for (const kindId of kindIds) {
+            const paar = `${kindId}|${t.id}`;
+            if (!verletzt.has(paar)) verletzt.set(paar, new Set());
+            verletzt.get(paar).add(c);
+          }
         }
       }
       for (const [paar, zellen] of [...verletzt].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ebene2, ebene3 } from '../hilfe.js';
+import { definiere } from '../../src/ebene2/index.js';
 import { neuerEntwurf, entwurfZuJson } from '../../src/ebene3/index.js';
 import { zellenInWelt, quaderZellen } from '../../src/ebene2/zellen.js';
 
@@ -143,4 +144,59 @@ test('Zusammenbau: deterministisch, unabhängig von der Reihenfolge der Teile, �
   const flach = e3.materialisiere(setze(grund(), raumTeil), MIT);
   assert.equal(flach.einbau, null);
   for (const [c, id] of flach.besitz) assert.equal(id, 'T1', c);
+});
+
+test('Zusammenbau: gemerkte Teile bleiben unverändert (der Raum ohne Kind hat danach wieder seine Decke), Entwürfe ohne Kinder liefern dieselbe Besitzkarte', () => {
+  const nurRaum = setze(grund(), raumTeil);
+  const schnapp = (m) => ({ t: [...m.teile.get('T1').schluessel].sort(), a: [...m.teile.get('T1').arbeitsbloecke].sort(), b: [...m.besitz].sort() });
+  const vorher = schnapp(e3.materialisiere(nurRaum, MIT));
+  assert.ok(vorher.t.length > 0 && vorher.b.length === vorher.t.length, 'die Besitzkarte ist nicht leer');
+  const mitKind = e3.materialisiere(mitTreppe(), MIT);
+  assert.ok(mitKind.teile.get('T1').schluessel.size < vorher.t.length, 'mit Treppe fehlen Deckenblöcke');
+  assert.deepEqual(schnapp(e3.materialisiere(nurRaum, MIT)), vorher, 'danach wieder vollständig (der Cache wurde nicht verändert)');
+});
+
+test('Freiraum: Rangregel und alle Belegungen: Techniker über Architekt, gleicher Besitzer → Bauleiter, mehrere Teile in einer Zelle', () => {
+  const e = mitTreppe();
+  const mat = e3.materialisiere(e, MIT);
+  const s2 = [...mat.teile.get('T2').schluessel].map((c) => c.split(',').map(Number)).find(([, y]) => y === 2);
+  const kopf = { x: s2[0], y: 4, z: s2[2] };
+  const klotz = (ref) => ({ baustein: 'bau.wand', ref, parameter: { laenge: 1, hoehe: 1, dicke: 1 }, lage: { ...kopf, drehung: 0 } });
+  // gleicher Besitzer (Architekt): der Bauleiter fragt den Architekten, das Ziel ist der Blockierer
+  const gleich = einwaende(setze(e, klotz('klotz')), 'plan.freiraum');
+  assert.equal(gleich.length, 1);
+  assert.deepEqual([gleich[0].von, gleich[0].an, gleich[0].ziel], ['bauleiter', 'architekt', 'teil:T3']);
+  // ein Technikteil in der Kopffreiheit: der höhere Rang (Techniker) verlangt, dass der Architekt die Treppe ändert
+  const t = e3.aendere(e, 'techniker', { art: 'setze-teil', teil: { abschnitt: 'A1', baustein: 'tech.antriebsstrecke', parameter: {}, lage: { ...kopf, drehung: 0 } } }).entwurf;
+  const tech = einwaende(t, 'plan.freiraum');
+  assert.equal(tech.length, 1);
+  assert.deepEqual([tech[0].von, tech[0].an, tech[0].ziel], ['techniker', 'architekt', 'teil:T2']);
+  // zwei Teile in derselben Freihaltezelle: für jeden ein Einwand (die Überschneidung der beiden meldet plan.geometrie zusätzlich)
+  const zwei = setze(setze(e, klotz('a')), klotz('b'));
+  assert.deepEqual(einwaende(zwei, 'plan.freiraum').map((x) => x.schluessel).sort(), ['plan.freiraum|T2|T3', 'plan.freiraum|T2|T4']);
+  assert.equal(einwaende(zwei, 'plan.geometrie').filter((x) => /gemeinsame Blöcke/.test(x.text)).length, 1);
+});
+
+test('Freiraum: ein Kind, dessen eigener Block in der eigenen Freihaltung steht, ist ein Einwand; große Räume mit mehreren Kindern bleiben schnell', () => {
+  const selbst = definiere({
+    id: 'bau.test-selbst', titel: 'Selbstblockade (nur Test)', quelle: 'https://beispiel.invalid/', testszenario: { start: 's', erwartung: 'e' }, parameter: [],
+    baue: () => ({ bloecke: [{ x: 0, y: 0, z: 0, rolle: 'wand' }], aussparungen: [{ art: 'freihaltung', von: { x: 0, y: 0, z: 0 }, bis: { x: 0, y: 1, z: 0 } }] }),
+  });
+  E2.bausteine.set(selbst.id, selbst);
+  try {
+    const e = setze(setze(grund(), raumTeil), { baustein: selbst.id, ref: 'haus/s', parameter: {}, traeger: 'haus', einbau: EI('innenraum', 'mitte') });
+    const liste = einwaende(e, 'plan.freiraum');
+    assert.equal(liste.length, 1);
+    assert.deepEqual([liste[0].von, liste[0].an, liste[0].ziel, liste[0].schluessel], ['bauleiter', 'architekt', 'teil:T2', 'plan.freiraum|T2|T2']);
+  } finally { E2.bausteine.delete(selbst.id); }
+  // großer Raum (Innenraum 40 × 40 × 20) mit drei Kindern: die Zone wird nicht Zelle für Zelle aufgebaut
+  let e = setze(grund(), { ...raumTeil, parameter: { breite: 40, tiefe: 40, hoehe: 20 }, lage: { x: 0, y: 0, z: 0, drehung: 1 } });
+  e = setze(e, { baustein: 'bau.tuer', ref: 'haus/t', parameter: {}, traeger: 'haus', einbau: EI('wand-sued', 'mitte') });
+  e = setze(e, { baustein: 'bau.fenster', ref: 'haus/f', parameter: {}, traeger: 'haus', einbau: EI('wand-nord', 'mitte', { versatz: { x: 0, y: 3, z: 0 } }) });
+  e = setze(e, { baustein: 'bau.treppe', ref: 'haus/tr', parameter: { stufen: 21, breite: 3 }, traeger: 'haus', einbau: EI('innenraum', 'nw') });
+  const start = Date.now();
+  const mat = e3.materialisiere(e, MIT);
+  assert.deepEqual(einwaende(e), []);
+  assert.ok(mat.teile.get('T1').schluessel.size > 1000);
+  assert.ok(Date.now() - start < 20000, 'große Räume brauchen keine Zellenmengen der ganzen Zone');
 });

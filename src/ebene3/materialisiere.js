@@ -2,7 +2,7 @@
 // Jedes Teil wird mit Ebene 2 gebaut (`baue`), in einer eigenen Welt platziert, über den Vermesser gedreht und verschoben und dann in die
 // Gesamtwelt eingefügt. Die Gesamtwelt wird nur über `welt.fuegeBauteilEin` beschrieben.
 import { dreheRichtung } from '../ebene0/richtungen.js';
-import { TESTPALETTE, aussparungsZellen, zellenInWelt, quaderZellen } from '../ebene2/index.js';
+import { TESTPALETTE, aussparungsZellen, zellenInWelt } from '../ebene2/index.js';
 import { erzeugeLagen } from './lagen.js';
 
 const key = (x, y, z) => `${x},${y},${z}`;
@@ -123,7 +123,12 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
       }
       if (cut.size) schnitt.set(tr.id, cut);
       const zone = paketT.einbauzonen.find((z) => z.id === kind.einbau.zone);
-      kinder.set(kind.id, { traeger: tr.id, zone: new Set(zellenInWelt(ebene0, quaderZellen(zone.von, zone.bis), tr.lage).map(ks)), ersetzt });
+      // Die Zone wird nicht als Zellenmenge aufgebaut (große Räume): ihre acht Eckpunkte laufen durch die Lage des Trägers, das Ergebnis ist wieder ein achsenparalleler Quader
+      const ecken = [zone.von.x, zone.bis.x].flatMap((x) => [zone.von.y, zone.bis.y].flatMap((y) => [zone.von.z, zone.bis.z].map((z) => ({ x, y, z }))));
+      const w = zellenInWelt(ebene0, ecken, tr.lage);
+      const achse = (a) => [Math.min(...w.map((c) => c[a])), Math.max(...w.map((c) => c[a]))];
+      const [x0, x1] = achse('x'), [y0, y1] = achse('y'), [z0, z1] = achse('z');
+      kinder.set(kind.id, { traeger: tr.id, zone: { von: { x: x0, y: y0, z: z0 }, bis: { x: x1, y: y1, z: z1 } }, ersetzt });
     }
     return { schnitt, kinder, freihaltung };
   }

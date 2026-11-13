@@ -46,6 +46,40 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       else { von = besitzerB; an = besitzerA; ziel = a.id; }
       liste.push({ regel: 'plan.geometrie', von, an, ort: zelleVon(kleinste(bloecke)), schwere: 'verstoss', ziel: `teil:${ziel}`, abschnitt: teilVon.get(ziel).abschnitt, text: `${a.baustein} (${a.id}) und ${b.baustein} (${b.id}) belegen ${bloecke.size} gemeinsame Blöcke`, schluessel: `plan.geometrie|ueberschneidung|${a.id}|${b.id}` });
     }
+    // Einbau (docs/architektur-einbau.md 3.3): Kind in der Zone des Trägers, Freihaltungen bleiben leer
+    if (mat.einbau) {
+      const nachId = (id) => teilVon.get(id);
+      // Zwischen Anspruchsteller A und Blockierer B gilt dieselbe Rangregel wie bei Überschneidungen: der Niederrangige weicht (bei gleichem Besitzer der Bauleiter)
+      const rang = (a, b) => {
+        const besitzerA = fachleute.besitzer(a), besitzerB = fachleute.besitzer(b);
+        if (besitzerA === besitzerB) return { von: 'bauleiter', an: besitzerA, ziel: b };
+        return fachleute.hoeher(besitzerA, besitzerB) ? { von: besitzerA, an: besitzerB, ziel: b } : { von: besitzerB, an: besitzerA, ziel: a };
+      };
+      for (const [kindId, k] of [...mat.einbau.kinder].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+        const kind = nachId(kindId), traeger = nachId(k.traeger);
+        const draussen = [...mat.teile.get(kindId).schluessel].filter((c) => !k.zone.has(c) && !k.ersetzt.has(c));
+        if (!draussen.length) continue;
+        const wer = fachleute.besitzer(kind);
+        liste.push({ regel: 'plan.geometrie', von: 'bauleiter', an: wer, ort: zelleVon(kleinste(draussen)), schwere: 'verstoss', ziel: `teil:${kind.id}`, abschnitt: kind.abschnitt, text: `${kind.baustein} (${kind.id}) liegt mit ${draussen.length} Blöcken außerhalb der Einbauzone "${kind.einbau.zone}" von ${traeger.baustein} (${traeger.id})`, schluessel: `plan.geometrie|einbau|${kind.id}` });
+      }
+      // Freihaltungen: in einer Freihaltezelle steht kein Block irgendeines Teils (auch nicht des Kindes selbst)
+      const verletzt = new Map(); // "kind|blockierer" → Zellen
+      for (const [c, kindIds] of mat.einbau.freihaltung) {
+        const blockierer = mat.besitz.get(c);
+        if (blockierer === undefined) continue;
+        for (const kindId of kindIds) {
+          const paar = `${kindId}|${blockierer}`;
+          if (!verletzt.has(paar)) verletzt.set(paar, new Set());
+          verletzt.get(paar).add(c);
+        }
+      }
+      for (const [paar, zellen] of [...verletzt].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+        const [kindId, blockId] = paar.split('|');
+        const kind = nachId(kindId), block = nachId(blockId);
+        const { von, an, ziel } = kindId === blockId ? { von: 'bauleiter', an: fachleute.besitzer(kind), ziel: kind } : rang(kind, block);
+        liste.push({ regel: 'plan.freiraum', von, an, ort: zelleVon(kleinste(zellen)), schwere: 'verstoss', ziel: `teil:${ziel.id}`, abschnitt: ziel.abschnitt, text: `${block.baustein} (${block.id}) steht in ${zellen.size} Zellen, die ${kind.baustein} (${kind.id}) freihalten muss (Kopffreiheit)`, schluessel: `plan.freiraum|${kind.id}|${block.id}` });
+      }
+    }
     // Sperrzonen des Technikers
     for (const sz of entwurf.sperrzonen) {
       for (const t of entwurf.teile) {

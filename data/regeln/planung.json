@@ -100,6 +100,16 @@
       "ungeprueft": false
     },
     {
+      "id": "plan.freiraum",
+      "titel": "Freihaltungen und Einbauzonen prüft die Planung selbst",
+      "regel": "Ein Kind (z. B. Treppe, Tür, Fenster) liegt in der Einbauzone seines Trägers oder ersetzt Blöcke des Trägers durch eine Öffnung. Seine Aussparungen entfernen Blöcke nur aus dem direkten Träger. Eine Freihaltung (z. B. Kopffreiheit über der Treppe, 3 Zellen über jedem Stufenblock) bleibt für alle leer: steht dort ein Block irgendeines Teils, auch des Kindes selbst, meldet die Planung einen Einwand an den Niederrangigen (bei gleichem Besitzer an diesen).",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/architektur-einbau.md (Einbau-Architektur B + C, Paket P5)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/zusammenbau.test.js::Freiraum: ein Block in der Kopffreiheit der Treppe ist ein Einwand (auch ein Teil des Geschwisters), außerhalb der Freihaltung nicht",
+      "ungeprueft": false
+    },
+    {
       "id": "plan.geometrie",
       "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
       "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Zone ohne Funktion gilt für alle Teile, eine Technikzone nur für Technikteile, jede andere Funktionszone nur für Teile, die der Architekt dort einplant). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",

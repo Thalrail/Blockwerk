@@ -337,6 +337,12 @@ test('Abschluss: Ablehnungen ohne jede Änderung (kein autonomer Lauf, nicht üb
   pruefe(f, g, ABSCHLUSS, 'remote-nicht-erlaubt', { ...g.umgebung, erlaubteRemotes: ['https://github.com/fremd/projekt.git'] });
   pruefe(f, g, ABSCHLUSS, 'remote-nicht-erlaubt', { gh: g.umgebung.gh });
   assert.ok(ERLAUBTE_REMOTES.every((x) => /thalrail\/blockwerk/.test(x)));
+  // eine zweite, nicht erlaubte URL für origin: ein Push ginge an jede URL, die Prüfung darf nicht nur die erste ansehen
+  { const z = fluss(); const gz = ghUmgebung(z.bare);
+    git(z.repo, ['config', '--add', 'remote.origin.url', 'https://example.org/fremd/repo.git']);
+    const r = abschliessen(z.repo, ABSCHLUSS, gz.umgebung);
+    assert.equal(r.status, 'abgelehnt', JSON.stringify(r)); assert.ok(['remote-nicht-erlaubt', 'git-konfiguration', 'integritaet'].includes(r.grund), JSON.stringify(r));
+    assert.equal(gz.aufrufe().length, 0, 'kein gh-Aufruf'); assert.deepEqual(remoteZweige(z.bare).map((x) => x.split(' ')[0]), ['main'], 'nichts gepusht'); }
   // Freigabe nachträglich entwertet (neuer Codezustand ohne neue Meldungen)
   f = fluss({ uebernehmen: false }); g = ghUmgebung(f.bare);
   lauf.uebernehmen(f.repo);
@@ -443,10 +449,11 @@ test('Quelltext des Abschlusses: nur Draft, nur der eigene Branch, nie Merge, Fo
   assert.equal((code.match(/\['push'/g) ?? []).length, 1, 'genau ein Push-Aufruf');
   assert.ok(code.includes("['push', '-u', 'origin',"), 'Push immer mit Upstream auf origin');
   assert.ok(code.includes('`refs/heads/${f.branch}:refs/heads/${f.branch}`'), 'ausdrücklicher Refspec');
-  for (const verboten of [/'merge'/, /pr merge/, /'ready'/, /'api'/, /--force/, /'-f'/, /--delete/, /--mirror/, /'--all'/, /'tag'/, /exec\(/, /shell:\s*true/, /'rebase'/, /'reset'/, /'stash'/, /'clean'/, /'filter-branch'/, /'--no-verify'/, /'--amend'/]) {
+  for (const verboten of [/'merge'/, /pr merge/, /'ready'/, /'api'/, /--force/, /'-f'/, /--delete/, /--mirror/, /'tag'/, /exec\(/, /shell:\s*true/, /'rebase'/, /'reset'/, /'stash'/, /'clean'/, /'filter-branch'/, /'--no-verify'/, /'--amend'/]) {
     assert.ok(!verboten.test(code), `abschluss.js enthält ${verboten}`);
   }
   assert.ok(/'merge-base'/.test(code), 'nur merge-base zum Prüfen der Basis');
+  assert.ok(code.split('\n').filter((z) => /'--all'/.test(z)).every((z) => /'get-url'/.test(z)), '`--all` nur bei `remote get-url`, nie bei push');
 });
 
 test('Kommandozeile: aus einem Agenten-Worktree heraus bedient das Werkzeug nichts (nur status); zweite Schranke neben dem Wächter', () => {

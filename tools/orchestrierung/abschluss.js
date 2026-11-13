@@ -22,6 +22,9 @@ export const TRAILER = 'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com
 const KURZNAME = /^[a-z0-9][a-z0-9-]{2,40}$/;
 // ohne Rücksicht auf Groß-/Kleinschreibung: unter Windows und macOS meint `.Claude/` dieselbe Datei wie `.claude/`
 export const SICHERHEITSDATEIEN = [/^\.claude\//i, /^\.github\//i, /^tools\/orchestrierung\//i, /^\.gitignore$/i];
+/** Pfadteile, die unter Windows denselben Ort wie ein anderer Name meinen können (8.3-Kurzname `ORCHES~1`, Punkt oder Leerzeichen am Ende, `:` für Datenströme): nie veröffentlichen, die Schutzliste wäre damit umgehbar. */
+export const unsichererPfad = (p) => p.split('/').some((k) => /~\d/.test(k) || /[. ]$/.test(k) || k.includes(':'));
+export const geschuetzterPfad = (p) => SICHERHEITSDATEIEN.some((r) => r.test(p)) || unsichererPfad(p);
 const SCHRITTE = ['branch', 'commit', 'push', 'pr'];
 
 export const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });
@@ -85,8 +88,9 @@ function pruefeVoraussetzungen(w, a, { kurzname, titel, einschraenkungen, basis 
   const konfig = pruefeGitKonfiguration(w);
   if (konfig.length) return { fehler: abgelehnt('git-konfiguration', { probleme: konfig, hinweis: 'Die wirksame Git-Konfiguration enthält Einträge, die Programme starten oder das Push-Ziel ändern könnten' }) };
   const erlaubteRemotes = (umgebung.erlaubteRemotes ?? ERLAUBTE_REMOTES).map((x) => x.toLowerCase());
-  const remotes = [git(w, ['remote', 'get-url', 'origin']).trim(), git(w, ['remote', 'get-url', '--push', 'origin']).trim()];
-  const remote = remotes[0];
+  // alle URLs (Fetch und Push): ein Push geht an jede eingetragene URL, nicht nur an die erste
+  const urlListe = (args) => git(w, args).split('\n').map((x) => x.trim()).filter(Boolean);
+  const remotes = [...urlListe(['remote', 'get-url', '--all', 'origin']), ...urlListe(['remote', 'get-url', '--all', '--push', 'origin'])];
   const fremdesZiel = remotes.find((x) => !erlaubteRemotes.includes(x.toLowerCase()));
   if (fremdesZiel) return { fehler: abgelehnt('remote-nicht-erlaubt', { remote: fremdesZiel }) };
   if (!git(w, ['config', 'user.name']).trim() || !git(w, ['config', 'user.email']).trim()) return { fehler: abgelehnt('git-identitaet', { hinweis: 'user.name und user.email fehlen' }) };
@@ -98,7 +102,7 @@ function pruefeVoraussetzungen(w, a, { kurzname, titel, einschraenkungen, basis 
 
   const dateien = [...a.uebernommen.dateien].map(vor).sort();
   if (!dateien.length) return { fehler: abgelehnt('keine-dateien') };
-  const gesperrt = dateien.filter((p) => SICHERHEITSDATEIEN.some((r) => r.test(p)));
+  const gesperrt = dateien.filter(geschuetzterPfad);
   if (gesperrt.length) return { fehler: abgelehnt('sicherheitsdateien', { dateien: gesperrt, hinweis: 'Solche Änderungen committet nie ein automatischer Abschluss' }) };
 
   const abweichung = vergleicheMitPlatte(w, a.basis, { ausgeschlossen: a.ausgeschlossen, ausser: AUSSER });

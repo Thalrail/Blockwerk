@@ -135,7 +135,7 @@ test('Vorprüfung lehnt ab: main, unsauberer Baum, aktiver Lauf, fehlende oder s
   { const f = vorbereitet(); nachweise(f.repo, { review: { ...GUT, verdict: 'request_changes' }, befunde: [{ id: 'F1', schwere: 'major', kurz: 'x' }], einstufungen: [{ id: 'F1', einstufung: 'widerlegt', beleg: 'abschluss.js Zeile 5 prüft das bereits ausdrücklich' }] });
     bereit(f.repo, ghAttrappe(f.bare)); }
   // Sicherheitsdateien und Geheimnis
-  for (const pfad of ['.claude/settings.json', '.github/workflows/x.yml', 'tools/orchestrierung/lauf.js', '.gitignore', '.Claude/Settings.json', '.GITHUB/workflows/x.yml', 'Tools/Orchestrierung/lauf.js', '.GitIgnore']) {
+  for (const pfad of ['.claude/settings.json', '.github/workflows/x.yml', 'tools/orchestrierung/lauf.js', '.gitignore', '.Claude/Settings.json', '.GITHUB/workflows/x.yml', 'Tools/Orchestrierung/lauf.js', '.GitIgnore', 'TOOLS~1/ORCHES~1/lauf.js', 'src/PROGRA~1/x.js']) {
     const f = vorbereitet({ aendere: (r) => { w(r, 'src/a.js', 'x\n'); w(r, pfad, pfad.toLowerCase() === '.gitignore' ?'.claude/worktrees/\n.claude/orchestrierung/\nextra\n' : 'x\n'); } }); nachweise(f.repo); const x = abl(f, 'sicherheitsdateien'); assert.deepEqual(x.r.dateien.map((d) => d.toLowerCase()), [pfad.toLowerCase()]);
   }
   { const f = vorbereitet({ aendere: (r) => w(r, 'data/schluessel.pem', '-----BEGIN PRIVATE KEY-----\nabc\n') }); abl(f, 'geheimnis'); }

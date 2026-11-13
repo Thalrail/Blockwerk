@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { git, gitStatus, blob, mitHaertung, sha256, zustand, zustandsUnterschiede } from './git.js';
+import { git, gitStatus, mitHaertung, sha256, zustand, zustandsUnterschiede } from './git.js';
 import { gitAbdruck, abdruckUnterschiede, pruefeGitKonfiguration, aktiveHooks } from './git-abdruck.js';
 import { pruefeGeheimnisse } from './schnappschuss.js';
 import { reviewPaket, standardReviewVerzeichnis } from './review-paket.js';
@@ -16,7 +16,7 @@ import { pruefeReviewErgebnis } from './review-pruefung.js';
 import {
   LaufFehler, AUSSER, SUITEN, orchDir, lies, leseZeilen, leseJson, schreibeJson, jetzt, vor, bewerteNachweise, pruefeBefundListe, pruefeEinstufung, testUmgebung, liesTestZaehler,
 } from './lauf.js';
-import { GITHUB_REPO, ERLAUBTE_REMOTES, BASIS_ZWEIG, ZWEIG_PRAEFIX, TRAILER, SICHERHEITSDATEIEN, abgelehnt, kurz, ghUmgebung } from './abschluss.js';
+import { GITHUB_REPO, ERLAUBTE_REMOTES, BASIS_ZWEIG, ZWEIG_PRAEFIX, TRAILER, geschuetzterPfad, abgelehnt, kurz, ghUmgebung } from './abschluss.js';
 
 const BRANCH = /^claude\/[a-z0-9][a-z0-9-]{2,40}$/;
 const HASH = /^[0-9a-f]{16}$/;
@@ -121,16 +121,19 @@ function ermittleStand(w, umgebung) {
 
   const diff = git(w, ['diff', '--binary', `${ref}...HEAD`], { text: false });
   const dateien = git(w, ['diff', '--name-only', '-z', `${ref}...HEAD`]).split('\0').filter(Boolean).map(vor).sort();
-  const gesperrt = dateien.filter((p) => SICHERHEITSDATEIEN.some((r) => r.test(p)));
+  const gesperrt = dateien.filter(geschuetzterPfad);
   if (gesperrt.length) return { fehler: abgelehnt('sicherheitsdateien', { dateien: gesperrt, hinweis: 'Änderungen an .claude/, .github/, tools/orchestrierung/ und .gitignore veröffentlicht dieser Ablauf nie; dafür braucht es eine eigene, ausdrücklich beschlossene Freigabe (siehe docs/orchestrierung.md)' }) };
-  // Geheimnisse in jedem Commit, der mitgepusht wird (auch wenn ein späterer Commit die Datei wieder entfernt: die Historie geht ins Remote)
-  for (const c of git(w, ['rev-list', `${ref}..HEAD`]).split('\n').filter(Boolean)) {
-    for (const p of git(w, ['diff-tree', '-m', '-r', '--no-commit-id', '--name-only', '--diff-filter=AM', '-z', c]).split('\0').filter(Boolean)) {
-      const inhalt = blob(w, c, p);
-      if (!inhalt) continue;
-      try { pruefeGeheimnisse(p, inhalt); } catch (f) { return { fehler: abgelehnt('geheimnis', { commit: c.slice(0, 7), datei: p, hinweis: String(f.message) }) }; }
+  // Geheimnisse in jedem Objekt, das mitgepusht wird (alle Blobs aus `main..HEAD`, auch wenn ein späterer Commit die Datei wieder entfernt, umbenennt oder ihren Typ ändert: die Historie geht ins Remote).
+  // Fail-closed: ein Blob, der sich nicht lesen lässt, lehnt die Veröffentlichung ab.
+  try {
+    const objekte = git(w, ['rev-list', '--objects', `${ref}..HEAD`]).split('\n').filter(Boolean).map((z) => { const i = z.indexOf(' '); return i < 0 ? { sha: z, pfad: '' } : { sha: z.slice(0, i), pfad: z.slice(i + 1) }; });
+    const arten = git(w, ['cat-file', '--batch-check=%(objecttype) %(objectname)'], { input: `${objekte.map((o) => o.sha).join('\n')}\n` }).split('\n').filter(Boolean);
+    if (arten.length !== objekte.length) throw new Error('Objektliste und Typliste passen nicht zusammen');
+    for (const [i, o] of objekte.entries()) {
+      if (!arten[i].startsWith('blob ')) continue;
+      try { pruefeGeheimnisse(o.pfad || o.sha, git(w, ['cat-file', 'blob', o.sha], { text: false })); } catch (f) { return { fehler: abgelehnt('geheimnis', { datei: o.pfad || o.sha, hinweis: String(f.message) }) }; }
     }
-  }
+  } catch (f) { return { fehler: abgelehnt('geheimnis-pruefung', { hinweis: `Die zu pushenden Objekte ließen sich nicht vollständig prüfen: ${String(f.message).slice(0, 200)}` }) }; }
   const stat = git(w, ['diff', '--stat', `${ref}...HEAD`]).trim().split('\n');
   const commits = git(w, ['log', '--format=%h %s', `${ref}..HEAD`]).trim().split('\n').filter(Boolean);
   return { werte: { ursprung: [...new Set(urls)].join(' '), zweig, kopf, baum, basis, mergeBase, voraus, hinterher, remoteSpitze, push, dateien, commits, stat, diffSha256: sha256(diff) } };

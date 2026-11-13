@@ -28,7 +28,7 @@ export function hausSpezifikation({ breite, tiefe, geschoss, neigung }, mit = {}
   const teile = [
     { id: 'erdgeschoss', name: 'Erdgeschoss', art: 'halle', wichtigkeit: 'muss', form: raum({ ...(mit.tuer ? { tuer: 1, tuerwand: 3 } : {}), ...(mit.fenster ? { fenster: 1, fensterbreite: 2, fensterhoehe: 2, bruestung: 1 } : {}) }), lage: { bezug: 'projekt', relation: 'mitte' }, stil: { stimmung: 'hell-nordisch' } },
     { id: 'obergeschoss', name: 'Obergeschoss', art: 'halle', wichtigkeit: 'muss', form: raum({ boden: 0, ...(mit.fenster ? { fenster: 1, fensterbreite: 2, fensterhoehe: 2, bruestung: 1 } : {}) }), lage: { bezug: 'erdgeschoss', relation: 'ueber' } },
-    { id: 'dach', name: 'Dach', art: 'halle', wichtigkeit: 'muss', form: { baustein: 'form.satteldach', groesse: { breite, laenge: tiefe, neigung } }, lage: { bezug: 'obergeschoss', relation: 'ueber' } },
+    { id: 'dach', name: 'Dach', art: 'halle', wichtigkeit: 'muss', form: { baustein: 'form.satteldach', groesse: { breite, laenge: tiefe, neigung, deckend: 1, giebel: 1 } }, lage: { bezug: 'obergeschoss', relation: 'ueber' } },
   ];
   if (mit.tuerTeil) teile.push({ id: 'haustuer', name: 'Haustür', art: 'tor', wichtigkeit: 'soll', form: { baustein: 'bau.tuer', groesse: { fluegel: 1 } }, lage: { bezug: 'erdgeschoss', relation: 'neben-sueden' } });
   if (mit.treppe) teile.push({ id: 'treppe', name: 'Treppe', art: 'anlage', wichtigkeit: 'muss', form: { baustein: 'bau.treppe', groesse: { stufen: geschoss + 1, breite: 2 } }, lage: { bezug: 'erdgeschoss', relation: 'innen' } });

@@ -164,6 +164,7 @@ Kreativ-Testwelt auf Stein; für Dorfbewohner ein Dorfbewohner-Ei oder Handel. A
 Die Formen sind reine Mathematik und brauchen keinen Spieltest. Wenn du trotzdem schauen willst, ob eine Rundung im Spiel gut aussieht: Baue in der Kreativwelt einen Kreis mit 11 Blöcken Breite und einen mit 12 Blöcken (Mitte bei 11 auf einem Block, bei 12 zwischen zwei Blöcken) nach dem Schichtplan der Seite und prüfe, ob alle vier Seiten gleich aussehen. Dasselbe mit einer Kuppel von 20 Blöcken Breite (Höhe 5 Schichten).
 
 ## Bogen und Dach: Sichttest (Ebene 2)
+Neu (Haus-Sonde, `dach.haus`): Satteldach mit `deckend = 1` und `giebel = 1` auf ein Haus gleicher Grundfläche (z. B. 9 × 7, Neigung 0,8) setzen. Reine Mathematik, aber zur Sicht: Bedeckt das Dach das Haus bis zum Rand (keine Lücke an der Traufe), schließt die Giebelwand bündig mit der Hauswand ab, und ist der Dachraum von außen dicht?
 Reine Mathematik, kein Spieltest nötig. Zum Anschauen in der Kreativwelt: ein Bogen mit 9 Blöcken lichter Weite (Pfeiler 2 hoch, Stich knapp 3) und ein Satteldach mit 11 Blöcken Breite (Firsthöhe 5 bis 6) nach den Querschnitten der Tests nachbauen und prüfen, ob beide Seiten gleich aussehen und ein Spieler unter dem Bogen durchpasst.
 
 ## Bauelemente: Türen und Treppen (Ebene 2)

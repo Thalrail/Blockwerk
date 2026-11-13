@@ -25,10 +25,8 @@ test('Haus-Sonde: Hülle aus Geschossen und Satteldach plant für drei Größen 
     assert.equal(og.bis[1] - og.von[1] + 1, v.geschoss + 1, `${name}: Obergeschoss ohne eigenen Boden, es steht auf der Decke des Erdgeschosses`);
     assert.equal(og.von[1], eg.bis[1] + 1, `${name}: Obergeschoss steht unmittelbar auf dem Erdgeschoss`);
     assert.equal(dach.von[1], og.bis[1] + 1, `${name}: Dach steht unmittelbar auf dem Obergeschoss`);
-    // Dach nie breiter als das Haus (kein Überstand möglich); bei Neigung 1 deckt es das Haus genau, bei 0,8 (groß) fehlt je Seite die unterste Reihe (Befund)
-    const d = [dach.von[0], dach.bis[0], dach.von[2], dach.bis[2]], h = [eg.von[0], eg.bis[0], eg.von[2], eg.bis[2]];
-    if (v.neigung === 1) assert.deepEqual(d, h, `${name}: Dach deckt das Haus genau`);
-    else assert.deepEqual(d, [h[0] + 1, h[1] - 1, h[2], h[3]], `${name}: Dach schmaler als das Haus (Befund)`);
+    // Dach deckt das Haus bis zum Rand (deckend), auch bei flacher Neigung 0,8
+    assert.deepEqual([dach.von[0], dach.bis[0], dach.von[2], dach.bis[2]], [eg.von[0], eg.bis[0], eg.von[2], eg.bis[2]], `${name}: Dach deckt das Haus genau`);
   }
 });
 
@@ -130,4 +128,21 @@ test('Haus-Sonde: doppelte Teil-Ids der Spezifikation werden vom Prüfer abgeleh
   const s = hausSpezifikation(VARIANTEN.klein); s.teile[1].id = s.teile[0].id;
   const treffer = e.ebene4.pruefe(s).rueckfragen.filter((q) => /^teile\[\d\]\.id$/.test(q.pfad) && /kommt mehrfach vor; sie muss eindeutig sein/.test(q.frage));
   assert.equal(treffer.length, 2, 'beide Teile mit der doppelten Id werden gemeldet');
+});
+
+test('Haus-Sonde: das Dach ist ein geschlossener Dachraum (Giebelwände aus der Wand-Rolle, auf der Decke des Obergeschosses), von außen nicht erreichbar', async () => {
+  const { e, e5 } = await umgebung();
+  for (const [name, v] of Object.entries(VARIANTEN)) {
+    const r = await laufe(hausSpezifikation(v), e, e5);
+    const fest = feste(r.plan), u = umfang(r.plan), dach = u.find((x) => x.id === 'dach'), og = u.find((x) => x.id === 'obergeschoss');
+    const cx = Math.floor((dach.von[0] + dach.bis[0]) / 2), cz = Math.floor((dach.von[2] + dach.bis[2]) / 2);
+    // Giebel: in der ersten und letzten Schicht ist der Dachraum bis unter die Dachfläche gefüllt (Mitte über dem Boden des Dachraums)
+    for (const z of [dach.von[2], dach.bis[2]]) assert.ok(fest.has(`${cx},${dach.von[1]},${z}`), `${name}: Giebelwand bei z=${z}`);
+    assert.ok(!fest.has(`${cx},${dach.von[1]},${cz}`), `${name}: Dachraum innen frei`);
+    assert.ok(fest.has(`${cx},${og.bis[1]},${cz}`), `${name}: darunter die Decke des Obergeschosses`);
+    assert.deepEqual(luftZugang(r.plan, [cx, dach.von[1], cz]), { startIstLuft: true, vonAussenErreichbar: false }, `${name}: Dachraum dicht`);
+    // das Material der Giebelwand ist das der Wand, nicht das der Dachhaut
+    const ids = new Set(r.plan.abschnitte.find((a) => a.id === 'dach').legende.map((l) => l.id));
+    assert.ok(ids.size >= 2, `${name}: Dach besteht aus Dachhaut und Giebelwand (zwei Materialien)`);
+  }
 });

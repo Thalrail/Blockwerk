@@ -13,6 +13,16 @@
       "status": "simuliert",
       "simulationstest": "test/ebene2/dach.test.js::Dach: Satteldach für alle Breiten",
       "ungeprueft": false
+    },
+    {
+      "id": "dach.haus",
+      "titel": "Dach auf einem Haus: Randspalten bedecken, Giebel schließen",
+      "regel": "Mit `deckend = 1` trägt jede Spalte der Grundfläche mindestens einen Dachblock, auch wo die Dachfläche unter einem halben Block liegt (flache Dächer sonst: Randspalten entfallen nach der Halbblock-Regel); das Dach bedeckt ein Haus gleicher Grundfläche bis zum Rand. Mit `giebel = 1` (Satteldach) sind beide Giebel mit einer 1 Block dicken Wand der Rolle `wand` geschlossen (die Zellen unter der Dachfläche in der ersten und letzten Schicht); das Dach ist dann von außen dicht, wenn es auf einer geschlossenen Decke liegt. Standard bleibt offen und ohne Deckung.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/haus-sonde.md (Haus-Sonde: Dach schmaler als das Haus, Giebel offen)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/dach.test.js::Dach: deckend bedeckt jede Spalte der Grundfläche, Giebel schließt die Enden mit Wand, beides dicht und symmetrisch",
+      "ungeprueft": false
     }
   ]
 }

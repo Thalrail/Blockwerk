@@ -98,13 +98,16 @@ test('Änderungen am Trägerwald über die Fachleute: ungültige Wälder werden 
   assert.equal(f.teile.length, 1);
 });
 
-test('ref-Vergabe: eine ausdrückliche ref blockiert keine spätere automatische Nummer, Ersetzen behält die stabile Kennung', () => {
+test('ref-Vergabe: eine ausdrückliche ref blockiert dieselbe automatische Nummer, id null zählt als fehlend, Ersetzen behält die stabile Kennung', () => {
   let e = grund();
   e = setze(e, { baustein: 'bau.raum', ref: 'T2', parameter: {} }); // id T1, ref T2
   e = setze(e, { baustein: 'bau.wand', parameter: {} });           // würde T2 als id und ref bekommen: kollidiert mit der ausdrücklichen ref
   e = setze(e, { baustein: 'bau.tuer', parameter: {} });
   assert.deepEqual(e.teile.map((t) => [t.id, t.ref]), [['T1', 'T2'], ['T3', 'T3'], ['T4', 'T4']]);
   pruefeForm(e);
+  const n = setze(e, { id: null, baustein: 'bau.fenster', parameter: {} });
+  assert.deepEqual(n.teile.at(-1).id, 'T5');
+  assert.equal(n.teile.at(-1).ref, 'T5');
   // Ersetzen eines vorhandenen Teils ohne ref behält dessen ref
   const f = setze(e, { id: 'T1', baustein: 'bau.raum', parameter: { breite: 3 } });
   assert.equal(f.teile.find((t) => t.id === 'T1').ref, 'T2');

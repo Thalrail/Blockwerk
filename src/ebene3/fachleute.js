@@ -215,7 +215,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (typeof t.baustein !== 'string' || typeof t.abschnitt !== 'string') throw new RechtFehler('ungueltig', 'Teil braucht baustein und abschnitt');
         if (!e.abschnitte.some((a) => a.id === t.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${t.abschnitt} existiert nicht`);
         const art = t.verbindung === true ? 'verbindung' : artVon(t.baustein); // Verbindungen (Gänge, Treppen, Schienen zwischen Abschnitten) legt der Konstrukteur
-        if (t.id === undefined) { // nächste Nummer, die weder als Nummer noch als ausdrückliche ref schon vergeben ist
+        if (t.id == null) { // (fehlend oder null) nächste Nummer, die weder als Nummer noch als ausdrückliche ref schon vergeben ist
           do t.id = `T${e.zaehler.teil++}`; while (e.teile.some((x) => x.id === t.id || x.ref === t.id));
         }
         t.art = art;

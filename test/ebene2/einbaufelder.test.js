@@ -146,3 +146,24 @@ test('bau.wand: Maße, Zone deckt den ganzen Wandkörper, Grenzen, deterministis
   assert.throws(() => e2.baue('bau.wand', { hoehe: 33 }), /außerhalb/);
   assert.throws(() => e2.baue('bau.wand', { laenge: 2.5 }), /ganzzahlig/);
 });
+
+test('bau.wand (Ebene 1): der Prüfer meldet nichts, Spieler, Dorfbewohner und Baby kommen nicht hindurch, am Wandende gehen sie herum', () => {
+  const e1 = e2.ebene1, e0 = e2.ebene0;
+  const welt = (p) => {
+    const w = e0.neueWelt();
+    for (let x = -20; x <= 20; x++) for (let z = -20; z <= 20; z++) w.setzeBlock(x, -1, z, 'minecraft:stone');
+    e2.platziere(w, p, { wand: 'minecraft:stone', akzent: 'minecraft:stone', boden: 'minecraft:stone', licht: 'minecraft:glowstone', glas: 'minecraft:glass' });
+    return w;
+  };
+  for (const par of [{ laenge: 9, hoehe: 3, dicke: 1 }, { laenge: 9, hoehe: 4, dicke: 3 }]) {
+    const w = welt(e2.baue('bau.wand', par));
+    assert.deepEqual(e1.pruefe(w, { schienen: null }).filter((x) => x.schwere === 'verstoss'), [], 'Prüfer');
+    const nord = Math.floor(par.dicke / 2), sued = par.dicke - 1 - nord;
+    for (const art of ['spieler', 'dorfbewohner', 'baby']) {
+      // genau durch die Mitte: die Wand hält
+      assert.equal(e1.bewegung.weg(w, { x: 0, y: 0, z: -nord - 1 }, { x: 0, y: 0, z: sued + 1 }, art, { radius: 3 }).ok, false, `${art}: kein Durchgang (Suchradius zu klein zum Umgehen)`);
+      // weit genug entfernt umgehen sie das Ende der Wand
+      assert.equal(e1.bewegung.weg(w, { x: 0, y: 0, z: -nord - 1 }, { x: 0, y: 0, z: sued + 1 }, art, { radius: 40 }).ok, true, `${art}: geht um das Wandende herum`);
+    }
+  }
+});

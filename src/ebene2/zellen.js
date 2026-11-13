@@ -46,7 +46,7 @@ export function quaderZellen(von, bis) {
 }
 
 /**
- * Zellen (Paketkoordinaten) mit Lage `{x, y, z, drehung}` in die Welt: erst drehen (um den Paket-Nullpunkt), dann verschieben. Genau die Kette von
+ * Zellen (Paketkoordinaten) mit Lage `{x, y, z, drehung}` in die Welt (drehung: beliebige ganze Zahl, der Vermesser rechnet modulo 4): erst drehen (um den Paket-Nullpunkt), dann verschieben. Genau die Kette von
  * `materialisiere` für die Blöcke (Drehung 0–3 und Verschiebung über den Vermesser); die Zellen laufen als Platzhalterblöcke ohne Zustand hindurch.
  * Ergebnis: sortiert nach y, z, x, ohne Doppelte.
  */

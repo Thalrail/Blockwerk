@@ -47,7 +47,7 @@
       "parameter": {},
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/architektur-einbau.md (Einbau-Architektur B + C, Paket P2)",
       "status": "simuliert",
-      "simulationstest": "test/ebene2/einbaufelder.test.js::bau.wand: Maße, Zone deckt den ganzen Wandkörper, Grenzen, deterministisch",
+      "simulationstest": "test/ebene2/einbaufelder.test.js::bau.wand (Ebene 1): der Prüfer meldet nichts, Spieler, Dorfbewohner und Baby kommen nicht hindurch, am Wandende gehen sie herum",
       "ungeprueft": true,
       "testanleitung": "Eine Wand 6 lang, 3 hoch, 1 dick auf den Boden bauen: Stimmen Länge, Höhe und Dicke, ist sie lückenlos? (Die Tür in der Wand folgt mit dem nächsten Paket.)"
     },

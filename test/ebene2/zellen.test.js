@@ -113,8 +113,11 @@ test('Zellen leeren: nur Blöcke werden entfernt, leere Zellen bleiben unberühr
 test('Zellen leeren: Blockzustände und Inhalt gehen in die Rückgabe, Wesen und andere Zellen bleiben unberührt', () => {
   const w = e0.neueWelt();
   e2.platziere(w, e2.baue('bau.treppe', { stufen: 2, breite: 1 }), TESTPALETTE, { x: 0, y: 10, z: 0 });
+  const erwartet = structuredClone(w.leseBlock(0, 10, 0).zustand);
+  assert.ok(Object.keys(erwartet).length > 0, 'die Treppe hat Zustände');
   const entfernt = leereZellen(w, [{ x: 0, y: 10, z: 0 }]);
   assert.equal(entfernt.length, 1);
+  assert.deepEqual(entfernt[0].zustand, erwartet);
   assert.equal(entfernt[0].id, 'minecraft:stone_stairs');
   assert.ok(entfernt[0].zustand && typeof entfernt[0].zustand === 'object');
   assert.ok(!w.istLuft(0, 11, -1), 'die zweite Stufe bleibt');

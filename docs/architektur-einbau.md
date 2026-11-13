@@ -114,9 +114,9 @@ Jedes Paket mit eigenem Auftrag, Tests, Codex-Review; die Haus-Sonde ist der gem
 Empfohlene erste Schritte: **P1 und P2 zusammen als kleinster Anfang** (kein Eingriff in die Planung), dann P3, P4.
 
 ## 9. Offene Entscheidungen für Jonah
-1. **Ebene 0:** unverändert lassen und Zellenlisten über den Vermesser mit Platzhalterblöcken drehen (meine Empfehlung, keine Regelverletzung), oder eine `luft`-Liste im Bauteil als saubere Erweiterung (verstößt gegen „Ebene 0 ändert sich nur bei einem Bedrock-Update“, wenn du nicht ausnahmsweise zustimmst).
+1. **Ebene 0** (*vorläufig so umgesetzt, Bestätigung von Jonah steht aus; jederzeit umkehrbar*): unverändert lassen und Zellenlisten über den Vermesser mit Platzhalterblöcken drehen (meine Empfehlung, keine Regelverletzung), oder eine `luft`-Liste im Bauteil als saubere Erweiterung (verstößt gegen „Ebene 0 ändert sich nur bei einem Bedrock-Update“, wenn du nicht ausnahmsweise zustimmst).
 2. **Kinder erben den Abschnitt** des Trägers (Fortschritt, Bauleiter und Abschnittsreihenfolge bleiben unverändert). Alternative: eigener Abschnitt je Kind mit erlaubter Verschachtelung der Hüllen, das wäre eine Änderung der Konstrukteur-Invariante. Ich empfehle das Erben.
-3. **Ursprung des lokalen Rahmens:** Hüllen-Ecke Nordwest unten (meine Empfehlung) oder der Paket-Nullpunkt (instabil bei Größenänderung).
+3. **Ursprung des lokalen Rahmens** (*vorläufig so umgesetzt, Bestätigung steht aus*): Hüllen-Ecke Nordwest unten (meine Empfehlung) oder der Paket-Nullpunkt (instabil bei Größenänderung).
 4. **Spezifikation:** `innen` und `wand-…` mit `anker` und `versatz` als Beziehungen (der Versatz ist eine relative Blockzahl, keine Weltkoordinate): in Ordnung für „nur WAS“?
 5. **Reihenfolge:** P1 und P2 zuerst?
 

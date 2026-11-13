@@ -1,12 +1,15 @@
 // Ebene 3 – Fachleute: Besitz, Rangfolge, Sperren. Jeder ändert nur seinen eigenen Teil; was ein Höherrangiger festgelegt hat, ist gesperrt.
 // Regeln als Daten: data/regeln/planung.json (plan.rangfolge, plan.besitz). `aendere` liefert immer einen neuen Entwurf.
-import { kopie } from './entwurf.js';
+import { kopie, pruefeTraegerwald } from './entwurf.js';
 import { haengeAn } from './bericht.js';
 
 /** Fehler mit Code: 'fremd' (Feld gehört einem anderen), 'gesperrt' (ein Höherrangiger hat es festgelegt), 'ungueltig'. */
 export class RechtFehler extends Error {
   constructor(code, nachricht) { super(nachricht); this.name = 'RechtFehler'; this.code = code; }
 }
+
+/** Fehlermelder für die Trägerwald-Prüfung bei Änderungen (ein ungültiger Wald ist eine ungültige Änderung). */
+const wald = (m) => { throw new RechtFehler('ungueltig', m); };
 
 /**
  * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
@@ -213,6 +216,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (!e.abschnitte.some((a) => a.id === t.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${t.abschnitt} existiert nicht`);
         const art = t.verbindung === true ? 'verbindung' : artVon(t.baustein); // Verbindungen (Gänge, Treppen, Schienen zwischen Abschnitten) legt der Konstrukteur
         t.id ??= `T${e.zaehler.teil++}`;
+        t.ref ??= t.id; // stabile Kennung (docs/architektur-einbau.md 3.2): ohne Angabe die Nummer
         t.art = art;
         t.parameter ??= {};
         t.lage = { x: 0, y: 0, z: 0, drehung: 0, ...t.lage };
@@ -223,6 +227,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (vorhanden && teilBesitz[vorhanden.art] !== fachmann) throw new RechtFehler('fremd', `${fachmann} darf ${ziel} nicht ändern (gehört dem ${teilBesitz[vorhanden.art]})`);
         t.gesetztVon = fachmann;
         ersetzeOderFuegeEin(e.teile, t);
+        pruefeTraegerwald(e, wald);
         beschreibung = `${t.baustein} bei (${t.lage.x}, ${t.lage.y}, ${t.lage.z}), Drehung ${t.lage.drehung * 90}°, gesetzt`;
         break;
       }
@@ -232,13 +237,16 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         ziel = `teil:${t.id}`;
         pruefeDarf(e, fachmann, ziel, teilBesitz[t.art]);
         const f = aenderung.felder ?? {};
-        for (const k of Object.keys(f)) if (!['parameter', 'lage', 'abschnitt'].includes(k)) throw new RechtFehler('ungueltig', `Feld ${k} eines Teils ist nicht änderbar`);
+        for (const k of Object.keys(f)) if (!['parameter', 'lage', 'abschnitt', 'traeger', 'einbau'].includes(k)) throw new RechtFehler('ungueltig', `Feld ${k} eines Teils ist nicht änderbar`);
         if (f.parameter) t.parameter = { ...t.parameter, ...f.parameter };
         if (f.lage) {
           t.lage = { ...t.lage, ...f.lage };
           if (![t.lage.x, t.lage.y, t.lage.z].every(Number.isInteger) || ![0, 1, 2, 3].includes(t.lage.drehung)) throw new RechtFehler('ungueltig', 'Lage braucht ganze x, y, z und drehung 0–3');
         }
         if (f.abschnitt) { if (!e.abschnitte.some((a) => a.id === f.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${f.abschnitt} existiert nicht`); t.abschnitt = f.abschnitt; }
+        if (f.traeger === null) { delete t.traeger; delete t.einbau; } else if (f.traeger !== undefined) t.traeger = f.traeger;
+        if (f.einbau) t.einbau = { ...t.einbau, ...f.einbau };
+        if (f.traeger !== undefined || f.einbau || f.abschnitt) pruefeTraegerwald(e, wald);
         t.gesetztVon = fachmann;
         beschreibung = `${Object.keys(f).join(' und ')} von ${t.baustein} geändert`;
         break;
@@ -248,6 +256,8 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (i < 0) throw new RechtFehler('ungueltig', `Teil ${String(aenderung.id)} existiert nicht`);
         ziel = `teil:${e.teile[i].id}`;
         pruefeDarf(e, fachmann, ziel, teilBesitz[e.teile[i].art]);
+        const kinder = e.teile.filter((x) => x.traeger !== undefined && x.traeger === e.teile[i].ref).map((x) => x.id);
+        if (kinder.length) throw new RechtFehler('ungueltig', `Teil ${e.teile[i].id} trägt noch ${kinder.join(', ')}: erst die Kinder entfernen oder an einen anderen Träger hängen`);
         beschreibung = `${e.teile[i].baustein} entfernt`;
         e.teile.splice(i, 1);
         break;

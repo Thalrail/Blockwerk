@@ -39,7 +39,7 @@ test('Entwurf: Form, JSON-Rundreise, kanonisch und unveränderlich', () => {
   assert.equal(e.teile[0].lage.x, 3, 'Kopie ist unabhängig');
 
   // Formfehler beim Laden
-  assert.throws(() => entwurfAusJson('{"version": 2}'), /Version/);
+  assert.throws(() => entwurfAusJson('{"version": 99}'), /Version/);
   assert.throws(() => pruefeForm({ ...kopie(e), teile: [{ id: 'T1', baustein: 'x', lage: { x: 0, y: 0, z: 0, drehung: 7 } }] }), /lage ungültig/);
   const doppelt = kopie(e);
   doppelt.teile.push({ ...doppelt.teile[0] });

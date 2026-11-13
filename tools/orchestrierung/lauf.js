@@ -17,8 +17,10 @@ import { pruefeTore, bewerteTore } from './tore.js';
 
 export class LaufFehler extends Error { constructor(m) { super(m); this.name = 'LaufFehler'; } }
 
-/** Verzeichnisse, die im Abdruck des Hauptbaums nicht mitzählen. */
-export const AUSSER = Object.freeze(['.claude/worktrees', '.claude/orchestrierung']);
+/** Pfade, die im Abdruck des Hauptbaums nicht mitzählen: zwei Verzeichnisse des Werkzeugs selbst und genau eine Datei. */
+// Die Datei (kein Muster): die kurzlebige Sperrdatei der Planer-Funktion von Claude Code. Herkunft und Semantik sind nicht offiziell bestätigt,
+// das Restrisiko hat Jonah am 12.11.2026 bewusst akzeptiert (`docs/orchestrierung.md`); `scheduled_tasks.json` und `settings.json` bleiben überwacht.
+export const AUSSER = Object.freeze(['.claude/worktrees', '.claude/orchestrierung', '.claude/scheduled_tasks.lock']);
 export const MAX_SCHLEIFEN = 3;
 
 const vor = (p) => p.replace(/\\/g, '/');

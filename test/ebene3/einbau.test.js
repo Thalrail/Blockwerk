@@ -98,6 +98,22 @@ test('Änderungen am Trägerwald über die Fachleute: ungültige Wälder werden 
   assert.equal(f.teile.length, 1);
 });
 
+test('ref-Vergabe: eine ausdrückliche ref blockiert keine spätere automatische Nummer, Ersetzen behält die stabile Kennung', () => {
+  let e = grund();
+  e = setze(e, { baustein: 'bau.raum', ref: 'T2', parameter: {} }); // id T1, ref T2
+  e = setze(e, { baustein: 'bau.wand', parameter: {} });           // würde T2 als id und ref bekommen: kollidiert mit der ausdrücklichen ref
+  e = setze(e, { baustein: 'bau.tuer', parameter: {} });
+  assert.deepEqual(e.teile.map((t) => [t.id, t.ref]), [['T1', 'T2'], ['T3', 'T3'], ['T4', 'T4']]);
+  pruefeForm(e);
+  // Ersetzen eines vorhandenen Teils ohne ref behält dessen ref
+  const f = setze(e, { id: 'T1', baustein: 'bau.raum', parameter: { breite: 3 } });
+  assert.equal(f.teile.find((t) => t.id === 'T1').ref, 'T2');
+  const g = setze(setze(grund(), { baustein: 'bau.raum', ref: 'haus', parameter: {} }), { baustein: 'bau.wand', ref: 'w', parameter: {}, traeger: 'haus', einbau: EI('innenraum', 'nw') });
+  const h = setze(g, { id: 'T1', baustein: 'bau.raum', parameter: { breite: 8 } });
+  assert.equal(h.teile.find((t) => t.id === 'T1').ref, 'haus', 'das Kind verliert seinen Träger nicht');
+  pruefeForm(h);
+});
+
 /** Erwartete Weltzellen des Kinds: Kind-Blöcke im Träger-Paket (gedreht, Ecke an den Zonenpunkt) und dann mit der Träger-Lage in die Welt. */
 function erwarteteWeltzellen(tPaket, kPaket, einbau, tLage) {
   const zone = tPaket.einbauzonen.find((z) => z.id === einbau.zone);

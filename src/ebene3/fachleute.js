@@ -215,14 +215,16 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (typeof t.baustein !== 'string' || typeof t.abschnitt !== 'string') throw new RechtFehler('ungueltig', 'Teil braucht baustein und abschnitt');
         if (!e.abschnitte.some((a) => a.id === t.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${t.abschnitt} existiert nicht`);
         const art = t.verbindung === true ? 'verbindung' : artVon(t.baustein); // Verbindungen (Gänge, Treppen, Schienen zwischen Abschnitten) legt der Konstrukteur
-        t.id ??= `T${e.zaehler.teil++}`;
-        t.ref ??= t.id; // stabile Kennung (docs/architektur-einbau.md 3.2): ohne Angabe die Nummer
+        if (t.id === undefined) { // nächste Nummer, die weder als Nummer noch als ausdrückliche ref schon vergeben ist
+          do t.id = `T${e.zaehler.teil++}`; while (e.teile.some((x) => x.id === t.id || x.ref === t.id));
+        }
         t.art = art;
         t.parameter ??= {};
         t.lage = { x: 0, y: 0, z: 0, drehung: 0, ...t.lage };
         if (![t.lage.x, t.lage.y, t.lage.z].every(Number.isInteger) || ![0, 1, 2, 3].includes(t.lage.drehung)) throw new RechtFehler('ungueltig', 'Lage braucht ganze x, y, z und drehung 0–3');
         ziel = `teil:${t.id}`;
         const vorhanden = e.teile.find((x) => x.id === t.id);
+        t.ref ??= vorhanden?.ref ?? t.id; // stabile Kennung (docs/architektur-einbau.md 3.2): beim Ersetzen die bisherige, sonst die Nummer
         pruefeDarf(e, fachmann, ziel, teilBesitz[art]);
         if (vorhanden && teilBesitz[vorhanden.art] !== fachmann) throw new RechtFehler('fremd', `${fachmann} darf ${ziel} nicht ändern (gehört dem ${teilBesitz[vorhanden.art]})`);
         t.gesetztVon = fachmann;

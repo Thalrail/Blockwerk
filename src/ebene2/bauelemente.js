@@ -187,7 +187,7 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
       const ox = Math.floor(breite / 2);
       const bloecke = [];
       for (let s = 0; s < stufen; s++) for (let i = 0; i < breite; i++) bloecke.push({ x: i - ox, y: s * stufenhoehe, z: -s, rolle: 'boden', form: 'treppe', richtung: 'north' });
-      // Aussparungen: je Stufe der eigene Block (oeffnung, falls der Träger dort Decke hat) und die Kopffreiheit darüber (freihaltung, 2 Blöcke, auch über der obersten Stufe)
+      // Aussparungen: je Stufe der eigene Block (oeffnung, falls der Träger dort Decke hat) und die Kopffreiheit darüber (freihaltung, 3 Blöcke: 2 zum Stehen, 1 für den Aufstieg, auch über der obersten Stufe)
       const von = { x: -ox }, bis = { x: breite - 1 - ox };
       const aussparungen = [];
       for (let s = 0; s < stufen; s++) {

@@ -18,19 +18,19 @@ export const VARIANTEN = {
 };
 
 /**
- * Die natürliche Beschreibung eines Wohnhauses mit den vorhandenen Begriffen: je Geschoss ein Hohlkasten (`bau.gang`: Boden, zwei Seitenwände, Decke;
- * die lichte Breite ist die Innenbreite, die Wandstärke kommt je Seite dazu), darauf das Satteldach. `mit` schaltet die Teile zu, die ein Wohnhaus
- * zusätzlich bräuchte: Tür, Fenster, Treppe im Haus. Alle Maße kommen aus der Variante.
+ * Die natürliche Beschreibung eines Wohnhauses mit den vorhandenen Begriffen: je Geschoss ein geschlossener Raum (`bau.raum`, seit dem ersten Paket nach der
+ * Haus-Sonde; vorher ein offener `bau.gang`), darauf das Satteldach. Das Obergeschoss hat keinen eigenen Boden, es steht auf der Decke des Erdgeschosses.
+ * `mit` schaltet zu: `tuer` und `fenster` (Parameter des Raums im Erdgeschoss), `tuerTeil` (Tür als eigenes Teil `bau.tuer`), `treppe` (Treppe im Haus, `innen`).
+ * Alle Maße kommen aus der Variante, nichts ist fest codiert.
  */
 export function hausSpezifikation({ breite, tiefe, geschoss, neigung }, mit = {}) {
-  const geschossForm = { baustein: 'bau.gang', groesse: { laenge: tiefe, breite: breite - 2, hoehe: geschoss, wandstaerke: 1 } };
+  const raum = (zusatz) => ({ baustein: 'bau.raum', groesse: { breite: breite - 2, tiefe: tiefe - 2, hoehe: geschoss, wandstaerke: 1, ...zusatz } });
   const teile = [
-    { id: 'erdgeschoss', name: 'Erdgeschoss', art: 'halle', wichtigkeit: 'muss', form: geschossForm, lage: { bezug: 'projekt', relation: 'mitte' }, stil: { stimmung: 'hell-nordisch' } },
-    { id: 'obergeschoss', name: 'Obergeschoss', art: 'halle', wichtigkeit: 'muss', form: geschossForm, lage: { bezug: 'erdgeschoss', relation: 'ueber' } },
+    { id: 'erdgeschoss', name: 'Erdgeschoss', art: 'halle', wichtigkeit: 'muss', form: raum({ ...(mit.tuer ? { tuer: 1, tuerwand: 3 } : {}), ...(mit.fenster ? { fenster: 1, fensterbreite: 2, fensterhoehe: 2, bruestung: 1 } : {}) }), lage: { bezug: 'projekt', relation: 'mitte' }, stil: { stimmung: 'hell-nordisch' } },
+    { id: 'obergeschoss', name: 'Obergeschoss', art: 'halle', wichtigkeit: 'muss', form: raum({ boden: 0, ...(mit.fenster ? { fenster: 1, fensterbreite: 2, fensterhoehe: 2, bruestung: 1 } : {}) }), lage: { bezug: 'erdgeschoss', relation: 'ueber' } },
     { id: 'dach', name: 'Dach', art: 'halle', wichtigkeit: 'muss', form: { baustein: 'form.satteldach', groesse: { breite, laenge: tiefe, neigung } }, lage: { bezug: 'obergeschoss', relation: 'ueber' } },
   ];
-  if (mit.tuer) teile.push({ id: 'haustuer', name: 'Haustür', art: 'tor', wichtigkeit: 'soll', form: { baustein: 'bau.tuer', groesse: { fluegel: 1 } }, lage: { bezug: 'erdgeschoss', relation: 'neben-sueden' } });
-  if (mit.fenster) teile.push({ id: 'fenster', name: 'Fenster', art: 'tor', wichtigkeit: 'kann', form: { baustein: 'bau.fenster', groesse: { breite: 3, hoehe: 2 } }, lage: { bezug: 'erdgeschoss', relation: 'neben-osten' } });
+  if (mit.tuerTeil) teile.push({ id: 'haustuer', name: 'Haustür', art: 'tor', wichtigkeit: 'soll', form: { baustein: 'bau.tuer', groesse: { fluegel: 1 } }, lage: { bezug: 'erdgeschoss', relation: 'neben-sueden' } });
   if (mit.treppe) teile.push({ id: 'treppe', name: 'Treppe', art: 'anlage', wichtigkeit: 'muss', form: { baustein: 'bau.treppe', groesse: { stufen: geschoss + 1, breite: 2 } }, lage: { bezug: 'erdgeschoss', relation: 'innen' } });
   const rand = 30; // großzügiger Bauplatz, damit nicht der Platz die Antwort bestimmt
   return { schema: 1, version: 1, projekt: { name: `Wohnhaus ${breite}×${tiefe}`, bauplatz: { breite: breite + rand, hoehe: 2 * (geschoss + 2) + breite, tiefe: tiefe + rand }, massstab: 1 }, teile };
@@ -81,9 +81,9 @@ export async function laufe(spec, e, e5) {
   return { ...aus, entwurf: r.entwurf, plan };
 }
 
-/** Innenpunkt des Erdgeschosses: Mitte des Hohlkastens, eine Schicht über dem Boden. */
-export function innenpunkt(entwurf) {
-  const t = entwurf.teile.find((x) => x.baustein === 'bau.gang');
+/** Innenpunkt eines Geschosses (Standard Erdgeschoss): Ursprung des Raums (Gehhöhe, Mitte der Grundfläche). */
+export function innenpunkt(entwurf, abschnitt = 'erdgeschoss') {
+  const t = entwurf.teile.find((x) => x.abschnitt === abschnitt && (x.baustein === 'bau.raum' || x.baustein === 'bau.gang'));
   return t ? [t.lage.x, t.lage.y, t.lage.z] : null;
 }
 
@@ -108,7 +108,7 @@ export async function fragen(e, e5) {
   const kurz = (q) => ({ status: q.status, rueckfragen: [...(q.rueckfragenPruefer ?? []), ...(q.rueckfragenBau ?? [])].map((x) => x.slice(0, 150)), bloecke: q.bloecke });
   aus.tuerAbstand = {};
   for (const ab of [undefined, 0, 1]) {
-    const s = hausSpezifikation(VARIANTEN.klein, { tuer: true });
+    const s = hausSpezifikation(VARIANTEN.klein, { tuerTeil: true });
     if (ab !== undefined) s.teile.find((x) => x.id === 'haustuer').lage.abstand = ab;
     const q = await laufe(s, e, e5);
     aus.tuerAbstand[ab ?? 'Standard'] = { ...kurz(q), umfang: q.plan ? umfang(q.plan).map((u) => `${u.id} ${u.von}..${u.bis}`).filter((x) => /haustuer|erdgeschoss/.test(x)) : null };
@@ -120,7 +120,7 @@ export async function fragen(e, e5) {
   const abdruecke = (p) => JSON.stringify(p.abschnitte.map((x) => x.schichten.map((s) => s.abdruck)));
   aus.masseAendern = { status: u.status, geaendert: u.geaendert, dauerMs: dauer, gleichWieFrischerLauf: u.entwurf ? abdruecke(e5.bauplan(u.entwurf)) === abdruecke(frisch.plan) : null };
   aus.grenzen = {};
-  for (const [n, v] of [['breite 34 (Maximum)', { breite: 34, tiefe: 9, geschoss: 3, neigung: 1 }], ['breite 35', { breite: 35, tiefe: 9, geschoss: 3, neigung: 1 }], ['Geschoss 1', { breite: 9, tiefe: 7, geschoss: 1, neigung: 1 }], ['3 × 3', { breite: 3, tiefe: 3, geschoss: 3, neigung: 1 }], ['34 × 60', { breite: 34, tiefe: 60, geschoss: 3, neigung: 1 }]]) aus.grenzen[n] = kurz(await laufe(hausSpezifikation(v), e, e5));
+  for (const [n, v] of [['breite 66 (Maximum)', { breite: 66, tiefe: 9, geschoss: 3, neigung: 1 }], ['breite 67', { breite: 67, tiefe: 9, geschoss: 3, neigung: 1 }], ['Geschoss 1', { breite: 9, tiefe: 7, geschoss: 1, neigung: 1 }], ['3 × 3', { breite: 3, tiefe: 3, geschoss: 3, neigung: 1 }], ['64 × 60', { breite: 64, tiefe: 60, geschoss: 3, neigung: 1 }]]) aus.grenzen[n] = kurz(await laufe(hausSpezifikation(v), e, e5));
   const stil = async (stil) => { const s = hausSpezifikation(VARIANTEN.klein); s.teile[2].stil = stil; return (await laufe(s, e, e5)).material; };
   aus.stil = { dachDunkel: await stil({ stimmung: 'dunkel-industriell' }), dachDunkelMitFarbwunsch: await stil({ stimmung: 'dunkel-industriell', farben: ['rot'] }), dachGlanz: await stil({ stimmung: 'glanz' }) };
   return aus;
@@ -130,7 +130,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { e, e5 } = await engine();
   const ausgabe = { varianten: {} };
   for (const [name, v] of Object.entries(VARIANTEN)) {
-    for (const [stufe, mit] of [['huelle', {}], ['mit-allem', { tuer: true, fenster: true, treppe: true }]]) {
+    for (const [stufe, mit] of [['huelle', {}], ['tuer-fenster', { tuer: true, fenster: true }], ['mit-treppe', { tuer: true, fenster: true, treppe: true }]]) {
       const { entwurf, plan, ...rest } = await laufe(hausSpezifikation(v, mit), e, e5);
       if (entwurf) { const p = innenpunkt(entwurf); rest.umfang = umfang(plan).map((u) => `${u.id} ${u.von}..${u.bis}`); rest.luftZugang = luftZugang(plan, p); }
       ausgabe.varianten[`${name}/${stufe}`] = rest;

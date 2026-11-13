@@ -1,6 +1,6 @@
-// Haus-Sonde (13.11.2026, `docs/haus-sonde.md`): hält fest, was Blockwerk heute mit den vorhandenen Bausteinen für ein zweigeschossiges Wohnhaus kann und was nicht.
-// Die Befund-Tests beschreiben den Ist-Zustand („Stirnwände fehlen“); sie sind absichtlich so formuliert, dass sie rot werden, sobald das erste Implementierungspaket
-// (Raum-Baustein, Öffnungen, `innen`) sie überholt, und dann mit dem Bericht zusammen angepasst werden.
+// Haus-Sonde (13.11.2026, `docs/haus-sonde.md`): hält fest, was Blockwerk mit den vorhandenen Bausteinen für ein zweigeschossiges Wohnhaus kann und was nicht.
+// Stand nach dem ersten Paket (`bau.raum` mit Tür und Fenstern): Die Geschosse sind geschlossene Räume. Die Befund-Tests für das, was weiter fehlt (`innen`, Bauelemente
+// als eigene Teile, Teil-Nummern, Farbwunsch), beschreiben den Ist-Zustand und werden rot, sobald das jeweilige Paket sie überholt.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { engine, holeJson } from './hilfe5.js';
@@ -22,6 +22,7 @@ test('Haus-Sonde: Hülle aus Geschossen und Satteldach plant für drei Größen 
     const u = umfang(r.plan), eg = u.find((x) => x.id === 'erdgeschoss'), og = u.find((x) => x.id === 'obergeschoss'), dach = u.find((x) => x.id === 'dach');
     assert.deepEqual([eg.bis[0] - eg.von[0] + 1, eg.bis[2] - eg.von[2] + 1], [v.breite, v.tiefe], `${name}: Außenmaß des Erdgeschosses`);
     assert.equal(eg.bis[1] - eg.von[1] + 1, v.geschoss + 2, `${name}: lichte Höhe plus Boden und Decke`);
+    assert.equal(og.bis[1] - og.von[1] + 1, v.geschoss + 1, `${name}: Obergeschoss ohne eigenen Boden, es steht auf der Decke des Erdgeschosses`);
     assert.equal(og.von[1], eg.bis[1] + 1, `${name}: Obergeschoss steht unmittelbar auf dem Erdgeschoss`);
     assert.equal(dach.von[1], og.bis[1] + 1, `${name}: Dach steht unmittelbar auf dem Obergeschoss`);
     // Dach nie breiter als das Haus (kein Überstand möglich); bei Neigung 1 deckt es das Haus genau, bei 0,8 (groß) fehlt je Seite die unterste Reihe (Befund)
@@ -42,54 +43,63 @@ test('Haus-Sonde: ändert sich ein Maß, entsteht über die neue Version derselb
   assert.deepEqual(abd(e5.bauplan(u.entwurf)), abd(frisch.plan));
 });
 
-test('Haus-Sonde: Grenzen kommen aus den Bausteinbereichen und werden als Rückfrage gemeldet (Gang: lichte Breite 1 bis 32, lichte Höhe 2 bis 32)', async () => {
+test('Haus-Sonde: Grenzen kommen aus den Bausteinbereichen und werden als Rückfrage gemeldet (Raum: lichte Breite 1 bis 64, lichte Höhe 2 bis 32)', async () => {
   const { e, e5 } = await umgebung();
-  assert.equal((await laufe(hausSpezifikation({ breite: 34, tiefe: 9, geschoss: 3, neigung: 1 }), e, e5)).status, 'fertig');
-  const zuBreit = await laufe(hausSpezifikation({ breite: 35, tiefe: 9, geschoss: 3, neigung: 1 }), e, e5);
+  assert.equal((await laufe(hausSpezifikation({ breite: 66, tiefe: 9, geschoss: 3, neigung: 1 }), e, e5)).status, 'fertig');
+  const zuBreit = await laufe(hausSpezifikation({ breite: 67, tiefe: 9, geschoss: 3, neigung: 1 }), e, e5);
   assert.equal(zuBreit.status, 'rueckfragen-vor-freigabe');
-  assert.match(zuBreit.rueckfragenPruefer[0], /teile\[0\]\.form\.groesse\.breite.*1 bis 32/);
+  assert.match(zuBreit.rueckfragenPruefer[0], /teile\[0\]\.form\.groesse\.breite.*1 bis 64/);
   const zuNiedrig = await laufe(hausSpezifikation({ breite: 9, tiefe: 7, geschoss: 1, neigung: 1 }), e, e5);
   assert.match(zuNiedrig.rueckfragenPruefer[0], /hoehe.*2 bis 32/);
 });
 
-test('Haus-Sonde (Befund): Tür, Fenster und Treppe lassen sich nicht in das Haus setzen; die Planung fragt statt zu raten', async () => {
+test('Haus-Sonde: Tür und Fenster gehören zum Raum und die Planung läuft durch; nur die Treppe im Haus (`innen`) bleibt eine Rückfrage (Befund)', async () => {
   const { e, e5 } = await umgebung();
+  for (const [name, v] of Object.entries(VARIANTEN)) {
+    const r = await laufe(hausSpezifikation(v, { tuer: true, fenster: true }), e, e5);
+    assert.equal(r.status, 'fertig', `${name}: ${JSON.stringify(r.rueckfragenBau)}`);
+    assert.deepEqual(r.einwaende, [], name);
+    const ids = r.plan.abschnitte.flatMap((a) => a.legende.map((l) => l.id));
+    assert.ok(ids.some((i) => /_door$/.test(i)), `${name}: Tür im Plan`);
+    assert.ok(ids.some((i) => /pane/.test(i)), `${name}: Fensterscheiben im Plan`);
+  }
   const r = await laufe(hausSpezifikation(VARIANTEN.klein, { tuer: true, fenster: true, treppe: true }), e, e5);
   assert.equal(r.status, 'rueckfragen');
-  assert.equal(r.rueckfragenBau.length, 3, JSON.stringify(r.rueckfragenBau));
-  const nach = (name) => r.rueckfragenBau.filter((q) => q.includes(name));
-  assert.equal(nach('Fenster braucht mit Rand und Technik').length, 1, 'Fenster: Rand und Technikstreifen sprengen den Bauplatz');
-  assert.equal(nach('Haustür braucht mit Rand und Technik').length, 1, 'Haustür: Rand und Technikstreifen sprengen den Bauplatz');
-  assert.equal(nach('Treppe: „innen“ lässt sich').length, 1, 'Treppe: innen fehlt');
+  assert.equal(r.rueckfragenBau.length, 1, JSON.stringify(r.rueckfragenBau));
+  assert.match(r.rueckfragenBau[0], /Treppe: „innen“ lässt sich .* nicht übersetzen/, 'Treppe: innen fehlt');
 });
 
-test('Haus-Sonde (Befund): eine Tür steht frühestens 8 Blöcke von der Wand entfernt (Hüllenrand), nie in einer Wandöffnung', async () => {
+test('Haus-Sonde (Befund): ein Bauelement als eigenes Teil steht frühestens 8 Blöcke von der Wand entfernt (Hüllenrand), nie bündig', async () => {
   const { e, e5 } = await umgebung();
-  const s = hausSpezifikation(VARIANTEN.klein, { tuer: true });
+  const s = hausSpezifikation(VARIANTEN.klein, { tuerTeil: true });
   s.teile.find((t) => t.id === 'haustuer').lage.abstand = 0;
   const r = await laufe(s, e, e5);
   assert.equal(r.status, 'fertig');
   const u = umfang(r.plan), haus = u.find((x) => x.id === 'erdgeschoss'), tuer = u.find((x) => x.id === 'haustuer');
   assert.equal(tuer.von[2] - haus.bis[2] - 1, 8, 'freie Blöcke zwischen Hauswand und Tür bei Abstand 0');
+  const ohne = await laufe(hausSpezifikation(VARIANTEN.klein, { tuerTeil: true }), e, e5);
+  assert.equal(ohne.status, 'rueckfragen', 'mit dem Standardabstand passt das Teil nicht auf den Bauplatz');
 });
 
-test('Haus-Sonde (Befund): der Hohlkasten hat Boden, Decke und zwei Seitenwände, aber keine Stirnwände; der Innenraum ist von außen über Luft erreichbar', async () => {
+test('Haus-Sonde: Erdgeschoss und Obergeschoss sind ringsum geschlossen (vier Wände, Decke, unten Boden bzw. die Decke darunter), der Innenraum ist von außen nicht erreichbar', async () => {
   const { e, e5 } = await umgebung();
-  for (const [name, v] of Object.entries(VARIANTEN)) {
-    const r = await laufe(hausSpezifikation(v), e, e5);
-    const fest = feste(r.plan), eg = umfang(r.plan).find((x) => x.id === 'erdgeschoss');
-    const [x0, y0, z0] = eg.von, [x1, y1, z1] = eg.bis;
-    const innenX = Array.from({ length: x1 - x0 - 1 }, (_, i) => x0 + 1 + i), innenY = Array.from({ length: y1 - y0 - 1 }, (_, i) => y0 + 1 + i);
-    for (const x of innenX) for (const y of innenY) {
-      assert.ok(!fest.has(`${x},${y},${z0}`) && !fest.has(`${x},${y},${z1}`), `${name}: Stirnseite offen bei x=${x}, y=${y}`);
+  for (const [name, v] of Object.entries(VARIANTEN)) for (const mit of [{}, { tuer: true, fenster: true }]) {
+    const r = await laufe(hausSpezifikation(v, mit), e, e5);
+    const fest = feste(r.plan), u = umfang(r.plan);
+    for (const geschoss of ['erdgeschoss', 'obergeschoss']) {
+      const g = u.find((x) => x.id === geschoss), n = `${name} ${geschoss}`;
+      const [x0, y0, z0] = g.von, [x1, y1, z1] = g.bis;
+      for (let x = x0; x <= x1; x++) for (let z = z0; z <= z1; z++) {
+        const rand = x === x0 || x === x1 || z === z0 || z === z1;
+        assert.ok(fest.has(`${x},${y1},${z}`), `${n}: Decke bei ${x},${y1},${z}`);
+        if (geschoss === 'erdgeschoss') assert.ok(fest.has(`${x},${y0},${z}`), `${n}: Boden bei ${x},${y0},${z}`);
+        else assert.ok(fest.has(`${x},${y0 - 1},${z}`), `${n}: darunter die Decke des Erdgeschosses bei ${x},${y0 - 1},${z}`);
+        if (rand) for (let y = y0; y <= y1; y++) assert.ok(fest.has(`${x},${y},${z}`), `${n}: Wand bei ${x},${y},${z}`);
+      }
+      const start = innenpunkt(r.entwurf, geschoss);
+      assert.ok(start.every((w, i) => w > g.von[i] - (geschoss === 'obergeschoss' && i === 1 ? 1 : 0) && w < g.bis[i]), `${n}: Startpunkt ${start} liegt nicht im Innenraum`);
+      assert.deepEqual(luftZugang(r.plan, start), { startIstLuft: true, vonAussenErreichbar: false }, n);
     }
-    for (let z = z0; z <= z1; z++) {
-      for (const y of innenY) assert.ok(fest.has(`${x0},${y},${z}`) && fest.has(`${x1},${y},${z}`), `${name}: Seitenwand bei z=${z}, y=${y}`);
-      for (const x of innenX) assert.ok(fest.has(`${x},${y0},${z}`) && fest.has(`${x},${y1},${z}`), `${name}: Boden und Decke bei x=${x}, z=${z}`);
-    }
-    const start = innenpunkt(r.entwurf);
-    assert.ok(start.every((w, i) => w > eg.von[i] && w < eg.bis[i]), `${name}: Startpunkt ${start} liegt nicht im Innenraum des Erdgeschosses`);
-    assert.deepEqual(luftZugang(r.plan, start), { startIstLuft: true, vonAussenErreichbar: true }, name);
   }
 });
 

@@ -28,6 +28,19 @@
       "ungeprueft": false
     },
     {
+      "id": "bau.raum",
+      "titel": "Raum: geschlossener Hohlquader mit Boden, Decke, Tür und Fenstern",
+      "regel": "Ein Raum ist ein Hohlquader aus lichter Breite, Tiefe und Höhe (Höhe mindestens 2) mit einstellbarer Wandstärke; Boden und Decke lassen sich einzeln weglassen. Er ist ringsum dicht. Eine Tür (1 oder 2 Flügel, 2 Blöcke hoch) sitzt mittig in einer wählbaren Wand (bei ungerader Restbreite einen Block näher am Wandanfang, die Mitte weicht höchstens einen halben Block ab), die Fenster verteilen sich gleichmäßig in allen übrigen Wänden (zwischen den Fenstern und am Rand bleibt mindestens 1 Block Wand, die Unterkante liegt mindestens 1 Block über dem Boden). Tür und Scheiben stehen in der äußersten Wandschicht, die Laibung bleibt frei. Passt eine Tür oder ein Fenster nicht in die Wand, meldet der Baustein einen Fehler statt zu raten. Die Tür schaut nach außen, die Ausrichtung folgt `bau.tuer` (die Flügel einer Doppeltür liegen wie bei `bau.tuer` um 90° je Wand gedreht, Scharniere außen).",
+      "parameter": {
+        "mindesthoehe": 2
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/haus-sonde.md (Haus-Sonde; Ebene 2: Bauelemente, Menschenmaß bleibt fest)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene2/raum.test.js::Raum: Spieler, Dorfbewohner und Baby gehen durch die Tür hinein, ohne Tür hält jede Wand, die Eisentür hält Dorfbewohner (Ebene 1)",
+      "ungeprueft": true,
+      "testanleitung": "Einen Raum mit Tür (Süd) und je einem Fenster in den anderen Wänden bauen (Raum 5 × 5, Höhe 3): Ist er ringsum dicht (keine Lücke, nichts spawnt innen bei Licht), geht man durch die Tür hinein, sitzen Tür und Scheiben in der äußersten Wandschicht, schaut die Tür nach außen? Danach dasselbe mit Wandstärke 2 (Laibung innen frei) und einer Doppeltür."
+    },
+    {
       "id": "bau.tuer",
       "titel": "Tür 2 Blöcke hoch",
       "regel": "Eine Tür ist 2 Blöcke hoch (unten und oben) und 1 Block breit je Flügel; Doppeltüren haben die Scharniere außen.",

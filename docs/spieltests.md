@@ -172,6 +172,13 @@ Kreativwelt. Gebaut wird nach den Plänen der Seite; geprüft wird nur die Lage 
 2. **Doppeltür:** zwei Türen nebeneinander, Scharniere außen: öffnen sie beide nach außen?
 3. **Treppe:** Aufstieg nach Norden, 4 Stufen: geht es nach Norden hoch? Eine Wendeltreppe mit Radius 1 (8 Stufen je Umdrehung) im Uhrzeigersinn: stimmt die Laufrichtung?
 
+## Raum mit Tür und Fenstern: Tests (Ebene 2, `bau.raum`, ungeprüft)
+1. **Dicht:** Raum 5 × 5, Höhe 3, Tür nach Süden, ein Fenster je übrige Wand. Ist er ringsum geschlossen (Fackel innen, nachts nichts, was von draußen hereinkommt außer durch die Tür)?
+2. **Tür:** Geht man hinein, und schaut die Tür nach außen (Scharnier und Türplatte wie bei `bau.tuer`)? Auch bei den anderen drei Wänden und als Doppeltür (Raum mindestens 2 breit).
+3. **Wandstärke 2:** Tür und Scheiben sitzen in der **äußersten** Schicht, innen ist die Laibung frei (kein Block hinter der Tür). Ist das so gewollt oder besser innen?
+4. **Fenster:** Sitzen die Scheiben im Rahmen der Wand (Unterkante 1 über dem Boden), verbinden sich die Scheiben mit den Wänden? Gleichmäßig verteilt, mit mindestens 1 Block Wand dazwischen?
+5. **Obergeschoss:** Zweiter Raum mit `boden = 0` direkt auf die Decke des ersten setzen: Steht man im Obergeschoss auf der Decke des Erdgeschosses, ohne Spalt?
+
 ## Bahn-Module: Sichttest (Ebene 2)
 Die Abstände stammen aus deinen Messungen (`lore.*`, geprüft). Zum Anschauen: eine Antriebsstrecke mit 4 Abschnitten à 4 normalen Schienen und einer Antriebsschiene mit Redstone-Block darunter nach Norden bauen und eine Lore starten; ebenso eine Rampe 3 Blöcke hoch und eine Kurve mit 3 Schienen je Schenkel. Fährt die Lore durch?
 

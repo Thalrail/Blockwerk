@@ -1,5 +1,7 @@
 # Haus-Sonde: Kann Blockwerk heute ein zweigeschossiges Wohnhaus beschreiben und planen?
 
+> **Stand nach dem ersten Paket (13.11.2026): `bau.raum` mit Tür und Fenstern ist umgesetzt** (Ebene 2, `src/ebene2/bauelemente.js`, Tests `test/ebene2/raum.test.js`, Regel `bau.raum`, Status `simuliert`, Annahmen `ungeprüft`, Spieltest-Anleitung in `docs/spieltests.md`). Die Sonde baut die Geschosse jetzt als Räume: Das Haus ist ringsum dicht, Tür und Fenster sitzen in der Wand (Zugang von außen: nein, Test an Koordinaten und per Flutfüllung, drei Größen). Offen bleiben: Treppe im Haus (`innen`), Bauelemente als eigene Teile ohne 8 Blöcke Abstand, bündiges Dach mit geschlossenem Giebel, Farbwünsche, stabile Teil-Kennungen. Der Rest dieses Berichts beschreibt den **Ausgangsbefund vor dem Paket** (mit `bau.gang` als Geschoss) und bleibt als Begründung stehen.
+
 Stand 13.11.2026, im Auftrag von Jonah (erstes Arbeitspaket von Phase 1, `docs/roadmap.md`). Es wurde **nichts an der Engine geändert**: die Sonde (`tools/haus-sonde.js`) nutzt nur öffentliche Schnittstellen (`ebene4.pruefe/freigeben/baue/aktualisiereBau`, `ebene5.bauplan`). Die Freigabe ist technisch (kein Mensch hat sie gegeben). Die Befunde sind als Tests in `test/ebene5/haus-sonde.test.js` festgehalten.
 
 Reproduzieren: `node tools/haus-sonde.js` (JSON mit allen Ergebnissen, einige Sekunden), Tests: `node --test test/ebene5/haus-sonde.test.js`.

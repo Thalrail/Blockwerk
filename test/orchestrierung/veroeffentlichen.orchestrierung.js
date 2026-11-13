@@ -9,6 +9,7 @@ import { git } from '../../tools/orchestrierung/git.js';
 import * as lauf from '../../tools/orchestrierung/lauf.js';
 import * as v from '../../tools/orchestrierung/veroeffentlichen.js';
 import { fuehreAus } from '../../tools/orchestrierung/cli.js';
+import { geschuetzterPfad } from '../../tools/orchestrierung/abschluss.js';
 import { neuerName, WURZEL, w } from './hilfe.js';
 
 const GUT = { review_mode: 'single', failover_occurred: false, provider: 'codex', verdict: 'approve', session_id: 's-gut', models: [{ provider: 'codex' }] };
@@ -375,6 +376,16 @@ test('Quelltext der Veröffentlichung: nur Push mit ausdrücklichem Refspec auf 
   assert.ok(!/gh\(w, umgebung, \[(?!'pr')/.test(ohneKommentare), 'gh nur mit pr');
   const abschluss = fs.readFileSync(path.resolve(import.meta.dirname, '../../tools/orchestrierung/abschluss.js'), 'utf8');
   assert.ok(!/'ready'/.test(abschluss), 'der Abschluss bleibt bei Draft-PRs ohne ready');
+});
+
+test('Schutzliste: Schreibweisen, Windows-Kurznamen, Unicode-Gleichwertigkeit und unsichtbare Zeichen treffen geschützte Pfade; gewöhnliche Pfade (auch mit Umlauten) nicht', () => {
+  for (const p of ['.claude/settings.json', '.Claude/x', '.GITHUB/workflows/a.yml', 'Tools/Orchestrierung/lauf.js', '.GitIgnore', 'TOOLS~1/x.js', 'src/PROGRA~1/x.js', 'src/datei.', 'src/datei ', 'src/a:b', 'src/ds:strom',
+    '.cla​ude/x', '.‍github/x', 'tools/orche⁠strierung/x', '．claude/x', 'tools／orchestrierung/x'.replace('／', '/'), 'src/‮evil.js', 'src/a\u0000b']) {
+    assert.ok(geschuetzterPfad(p), `muss geschützt sein: ${JSON.stringify(p)}`);
+  }
+  for (const p of ['src/a.js', 'docs/stand.md', 'docs/Übersicht/größe.md', 'data/regeln/wasser.json', 'test/orchestrierung/x.orchestrierung.js', 'src/ebene2/bogen~.js', 'docs/zitadelle/bilder/07-nische.png']) {
+    assert.ok(!geschuetzterPfad(p), `darf nicht geschützt sein: ${JSON.stringify(p)}`);
+  }
 });
 
 test('Einstellungen: der Veröffentlichungsaufruf fragt im normalen Sitzungsmodus nach (ask), die Vorprüfung nicht, kein Allow-Muster trifft den Aufruf, deny bleibt', () => {

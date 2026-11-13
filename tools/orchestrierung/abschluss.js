@@ -24,7 +24,11 @@ const KURZNAME = /^[a-z0-9][a-z0-9-]{2,40}$/;
 export const SICHERHEITSDATEIEN = [/^\.claude\//i, /^\.github\//i, /^tools\/orchestrierung\//i, /^\.gitignore$/i];
 /** Pfadteile, die unter Windows denselben Ort wie ein anderer Name meinen können (8.3-Kurzname `ORCHES~1`, Punkt oder Leerzeichen am Ende, `:` für Datenströme): nie veröffentlichen, die Schutzliste wäre damit umgehbar. */
 export const unsichererPfad = (p) => p.split('/').some((k) => /~\d/.test(k) || /[. ]$/.test(k) || k.includes(':'));
-export const geschuetzterPfad = (p) => SICHERHEITSDATEIEN.some((r) => r.test(p)) || unsichererPfad(p);
+/** Unsichtbare, Format- und Steuerzeichen (Nullbreite Zeichen, Richtungszeichen …): manche Dateisysteme ignorieren sie beim Vergleich, der Pfad würde dann einen geschützten Namen treffen. */
+const UNSICHTBAR = /[\p{Cf}\p{Cc}\p{Co}\p{Cn}]/u;
+/** Vergleichsform für die Schutzliste: Unicode-Kompatibilitätsform (z. B. ganzbreiter Punkt → `.`), ohne unsichtbare Zeichen. Groß-/Kleinschreibung erledigen die Regexe (`i`). */
+const vergleichsform = (p) => p.normalize('NFKC').replace(/\p{Cf}/gu, '');
+export const geschuetzterPfad = (p) => UNSICHTBAR.test(p) || unsichererPfad(p) || SICHERHEITSDATEIEN.some((r) => r.test(p) || r.test(vergleichsform(p)));
 const SCHRITTE = ['branch', 'commit', 'push', 'pr'];
 
 export const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });

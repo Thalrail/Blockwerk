@@ -118,6 +118,6 @@ test('Haus-Sonde (Befund): die Teil-Nummern (T1, T2 …) sind fortlaufende Numme
 test('Haus-Sonde: doppelte Teil-Ids der Spezifikation werden vom Prüfer abgelehnt', async () => {
   const { e } = await umgebung();
   const s = hausSpezifikation(VARIANTEN.klein); s.teile[1].id = s.teile[0].id;
-  const treffer = e.ebene4.pruefe(s).rueckfragen.filter((q) => /^teile[d].id$/.test(q.pfad) && /kommt mehrfach vor; sie muss eindeutig sein/.test(q.frage));
+  const treffer = e.ebene4.pruefe(s).rueckfragen.filter((q) => /^teile\[\d\]\.id$/.test(q.pfad) && /kommt mehrfach vor; sie muss eindeutig sein/.test(q.frage));
   assert.equal(treffer.length, 2, 'beide Teile mit der doppelten Id werden gemeldet');
 });

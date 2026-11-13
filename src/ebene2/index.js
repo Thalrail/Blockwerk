@@ -16,7 +16,7 @@ export { erzeugeDach } from './dach.js';
 export { erzeugeBauelemente, ring } from './bauelemente.js';
 export { erzeugeTechnik } from './technik.js';
 export { erzeugeLager } from './lager.js';
-export { rahmenUrsprung, paketZuRahmen, rahmenZuPaket, quaderZellen, zellenInWelt, leereZellen } from './zellen.js';
+export { rahmenUrsprung, paketZuRahmen, rahmenZuPaket, quaderZellen, zellenInWelt, leereZellen, aussparungsZellen } from './zellen.js';
 
 /**
  * @param {{ebene0: ReturnType<typeof import('../ebene0/index.js').erzeugeEbene0>, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen

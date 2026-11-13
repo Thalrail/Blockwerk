@@ -18,7 +18,8 @@ test('Einbaufelder: alle bisherigen Bausteine bleiben gültig, ohne Zonen und Au
   for (const b of e2.bausteine.values()) {
     const p = b.erzeuge();
     pruefePaket(p);
-    if (!['bau.raum', 'bau.wand'].includes(b.id)) assert.ok(!('einbauzonen' in p) && !('aussparungen' in p), b.id);
+    if (!['bau.raum', 'bau.wand'].includes(b.id)) assert.ok(!('einbauzonen' in p), b.id);
+    if (!['bau.tuer', 'bau.fenster', 'bau.treppe'].includes(b.id)) assert.ok(!('aussparungen' in p), b.id);
   }
 });
 

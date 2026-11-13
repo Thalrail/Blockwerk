@@ -74,3 +74,12 @@ export function leereZellen(welt, zellen) {
   }
   return entfernt;
 }
+
+/**
+ * Zellen der Aussparungen eines Pakets einer Art ('oeffnung' oder 'freihaltung') in der Welt, sortiert und ohne Doppelte;
+ * dieselbe Kette wie für die Blöcke (`zellenInWelt`). Ein Paket ohne Aussparungen liefert eine leere Liste.
+ */
+export function aussparungsZellen(ebene0, paket, art, lage) {
+  const zellen = (paket.aussparungen ?? []).filter((a) => a.art === art).flatMap((a) => quaderZellen(a.von, a.bis));
+  return zellenInWelt(ebene0, zellen, lage);
+}

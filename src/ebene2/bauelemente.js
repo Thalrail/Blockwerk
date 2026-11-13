@@ -187,7 +187,14 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
       const ox = Math.floor(breite / 2);
       const bloecke = [];
       for (let s = 0; s < stufen; s++) for (let i = 0; i < breite; i++) bloecke.push({ x: i - ox, y: s * stufenhoehe, z: -s, rolle: 'boden', form: 'treppe', richtung: 'north' });
-      return { bloecke, anschluesse: [{ art: 'durchgang', seite: 'unten', breite }, { art: 'durchgang', seite: 'oben', breite, hoehe: stufen * stufenhoehe }] };
+      // Aussparungen: je Stufe der eigene Block (oeffnung, falls der Träger dort Decke hat) und die Kopffreiheit darüber (freihaltung, 2 Blöcke, auch über der obersten Stufe)
+      const von = { x: -ox }, bis = { x: breite - 1 - ox };
+      const aussparungen = [];
+      for (let s = 0; s < stufen; s++) {
+        aussparungen.push({ art: 'oeffnung', von: { ...von, y: s * stufenhoehe, z: -s }, bis: { ...bis, y: s * stufenhoehe, z: -s } });
+        aussparungen.push({ art: 'freihaltung', von: { ...von, y: s * stufenhoehe + 1, z: -s }, bis: { ...bis, y: s * stufenhoehe + gangHoehe + 1, z: -s } });
+      }
+      return { bloecke, anschluesse: [{ art: 'durchgang', seite: 'unten', breite }, { art: 'durchgang', seite: 'oben', breite, hoehe: stufen * stufenhoehe }], aussparungen };
     },
   });
 
@@ -222,7 +229,8 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
         const scharnier = fluegel === 1 || i === 0 ? 'links' : 'rechts';
         for (const [h, y] of [['unten', 0], ['oben', 1]]) if (y < tuerHoehe) bloecke.push({ x: i, y, z: 0, rolle: 'akzent', form: 'tuer', richtung: 'north', haelfte: h, scharnier });
       }
-      return { bloecke, anschluesse: [{ art: 'durchgang', achse: 'z', breite: fluegel, hoehe: tuerHoehe }] };
+      // Aussparung: genau die Zellen der Tür (Wandblöcke dort entfallen)
+      return { bloecke, anschluesse: [{ art: 'durchgang', achse: 'z', breite: fluegel, hoehe: tuerHoehe }], aussparungen: [{ art: 'oeffnung', von: { x: 0, y: 0, z: 0 }, bis: { x: fluegel - 1, y: tuerHoehe - 1, z: 0 } }] };
     },
   });
 
@@ -242,7 +250,8 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
         const glas = i >= rahmen && i < rahmen + breite && j >= rahmen && j < rahmen + hoehe;
         bloecke.push(glas ? { x: i - ox, y: j, z: 0, rolle: 'glas', form: 'scheibe' } : { x: i - ox, y: j, z: 0, rolle: 'akzent' });
       }
-      return { bloecke, anschluesse: [{ art: 'oeffnung', achse: 'z', breite, hoehe }] };
+      // Aussparung: der ganze Fensterkörper samt Rahmen (dort entfällt die Wand; Rahmen und Scheiben füllen die Öffnung wieder lückenlos)
+      return { bloecke, anschluesse: [{ art: 'oeffnung', achse: 'z', breite, hoehe }], aussparungen: [{ art: 'oeffnung', von: { x: -ox, y: 0, z: 0 }, bis: { x: B - 1 - ox, y: hoehe + 2 * rahmen - 1, z: 0 } }] };
     },
   });
 

@@ -166,6 +166,25 @@ const SCHWEREN = ['critical', 'major', 'minor', 'info'];
 const EINSTUFUNGEN = ['bestaetigt', 'widerlegt', 'hinweis'];
 const MIN_BELEG = 20;
 
+/** Die Befundliste eines Reviews: jede Meldung mit eindeutiger id und bekannter Schwere. */
+export function pruefeBefundListe(befunde) {
+  if (!Array.isArray(befunde)) throw new LaufFehler('befunde muss eine Liste sein');
+  const ids = new Set();
+  for (const b of befunde) {
+    if (!b || typeof b.id !== 'string' || !b.id.trim()) throw new LaufFehler('Jeder Befund braucht eine id');
+    if (ids.has(b.id)) throw new LaufFehler(`Befund ${b.id} doppelt gemeldet`);
+    ids.add(b.id);
+    if (!SCHWEREN.includes(b.schwere)) throw new LaufFehler(`Befund ${b.id}: schwere muss eine von ${SCHWEREN.join(', ')} sein`);
+  }
+}
+
+/** Die Einstufung eines Befunds `b` (aus dem gemeldeten Review): erlaubter Wert, Beleg bei widerlegt und hinweis, Hinweis nur bei minor und info. */
+export function pruefeEinstufung(b, einstufung, beleg) {
+  if (!EINSTUFUNGEN.includes(einstufung)) throw new LaufFehler(`einstufung muss eine von ${EINSTUFUNGEN.join(', ')} sein`);
+  if (einstufung !== 'bestaetigt' && String(beleg).trim().length < MIN_BELEG) throw new LaufFehler(`„${einstufung}“ braucht einen Beleg gegen den Code (mindestens ${MIN_BELEG} Zeichen)`);
+  if (einstufung === 'hinweis' && !['minor', 'info'].includes(b.schwere)) throw new LaufFehler(`Befund ${b.id} ist „${b.schwere}“: er kann nicht als bloßer Hinweis durchgehen (bestätigen oder mit Beleg widerlegen)`);
+}
+
 /**
  * Prüft und protokolliert die Kopffelder eines Codex-Ergebnisses, gebunden an das Review-Paket des aktuellen Stands (Codezustand = Baum der Basis).
  * `befunde`: alle Befunde, die das Ergebnis nennt, als [{id, schwere, kurz}]; jeder muss danach mit `befundMelden` eingestuft werden.
@@ -176,14 +195,7 @@ export function reviewMelden(w, kopf, befunde = []) {
   const baum = baumVon(w, a.basis);
   const paketEintrag = leseZeilen(path.join(laufDir(w, a.id), 'pakete.jsonl')).filter((x) => x.baum === baum).at(-1);
   if (!paketEintrag) throw new LaufFehler('Für den aktuellen Codezustand gibt es kein Review-Paket (zuerst: paket). Ein Review zählt nur für genau den Stand, den das Paket enthielt');
-  if (!Array.isArray(befunde)) throw new LaufFehler('befunde muss eine Liste sein');
-  const ids = new Set();
-  for (const b of befunde) {
-    if (!b || typeof b.id !== 'string' || !b.id.trim()) throw new LaufFehler('Jeder Befund braucht eine id');
-    if (ids.has(b.id)) throw new LaufFehler(`Befund ${b.id} doppelt gemeldet`);
-    ids.add(b.id);
-    if (!SCHWEREN.includes(b.schwere)) throw new LaufFehler(`Befund ${b.id}: schwere muss eine von ${SCHWEREN.join(', ')} sein`);
-  }
+  pruefeBefundListe(befunde);
   const r = pruefeReviewErgebnis(kopf);
   anhaengen(path.join(laufDir(w, a.id), 'reviews.jsonl'), {
     runde: a.runde, baum, gueltig: r.gueltig, gruende: r.gruende, verdict: kopf?.verdict ?? null, session_id: kopf?.session_id ?? null,
@@ -204,9 +216,7 @@ export function befundMelden(w, { id, einstufung, beleg = '' }) {
   if (!rv) throw new LaufFehler('Für den aktuellen Codezustand gibt es noch kein gemeldetes Review (review-melden)');
   const b = (rv.befunde ?? []).find((x) => x.id === id);
   if (!b) throw new LaufFehler(`Befund „${String(id)}“ gehört nicht zum Review des aktuellen Codezustands`);
-  if (!EINSTUFUNGEN.includes(einstufung)) throw new LaufFehler(`einstufung muss eine von ${EINSTUFUNGEN.join(', ')} sein`);
-  if (einstufung !== 'bestaetigt' && String(beleg).trim().length < MIN_BELEG) throw new LaufFehler(`„${einstufung}“ braucht einen Beleg gegen den Code (mindestens ${MIN_BELEG} Zeichen)`);
-  if (einstufung === 'hinweis' && !['minor', 'info'].includes(b.schwere)) throw new LaufFehler(`Befund ${id} ist „${b.schwere}“: er kann nicht als bloßer Hinweis durchgehen (bestätigen oder mit Beleg widerlegen)`);
+  pruefeEinstufung(b, einstufung, beleg);
   anhaengen(path.join(laufDir(w, a.id), 'befunde.jsonl'), { runde: a.runde, baum, session_id: rv.session_id, id, einstufung, beleg: String(beleg).slice(0, 1000), zeit: jetzt() });
   return { id, einstufung, baum };
 }
@@ -391,10 +401,18 @@ export function testsMelden(w, { worktree, suite, gruen, fehlgeschlagen, uebersp
  */
 export function freigabeStatus(w, a = brauche(w)) {
   const baum = baumVon(w, a.basis);
-  const gruende = [];
   const sperre = sperrGrund(w, a);
-  if (sperre) gruende.push(`Lauf gesperrt: ${sperre}`);
-  const dir = laufDir(w, a.id);
+  const n = bewerteNachweise(laufDir(w, a.id), baum);
+  return { ok: !sperre && n.gruende.length === 0, gruende: [...(sperre ? [`Lauf gesperrt: ${sperre}`] : []), ...n.gruende], baum, tests: n.tests, review: n.review };
+}
+
+/**
+ * Bewertet Tests, Review und Befunde einer Nachweis-Ablage (`tests.jsonl`, `reviews.jsonl`, `befunde.jsonl` im Verzeichnis) für genau einen Codezustand (Baum).
+ * Gemeinsam für Läufe (`freigabeStatus`) und vorbereitete Branches (`veroeffentlichen.js`).
+ */
+export function bewerteNachweise(dir, baum) {
+  const gruende = [];
+  const befundStand = []; // Befunde mit Schwere und Einstufung, für Freigabe-Hashes
   // je Suite zählt der jüngste Lauf für genau diesen Codezustand; die vollständige Suite `kurz` ist Pflicht, weitere gestartete Suiten müssen ebenfalls grün sein
   const jeSuite = new Map();
   for (const x of leseZeilen(path.join(dir, 'tests.jsonl'))) if (x.baum === baum) jeSuite.set(x.suite, x);
@@ -411,12 +429,13 @@ export function freigabeStatus(w, a = brauche(w)) {
     for (const e of leseZeilen(path.join(dir, 'befunde.jsonl'))) if (e.baum === baum && e.session_id === rv.session_id) eingestuft.set(e.id, e);
     for (const b of rv.befunde ?? []) {
       const e = eingestuft.get(b.id);
+      befundStand.push({ id: b.id, schwere: b.schwere, einstufung: e?.einstufung ?? null });
       if (!e) gruende.push(`Befund ${b.id} (${b.schwere}) ist nicht eingestuft`);
       else if (e.einstufung === 'bestaetigt') gruende.push(`Befund ${b.id} ist bestätigt und noch nicht behoben (neue Runde und neues Review nötig)`);
       else if (b.schwere === 'critical') gruende.push(`Kritischer Befund ${b.id} ist nur eingestuft („${e.einstufung}“), nicht behoben: das Urteil über einen kritischen Befund trifft Jonah, nicht der Koordinator (Rückfrage; automatisch geht es erst mit einem neuen Review ohne diesen Befund weiter)`);
     }
   }
-  return { ok: gruende.length === 0, gruende, baum, tests: t, review: rv };
+  return { gruende, tests: t, review: rv, befundStand };
 }
 
 /** Zustand des Hauptrepositories gegenüber dem Start des Laufs: nur die Buchführung (HEAD, Zweig, Stash, Refs, Index) und optional erwartete Dateiänderungen. */
@@ -492,4 +511,4 @@ export function status(w) {
   return { aktiv: a.status === 'aktiv', id: a.id, auftrag: a.auftrag, runde: a.runde, maxSchleifen: MAX_SCHLEIFEN, s0: a.s0.slice(0, 10), basis: a.basis.slice(0, 10), worktrees: worktrees(w, a.id).map((x) => x.pfad), runden: a.runden, uebernommen: Boolean(a.uebernommen), autonom: Boolean(a.autonom), abschluss: a.abschluss ?? null, unterbrochen: offeneJournale(sicherungsWurzel(w)).map(vor) };
 }
 
-export { wiederherstellen, brauche, speichere, laufDir, leseZeilen, baumVon, vor };
+export { wiederherstellen, brauche, speichere, laufDir, leseZeilen, baumVon, vor, jetzt, leseJson, schreibeJson };

@@ -20,11 +20,11 @@ export const BASIS_ZWEIG = 'main';
 export const ZWEIG_PRAEFIX = 'claude/';
 export const TRAILER = 'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>';
 const KURZNAME = /^[a-z0-9][a-z0-9-]{2,40}$/;
-const SICHERHEITSDATEIEN = [/^\.claude\//, /^\.github\//, /^tools\/orchestrierung\//, /^\.gitignore$/];
+export const SICHERHEITSDATEIEN = [/^\.claude\//, /^\.github\//, /^tools\/orchestrierung\//, /^\.gitignore$/];
 const SCHRITTE = ['branch', 'commit', 'push', 'pr'];
 
-const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });
-const kurz = (buf) => String(buf ?? '').trim().slice(0, 400);
+export const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });
+export const kurz = (buf) => String(buf ?? '').trim().slice(0, 400);
 
 function nachrichtVon(a, f, titel) {
   const t = f.tests; const rv = f.review;
@@ -136,7 +136,7 @@ export function stagingStimmt(gestaged, erwartet) {
 
 /** Umgebung für `gh`: wie bei Git nur die Positivliste, dazu die Anmeldeverfahren von gh (Token-Variablen, Konfigurationsort); Git-Einstellungen gelten auch für die Git-Aufrufe, die gh selbst startet. */
 export const GH_UMGEBUNG_ZUSATZ = Object.freeze(['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GH_HOST', 'GH_CONFIG_DIR', 'XDG_CONFIG_HOME']);
-const ghUmgebung = (extra = {}) => ({ ...haerteUmgebung(process.env, GH_UMGEBUNG_ZUSATZ), ...konfigUmgebung(haerteEinstellungen(haertePfad())), GIT_TERMINAL_PROMPT: '0', GH_PROMPT_DISABLED: '1', ...extra });
+export const ghUmgebung = (extra = {}) => ({ ...haerteUmgebung(process.env, GH_UMGEBUNG_ZUSATZ), ...konfigUmgebung(haerteEinstellungen(haertePfad())), GIT_TERMINAL_PROMPT: '0', GH_PROMPT_DISABLED: '1', ...extra });
 
 function blockiert(w, a, f, schritt, grund) {
   speichere(w, a);

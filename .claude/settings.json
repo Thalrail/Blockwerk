@@ -18,6 +18,10 @@
       "Bash(node tools/orchestrierung/cli.js wiederherstellen *)",
       "Bash(node tools/orchestrierung/cli.js ende *)",
       "Bash(node tools/orchestrierung/cli.js abschluss *)",
+      "Bash(node tools/orchestrierung/cli.js veroeffentlichen-vorpruefung *)",
+      "Bash(node tools/orchestrierung/cli.js veroeffentlichen-paket *)",
+      "Bash(node tools/orchestrierung/cli.js veroeffentlichen-review *)",
+      "Bash(node tools/orchestrierung/cli.js veroeffentlichen-befund *)",
       "Bash(node tools/karte.js *)",
       "Bash(npm test)",
       "Bash(npm run test:kurz)",
@@ -36,6 +40,7 @@
     ],
     "ask": [
       "Bash(git commit *)",
+      "Bash(node tools/orchestrierung/cli.js veroeffentlichen *)",
       "Agent(blockwerk-entwickler-schwer)"
     ]
   },

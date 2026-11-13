@@ -17,11 +17,11 @@ Ein Benutzer entwirft aus Bildern und Text beliebige Bauwerke: Abmessungen, Arch
 Offene PRs mergen, danach keine weiteren Sicherheitsrunden. Vision in der Doku festhalten (diese Datei).
 
 ## Phase 1: Grundlagen für ein beliebiges einfaches Bauwerk
-1. Zweiter und dritter Referenzbau ohne Zitadellen-Eigenheiten (Wohnhaus mit Etagen, Dach, Fenstern; Burgmauer oder Turm mit Zinnen), um Kopplungen aufzudecken. Auswahl der Bauwerke: **offen**.
+1. **Haus-Sonde (erledigt 13.11.2026, `docs/haus-sonde.md`):** Das Wohnhaus lässt sich mit den vorhandenen Bausteinen nur als offener Tunnel beschreiben; erstes Implementierungspaket: `bau.raum` mit Wandöffnungen. Dritter Referenzbau (Burgmauer oder Turm mit Zinnen): später, Auswahl offen.
 2. Spezifikation erweitern: Quader, Raum und Wand als Bausteine, `innen`, Öffnungen in Wänden, Etagen und Treppen, freie Abmessungen; Vokabular bleibt Daten.
 3. Eingabe ohne KI: Assistent (Abmessungen, Stil, Material, Funktionen) schreibt dieselbe Spezifikation; der Leser wird optional.
 4. Stile und Paletten als Daten, mehr Blöcke und Texturen nach Bedarf.
-5. Entwurf des Bearbeitungsmodells (Fixierungen über der berechneten Welt; grundlegende Architekturentscheidung, braucht Jonahs Zustimmung nach Optionen mit Vor- und Nachteilen): **offen**.
+5. Bearbeitungsmodell B (Hybrid), **beschlossen am 13.11.2026** (`docs/entscheidungen.md`): Blockänderungen relativ zum Bauteil, Neuprüfung bei Technikänderung, versionierte Planfassung, Verwaistes entscheidet der Benutzer; Link-Grenze dokumentiert. Voraussetzung: stabile Teil-Kennungen (die Nummern T1, T2 … taugen nicht; Kandidat: Spezifikations-Id, im Arbeitspaket zu prüfen). Umsetzung erst im eigenen Arbeitspaket.
 6. Planung beschleunigen: Prüfer nur für Abschnitt und Nachbarn (ändert das Prüfverhalten, nur mit Jonahs Freigabe).
 7. Spieltest-Schleife in der Oberfläche und erste echte Bauetappe in Bedrock.
 

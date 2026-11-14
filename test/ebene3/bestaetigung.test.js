@@ -157,5 +157,8 @@ test('Bestätigung: auch Inventarinhalt und Wesen im Prüfbereich gehören zum A
   assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.8)]), 'Bewegung innerhalb derselben Blockzelle');
   assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { baby: true })]), 'anderes Merkmal');
   assert.equal(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { nr: 99 })]), 'die laufende Nummer zählt nicht');
+  assert.equal(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { sitztIn: 3 })]), 'sitztIn hängt von der Einfügereihenfolge ab und zählt nicht');
+  assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { yaw: 90 })]), 'die Blickrichtung zählt');
+  assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { beruf: 'minecraft:farmer' })]), 'ein weiteres Merkmal (Beruf) zählt');
   assert.equal(abd([], [dorfi(kastenHoch.bis.x + 50)]), basis, 'ein Wesen weit weg zählt nicht');
 });

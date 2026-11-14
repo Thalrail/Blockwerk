@@ -526,7 +526,7 @@ async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = n
     const v = await anfrage({ typ: 'teileVorschau', spezifikation: neu, aenderungen: z.planfassung, messungen: z.messungen, planVorher: { aenderungen: z.daten.plan.aenderungen ?? [] } });
     if (z.spec !== ausgang || startNr !== nr) return; // inzwischen gilt oder rechnet eine andere Fassung: diese Vorschau ist überholt
     if (v.rueckfragen.length) { t.meldung = `Das lässt sich so nicht übernehmen: ${v.rueckfragen.map((q) => q.frage).join(' ')}`; return; }
-    if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel }; return; }
+    if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel, basis: ausgang, nr }; return; }
     t.bestaetigung = null; t.neu = null;
   } catch (f) { t.meldung = String(f.message ?? f); return; } finally { teileBeschaeftigt = false; render(); }
   await stilAnwenden(neu);
@@ -535,7 +535,11 @@ async function teileAktion(name) {
   const t = z.teile, info = t.info; if (!info) return;
   try {
     if (name === 'tl-nein') { t.bestaetigung = null; render(); return; }
-    if (name === 'tl-ja') { const b = t.bestaetigung; if (b) await teileAnwenden(b.spec, { bestaetigt: true }); return; }
+    if (name === 'tl-ja') {
+      const b = t.bestaetigung; if (!b) return;
+      if (z.spec !== b.basis || startNr !== b.nr) { t.bestaetigung = null; t.meldung = 'Inzwischen gilt eine andere Fassung. Bitte die Änderung noch einmal prüfen.'; render(); return; } // die Liste der Folgen gehört zum alten Stand
+      await teileAnwenden(b.spec, { bestaetigt: true }); return;
+    }
     if (name === 'tn-zu') { t.neu = null; t.meldung = ''; render(); return; }
     if (name === 'tl-neu') {
       const teile = Teile.teilListe(z.spec, info.kindrelationen), b = info.bausteine[0];
@@ -925,7 +929,14 @@ function taste(ev) {
 }
 document.addEventListener('click', klick);
 document.addEventListener('keydown', taste);
+/** Eingaben der Teile-Formulare gehen sofort in den Zustand: ein Neuaufbau der Seite (Live-Meldung, Statuswechsel) verliert nichts. */
+function merkeTeileFeld(ev) {
+  const id = ev.target?.id ?? '';
+  if (id.startsWith('tl-') && id !== 'tl-teil' && z.teile.felder) z.teile.felder = { ...z.teile.felder, [id.slice(3)]: ev.target.value };
+  else if (id.startsWith('tn-') && z.teile.neu) z.teile.neu = { ...z.teile.neu, [id.slice(3)]: ev.target.value };
+}
 document.addEventListener('input', (ev) => {
+  merkeTeileFeld(ev);
   const id = ev.target.id;
   if (id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); if (z.seite === 'eingabe') render(); }
   else if (Eingabe.eingabeGeaendert(id, ev.target.value, z.e)) { speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)); if (id === 'e-text') { const b = document.querySelector('[data-a="e-pruefen"]'); if (b) b.disabled = !ev.target.value.trim(); } }
@@ -948,6 +959,7 @@ document.addEventListener('input', (ev) => {
 });
 document.addEventListener('change', async (ev) => {
   const id = ev.target.id;
+  merkeTeileFeld(ev);
   if (id === 'tl-teil') { z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
   if (id === 'tl-rel' || id === 'tl-bezug') { const f = liesFelder('tl-'); delete f.teil; z.teile.felder = f; render(); return; }
   if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; render(); return; }

@@ -230,6 +230,7 @@ export function wendeFelder(spec, id, felder, info) {
   if (felder.wicht && felder.wicht !== t0.wichtigkeit) neu = setzeEigenschaft(neu, id, 'wichtigkeit', felder.wicht, info);
   const baustein = info.bausteine.find((b) => b.id === t0.form?.baustein);
   for (const p of baustein?.parameter ?? []) {
+    if (!Object.hasOwn(felder, `p-${p.name}`)) continue; // ein fehlendes Feld ist keine Angabe; nur ein vorhandenes leeres Feld heißt „Standard“
     const ziel = zahlAus(felder[`p-${p.name}`], p.name), jetzt = t0.form?.groesse?.[p.name] ?? null;
     if (ziel !== jetzt) neu = setzeParameter(neu, id, p.name, ziel, info);
   }

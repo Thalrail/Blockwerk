@@ -239,3 +239,22 @@ test('Felder: eine anders geschriebene, aber gleiche Lage (Abstand 0, andere Sch
   const g = T.wendeFelder(s, 'dach', { ...T.felderVon(s, 'dach'), abstand: '2' }, i);
   assert.deepEqual(g.teile[2].lage, { bezug: 'obergeschoss', relation: 'ueber', abstand: 2 });
 });
+
+test('Review: ein fehlendes Feld ist keine Angabe (löscht nichts), ein vorhandenes leeres Feld heißt Standard; Verbindungen beim Entfernen unabhängig vom Beispiel', async () => {
+  const e = await engine(), i = info(e);
+  const s = haus();
+  const f = T.felderVon(s, 'erdgeschoss');
+  delete f['p-breite'];
+  assert.equal(T.wendeFelder(s, 'erdgeschoss', f, i).teile[0].form.groesse.breite, 7, 'fehlt das Feld, bleibt die Größe');
+  assert.equal('breite' in T.wendeFelder(s, 'erdgeschoss', { ...f, 'p-breite': '' }, i).teile[0].form.groesse, false, 'leeres Feld = Standard');
+  assert.equal(JSON.stringify(T.wendeFelder(s, 'erdgeschoss', { name: 'Erdgeschoss' }, i)), JSON.stringify(s), 'nur der Name: alles andere bleibt');
+  // Verbindungen: das Ziel ohne Kinder und Bezogene
+  const v = haus();
+  v.teile[1].verbindungen = [{ mit: 'dach', art: 'gang' }];
+  v.teile[0].verbindungen = [{ mit: 'dach', art: 'schiene' }, { mit: 'obergeschoss', art: 'gang' }];
+  assert.deepEqual(T.abhaengige(v, 'dach', i.kindrelationen).kinder.concat(T.abhaengige(v, 'dach', i.kindrelationen).bezogene), []);
+  const r = T.entferneTeil(v, 'dach', i.kindrelationen);
+  assert.deepEqual(r.entfernteVerbindungen, [{ von: 'erdgeschoss', art: 'schiene' }, { von: 'obergeschoss', art: 'gang' }]);
+  assert.deepEqual(r.spec.teile[0].verbindungen, [{ mit: 'obergeschoss', art: 'gang' }], 'andere Verbindungen bleiben');
+  assert.equal('verbindungen' in r.spec.teile[1], false, 'eine leer gewordene Liste entfällt');
+});

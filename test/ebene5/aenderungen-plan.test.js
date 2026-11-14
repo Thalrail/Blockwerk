@@ -93,3 +93,21 @@ test('Verwaist: wird das Haus kleiner, fragt die Planung Jonah; verwerfen, neu v
   // eine schon beantwortete Rückfrage lässt sich nicht noch einmal beantworten
   assert.throws(() => ablauf.antworte(ablauf.antworte(u.entwurf, frage.id, { option: 'verwerfen' }), frage.id, { option: 'verwerfen' }), /schon beantwortet/);
 });
+
+test('Verwaist: wird die Änderung an eine weiterhin ungültige Zelle verankert, fragt die Planung erneut, bis Jonah eine gültige Lösung wählt', async () => {
+  const { e } = await umgebung();
+  const ablauf = e.ebene3.ablauf;
+  const gross = e.ebene4.baue(e.ebene4.freigeben(hausSpezifikation(VARIANTEN.mittel), 'sonde'));
+  const mit = e.ebene3.aenderungen.setze(gross.entwurf, { teil: 'erdgeschoss', zelle: { x: 11, y: 1, z: 0 }, op: 'setze', block: { id: 'minecraft:glass' } }, 'Jonah').entwurf;
+  const klein = hausSpezifikation(VARIANTEN.klein); klein.version = 2;
+  const u = e.ebene4.aktualisiereBau(mit, e.ebene4.freigeben(klein, 'sonde'));
+  const erste = u.entwurf.rueckfragen.find((r) => r.status === 'offen');
+  const nochmal = ablauf.fortsetzen(ablauf.antworte(u.entwurf, erste.id, { option: 'verankern', zelle: { x: 10, y: 1, z: 0 } }));
+  assert.equal(nochmal.status, 'wartet', 'die neue Zelle liegt weiterhin außerhalb des kleinen Hauses');
+  const zweite = nochmal.entwurf.rueckfragen.find((r) => r.status === 'offen');
+  assert.ok(zweite && zweite.id !== erste.id && zweite.art === 'aenderung');
+  assert.match(zweite.frage, /Rahmenzelle \(10, 1, 0\)/);
+  const fertig = ablauf.fortsetzen(ablauf.antworte(nochmal.entwurf, zweite.id, { option: 'verwerfen' }));
+  assert.equal(fertig.status, 'fertig');
+  assert.equal(fertig.entwurf.aenderungen.length, 0);
+});

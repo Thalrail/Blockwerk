@@ -82,8 +82,8 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
   function wendeAn(entwurf, reihe, eintraege, einbau) {
     const status = new Map();
     const nachRef = new Map(reihe.filter((t) => t.ref !== undefined).map((t) => [t.ref, t]));
-    const besitz = new Map();
-    for (const t of reihe) for (const k of eintraege.get(t.id).schluessel) if (!besitz.has(k)) besitz.set(k, t.id);
+    const besitz = new Map(); // Zelle → alle Teile, die sie belegen (zwei Teile in einer Zelle sind schon ein Einwand der Planung, hier zählen beide)
+    for (const t of reihe) for (const k of eintraege.get(t.id).schluessel) { if (!besitz.has(k)) besitz.set(k, new Set()); besitz.get(k).add(t.id); }
     const kopiert = new Set();
     const eigene = (t) => { // Kopie des Eintrags, bevor er verändert wird (gemerkte Teile bleiben unberührt)
       if (!kopiert.has(t.id)) {
@@ -110,13 +110,13 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
         const e = eigene(t);
         e.bauteil.bloecke = e.bauteil.bloecke.filter((b) => key(b.x, b.y, b.z) !== k);
         e.schluessel.delete(k); e.arbeitsbloecke.delete(k);
-        if (besitz.get(k) === t.id) besitz.delete(k);
+        besitz.get(k)?.delete(t.id);
         status.set(a.id, { status: 'angewandt', teil: t.id, ort });
         continue;
       }
       // setze: nur auf Zellen des Teils selbst oder freie Zellen, nie in eine Freihaltung
-      const anderer = besitz.get(k);
-      if (anderer !== undefined && anderer !== t.id) { status.set(a.id, { status: 'konflikt', grund: 'fremder-block', mit: anderer, teil: t.id, ort }); continue; }
+      const andere = [...(besitz.get(k) ?? [])].filter((x) => x !== t.id).sort();
+      if (andere.length) { status.set(a.id, { status: 'konflikt', grund: 'fremder-block', mit: andere.join(', '), teil: t.id, ort }); continue; }
       const frei = einbau?.freihaltung.get(k);
       if (frei) { status.set(a.id, { status: 'konflikt', grund: 'freiraum', mit: [...frei].sort(), teil: t.id, ort }); continue; }
       let block;
@@ -127,7 +127,8 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
       e.schluessel.add(k);
       const arbeits = (() => { try { return ebene0.register.bloecke.block(block.id).eigenschaften.arbeitsblock; } catch { return false; } })();
       if (arbeits) e.arbeitsbloecke.add(k); else e.arbeitsbloecke.delete(k);
-      besitz.set(k, t.id);
+      if (!besitz.has(k)) besitz.set(k, new Set());
+      besitz.get(k).add(t.id);
       status.set(a.id, { status: 'angewandt', teil: t.id, ort });
     }
     return { status };

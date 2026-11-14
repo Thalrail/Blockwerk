@@ -191,3 +191,52 @@ test('Änderungen: unabhängig von der Reihenfolge in der Liste, deterministisch
   assert.deepEqual([...a.aenderungen], [...b.aenderungen]);
   assert.equal(a.aenderungen.size, 2);
 });
+
+test('Änderungen an einem Kind (Treppe) folgen seiner abgeleiteten Lage mit Träger-Drehung und -Verschiebung; wird das Kind entfernt, bleibt die Änderung gespeichert und ist verwaist', () => {
+  const stufenParameter = { stufen: 4, breite: 2 };
+  for (const drehung of [0, 1, 2, 3]) {
+    const lage = { x: 6, y: 3, z: -8, drehung };
+    let e = setzeTeil(grund(lage), { baustein: 'bau.treppe', ref: 'treppe', parameter: stufenParameter, traeger: 'haus', einbau: EI('innenraum', 'nw') });
+    const ohne = e3.materialisiere(e, MIT);
+    // Rahmenzelle (0, 0, 3) = erste Stufe in der Westspalte (Paketzelle (-1, 0, 0))
+    e = A.setze(e, { teil: 'treppe', zelle: { x: 0, y: 0, z: 3 }, op: 'leere' }, 'Jonah').entwurf;
+    const mat = e3.materialisiere(e, MIT);
+    assert.equal(mat.aenderungen.get('C1').status, 'angewandt', `Drehung ${drehung}`);
+    const o = mat.aenderungen.get('C1').ort;
+    assert.ok(ohne.teile.get('T2').schluessel.has(k(o)), `Drehung ${drehung}: genau der Stufenblock an der Weltzelle`);
+    assert.ok(!mat.teile.get('T2').schluessel.has(k(o)) && mat.welt.istLuft(o.x, o.y, o.z), 'er ist entfernt');
+    assert.equal(mat.teile.get('T2').schluessel.size, ohne.teile.get('T2').schluessel.size - 1);
+    assert.equal(mat.teile.get('T1').schluessel.size, ohne.teile.get('T1').schluessel.size, 'der Träger bleibt unberührt');
+    // Kind entfernt: Änderung bleibt, verwaist, Einwand ohne Ziel
+    const weg = e3.aendere(e, 'architekt', { art: 'entferne-teil', id: 'T2' }).entwurf;
+    assert.equal(weg.aenderungen.length, 1);
+    assert.deepEqual([e3.materialisiere(weg, MIT).aenderungen.get('C1').status, e3.materialisiere(weg, MIT).aenderungen.get('C1').grund], ['verwaist', 'teil-fehlt']);
+    assert.equal(einwaende(weg).length, 1);
+  }
+});
+
+test('Konflikt: mit mehreren Besitzern in einer Zelle zählt jeder, nicht nur der erste', () => {
+  // zwei Teile belegen dieselbe Zelle (die Planung meldet das schon als Überschneidung); ein Setzen am ersten Teil darf den Block des zweiten nicht überschreiben
+  let e = grund({ x: 0, y: 0, z: 0, drehung: 0 });
+  e = setzeTeil(e, { baustein: 'bau.wand', ref: 'klotz', parameter: { laenge: 1, hoehe: 1, dicke: 1 }, lage: { x: -3, y: 0, z: -3, drehung: 0 } }); // Zelle liegt in der Nordwand des Raums (Raum: Außenmaß 9 × 7, Nordwest (-4, 0, -3))
+  const mat0 = e3.materialisiere(e, MIT);
+  const doppelt = [...mat0.teile.get('T2').schluessel].find((c) => mat0.teile.get('T1').schluessel.has(c));
+  assert.ok(doppelt, 'beide Teile belegen die Zelle');
+  const h = huelleVon(E2.baue('bau.raum', raumPar).bloecke).von, [x, y, z] = doppelt.split(',').map(Number);
+  const f = A.setze(e, { teil: 'haus', zelle: { x: x - h.x, y: y - h.y, z: z - h.z }, op: 'setze', block: { id: 'minecraft:glass' } }, 'Jonah').entwurf;
+  const st = e3.materialisiere(f, MIT).aenderungen.get('C1');
+  assert.deepEqual([st.status, st.grund, st.mit], ['konflikt', 'fremder-block', 'T2']);
+});
+
+test('Zulassen deckt nur die konkrete Verankerung: wird die Änderung neu verankert und ist wieder verwaist, kommt der Einwand erneut', () => {
+  let e = A.setze(grund(), { teil: 'haus', zelle: { x: 30, y: 1, z: 0 }, op: 'setze', block: { id: 'minecraft:glass' } }, 'Jonah').entwurf;
+  const erster = einwaende(e);
+  assert.equal(erster.length, 1);
+  assert.match(erster[0].schluessel, /^plan\.aenderung\|C1\|verwaist\|ausserhalb\|haus\|30,1,0\|$/);
+  e.zulassungen = [erster[0].schluessel];
+  assert.deepEqual(einwaende(e), [], 'zugelassen: kein Einwand mehr');
+  const neu = A.verankere(e, 'C1', { zelle: { x: 31, y: 1, z: 0 } }, 'Jonah').entwurf;
+  const zweiter = einwaende(neu);
+  assert.equal(zweiter.length, 1, 'die frühere Zulassung unterdrückt den neuen Einwand nicht');
+  assert.notEqual(zweiter[0].schluessel, erster[0].schluessel);
+});

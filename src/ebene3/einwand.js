@@ -99,7 +99,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       liste.push({
         regel: 'plan.aenderung', von: 'bauleiter', an: teil ? fachleute.besitzer(teil) : 'architekt', ort: st.ort ? { ...st.ort } : { ...entwurf.projekt.nullpunkt }, schwere: 'verstoss',
         ziel: teil ? `teil:${teil.id}` : null, abschnitt: teil?.abschnitt ?? null,
-        text: `Änderung ${id} (${was}) lässt sich nicht anwenden: ${grund}. Jonah entscheidet: verwerfen oder neu verankern`, schluessel: `plan.aenderung|${id}|${st.status}|${st.grund ?? ''}`,
+        text: `Änderung ${id} (${was}) lässt sich nicht anwenden: ${grund}. Jonah entscheidet: verwerfen oder neu verankern`, schluessel: `plan.aenderung|${id}|${st.status}|${st.grund ?? ''}|${a.teil}|${a.zelle.x},${a.zelle.y},${a.zelle.z}|${[].concat(st.mit ?? []).join(',')}`, // an die konkrete Verankerung gebunden: eine frühere Zulassung deckt keinen neuen Konflikt
       });
     }
     // Sperrzonen des Technikers

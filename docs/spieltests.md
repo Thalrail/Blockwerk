@@ -405,3 +405,11 @@ Das Aussehen ist reine Auswahl aus dem Register; getestet wird, ob der Bauplan i
 4. **Säule:** Wand → `oak_log` mit Achse y: Stehen die Stämme senkrecht, auch nach einer Drehung des Hauses (Ausrichtung des Bauwerks ändern)?
 5. **Umbauhinweise:** Eine Schicht abhaken, danach die Wand ändern: Blockwerk nennt „ersetzen“ mit den Koordinaten; erst nach „bestätigt“ gilt die neue Fassung.
 6. **Stimmung statt Block:** Eine gewählte Wand wieder wegnehmen („Wahl wegnehmen“): Es gilt die Stimmung des Teils.
+
+## Bauteile bearbeiten (14.11.2026, `ungeprüft`)
+Reine Änderung der Spezifikation; getestet wird, ob der neue Bauplan im Spiel so aussieht, wie er angezeigt wird. Testwelt (Kreativ), Wohnhaus aus der Haus-Sonde.
+1. **Größe ändern:** Reiter „Teile“, Erdgeschoss, Breite 7 → 9, übernehmen. Das Haus ist zwei Blöcke breiter, Obergeschoss, Dach und Treppe passen sich an (Wandschichten im Plan und im Spiel vergleichen).
+2. **Kindteil verschieben:** Fenster auf die Westwand legen (Lage „in der Westwand“), Haustür auf die Ostwand. Sitzen sie im Spiel in der richtigen Wand, schauen sie nach außen?
+3. **Teil hinzufügen:** Einen Raum „Anbau“ neben dem Haus anlegen (ein größerer Bauplatz ist dafür nötig). Er steht als eigener Abschnitt im Plan; im Spiel nachbauen und die Lücke zum Haus prüfen.
+4. **Teil entfernen:** Das Dach entfernen. Die Bestätigung nennt die Folgen; danach fehlt das Dach im Plan. Ein Haus mit Obergeschoss kann man nur so entfernen, dass erst alles darauf Bezogene weg ist (Meldung).
+5. **Einzelblockänderungen:** Erst im Reiter „Zelle“ einen Block an der Außenkante setzen, dann das Teil verkleinern. Die Vorschau nennt die Änderung als „wird verwaist“; sie bleibt gespeichert und ändert den Plan nicht.

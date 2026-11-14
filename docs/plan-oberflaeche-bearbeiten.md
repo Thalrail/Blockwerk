@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U4 umgesetzt (14.11.2026); U5 bis U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U5 umgesetzt (14.11.2026); U6 und U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -62,7 +62,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U4 um
 - Der bestehende Weg übernimmt: `pruefe` mit `bearbeitet` → neue Version → Freigabe → Bauplan → Umbauhinweise.
 - Tests: Spezifikationsvergleich (`vergleiche`), Palette unvollständig → Rückfrage statt stilles Material (bleibt Regel).
 
-### U5 Bauteile bearbeiten (Priorität 2, Spezifikationsweg)
+### U5 Bauteile bearbeiten (Priorität 2, Spezifikationsweg) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene5.md`
 - Teilliste mit Parametern (Größe, Lage `anker`/`versatz`/`ausrichtung`), Teile hinzufügen und entfernen, Kindteile (Tür, Fenster, Treppe, Wand) verschieben. Wertebereiche und Beschriftung kommen aus dem Bausteinpaket (Parameter mit Größenart), nicht aus festem Oberflächencode, damit neue Bausteine ohne Umbau erscheinen.
 - Schutz: ein Träger mit Kindern wird nicht stumm entfernt (Regel besteht), die Oberfläche zeigt die Meldung und die Folge für gebundene Änderungen („Änderung C3 wird verwaist“) **vor** dem Übernehmen.
 - Tests: Spezifikation → Plan für Größenänderung mit vorhandenen Änderungen (Verwaisung wird vorab gezeigt).

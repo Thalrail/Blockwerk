@@ -24,6 +24,7 @@ export const VARIANTEN = {
  * Alle Maße kommen aus der Variante, nichts ist fest codiert.
  */
 export function hausSpezifikation({ breite, tiefe, geschoss, neigung }, mit = {}) {
+  if (mit.tuerTeil && mit.tuerInWand) throw new Error('hausSpezifikation: tuerTeil und tuerInWand schließen sich aus (beide wären die Teil-Id haustuer)');
   const raum = (zusatz) => ({ baustein: 'bau.raum', groesse: { breite: breite - 2, tiefe: tiefe - 2, hoehe: geschoss, wandstaerke: 1, ...zusatz } });
   const teile = [
     { id: 'erdgeschoss', name: 'Erdgeschoss', art: 'halle', wichtigkeit: 'muss', form: raum({ ...(mit.tuer ? { tuer: 1, tuerwand: 3 } : {}), ...(mit.fenster ? { fenster: 1, fensterbreite: 2, fensterhoehe: 2, bruestung: 1 } : {}) }), lage: { bezug: 'projekt', relation: 'mitte' }, stil: { stimmung: 'hell-nordisch' } },

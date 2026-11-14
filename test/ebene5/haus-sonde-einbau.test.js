@@ -107,3 +107,28 @@ test('Haus-Sonde (P6): ändert sich ein Maß, entsteht mit Treppe, Trennwand und
     assert.deepEqual(u.entwurf.teile.map((t) => t.ref).filter((x) => ['treppe', 'trennwand', 'innentuer', 'haustuer', 'fenster'].includes(x)).sort(), erwartet, 'jedes Kind genau einmal');
   }
 });
+
+test('Haus-Sonde (P6): Änderungen nur an den Kindern (Versatz, Kind entfernen) bei gleichen Hausmaßen ergeben denselben Plan wie ein frischer Lauf, entfernte Kinder bleiben nicht im Entwurf', async () => {
+  const { e, e5 } = await umgebung();
+  const abd = (p) => p.abschnitte.map((a) => a.schichten.map((s) => s.abdruck));
+  const basis = () => hausSpezifikation(VARIANTEN.mittel, { trennwand: true, tuerInWand: true, fensterTeil: true });
+  let aktuell = e.ebene4.baue(e.ebene4.freigeben(basis(), 'sonde'));
+  assert.equal(aktuell.status, 'fertig');
+  const schritte = [
+    ['Versatz der Trennwand', (s) => { s.teile.find((t) => t.id === 'trennwand').lage.versatz = { sued: 3 }; }, ['fenster', 'haustuer', 'innentuer', 'trennwand']],
+    ['Innentür entfernt', (s) => { s.teile = s.teile.filter((t) => t.id !== 'innentuer'); }, ['fenster', 'haustuer', 'trennwand']],
+    ['ganze Trennwandkette entfernt', (s) => { s.teile = s.teile.filter((t) => t.id !== 'trennwand'); }, ['fenster', 'haustuer']],
+  ];
+  let spez = basis();
+  for (const [name, aendere, erwartet] of schritte) {
+    aendere(spez);
+    spez.version += 1;
+    const u = e.ebene4.aktualisiereBau(aktuell.entwurf, e.ebene4.freigeben(spez, 'sonde'));
+    assert.equal(u.status, 'fertig', `${name}: ${JSON.stringify(u.rueckfragen)}`);
+    const frisch = await laufe(structuredClone(spez), e, e5);
+    assert.equal(frisch.status, 'fertig', name);
+    assert.deepEqual(abd(e5.bauplan(u.entwurf)), abd(frisch.plan), name);
+    assert.deepEqual(u.entwurf.teile.map((t) => t.ref).filter((x) => ['trennwand', 'innentuer', 'haustuer', 'fenster'].includes(x)).sort(), erwartet, `${name}: Kinder im Entwurf`);
+    aktuell = { entwurf: u.entwurf };
+  }
+});

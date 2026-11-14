@@ -79,3 +79,22 @@ test('Briefing: der Prompt erklärt Teile in Bauteilen, Anker, Versatz und Ausri
   const s = typeof b === 'string' ? b : JSON.stringify(b);
   for (const wort of ['innen', 'wand-sued', 'lage.anker', 'nordwest', 'lage.versatz', 'ost, sued, hoch', 'lage.ausrichtung', 'sueden']) assert.ok(s.includes(wort), wort);
 });
+
+test('Übersetzung: ungültige Kind-Bezüge enden in Rückfragen ohne Ausnahme, vorangestellte Kinder finden ihre Wurzel', () => {
+  const wand = kind('trennwand', 'bau.wand', { laenge: 9, hoehe: 4, dicke: 1 }, { bezug: 'haus', relation: 'innen' });
+  const tuer = kind('tuer', 'bau.tuer', { fluegel: 1 }, { bezug: 'trennwand', relation: 'wand' });
+  // vollständig umgekehrte Reihenfolge: Tür, Wand, Haus
+  const umgekehrt = uebersetze([tuer, wand, haus]);
+  assert.deepEqual(umgekehrt.rueckfragen, []);
+  assert.deepEqual(kinderVon(umgekehrt.vorgabe, 'haus').map((k) => k.ref), ['trennwand', 'tuer']);
+  assert.deepEqual(umgekehrt.vorgabe, uebersetze([haus, wand, tuer]).vorgabe);
+  // zwei Teile liegen gegenseitig ineinander, keines hat eine Wurzel
+  const a = kind('a', 'bau.wand', {}, { bezug: 'b', relation: 'innen' }), b = kind('b', 'bau.wand', {}, { bezug: 'a', relation: 'innen' });
+  const kreis = U.uebersetze(spec([haus, a, b]));
+  assert.equal(kreis.vorgabe, null);
+  assert.match(kreis.rueckfragen[0].frage, /führen nicht auf den Bauplatz zurück/);
+  // Bezug auf ein Teil, das es nicht gibt
+  const fehlt = U.uebersetze(spec([haus, kind('x', 'bau.treppe', {}, { bezug: 'gibtsnicht', relation: 'innen' })]));
+  assert.equal(fehlt.vorgabe, null);
+  assert.ok(fehlt.rueckfragen.length > 0);
+});

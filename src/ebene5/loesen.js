@@ -107,7 +107,9 @@ export function konfliktAnsicht(k, { gruppe = false } = {}) {
   return {
     teil: k.teil, zelle: { ...k.zelle }, ort: ort(k), gruppe,
     deine: inhaltText(k.vorschlag), ihre: inhaltText(k.aktuell), von: k.aktuell?.von ?? null,
-    satz: `${gruppe ? 'Das Verschieben wurde ganz abgelehnt, nichts wurde geändert. ' : ''}${ort(k)}: Du wolltest „${inhaltText(k.vorschlag)}“, ${k.aktuell?.von ?? 'jemand anders'} hat inzwischen „${inhaltText(k.aktuell)}“ gesetzt.${gruppe ? ' Bitte „Neu verankern“ noch einmal wählen.' : ''}`,
+    satz: gruppe
+      ? `Das Verschieben wurde ganz abgelehnt, nichts wurde geändert. ${ort(k)}: ${k.aktuell?.von ?? 'Jemand anders'} hat sie inzwischen auf „${inhaltText(k.aktuell)}“ gestellt. Bitte „Neu verankern“ noch einmal wählen.`
+      : `${ort(k)}: Du wolltest „${inhaltText(k.vorschlag)}“, ${k.aktuell?.von ?? 'jemand anders'} hat inzwischen „${inhaltText(k.aktuell)}“ gesetzt.`,
   };
 }
 

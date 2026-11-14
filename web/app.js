@@ -54,7 +54,8 @@ worker.onmessage = ({ data }) => {
   if (z.bearbeitung && z.vorher && (data.typ === 'fehler' || data.typ === 'rueckfragen')) { bearbeitungVerwerfen(data.typ === 'fehler' ? data.text : data.rueckfragen.map((q) => q.frage).join(' ')); render(); return; }
   if (data.typ === 'fehler') { z.fehler = data.text; z.daten = null; }
   else if (data.typ === 'rueckfragen') { z.rueckfragen = data.rueckfragen; z.daten = null; z.fehler = null; }
-  else if (data.typ === 'fertig' && z.bearbeitung && z.vorher && Bearbeiten.neueProbleme(data, z.vorher.daten)) { bearbeitungVerwerfen(Bearbeiten.neueProbleme(data, z.vorher.daten)); }
+  else if (data.typ === 'fertig' && z.bearbeitung && z.vorher && !z.vomRaum && Bearbeiten.neueProbleme(data, z.vorher.daten)) { // nur eigene lokale Änderungen werden bei einem neuen Problem zurückgenommen; was der Raum angenommen hat, gilt für alle und wird gezeigt (Reiter „Änderungen“)
+    bearbeitungVerwerfen(Bearbeiten.neueProbleme(data, z.vorher.daten)); }
   else if (data.typ === 'fertig') { z.daten = data; z.fehler = null; z.rueckfragen = null; nachDemBauen(); }
   render();
 };
@@ -128,7 +129,8 @@ const gesperrteAenderungen = new Set(); // Schlüssel mit unlesbaren Daten ohne 
 const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (!k) return; if (gesperrteAenderungen.has(k)) { toast('Die gespeicherten Änderungen dieses Projekts sind unlesbar und ließen sich nicht sichern; neue Änderungen werden deshalb nicht gespeichert, damit das Original nicht überschrieben wird. Bitte Speicher freigeben und die Seite neu laden.'); return; } speicher.schreib(k, PF.fuerSpeicher(pf)); }; // mit Zulassungen in der Speicherform, die ältere Versionen sichtbar ablehnen (planfassung.js)
 
 /** Eine neue Planfassung (eigene Änderung oder Änderung aus dem Raum) wird gebaut. Die Seite zeigt den bisherigen Plan, bis der neue fertig und (bei geänderten Schichten) bestätigt ist. */
-function baueMitAenderungen(pf) {
+function baueMitAenderungen(pf, { vomRaum = false } = {}) {
+  z.vomRaum = vomRaum;
   if (!z.spec) return;
   const basis = z.daten ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null); // läuft schon eine Berechnung, bleibt der zuletzt gezeigte Plan die Grundlage
   z.bleibe = z.daten ? { id: abschnitt().id, y: schicht().y } : z.bleibe; // nach dem Neubau an derselben Schicht bleiben (nicht zur nächsten ungebauten springen)
@@ -241,17 +243,23 @@ function umbauEntscheiden(ja) {
 /** Der Raum hat eine neue Planfassung (beim Beitritt, oder weil jemand eine Änderung gemacht hat): sie gilt für alle und wird gebaut. Eigene Änderungen aus der Zeit vor dem Beitritt gehen nicht verloren, sondern bleiben als Sicherung im Browser. */
 function raumAenderung(pf, beimBeitritt = false) {
   if (!z.spec) return;
-  if (Bearbeiten.gleicheEintraege(pf, z.planfassung)) { z.planfassung = pf; sichereAenderungen(); return; }
+  if (Bearbeiten.gleicheEintraege(pf, z.planfassung)) { z.planfassung = pf; if (z.bearbeitung) z.vomRaum = true; /* ein laufender Bau dieser Änderung gilt jetzt als vom Raum bestätigt: er wird nicht mehr lokal zurückgenommen */ sichereAenderungen(); return; }
   const lokal = Object.keys(z.planfassung.eintraege).length;
   if (beimBeitritt && lokal && !Object.keys(pf.eintraege).length) { // der Raum hat noch keine Änderungen: die eigenen gehen in den Raum (so beginnt der Raum mit dem Plan, den du siehst)
-    if (live.sendeOperationen(Bearbeiten.operationenAus(z.planfassung))) toast(`Deine ${lokal} ${lokal === 1 ? 'Änderung wird' : 'Änderungen werden'} in den Raum übertragen.`);
-    return;
+    try {
+      if (live.sendeOperationen(Bearbeiten.operationenAus(z.planfassung))) toast(`Deine ${lokal} ${lokal === 1 ? 'Änderung wird' : 'Änderungen werden'} in den Raum übertragen.`);
+      return;
+    } catch (f) { // z. B. ein älterer Dienst, der Zulassungen nicht kennt: nichts geht verloren, der Stand bleibt als Sicherung, im Raum gilt der Stand des Raums
+      const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, PF.fuerSpeicher(z.planfassung));
+      toast(`${f.message} Deine ${lokal} ${lokal === 1 ? 'Änderung bleibt' : 'Änderungen bleiben'} als Sicherung im Browser (${k}.sicherung); im Raum gilt der Stand des Raums.`);
+      baueMitAenderungen(pf, { vomRaum: true }); return;
+    }
   }
   if (beimBeitritt && lokal) {
     const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, PF.fuerSpeicher(z.planfassung));
     toast(`Der Raum hat andere Änderungen (${Bearbeiten.beschreibung(pf)}) als du (${Bearbeiten.beschreibung(z.planfassung)}). Im Raum gilt der Stand des Raums; deine bisherigen bleiben als Sicherung im Browser (${k}.sicherung).`);
   }
-  baueMitAenderungen(pf);
+  baueMitAenderungen(pf, { vomRaum: true }); // vom Raum angenommen: für alle gültig, auch wenn es ein Problem erzeugt (Verwaistes wird sichtbar und lässt sich lösen)
 }
 
 function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); live?.lokalGeaendert(z.fortschritt); }

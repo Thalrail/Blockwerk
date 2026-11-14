@@ -93,7 +93,7 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
       const emp = PF.pruefeForm(empfangeneAenderungen);
       if (!Object.keys(pf.eintraege).length) pf = emp;
       else if (vonRaum) { // im Raum gilt der Stand des Raums; die eigenen bleiben als Sicherung
-        if (!Bearbeiten.gleicheEintraege(emp, pf)) { const k = pfSchluessel(spezifikation); if (k) speicher.schreib(`${k}.sicherung`, pf); toast(`Im Raum gelten andere Änderungen (${Bearbeiten.beschreibung(emp)}); deine bisherigen (${Bearbeiten.beschreibung(pf)}) bleiben als Sicherung im Browser.`); }
+        if (!Bearbeiten.gleicheEintraege(emp, pf)) { const k = pfSchluessel(spezifikation); if (k) speicher.schreib(`${k}.sicherung`, PF.fuerSpeicher(pf)); toast(`Im Raum gelten andere Änderungen (${Bearbeiten.beschreibung(emp)}); deine bisherigen (${Bearbeiten.beschreibung(pf)}) bleiben als Sicherung im Browser.`); }
         pf = emp;
       }
       else if (!Bearbeiten.gleicheEintraege(emp, pf)) toast(`Der Link oder die Datei enthält andere Änderungen (${Bearbeiten.beschreibung(emp)}); deine eigenen (${Bearbeiten.beschreibung(pf)}) bleiben.`);
@@ -118,12 +118,12 @@ function ladePlanfassung(spec) {
   const k = pfSchluessel(spec); if (!k) return PF.leer();
   let text = null; try { text = localStorage.getItem(k); } catch { /* Speicher gesperrt: dann gibt es nichts zu lesen */ }
   if (text === null) return PF.leer();
-  try { return PF.pruefeForm(JSON.parse(text)); } catch (f) { // beschädigt (auch kein JSON): nicht erfinden, aber auch nicht überschreiben: der Rohtext bleibt als Kopie erhalten
+  try { return PF.ausSpeicher(JSON.parse(text)); } catch (f) { // beschädigt (auch kein JSON): nicht erfinden, aber auch nicht überschreiben: der Rohtext bleibt als Kopie erhalten
     try { localStorage.setItem(`${k}.defekt`, text); } catch { /* Speicher voll */ }
     setTimeout(() => toast(`Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.`), 0); return PF.leer();
   }
 }
-const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (k) speicher.schreib(k, pf); };
+const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (k) speicher.schreib(k, PF.fuerSpeicher(pf)); }; // mit Zulassungen in der Speicherform, die ältere Versionen sichtbar ablehnen (planfassung.js)
 
 /** Eine neue Planfassung (eigene Änderung oder Änderung aus dem Raum) wird gebaut. Die Seite zeigt den bisherigen Plan, bis der neue fertig und (bei geänderten Schichten) bestätigt ist. */
 function baueMitAenderungen(pf) {
@@ -246,7 +246,7 @@ function raumAenderung(pf, beimBeitritt = false) {
     return;
   }
   if (beimBeitritt && lokal) {
-    const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, z.planfassung);
+    const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, PF.fuerSpeicher(z.planfassung));
     toast(`Der Raum hat andere Änderungen (${Bearbeiten.beschreibung(pf)}) als du (${Bearbeiten.beschreibung(z.planfassung)}). Im Raum gilt der Stand des Raums; deine bisherigen bleiben als Sicherung im Browser (${k}.sicherung).`);
   }
   baueMitAenderungen(pf);
@@ -479,6 +479,7 @@ function aenderungenPanel() {
 function loesenAnwenden(ops, gruppe = false) {
   if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
   if (live.istVerbunden()) {
+    if (ops.some((o) => o.neu?.zugelassen === true) && !live.raumKenntZulassung()) { toast('Der Dienst dieses Raums ist älter und kennt noch keine Zulassungen. Es wurde nichts gesendet, damit die Zulassung nicht still verloren geht. Bitte den Dienst aktualisieren.'); return; }
     if (!live.sendeOperationen(ops, { gruppe })) { toast('Der Raum ist gerade nicht erreichbar. Nichts wurde gesendet.'); return; }
     toast('Entscheidung an den Raum gesendet. Sie gilt, sobald der Raum sie annimmt.'); return;
   }
@@ -961,7 +962,7 @@ async function aktion(name, el) {
     else if (name === 'kopie') { startProjekt(Projekt.eigenstaendigeKopie(z.spec, zufall())); toast('Eigenständige Kopie angelegt: neue Projektkennung, eigener Fortschritt, nie mit dem Original gemischt.'); }
     else if (name.startsWith('bk-')) await blockAktion(name, d);
     else if (name === 'aenderungen-verwerfen') {
-      const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, z.planfassung); // nichts geht endgültig verloren
+      const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, PF.fuerSpeicher(z.planfassung)); // nichts geht endgültig verloren
       z.fehler = null; z.rueckfragen = null;
       toast('Die Änderungen werden verworfen; der Plan wird nur aus der Spezifikation neu berechnet.');
       baueMitAenderungen(PF.leer()); // der normale Weg: Umbauhinweise für schon gebaute Schichten, gespeichert wird erst nach dem Bau

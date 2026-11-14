@@ -9,6 +9,8 @@ import { PROJEKT_ID } from '../ebene4/spezifikation.js';
 
 export const TYP = 'blockwerk-projekt';
 export const VERSION = 1;
+/** Umschlag mit Zulassungen in den Änderungen (U6): ältere Versionen verstehen ihn nicht und lehnen ihn sichtbar ab, statt die Zulassungen beim Lesen zu verlieren. */
+export const VERSION_MIT_ZULASSUNG = 2;
 /** Ab dieser Länge des Codes schlägt die Oberfläche die Datei vor (Chat-Programme kürzen lange Links). */
 export const EMPFOHLEN_MAX = 4000;
 /** Grenzen für fremde Eingaben (Links, Dateien): größer ist kein Blockwerk-Projekt, sondern ein Fehler oder ein Angriff (Dekompressionsbombe). */
@@ -57,7 +59,7 @@ function ausBase64Url(text) {
 /** Prüft die Form der geteilten Daten. */
 function pruefe(d) {
   if (!d || d.typ !== TYP) throw new TeilenFehler('das ist kein Blockwerk-Projekt');
-  if (d.version !== VERSION) throw new TeilenFehler(`Version ${String(d.version)} wird nicht verstanden (erwartet ${VERSION})`);
+  if (d.version !== VERSION && d.version !== VERSION_MIT_ZULASSUNG) throw new TeilenFehler(`Version ${String(d.version)} wird nicht verstanden (erwartet ${VERSION} oder ${VERSION_MIT_ZULASSUNG}); bitte Blockwerk aktualisieren`);
   if (!d.spezifikation || typeof d.spezifikation !== 'object') throw new TeilenFehler('die Spezifikation fehlt');
   const kennung = d.spezifikation.projekt?.id;
   if (kennung !== undefined && !(typeof kennung === 'string' && PROJEKT_ID.test(kennung))) throw new TeilenFehler('die Projektkennung ist ungültig (erwartet p- und 32 Hexzeichen)');
@@ -72,7 +74,7 @@ function pruefe(d) {
 }
 
 /** @param {{spezifikation: object, fortschritt?: object, aenderungen?: {version: number, eintraege: object}, name?: string}} projekt */
-const paket = (projekt) => ({ typ: TYP, version: VERSION, spezifikation: projekt.spezifikation, ...(projekt.fortschritt ? { fortschritt: projekt.fortschritt } : {}), ...(projekt.aenderungen && Object.keys(projekt.aenderungen.eintraege ?? {}).length ? { aenderungen: projekt.aenderungen } : {}) });
+const paket = (projekt) => ({ typ: TYP, version: PF.enthaeltZulassung(projekt.aenderungen) ? VERSION_MIT_ZULASSUNG : VERSION, spezifikation: projekt.spezifikation, ...(projekt.fortschritt ? { fortschritt: projekt.fortschritt } : {}), ...(projekt.aenderungen && Object.keys(projekt.aenderungen.eintraege ?? {}).length ? { aenderungen: projekt.aenderungen } : {}) });
 
 /** Kodiert ein Projekt für einen Link. @returns {Promise<{code: string, zuLang: boolean}>} */
 export async function kodiere(projekt) {

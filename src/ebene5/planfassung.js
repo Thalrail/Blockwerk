@@ -24,6 +24,29 @@ export class PlanfassungFehler extends Error {
 }
 
 export const leer = () => ({ version: 0, eintraege: {} });
+
+// ---------- Format und Verträglichkeit mit älteren Versionen (U6, Entscheidung 14.11.2026) ----------
+// Eine Planfassung mit Zulassungen (`zugelassen: true`) kann eine ältere Blockwerk-Version nicht verlustfrei lesen: sie würde das unbekannte Feld beim Laden stillschweigend entfernen und beim
+// erneuten Speichern oder Teilen die Zulassung verlieren. Darum bekommt so eine Planfassung eine Form, die ältere Versionen **sichtbar ablehnen**, statt sie zu verstümmeln:
+//  - Speicher im Browser: `{ format: 2, planfassung }` (ältere Versionen finden darin keine gültige Planfassung, legen eine Kopie unter „….defekt“ an und melden es);
+//  - Link und Datei: Umschlag `version: 2` (ältere Versionen lehnen ihn mit „Version 2 wird nicht verstanden“ ab; siehe teilen.js);
+//  - im Raum schützt der Vergleich je Zelle: ein älterer Klient kennt die Zulassung nicht, seine Erwartung weicht ab, und der Raum meldet einen Konflikt statt zu überschreiben.
+// Ohne Zulassung bleibt alles wie bisher (Format 1, auch von älteren Versionen lesbar).
+export const FORMAT = 2;
+export const enthaeltZulassung = (pf) => Object.values(pf?.eintraege ?? {}).some((e) => e?.zugelassen === true);
+/** Die Form, in der eine Planfassung gespeichert wird (Browser-Speicher, Sicherungen): mit Zulassungen eingewickelt, sonst unverändert. */
+export const fuerSpeicher = (pf) => (enthaeltZulassung(pf) ? { format: FORMAT, planfassung: pf } : pf);
+/**
+ * Liest die Speicherform (`fuerSpeicher`) und prüft sie streng. Ein Format, das diese Version nicht kennt (neuer als sie), ist ein klarer Fehler und wird nie still gelesen oder überschrieben.
+ * @returns {{version: number, eintraege: object}}
+ */
+export function ausSpeicher(roh) {
+  if (istObjekt(roh) && Object.hasOwn(roh, 'format')) {
+    if (roh.format !== FORMAT) throw new PlanfassungFehler('format', `Diese Änderungen haben das Format ${String(roh.format).slice(0, 20)}, das diese Version von Blockwerk nicht kennt. Bitte Blockwerk aktualisieren; nichts wurde verändert.`);
+    return pruefeForm(roh.planfassung);
+  }
+  return pruefeForm(roh);
+}
 export const schluessel = (teil, zelle) => `${teil}|${zelle.x},${zelle.y},${zelle.z}`;
 
 function pruefeZelle(z) {

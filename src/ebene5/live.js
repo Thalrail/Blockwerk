@@ -25,7 +25,8 @@ export const neuerRaum = () => ({ spezifikation: null, fortschritt: F.leer(), ae
 const aenderungenVon = (raum) => raum.aenderungen ?? PF.leer(); // ältere gespeicherte Räume kennen noch keine Änderungen
 export const spielerListe = (raum) => Object.values(raum.spieler).map((s) => s.name).sort();
 const version = (raum) => raum.spezifikation?.version ?? 0;
-const zustandVon = (raum) => ({ typ: 'zustand', spezifikation: raum.spezifikation, fortschritt: raum.fortschritt, aenderungen: aenderungenVon(raum), spieler: spielerListe(raum) });
+// `format`: das Planfassungsformat, das der Raum versteht (2 = mit Zulassungen). Ein älterer Dienst nennt es nicht; die Seite sendet ihm dann keine Zulassungen (sie gingen dort still verloren).
+const zustandVon = (raum) => ({ typ: 'zustand', spezifikation: raum.spezifikation, fortschritt: raum.fortschritt, aenderungen: aenderungenVon(raum), spieler: spielerListe(raum), format: PF.FORMAT });
 
 /** Liest den Text einer Nachricht (Größe und Form werden geprüft, bevor etwas geparst wird, das groß sein könnte). */
 export function liesNachricht(text) {
@@ -154,7 +155,7 @@ export function austritt(raum, absender) {
 const inhalt = (e) => (e ? { op: e.op, ...(e.block ? { block: e.block } : {}), ...(e.zugelassen === true ? { zugelassen: true } : {}) } : null);
 
 export function erzeugeKlient({ name, fortschritt = F.leer() }) {
-  const z = { name, fortschritt, gesendet: {}, raumVersion: 0, spieler: [], vorschlag: null, aenderungen: PF.leer() };
+  const z = { name, fortschritt, gesendet: {}, raumVersion: 0, spieler: [], vorschlag: null, aenderungen: PF.leer(), raumFormat: 1 };
   const gleich = (a, b) => a && b && a.wert === b.wert && a.uhr === b.uhr && a.von === b.von;
   /** Alle Einträge, die der Raum noch nicht von uns kennt. */
   const neuesVon = (f) => Object.fromEntries(Object.entries(f.eintraege).filter(([k, e]) => !gleich(z.gesendet[k], e)));
@@ -202,13 +203,14 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
       if (m.typ === 'zustand') {
         z.spieler = m.spieler;
         z.raumVersion = m.spezifikation?.version ?? 0;
+        z.raumFormat = Number.isInteger(m.format) ? m.format : 1; // ohne Angabe ein älterer Dienst
         z.aenderungen = PF.pruefeForm(m.aenderungen ?? PF.leer());
         const merged = F.zusammenfuehren(z.fortschritt, F.pruefe(m.fortschritt));
         const mein = neuesVon(merged); // lokal Neueres geht jetzt in den Raum
         for (const [k, e] of Object.entries(m.fortschritt.eintraege)) if (gleich(merged.eintraege[k], e)) z.gesendet[k] = e;
         z.fortschritt = merged;
         if (Object.keys(mein).length) { Object.assign(z.gesendet, kopie(mein)); senden.push({ typ: 'haken', eintraege: mein }); }
-        meldungen.push({ art: 'zustand', spezifikation: m.spezifikation ?? null, fortschritt: merged, aenderungen: z.aenderungen });
+        meldungen.push({ art: 'zustand', spezifikation: m.spezifikation ?? null, fortschritt: merged, aenderungen: z.aenderungen, format: z.raumFormat });
       } else if (m.typ === 'eintraege') {
         const eingang = F.pruefe({ eintraege: m.eintraege, uhr: Math.max(0, ...Object.values(m.eintraege).map((e) => e.uhr)) });
         z.fortschritt = F.zusammenfuehren(z.fortschritt, eingang);

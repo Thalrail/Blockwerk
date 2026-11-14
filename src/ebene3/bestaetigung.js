@@ -112,5 +112,22 @@ export function erzeugeBestaetigung({ regelwerk, materialisierung }) {
     return { entwurf: e, bestaetigt, abgelehnt };
   }
 
-  return { abdruecke, status, bestaetige };
+  /**
+   * Welche angewandten manuellen Änderungen liegen im Prüfbereich welcher Technikanlage? Nur Änderungen mit Status `angewandt` zählen (ungültige, verwaiste, überholte und
+   * zugelassene, aber nicht angewendete haben nichts verändert). Die Anlage wird im Abschluss mit diesen Änderungen neu geprüft.
+   * @returns {Map<string, string[]>}  Anlage (ref) → Änderungs-Ids, sortiert
+   */
+  function geaendertDurch(entwurf, mat) {
+    const aus = new Map();
+    if (!mat.aenderungen) return aus;
+    const angewandt = [...mat.aenderungen].filter(([, st]) => st.status === 'angewandt' && st.ort).sort((p, q) => Number(p[0].slice(1)) - Number(q[0].slice(1)));
+    if (!angewandt.length) return aus;
+    for (const x of abdruecke(entwurf, mat)) {
+      const ids = angewandt.filter(([, st]) => imKasten(st.ort, x.kasten)).map(([id]) => id);
+      if (ids.length) aus.set(x.ref, ids);
+    }
+    return aus;
+  }
+
+  return { abdruecke, status, bestaetige, geaendertDurch };
 }

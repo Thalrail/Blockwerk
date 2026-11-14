@@ -1,6 +1,6 @@
 // Blockwerk – Engine im Hintergrund (Modul-Worker): lädt die Daten per fetch und rechnet Spezifikation → Plan → Bauplan,
 // damit die Seite während der mehrsekündigen Berechnung bedienbar bleibt. Die Oberfläche bekommt nur fertige, einfache Daten.
-import { ladeEngine, erzeugeEbene5 } from '../src/ebene5/index.js';
+import { ladeEngine, erzeugeEbene5, bauePlan } from '../src/ebene5/index.js';
 import { berichtAlsText } from '../src/ebene3/index.js';
 import { eingabe as eingabeModul } from '../src/ebene5/index.js';
 import { liesJson, abdruck } from '../src/ebene4/index.js';
@@ -55,10 +55,10 @@ async function eingabe(data) {
   return null;
 }
 
-async function baue(spezifikation, messungen = [], lauf) {
+async function baue(spezifikation, messungen = [], lauf, aenderungen = null) {
   const e = await engine();
   self.postMessage({ typ: 'status', text: 'Spezifikation wird geprüft …', lauf });
-  const r = e.ebene4.baue(spezifikation, messungen);
+  const r = bauePlan(e, spezifikation, messungen, aenderungen); // manuelle Änderungen (Planfassung) fließen in den wirksamen Plan ein
   if (r.status === 'rueckfragen') return { typ: 'rueckfragen', rueckfragen: r.rueckfragen };
   self.postMessage({ typ: 'status', text: 'Bauplan wird angelegt …', lauf });
   const plan = e.e5.bauplan(r.entwurf);
@@ -71,7 +71,7 @@ async function baue(spezifikation, messungen = [], lauf) {
 
 self.onmessage = async ({ data }) => {
   try {
-    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
+    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf, data.aenderungen)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
     self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });

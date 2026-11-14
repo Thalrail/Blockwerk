@@ -123,7 +123,7 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
       const frei = einbau?.freihaltung.get(k);
       if (frei) { status.set(a.id, { status: 'konflikt', grund: 'freiraum', mit: [...frei].sort(), teil: t.id, ort }); continue; }
       let block;
-      try { [block] = bloeckeInWelt(ebene0, [{ id: a.block.id, zustand: a.block.zustand ?? {}, x: pz.x, y: pz.y, z: pz.z }], t.lage); } catch (f) { status.set(a.id, { status: 'ungueltig', grund: f.message, teil: t.id, ort }); continue; }
+      try { pruefeBlock(a.block); [block] = bloeckeInWelt(ebene0, [{ id: a.block.id, zustand: a.block.zustand ?? {}, x: pz.x, y: pz.y, z: pz.z }], t.lage); } catch (f) { status.set(a.id, { status: 'ungueltig', grund: f.message, teil: t.id, ort }); continue; }
       const e = eigene(t);
       e.bauteil.bloecke = e.bauteil.bloecke.filter((b) => key(b.x, b.y, b.z) !== k);
       e.bauteil.bloecke.push({ id: block.id, x: block.x, y: block.y, z: block.z, zustand: block.zustand });

@@ -21,7 +21,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
   const maximum = regelwerk.parameter('plan.runden', 'maximum');
 
   /** Geometrieregeln der Planung: Überschneidung, Sperrzone, Zone. */
-  function geometrie(entwurf, mat) {
+  function geometrie(entwurf, mat, ohneAenderungen = false) {
     const liste = [];
     const teilVon = new Map(entwurf.teile.map((t) => [t.id, t]));
     // Überschneidung: jeder Block höchstens einem Teil
@@ -84,7 +84,8 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       }
     }
     // Manuelle Einzelblockänderungen (Bearbeitungsmodell B): verwaiste, widersprüchliche oder ungültige Änderungen sind ein Einwand an Jonah; nichts wird automatisch verworfen oder verschoben
-    for (const [id, st] of [...(mat.aenderungen ?? [])].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+    // Während der Planung der einzelnen Abschnitte (`ohneAenderungen`) sind spätere Teile noch gar nicht da: eine Änderung an ihnen wäre sonst fälschlich „verwaist“. Geprüft wird bei der Abschlussprüfung.
+    for (const [id, st] of (ohneAenderungen ? [] : [...(mat.aenderungen ?? [])]).sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
       if (st.status === 'angewandt' || st.status === 'ueberholt') continue;
       const a = entwurf.aenderungen.find((x) => x.id === id), teil = teilVon.get(st.teil) ?? null;
       const was = `${a.op === 'setze' ? `${a.block.id} setzen` : 'Block entfernen'} an der Rahmenzelle (${a.zelle.x}, ${a.zelle.y}, ${a.zelle.z}) von „${a.teil}“`;
@@ -132,7 +133,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
   }
 
   /** Sammelt alle Einwände (nur Verstöße) und die Hinweise des Prüfers. Sortiert nach Rang des Erhebenden, dann nach Schlüssel. */
-  function sammle(entwurf) {
+  function sammle(entwurf, ohneAenderungen = false) {
     const mat = materialisierung.materialisiere(entwurf, { testmaterial: true });
     const einwaende = [], hinweise = [];
     for (const m of materialisierung.pruefeEntwurf(entwurf, mat)) {
@@ -143,7 +144,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
         abschnitt: teil ? entwurf.teile.find((t) => t.id === teil).abschnitt : null, text: m.meldung, schluessel: `${m.regel}|${ortKey(m.ort)}|${m.meldung}`,
       });
     }
-    einwaende.push(...geometrie(entwurf, mat));
+    einwaende.push(...geometrie(entwurf, mat, ohneAenderungen));
     const zugelassen = new Set(entwurf.zulassungen ?? []);
     einwaende.splice(0, einwaende.length, ...einwaende.filter((x) => !zugelassen.has(x.schluessel)));
     einwaende.sort((a, b) => fachleute.rang(a.von) - fachleute.rang(b.von) || (a.schluessel < b.schluessel ? -1 : a.schluessel > b.schluessel ? 1 : 0));
@@ -167,7 +168,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
    * @param {Record<string, (einwand: object, entwurf: object) => (object|null)>} handler  je Fachmann: liefert eine Änderung (für `aendere`) oder null
    * @returns {{entwurf: object, erledigt: string[], eskaliert: string[], rueckfragen: object[], hinweise: object[], runden: number}}
    */
-  function laufe(entwurf, handler, { maxRunden = maximum } = {}) {
+  function laufe(entwurf, handler, { maxRunden = maximum, ohneAenderungen = false } = {}) {
     let e = kopie(entwurf);
     const offen = new Map(); // Schlüssel → Einwand-ID
     const erledigt = [];
@@ -184,7 +185,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       }
     };
     for (let runde = 1; runde <= maxRunden; runde++) {
-      const { einwaende, hinweise: h } = sammle(e);
+      const { einwaende, hinweise: h } = sammle(e, ohneAenderungen);
       hinweise = h;
       schliesse(new Set(einwaende.map((x) => x.schluessel)), runde - 1);
       if (!einwaende.length) break;
@@ -208,7 +209,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       }
     }
     // nach der letzten Runde noch einmal prüfen: was bleibt, wird eskaliert
-    const { einwaende: rest, hinweise: h } = sammle(e);
+    const { einwaende: rest, hinweise: h } = sammle(e, ohneAenderungen);
     hinweise = h;
     schliesse(new Set(rest.map((x) => x.schluessel)), runden);
     const eskaliert = [], rueckfragen = [];

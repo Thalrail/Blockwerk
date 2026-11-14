@@ -39,7 +39,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 umgesetzt
 - **0b projektId** (Empfehlung unten): `projekt.id` optional in der Spezifikation, von der Oberfläche beim ersten Freigeben erzeugt (dort darf Zufall sein), mitgeführt in Link, Datei, Raum; Zuordnung der Fassungen und Schlüssel (Fortschritt, Änderungen) darüber, alter Name als Rückfall mit Bestätigung.
 - Prüfung: Schema-, Übersetzungs- und Teilen-Tests; Zitadelle-Prüfstein unverändert.
 
-### U1 Änderungen im Bauplan sichtbar (Priorität 1, Grundlage, ohne Oberfläche)
+### U1 Änderungen im Bauplan sichtbar (Priorität 1, Grundlage, ohne Oberfläche) – umgesetzt 14.11.2026, siehe `docs/referenz/`
 - Worker `baue(spec, messungen, planfassung, lauf)`: Entwurf aus der Spezifikation, `ausPlanfassung`, dann Bauplan mit den Änderungen. Leere Planfassung = bisheriger Plan, Byte für Byte (Regressionstest).
 - Bauplan erhält `aenderungen: [{ id, teil, zelle, weltzelle, op, block, status, grund }]` und die offenen Rückfragen der Art `aenderung`.
 - Schicht-Abdruck umfasst die geänderten Blöcke bereits (Abdruck über Ort, Block, Richtung, Inhalt): Haken gebauter Schichten fallen von selbst.

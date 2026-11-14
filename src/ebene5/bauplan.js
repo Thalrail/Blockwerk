@@ -31,6 +31,28 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
     return 0;
   }
 
+  /**
+   * Manuelle Einzelblockänderungen (Bearbeitungsmodell B) mit ihrem Stand, nur gelesen aus dem Entwurf und der Materialisierung (Ebene 5 rechnet nichts):
+   * Rahmenzelle und Block wie gespeichert, `status` (angewandt, ueberholt, verwaist, konflikt, ungueltig), `grund`, `ort` (Weltzelle, sofern das Teil sie hat),
+   * `rueckfrage` (die offene Frage an Jonah mit ihren Optionen, solange er nicht entschieden hat) und `zugelassen` (Jonah baut ohne sie weiter, sie bleibt gespeichert).
+   * Verwaistes oder Widersprüchliches verschwindet nie stillschweigend aus dieser Liste.
+   */
+  function aenderungsListe(entwurf, mat) {
+    const teilVon = new Map(entwurf.teile.map((t) => [t.ref ?? t.id, t]));
+    return [...entwurf.aenderungen].sort((p, q) => Number(p.id.slice(1)) - Number(q.id.slice(1))).map((a) => {
+      const st = mat.aenderungen?.get(a.id) ?? { status: 'angewandt' };
+      const ew = [...entwurf.einwaende].reverse().find((w) => w.regel === 'plan.aenderung' && String(w.schluessel).startsWith(`plan.aenderung|${a.id}|`));
+      const rf = ew ? entwurf.rueckfragen.find((r) => r.einwand === ew.id && (r.status === undefined || r.status === 'offen')) : null;
+      return {
+        id: a.id, teil: a.teil, zelle: { ...a.zelle }, op: a.op, ...(a.block ? { block: JSON.parse(JSON.stringify(a.block)) } : {}), von: a.von ?? null,
+        status: st.status, ...(st.grund !== undefined ? { grund: st.grund } : {}), ...(st.mit !== undefined ? { mit: st.mit } : {}),
+        ort: st.ort ? { ...st.ort } : null, abschnitt: teilVon.get(a.teil)?.abschnitt ?? null,
+        ...(rf ? { rueckfrage: { id: rf.id, optionen: (rf.optionen ?? []).map((o) => ({ id: o.id, text: o.text })) } } : {}),
+        zugelassen: !!ew && (entwurf.zulassungen ?? []).includes(ew.schluessel),
+      };
+    });
+  }
+
   /** @param {object} entwurf  geplanter Entwurf (Ebene 3) */
   function bauplan(entwurf) {
     const mat = ebene3.materialisiere(entwurf);
@@ -41,6 +63,11 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
     const technikStatus = !entwurf.teile.some((t) => t.art === 'technik') ? []
       : entwurf.bestaetigungen?.length ? ebene3.bestaetigung.status(entwurf, mat)
         : entwurf.teile.filter((t) => t.art === 'technik').map((t) => ({ ref: t.ref ?? t.id, id: t.id, name: t.name ?? t.baustein, abschnitt: t.abschnitt, status: 'ungeprueft' }));
+    // manuelle Änderungen (ohne sie bleibt der Plan unverändert, kein zusätzliches Feld) und welche Technikanlage sie in ihrem Prüfbereich berühren:
+    // die Anlage wurde nach der Änderung neu geprüft (Ebene 1), die Anzeige nennt die Änderungen dazu
+    const aenderungen = (entwurf.aenderungen ?? []).length ? aenderungsListe(entwurf, mat) : null;
+    const durch = aenderungen && technikStatus.length ? ebene3.bestaetigung.geaendertDurch(entwurf, mat) : new Map(); // berechnet Ebene 3, hier wird nur angezeigt
+    const technikAnzeige = ({ ref, name, status }) => ({ ref, name, status, ...(durch.has(ref) ? { geaendertDurch: durch.get(ref) } : {}) });
     const teilVon = new Map(entwurf.teile.map((t) => [t.id, t]));
     const refVon = (id) => teilVon.get(id)?.ref ?? id;
     const ergebnis = [];
@@ -112,9 +139,9 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
       const summeA = {};
       for (const s of schichten) for (const [id, m] of Object.entries(s.summe)) summeA[id] = (summeA[id] ?? 0) + m;
       const teileListe = teileA.map((t) => ({ id: t.id, ref: t.ref ?? t.id, baustein: t.baustein, name: t.name ?? a.name, art: t.art, traeger: t.traeger ?? null, bloecke: mat.teile.get(t.id).schluessel.size }));
-      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, technik: technikStatus.filter((x) => x.abschnitt === a.id).map(({ ref, name, status }) => ({ ref, name, status })), aussparungen: aussparungenAnzahl, ...(ohneSchicht.length ? { aussparungenOhneSchicht: ohneSchicht } : {}) });
+      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, technik: technikStatus.filter((x) => x.abschnitt === a.id).map(technikAnzeige), aussparungen: aussparungenAnzahl, ...(ohneSchicht.length ? { aussparungenOhneSchicht: ohneSchicht } : {}) });
     }
-    return { projekt: { name: entwurf.projekt.name }, abschnitte: ergebnis, technik: technikStatus.map(({ ref, name, abschnitt, status }) => ({ ref, name, abschnitt, status })), summe: gesamt, bloecke: ergebnis.reduce((s, a) => s + a.bloecke, 0) };
+    return { projekt: { name: entwurf.projekt.name }, abschnitte: ergebnis, ...(aenderungen ? { aenderungen } : {}), technik: technikStatus.map((x) => ({ ...technikAnzeige(x), abschnitt: x.abschnitt })), summe: gesamt, bloecke: ergebnis.reduce((s, a) => s + a.bloecke, 0) };
   }
 
   return { bauplan };

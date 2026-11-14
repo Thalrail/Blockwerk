@@ -7,6 +7,7 @@ import * as Projekt from '../src/ebene5/projektid.js';
 import * as PF from '../src/ebene5/planfassung.js';
 import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
 import * as Stil from '../src/ebene5/stil.js';
+import * as Teile from '../src/ebene5/teile.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -28,7 +29,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -438,6 +439,127 @@ function zellePanel() {
   if (z.blockwahl) h += blockwahlPanel();
   return h + fuss;
 }
+// ---------- Bauteile (U5) ----------
+const REL_TEXT = (info, rel) => String(info.relationen[rel] ?? rel).replace('{bezug}', '…');
+const GROESSENART = { geometrie: 'Geometrie (skaliert frei)', menschenmass: 'Menschenmaß (bleibt fest)', technik: 'Technik (skaliert über Anzahl)' };
+async function teileLaden() {
+  if (z.teile.info) return;
+  try { z.teile.info = (await anfrage({ typ: 'teileInfo' })).info; } catch (f) { toast(String(f.message ?? f)); return; }
+  render();
+}
+/** Felder des gewählten Teils; sie werden neu angelegt, wenn eine andere Fassung gilt (der Stand der Spezifikation steht im Feld stand). */
+function teileFelder() {
+  const t = z.teile, stand = z.spec?.freigabe?.abdruck ?? null;
+  const teile = Teile.teilListe(z.spec, t.info.kindrelationen);
+  if (!teile.some((x) => x.id === t.id)) { t.id = (teile.find((x) => !x.kind) ?? teile[0])?.id ?? null; t.felder = null; }
+  if (t.id && (!t.felder || t.stand !== stand)) { t.felder = Teile.felderVon(z.spec, t.id); t.stand = stand; }
+  return teile;
+}
+const feld = (felder, k) => esc(felder[k] ?? '');
+const optionen = (liste, wert, text = (x) => x) => liste.map((x) => `<option value="${esc(x)}" ${x === wert ? 'selected' : ''}>${esc(text(x))}</option>`).join('');
+/** Felder der Lage: Beziehung, Bezug, dazu je nach Beziehung Abstand oder Anker, Ausrichtung und Versatz. */
+function lageFelderHtml(p, f, info, selfId, teile) {
+  const kind = info.kindrelationen.includes(f.rel), wand = /^wand-/.test(f.rel ?? '');
+  let h = `<label class="klein zustand">Lage <select id="${p}rel">${optionen(Object.keys(info.relationen), f.rel, (r) => REL_TEXT(info, r))}</select></label>
+    <label class="klein zustand">Bezug <select id="${p}bezug"><option value="projekt" ${f.bezug === 'projekt' ? 'selected' : ''}>Bauplatz (projekt)</option>${teile.filter((x) => x.id !== selfId).map((x) => `<option value="${esc(x.id)}" ${f.bezug === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>`;
+  if (kind) {
+    h += `<label class="klein zustand">Anker <select id="${p}anker"><option value="">(Standard)</option>${optionen(info.anker, f.anker)}</select></label>`;
+    if (!wand) h += `<label class="klein zustand">Ausrichtung <select id="${p}ausr"><option value="">(Standard)</option>${optionen(info.ausrichtungen, f.ausr)}</select></label>`;
+    h += `<div class="klein zustand">Versatz in Blöcken: ${info.versatzAchsen.map((a) => `${esc(a)} <input id="${p}v-${esc(a)}" type="number" step="1" min="-${info.versatzMax}" max="${info.versatzMax}" value="${feld(f, 'v-' + a)}" style="width:4.5em">`).join(' ')}</div>`;
+  } else h += `<label class="klein zustand">Abstand in Blöcken <input id="${p}abstand" type="number" step="1" min="0" max="${info.abstandMax}" value="${feld(f, 'abstand')}" style="width:5em"></label>`;
+  return h;
+}
+/** Größenfelder aus dem Bausteinpaket (Bereich, Größenart, Beschreibung): leer = Standard des Bausteins. */
+function paramFelderHtml(p, f, baustein) {
+  if (!baustein) return '';
+  return baustein.parameter.map((q) => `<label class="klein zustand" title="${esc(q.beschreibung ?? '')}">${esc(q.name)} <input id="${p}p-${esc(q.name)}" type="number" step="${q.ganzzahl ? 1 : 'any'}" min="${q.min}" max="${q.max}" placeholder="${q.standard ?? ''}" value="${feld(f, 'p-' + q.name)}" style="width:5em"> <span class="plakette">${esc(GROESSENART[q.groessenart] ?? q.groessenart)}</span> <span class="klein">${q.min}–${q.max}</span></label>`).join('');
+}
+/** Reiter „Teile“: Teile ändern (Größe, Lage, Name), hinzufügen, entfernen. Es wird die Spezifikation geändert; vorab zeigt eine Vorschau, was mit deinen Einzelblockänderungen geschieht. */
+function teilePanel() {
+  const t = z.teile, info = t.info;
+  if (!info) return '<p class="klein">Wird geladen …</p>';
+  if (z.umbau) return '<h3>Bauteile</h3><p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
+  const teile = teileFelder();
+  let h = '<h3>Bauteile</h3><p class="klein">Hier änderst du Größe, Lage und Name der Teile, fügst Teile hinzu oder entfernst sie. Vorher siehst du, was mit deinen Einzelblockänderungen geschieht. Eine Änderung ist eine neue Fassung und läuft über die Umbauhinweise.</p>';
+  if (t.meldung) h += `<p class="fehler">${esc(t.meldung)}</p>`;
+  if (t.bestaetigung) {
+    const b = t.bestaetigung;
+    h += `<div class="blockwahl"><strong>${esc(b.titel ?? 'Das ändert sich')}</strong><ul class="klein">${[...b.hinweise, ...b.folgen.map((x) => x.text)].map((x) => `<li>${esc(x)}</li>`).join('') || '<li>Keine Folgen für deine Einzelblockänderungen.</li>'}</ul>${b.folgen.length ? '<p class="klein">Betroffene Änderungen bleiben gespeichert, wirken aber nicht, bis sie aufgelöst sind (das kommt mit U6).</p>' : ''}<div class="knoepfe"><button class="haupt" data-a="tl-ja">Übernehmen</button><button data-a="tl-nein">Abbrechen</button></div></div>`;
+    return h;
+  }
+  if (t.neu) return h + neuesTeilHtml(info, teile);
+  const f = t.felder, ausgewaehlt = teile.find((x) => x.id === t.id);
+  h += `<label class="klein zustand">Teil <select id="tl-teil">${teile.map((x) => `<option value="${esc(x.id)}" ${x.id === t.id ? 'selected' : ''}>${x.kind ? '↳ ' : ''}${esc(x.name)}</option>`).join('')}</select></label>`;
+  if (!ausgewaehlt) return h + '<p class="klein">Es gibt noch kein Teil.</p><div class="knoepfe"><button data-a="tl-neu">Neues Teil …</button></div>';
+  const t0 = z.spec.teile.find((x) => x.id === t.id), baustein = info.bausteine.find((b) => b.id === t0.form?.baustein);
+  h += `<p class="klein">Baustein: ${esc(baustein?.titel ?? t0.form?.baustein ?? '?')} (${esc(t0.form?.baustein ?? '')})${ausgewaehlt.kind ? `, liegt in „${esc(teile.find((x) => x.id === ausgewaehlt.traeger)?.name ?? ausgewaehlt.traeger)}“` : ''}. Die Kennung „${esc(t.id)}“ bleibt (Einzelblockänderungen sind an sie gebunden).</p>
+    <label class="klein zustand">Name <input id="tl-name" type="text" maxlength="60" value="${feld(f, 'name')}"></label>
+    <label class="klein zustand">Wichtigkeit <select id="tl-wicht">${optionen(info.wichtigkeiten, f.wicht)}</select></label>
+    <h4>Größe</h4>${paramFelderHtml('tl-', f, baustein)}<p class="klein">Leer lassen = Standard des Bausteins.</p>
+    <h4>Lage</h4>${lageFelderHtml('tl-', f, info, t.id, teile)}
+    <div class="knoepfe"><button class="haupt" data-a="tl-anwenden">Prüfen und übernehmen</button><button data-a="tl-neu">Neues Teil …</button><button data-a="tl-entfernen">Teil entfernen …</button></div>`;
+  return h;
+}
+function neuesTeilHtml(info, teile) {
+  const f = z.teile.neu, baustein = info.bausteine.find((b) => b.id === f.baustein);
+  return `<h4>Neues Teil</h4>
+    <label class="klein zustand">Name <input id="tn-name" type="text" maxlength="60" value="${feld(f, 'name')}"></label>
+    <label class="klein zustand">Baustein <select id="tn-baustein">${info.bausteine.map((b) => `<option value="${esc(b.id)}" ${b.id === f.baustein ? 'selected' : ''}>${esc(b.titel)}</option>`).join('')}</select></label>
+    <label class="klein zustand">Art <select id="tn-art">${optionen(info.teilarten, f.art)}</select></label>
+    <label class="klein zustand">Wichtigkeit <select id="tn-wicht">${optionen(info.wichtigkeiten, f.wicht)}</select></label>
+    <h4>Größe</h4>${paramFelderHtml('tn-', f, baustein)}<p class="klein">Leer lassen = Standard des Bausteins (passt er nicht auf den Bauplatz, sagt es die Prüfung).</p>
+    <h4>Lage</h4>${lageFelderHtml('tn-', f, info, null, teile)}
+    <div class="knoepfe"><button class="haupt" data-a="tn-anlegen">Prüfen und hinzufügen</button><button data-a="tn-zu">Abbrechen</button></div>`;
+}
+/** Liest alle Felder mit dem Präfix aus der Seite (Feldname = Rest der Kennung). */
+const liesFelder = (p) => Object.fromEntries([...document.querySelectorAll(`[id^="${p}"]`)].map((el) => [el.id.slice(p.length), el.value]));
+let teileBeschaeftigt = false;
+/** Neue Spezifikation prüfen, Folgen vorab zeigen, bei Bedarf bestätigen lassen, dann über den gewohnten Weg übernehmen (Prüfer, Version, Freigabe, Umbauhinweise). */
+async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = null } = {}) {
+  const t = z.teile;
+  if (teileBeschaeftigt || stilBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
+  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
+  if (!z.name.trim()) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
+  t.meldung = ''; teileBeschaeftigt = true;
+  const ausgang = z.spec, nr = startNr;
+  try {
+    const v = await anfrage({ typ: 'teileVorschau', spezifikation: neu, aenderungen: z.planfassung, messungen: z.messungen, planVorher: { aenderungen: z.daten.plan.aenderungen ?? [] } });
+    if (z.spec !== ausgang || startNr !== nr) return; // inzwischen gilt oder rechnet eine andere Fassung: diese Vorschau ist überholt
+    if (v.rueckfragen.length) { t.meldung = `Das lässt sich so nicht übernehmen: ${v.rueckfragen.map((q) => q.frage).join(' ')}`; return; }
+    if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel }; return; }
+    t.bestaetigung = null; t.neu = null;
+  } catch (f) { t.meldung = String(f.message ?? f); return; } finally { teileBeschaeftigt = false; render(); }
+  await stilAnwenden(neu);
+}
+async function teileAktion(name) {
+  const t = z.teile, info = t.info; if (!info) return;
+  try {
+    if (name === 'tl-nein') { t.bestaetigung = null; render(); return; }
+    if (name === 'tl-ja') { const b = t.bestaetigung; if (b) await teileAnwenden(b.spec, { bestaetigt: true }); return; }
+    if (name === 'tn-zu') { t.neu = null; t.meldung = ''; render(); return; }
+    if (name === 'tl-neu') {
+      const teile = Teile.teilListe(z.spec, info.kindrelationen), b = info.bausteine[0];
+      t.neu = { name: '', baustein: b.id, art: info.teilarten[0], wicht: 'soll', rel: 'neben-osten', bezug: (teile.find((x) => !x.kind) ?? teile[0])?.id ?? 'projekt', abstand: '', anker: '', ausr: '' }; t.meldung = ''; render(); return;
+    }
+    if (name === 'tl-anwenden') {
+      t.felder = { ...liesFelder('tl-') }; delete t.felder.teil; t.meldung = '';
+      const neu = Teile.wendeFelder(z.spec, t.id, t.felder, info);
+      if (JSON.stringify(neu) === JSON.stringify(z.spec)) { toast('Es hat sich nichts geändert.'); render(); return; }
+      await teileAnwenden(neu); return;
+    }
+    if (name === 'tl-entfernen') {
+      const r = Teile.entferneTeil(z.spec, t.id, info.kindrelationen), n = Teile.teilListe(z.spec, info.kindrelationen).find((x) => x.id === t.id)?.name ?? t.id;
+      const betroffen = Object.keys(z.planfassung.eintraege).filter((k) => z.planfassung.eintraege[k].teil === t.id).length;
+      await teileAnwenden(r.spec, { titel: `Teil „${n}“ entfernen?`, hinweise: [`Das Teil und alle seine Blöcke entfallen aus dem Bauplan.`, ...r.entfernteVerbindungen.map((v) => `Die Verbindung von „${v.von}“ (${v.art}) zu diesem Teil entfällt.`), ...(betroffen ? [`${betroffen} Einzelblockänderung${betroffen === 1 ? '' : 'en'} an diesem Teil werden verwaist.`] : [])] }); return;
+    }
+    if (name === 'tn-anlegen') {
+      t.neu = { ...liesFelder('tn-') }; t.meldung = '';
+      const r = Teile.neuAusFeldern(z.spec, t.neu, info);
+      await teileAnwenden(r.spec, { hinweise: [`Neues Teil „${r.spec.teile.at(-1).name}“ (Kennung ${r.id}) wird hinzugefügt.`], titel: 'Teil hinzufügen?' }); return;
+    }
+  } catch (f) { t.meldung = String(f.message ?? f); render(); }
+}
+
 // ---------- Stil und Materialien (U4) ----------
 const ROLLEN_TEXT = { wand: 'Wand', akzent: 'Akzent', boden: 'Boden', licht: 'Licht', glas: 'Glas' };
 const FORMEN_TEXT = { voll: 'Block', treppe: 'Treppe', tuer: 'Tür', scheibe: 'Scheibe' };
@@ -542,7 +664,7 @@ function blockwahlPanel() {
 }
 function rechteSpalte() {
   const a = abschnitt(), s = schicht(), r = z.reiter;
-  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['stil', 'Stil'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
+  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['stil', 'Stil'], ['teile', 'Teile'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
   let inhalt = '';
   if (r === 'material') {
     const m = z.daten.material;
@@ -556,6 +678,7 @@ function rechteSpalte() {
       ${a.wesen.filter((w) => w.y === s.y).length ? `<h3>Wesen</h3>${a.wesen.filter((w) => w.y === s.y).map((w) => `<p class="klein">${esc(w.id.replace('minecraft:', ''))}${w.baby ? ' (Baby)' : ''} bei x ${w.x}, z ${w.z}</p>`).join('')}` : ''}`;
   } else if (r === 'zelle') inhalt = zellePanel();
   else if (r === 'stil') inhalt = stilPanel();
+  else if (r === 'teile') inhalt = teilePanel();
   else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {
     const st = z.daten.baustatus;
@@ -768,8 +891,9 @@ async function aktion(name, el) {
     else if (name === 'pip') await pip();
     else if (name === 'abschnitt') { z.a = Number(d.i); z.s = Math.min(z.s, abschnitt().schichten.length - 1); const n = abschnitt().schichten.findIndex((s) => !fertig(abschnitt(), s)); z.s = n >= 0 ? n : 0; render(); }
     else if (name === 'schicht') { z.a = Number(d.i); z.s = Number(d.j); render(); }
-    else if (name === 'reiter') { z.reiter = d.k; render(); if (d.k === 'stil') await stilLaden(); }
+    else if (name === 'reiter') { z.reiter = d.k; render(); if (d.k === 'stil') await stilLaden(); if (d.k === 'teile') await teileLaden(); }
     else if (name.startsWith('st-')) await stilAktion(name, d);
+    else if (name.startsWith('tl-') || name.startsWith('tn-')) await teileAktion(name);
     else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }
     else if (name === 'einpassen') { a3d?.einpassen(); }
     else if (name === 'bisAktuelle') { z.sicht.maxY = schicht().y; render(); }
@@ -824,6 +948,9 @@ document.addEventListener('input', (ev) => {
 });
 document.addEventListener('change', async (ev) => {
   const id = ev.target.id;
+  if (id === 'tl-teil') { z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
+  if (id === 'tl-rel' || id === 'tl-bezug') { const f = liesFelder('tl-'); delete f.teil; z.teile.felder = f; render(); return; }
+  if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; render(); return; }
   if (id.startsWith('st-z-')) { // Zustandswert der Materialwahl (Index in der Liste der erlaubten Werte)
     const g = z.stil.picker?.gewaehlt; const za = g?.info.zustaende[Number(ev.target.dataset.i)]; if (!za) return;
     const j = Number(ev.target.value); if (j < 0) delete g.zustand[za.name]; else g.zustand[za.name] = za.werte[j];

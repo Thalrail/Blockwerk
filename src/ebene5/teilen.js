@@ -1,6 +1,10 @@
-// Ebene 5 – Teilen: Projekt (freigegebene Spezifikation) und Fortschritt als Link oder Datei weitergeben.
+// Ebene 5 – Teilen: Projekt (freigegebene Spezifikation), Fortschritt und manuelle Änderungen (Planfassung, P10) als Link oder Datei weitergeben.
 // Der Empfänger baut aus der Spezifikation deterministisch denselben Plan; geteilt wird also nur die kleine Spezifikation, nicht der Entwurf.
+// Dokumentierte Einschränkung (Entscheidung 5 des Bearbeitungsmodells): Der Link ist auch mit Änderungen auf CODE_MAX Zeichen begrenzt; wird er zu lang, sagt `kodiere`
+// es klar und verweist auf die Datei (TEXT_MAX). Eine dauerhafte Ablage der Änderungen jenseits von Link, Datei und Live-Raum ist ein späteres Paket.
 // Nur Web-Standards (CompressionStream, btoa/atob), keine Pakete. Link: <Adresse>#p=<deflate + base64url>.
+
+import * as PF from './planfassung.js';
 
 export const TYP = 'blockwerk-projekt';
 export const VERSION = 1;
@@ -55,20 +59,27 @@ function pruefe(d) {
   if (d.version !== VERSION) throw new TeilenFehler(`Version ${String(d.version)} wird nicht verstanden (erwartet ${VERSION})`);
   if (!d.spezifikation || typeof d.spezifikation !== 'object') throw new TeilenFehler('die Spezifikation fehlt');
   if (d.fortschritt !== undefined && (typeof d.fortschritt !== 'object' || d.fortschritt === null)) throw new TeilenFehler('der Fortschritt ist ungültig');
+  if (d.aenderungen !== undefined) {
+    try { d = { ...d, aenderungen: PF.pruefeForm(d.aenderungen) }; } catch (f) {
+      if (f instanceof PF.PlanfassungFehler) throw new TeilenFehler(`die Änderungen sind ungültig: ${f.message}`);
+      throw f;
+    }
+  }
   return d;
 }
 
-/** @param {{spezifikation: object, fortschritt?: object, name?: string}} projekt */
-const paket = (projekt) => ({ typ: TYP, version: VERSION, spezifikation: projekt.spezifikation, ...(projekt.fortschritt ? { fortschritt: projekt.fortschritt } : {}) });
+/** @param {{spezifikation: object, fortschritt?: object, aenderungen?: {version: number, eintraege: object}, name?: string}} projekt */
+const paket = (projekt) => ({ typ: TYP, version: VERSION, spezifikation: projekt.spezifikation, ...(projekt.fortschritt ? { fortschritt: projekt.fortschritt } : {}), ...(projekt.aenderungen && Object.keys(projekt.aenderungen.eintraege ?? {}).length ? { aenderungen: projekt.aenderungen } : {}) });
 
 /** Kodiert ein Projekt für einen Link. @returns {Promise<{code: string, zuLang: boolean}>} */
 export async function kodiere(projekt) {
   const bytes = new TextEncoder().encode(JSON.stringify(paket(projekt)));
   const code = zuBase64Url(await komprimiere(bytes));
+  if (code.length > CODE_MAX) throw new TeilenFehler(`das Projekt ist für einen Link zu groß (${code.length} Zeichen, höchstens ${CODE_MAX}${projekt.aenderungen ? '; vielleicht sind es zu viele Änderungen' : ''}); bitte als Datei sichern`);
   return { code, zuLang: code.length > EMPFOHLEN_MAX };
 }
 
-/** Liest den Code eines Links. @returns {Promise<{spezifikation: object, fortschritt?: object}>} */
+/** Liest den Code eines Links. @returns {Promise<{spezifikation: object, fortschritt?: object, aenderungen?: object}>} */
 export async function dekodiere(code) {
   let text;
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(await entkomprimiere(ausBase64Url(code.trim()))); } catch (f) {

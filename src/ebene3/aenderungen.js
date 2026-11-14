@@ -134,5 +134,31 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
     return { status };
   }
 
-  return { setze, verwirf, verankere, wendeAn };
+  /** Schlüssel einer Änderung in der gemeinsamen Planfassung (ebene5/planfassung.js): Teil und Rahmenzelle. */
+  const planfassungsSchluessel = (a) => `${a.teil}|${a.zelle.x},${a.zelle.y},${a.zelle.z}`;
+
+  /** Die Änderungen des Entwurfs als Einträge der gemeinsamen Planfassung (ohne Version; die führt der Raum). */
+  function zuPlanfassung(entwurf) {
+    const eintraege = {};
+    for (const a of entwurf.aenderungen ?? []) eintraege[planfassungsSchluessel(a)] = { teil: a.teil, zelle: { ...a.zelle }, op: a.op, ...(a.block ? { block: kopie(a.block) } : {}), von: a.von };
+    return { version: 0, eintraege };
+  }
+
+  /**
+   * Setzt die Änderungen des Entwurfs aus einer Planfassung des Raums: die Liste wird ersetzt (nichts wird dazugemischt), die Ids `C1 …` ergeben sich aus der Sortierung der
+   * Schlüssel und sind damit bei allen Spielern gleich. Entscheidungen über Verwaistes laufen im gemeinsamen Raum als Operationen, nicht über diese Ids.
+   */
+  function ausPlanfassung(entwurf, planfassung) {
+    const e = kopie(entwurf);
+    const liste = Object.keys(planfassung.eintraege).sort().map((k, i) => {
+      const x = planfassung.eintraege[k];
+      return { id: `C${i + 1}`, teil: x.teil, zelle: { x: x.zelle.x, y: x.zelle.y, z: x.zelle.z }, op: x.op, ...(x.block ? { block: kopie(x.block) } : {}), von: x.von, quelle: 'benutzer' };
+    });
+    for (const a of liste) pruefeAenderungForm(a);
+    e.aenderungen = liste;
+    e.zaehler.aenderung = liste.length + 1;
+    return e;
+  }
+
+  return { setze, verwirf, verankere, wendeAn, zuPlanfassung, ausPlanfassung };
 }

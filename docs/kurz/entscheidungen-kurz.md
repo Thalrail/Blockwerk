@@ -43,3 +43,4 @@ Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwo
 - Produktvision: universeller Bauplaner, Zitadelle nur Referenz (Jonah, 13.11.2026): Reihenfolge und offene Punkte in `docs/roadmap.md`.
 - Bearbeitungsmodell B (Jonah, 13.11.2026): Blockänderungen relativ zum Bauteil (stabile Id); Technikänderung löst Neuprüfung aus; Mehrspieler über versionierte Planfassung; Verwaistes entscheidet der Benutzer (Volltext).
 - Einbau-Architektur B + C (Jonah, 13.11.2026): Innenräume als freie Zonen und allgemeine Aussparungen, gemeinsame Grundlage mit Einzelblockänderungen; Details und Pakete in `docs/architektur-einbau.md`.
+- Rahmenursprung und Ebene 0 (Jonah, 14.11.2026): Ebene 0 unverändert; Rahmenursprung = Ecke Nordwest unten der Paketblöcke, gilt für Drehung, Verschiebung, Größenänderung, Einzelblockänderungen (Volltext).

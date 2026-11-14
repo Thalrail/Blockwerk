@@ -198,13 +198,17 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
         for (const [k, e] of Object.entries(eingang.eintraege)) if (gleich(z.fortschritt.eintraege[k], e)) z.gesendet[k] = e;
         meldungen.push({ art: 'haken', von: m.von, eintraege: eingang.eintraege, fortschritt: z.fortschritt });
       } else if (m.typ === 'aenderung-ergebnis') {
-        // Der Raum meldet den Endstand jeder berührten Zelle; den übernimmt der Absender (nichts geht still verloren). Ist die Antwort älter als der lokale Stand, wird sie nicht angewendet;
-        // fehlen uns Versionen dazwischen (verlorene Rundsendung), holt der Klient den vollen Zustand nach.
+        // Die Antwort wird zuerst eingeordnet und erst dann angewendet: passt ihre Version genau (eine Änderung mehr, bei reinen Konflikten dieselbe), übernimmt der Absender den Endstand
+        // der berührten Zellen. Ist sie älter als der lokale Stand, ändert sie nichts. Fehlen Versionen dazwischen (verlorene Rundsendung), bleibt der lokale Stand unverändert (kein
+        // halber Zwischenstand) und der Klient holt den vollen Zustand nach. Ein Konflikt wird in jedem Fall gemeldet, damit der Vorschlag des Spielers nie still verloren geht.
         const alt = z.aenderungen;
-        if (m.version >= alt.version) z.aenderungen = PF.setzeZellen(alt, m.zellen, m.version);
-        const luecke = m.version < alt.version || (m.angenommen.length ? m.version !== alt.version + 1 : m.version !== alt.version);
-        meldungen.push({ art: 'aenderungen-angenommen', version: m.version, anzahl: m.angenommen.length, aenderungen: z.aenderungen });
-        if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, aenderungen: z.aenderungen });
+        const veraltet = m.version < alt.version;
+        const luecke = !veraltet && m.version !== (m.angenommen.length ? alt.version + 1 : alt.version);
+        if (!veraltet && !luecke) {
+          z.aenderungen = PF.setzeZellen(alt, m.zellen, m.version);
+          meldungen.push({ art: 'aenderungen-angenommen', version: m.version, anzahl: m.angenommen.length, aenderungen: z.aenderungen });
+        }
+        if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, abgleich: luecke, aenderungen: z.aenderungen });
         if (luecke) senden.push({ typ: 'hallo', name: z.name });
       } else if (m.typ === 'aenderungen') {
         const alt = z.aenderungen;

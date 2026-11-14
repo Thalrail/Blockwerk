@@ -250,7 +250,7 @@ test('Live: geht eine Rundsendung verloren, merkt der Klient die Versionslücke 
   R.z.post.set(b, (R.z.post.get(b) ?? []).filter((m) => m.typ !== 'aenderungen'));
   for (const m of B.aendere('haus', zelle(3), stein)) R.sende(b, m);
   const spaeter = R.verteile(b);
-  assert.deepEqual(spaeter.filter((m) => m.art !== 'zustand').map((m) => m.art), ['aenderungen-angenommen', 'aenderung-konflikt']);
+  assert.deepEqual(spaeter.filter((m) => m.art !== 'zustand').map((m) => [m.art, m.abgleich]), [['aenderung-konflikt', true]], 'der Konflikt wird gemeldet, auch wenn der Stand erst nachgeholt wird');
   assert.deepEqual(B.zustand.aenderungen, R.z.raum.aenderungen);
   assert.equal(R.z.raum.aenderungen.eintraege['haus|3,1,0'].block.id, 'minecraft:glass', 'nichts wurde überschrieben');
 });
@@ -282,9 +282,27 @@ test('Klient: veraltete Nachrichten (kleinere Version) werden nicht angewendet u
   assert.equal(k.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone');
   const r2 = k.beiNachricht({ typ: 'aenderung-ergebnis', version: 1, angenommen: [], konflikte: [], zellen: [{ teil: 'haus', zelle: zelle(), aktuell: { op: 'setze', block: glas.block, von: 'Anna' } }] });
   assert.equal(k.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone', 'eine veraltete Antwort setzt nichts zurück');
-  assert.deepEqual(r2.senden, [{ typ: 'hallo', name: 'Ben' }], 'stattdessen den vollen Zustand holen');
+  assert.deepEqual([r2.meldungen, r2.senden], [[], []], 'eine veraltete Antwort ohne Konflikt wird still ignoriert (kein Abgleich nötig)');
   assert.equal(k.zustand.aenderungen.version, 2);
   const r3 = k.beiNachricht({ typ: 'aenderungen', von: 'Anna', version: 5, operationen: [alt] });
   assert.deepEqual([r3.meldungen.length, r3.senden], [0, [{ typ: 'hallo', name: 'Ben' }]], 'eine Lücke wird nicht angewendet, sondern löst den Abgleich aus');
   assert.equal(k.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone');
+  // veraltete Antwort MIT Konflikt: der Vorschlag des Spielers geht nicht verloren, der Stand bleibt
+  const konflikt = { teil: 'haus', zelle: zelle(), aktuell: { op: 'setze', block: glas.block, von: 'Anna' }, vorschlag: stein };
+  const r4 = k.beiNachricht({ typ: 'aenderung-ergebnis', version: 1, angenommen: [], konflikte: [konflikt], zellen: [{ teil: 'haus', zelle: zelle(), aktuell: konflikt.aktuell }] });
+  assert.deepEqual([r4.meldungen.map((x) => [x.art, x.abgleich]), r4.senden], [[['aenderung-konflikt', false]], []]);
+  assert.equal(k.zustand.aenderungen.version, 2);
+});
+
+test('Klient: eine Antwort mit Versionslücke verändert den lokalen Stand nicht (kein halber Zwischenstand), meldet nur den Konflikt und holt einmal den vollen Zustand', () => {
+  const k = erzeugeKlient({ name: 'Ben' });
+  const stand = { version: 2, eintraege: { 'haus|1,1,0': { teil: 'haus', zelle: zelle(), op: 'setze', block: stein.block, von: 'Anna' } } };
+  k.beiNachricht({ typ: 'zustand', spezifikation: null, fortschritt: { eintraege: {}, uhr: 0 }, aenderungen: stand, spieler: ['Ben'] });
+  const vorher = structuredClone(k.zustand.aenderungen);
+  const neuerEintrag = { op: 'setze', block: glas.block, von: 'Ben' };
+  const konflikt = { teil: 'haus', zelle: zelle(7), aktuell: { op: 'leere', von: 'Anna' }, vorschlag: stein };
+  const r = k.beiNachricht({ typ: 'aenderung-ergebnis', version: 5, angenommen: [{ teil: 'haus', zelle: zelle(5), neu: neuerEintrag }], konflikte: [konflikt], zellen: [{ teil: 'haus', zelle: zelle(5), aktuell: neuerEintrag }, { teil: 'haus', zelle: zelle(7), aktuell: konflikt.aktuell }] });
+  assert.deepEqual(k.zustand.aenderungen, vorher, 'Einträge und Version bleiben genau wie vorher');
+  assert.deepEqual(r.meldungen.map((x) => [x.art, x.abgleich]), [['aenderung-konflikt', true]], 'keine Annahme-Meldung, nur der Konflikt');
+  assert.deepEqual(r.senden, [{ typ: 'hallo', name: 'Ben' }], 'genau ein Abgleich');
 });

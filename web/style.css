@@ -116,3 +116,9 @@ body.pip { display: block; } body.pip #fuss, body.pip #toast { display: none; }
 .live.vorschlag { background: var(--flaeche); border-left: 4px solid var(--akzent); }
 .live.einladung { background: var(--flaeche); border-left: 4px solid var(--warn); }
 .live code { background: var(--flaeche); padding: 1px 5px; border-radius: 4px; }
+
+.umbau { margin: 12px 16px; padding: 14px 18px; border: 1px solid var(--warn); border-radius: 10px; background: var(--flaeche); }
+.umbau h2 { margin: 0 0 8px; font-size: 18px; }
+.umbau details { margin: 4px 0; } .umbau summary { cursor: pointer; }
+.umbau ul { margin: 6px 0 6px 18px; padding: 0; }
+.umbau .knoepfe { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }

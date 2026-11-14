@@ -2,6 +2,7 @@
 // die Engine läuft im Worker (engine-worker.js), die Mengen- und Fortschrittslogik kommt aus src/ebene5.
 import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
+import * as Umbau from '../src/ebene5/umbau.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -50,6 +51,10 @@ worker.onmessage = ({ data }) => {
 worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebrochen: ${e.message ?? e}`; render(); };
 
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = []) {
+  // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
+  const gleichesProjekt = z.daten && z.spec && z.spec.projekt?.name === spezifikation.projekt?.name && z.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
+  z.vorher = gleichesProjekt ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt } : null;
+  z.umbau = null;
   z.seite = null; z.messungen = messungen;
   z.spec = spezifikation; z.empfangen = empfangenerFortschritt; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird berechnet …';
@@ -67,11 +72,47 @@ function nachDemBauen() {
     try { f = fortschritt.zusammenfuehren(f, fortschritt.pruefe(z.empfangen)); hinweis = ' Der Fortschritt aus dem Link wurde mit deinem Stand zusammengeführt.'; } catch { hinweis = ' Der Fortschritt im Link war unbrauchbar und wurde ignoriert.'; }
     z.empfangen = null;
   }
+  if (z.vorher) {
+    const v = z.vorher; z.vorher = null;
+    f = fortschritt.zusammenfuehren(f, v.fortschritt); // der Fortschritt der alten Fassung geht mit (Haken unveränderter Schichten gelten weiter)
+    const h = Umbau.hinweise(v.daten.plan, z.daten.plan, v.fortschritt);
+    if (h.noetig) {
+      // schon gebaute Schichten ändern sich: bis zur Bestätigung der Umbauhinweise gilt weiter die alte Fassung
+      z.umbau = { hinweise: h, neu: { spec: z.spec, daten: z.daten, fortschritt: f }, hinweis };
+      z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt;
+      speicher.schreib('blockwerk.projekt', v.spec);
+      toast('Die neue Fassung ändert schon gebaute Schichten: bitte die Umbauhinweise ansehen und bestätigen.');
+      return;
+    }
+  }
   z.fortschritt = f;
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   speichern();
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
+}
+
+/** Umbauhinweise: was an schon gebauten Schichten geändert werden muss, bevor die neue Fassung gilt (Bestätigung nötig). */
+function umbauPanel() {
+  const h = z.umbau.hinweise, sm = h.summe, kurz = (id) => esc(String(id).replace('minecraft:', ''));
+  const zelle = (c, art) => `<li>x ${c.x}, z ${c.z}: ${art === 'entfernen' ? `${kurz(c.alt)} entfernen` : art === 'ersetzen' ? `${kurz(c.alt)} durch ${kurz(c.neu)} ersetzen${c.neuRichtung && c.neuRichtung !== c.altRichtung ? ` (Richtung ${PFEIL[c.neuRichtung]})` : ''}` : `${kurz(c.neu)} ergänzen`}</li>`;
+  const liste = (cs, art) => { const zeig = cs.slice(0, 12); return zeig.map((c) => zelle(c, art)).join('') + (cs.length > zeig.length ? `<li class="klein">… und ${cs.length - zeig.length} weitere</li>` : ''); };
+  return `<section class="umbau"><h2>Umbauhinweise</h2>
+    <p>Die neue Fassung ändert Schichten, die du schon gebaut hast: <b>${sm.entfernen}</b> Blöcke entfernen, <b>${sm.ersetzen}</b> ersetzen, <b>${sm.ergaenzen}</b> ergänzen (${sm.schichten} Schichten). Bis zu deiner Bestätigung gilt die alte Fassung.</p>
+    ${h.schichten.map((s) => `<details><summary>${esc(Umbau.hinweisText(s))}</summary><ul class="klein">${liste(s.entfernen, 'entfernen')}${liste(s.ersetzen, 'ersetzen')}${liste(s.ergaenzen, 'ergaenzen')}</ul></details>`).join('')}
+    <div class="knoepfe"><button class="haupt" data-a="umbau-ja">Hinweise bestätigt – neue Fassung übernehmen</button><button data-a="umbau-nein">Bei der alten Fassung bleiben</button></div></section>`;
+}
+function umbauEntscheiden(ja) {
+  const u = z.umbau; if (!u) return;
+  z.umbau = null;
+  if (!ja) { toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = u.neu.fortschritt;
+  speicher.schreib('blockwerk.projekt', z.spec);
+  const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
+  z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
+  speichern();
+  toast(`Neue Fassung übernommen: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${u.hinweis ?? ''}`);
+  render();
 }
 
 function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); live?.lokalGeaendert(z.fortschritt); }
@@ -296,7 +337,7 @@ function kompaktansicht() {
 
 function render() {
   const aktiv = document.activeElement?.id === 'name';
-  let html = kopf() + live.leiste(z.liveOffen, z.einladung);
+  let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.umbau && z.daten ? umbauPanel() : '');
   if (z.status) html += rechnet();
   else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec, raumAktiv: live.istVerbunden() });
   else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
@@ -396,6 +437,8 @@ async function aktion(name, el) {
     else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
     else if (name === 'eingabe-zu') { z.seite = null; render(); }
     else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
+    else if (name === 'umbau-ja') umbauEntscheiden(true);
+    else if (name === 'umbau-nein') umbauEntscheiden(false);
     else if (name === 'oeffnen') document.getElementById('datei').click();
     else if (name === 'neu') { z.fehler = null; z.rueckfragen = null; z.daten = null; render(); }
     else if (name === 'modus') { z.modus = z.modus === 'kompakt' ? 'voll' : 'kompakt'; speicher.schreib('blockwerk.modus', z.modus); render(); }

@@ -166,10 +166,10 @@ test('Modell-Routing (Jonah, 31.10.2026): Haiku nur mechanisch, Sonnet direkt be
 test('Autonomer Auftragslauf (Jonah, 31.10.2026): die Git-Sperren bleiben unverändert; Commit, Push und Draft-PR gibt es nur über das Abschluss-Werkzeug; der Skill beschreibt den Ablauf', () => {
   const e = einst();
   assert.deepEqual(e.permissions.deny, ['Bash(git push *)', 'Bash(gh pr *)', 'Bash(git reset *)', 'Bash(git clean *)', 'Bash(git stash *)', 'Bash(git rebase *)'], 'deny unverändert');
-  assert.deepEqual(e.permissions.ask, ['Bash(git commit *)', 'Agent(blockwerk-entwickler-schwer)'], 'ask unverändert');
+  assert.deepEqual(e.permissions.ask, ['Bash(git commit *)', 'Bash(node tools/orchestrierung/cli.js veroeffentlichen *)', 'Agent(blockwerk-entwickler-schwer)'], 'ask: Commit, die Veröffentlichung (Bestätigungsdialog, 12.11.2026) und der Opus-Entwickler');
   for (const erlaubt of e.permissions.allow ?? []) assert.ok(!/git (push|commit|add|switch|checkout|branch|merge|reset|stash|rebase|clean|tag)|\bgh\b|Bash\(\*\)|Bash\(node \*\)/.test(erlaubt), `allow öffnet kein Git-Schreiben und kein gh: ${erlaubt}`);
   // Minimale Erlaubnisliste: genau diese Einträge, keine Sammelregel für cli.js, kein beliebiges node oder npm, nur Bash-Befehle dieses Projekts und die zwei Codex-Aufrufe
-  const cli = ['status', 'start', 'runde-ende', 'tore', 'paket', 'tests-ausfuehren', 'review-melden', 'befund-melden', 'uebernehmen', 'haupt-kontrolle', 'wiederherstellen', 'ende', 'abschluss'].map((b) => `Bash(node tools/orchestrierung/cli.js ${b} *)`);
+  const cli = ['status', 'start', 'runde-ende', 'tore', 'paket', 'tests-ausfuehren', 'review-melden', 'befund-melden', 'uebernehmen', 'haupt-kontrolle', 'wiederherstellen', 'ende', 'abschluss', 'veroeffentlichen-vorpruefung', 'veroeffentlichen-paket', 'veroeffentlichen-review', 'veroeffentlichen-befund'].map((b) => `Bash(node tools/orchestrierung/cli.js ${b} *)`);
   assert.deepEqual([...(e.permissions.allow ?? [])].sort(), [...cli, 'Bash(node tools/karte.js *)', 'Bash(npm test)', 'Bash(npm run test:kurz)', 'Bash(npm run test:orchestrierung)', 'Bash(npm run test:pruefstein)',
     'mcp__codex-bridge__review_code', 'mcp__codex-bridge__review_status'].sort(), 'allow ist die vereinbarte minimale Liste');
   assert.ok(!e.permissions.allow.some((x) => /cli\.js \*\)|^Bash\(\*\)|^Bash\(node \*\)|^Bash\(npm \*\)|graphify|git |\bgh\b/.test(x)), 'keine Sammelregeln');

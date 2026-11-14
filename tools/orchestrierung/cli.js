@@ -6,11 +6,15 @@
 //   review-melden --json '<Kopffelder des Codex-Ergebnisses>' [--befunde '[{"id","schwere","kurz"}]'] | befund-melden --json '{"id","einstufung","beleg"}'
 //   uebernehmen [--erlaubt "..."] | haupt-kontrolle | wiederherstellen | ende [--verwerfen]
 //   abschluss --kurzname <name> --titel "<Text>" --einschraenkungen "<Text>" [--basis claude/<name>] [--trocken]   (Branch, Commit, Push, Draft-PR; nie Merge)
+//   veroeffentlichen-paket [--kontext "a,b"] [--hinweise "<Text>"] | veroeffentlichen-review --json '<Kopffelder>' [--befunde '[...]'] | veroeffentlichen-befund --json '{...}'   (Nachweise für einen vorbereiteten claude/*-Branch)
+//   veroeffentlichen-vorpruefung --titel "<Text>" --einschraenkungen "<Text>"   (zeigt den Stand und liefert den Freigabe-Hash; ändert nichts am Repository und am Remote)
+//   veroeffentlichen --branch claude/<name> --bestaetigt <Hash>   (Push, PR gegen main, Ready for review, Checks; nie Merge; löst den Bestätigungsdialog aus)
 // Jeder Befehl kennt nur seine eigenen Optionen; unbekannte werden abgelehnt (Remote, Branch-Präfix und Basis lassen sich über die Kommandozeile nicht umbiegen).
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as lauf from './lauf.js';
 import { abschliessen } from './abschluss.js';
+import * as veroeff from './veroeffentlichen.js';
 import { standardReviewVerzeichnis } from './review-paket.js';
 
 function optionen(argv) {
@@ -28,6 +32,8 @@ const ERLAUBT = {
   start: ['auftrag', 'dateien', 'kontext', 'autonom'], status: [], 'runde-ende': ['worktree'], tore: ['erlaubt'], paket: ['kontext', 'hinweise'],
   'tests-ausfuehren': ['worktree', 'suite'], 'review-melden': ['json', 'befunde'], 'befund-melden': ['json'], uebernehmen: ['erlaubt'], 'haupt-kontrolle': ['erwartet'],
   wiederherstellen: [], ende: ['verwerfen'], abschluss: ['kurzname', 'titel', 'einschraenkungen', 'basis', 'trocken'],
+  'veroeffentlichen-paket': ['kontext', 'hinweise'], 'veroeffentlichen-review': ['json', 'befunde'], 'veroeffentlichen-befund': ['json'],
+  'veroeffentlichen-vorpruefung': ['titel', 'einschraenkungen'], veroeffentlichen: ['branch', 'bestaetigt'],
 };
 
 export function fuehreAus(argv, cwd = process.cwd()) {
@@ -64,6 +70,12 @@ export function fuehreAus(argv, cwd = process.cwd()) {
     case 'wiederherstellen': return { wiederhergestellt: lauf.pruefeUnterbrochene(w) };
     case 'ende': return lauf.beenden(w, { verwerfen: o.verwerfen === true });
     case 'abschluss': return abschliessen(w, { kurzname: o.kurzname, titel: o.titel, einschraenkungen: typeof o.einschraenkungen === 'string' ? o.einschraenkungen : '', basis: typeof o.basis === 'string' ? o.basis : 'main', trocken: o.trocken === true });
+    // die Veröffentlichung kennt weder Remote noch gh-Programm noch Basis aus der Kommandozeile (feste Werte in abschluss.js und veroeffentlichen.js)
+    case 'veroeffentlichen-paket': return veroeff.nachweisPaket(w, { kontext: liste(o.kontext), hinweise: typeof o.hinweise === 'string' ? o.hinweise : '' });
+    case 'veroeffentlichen-review': return veroeff.nachweisReview(w, json(o.json, '--json'), o.befunde === undefined ? [] : json(o.befunde, '--befunde'));
+    case 'veroeffentlichen-befund': return veroeff.nachweisBefund(w, json(o.json, '--json'));
+    case 'veroeffentlichen-vorpruefung': return veroeff.vorpruefung(w, { titel: o.titel, einschraenkungen: typeof o.einschraenkungen === 'string' ? o.einschraenkungen : '' });
+    case 'veroeffentlichen': return veroeff.veroeffentlichen(w, { branch: o.branch, bestaetigt: o.bestaetigt });
     default: throw new lauf.LaufFehler(`Unbekannter Befehl „${String(befehl)}“. Befehle: ${Object.keys(ERLAUBT).join(', ')}`);
   }
 }

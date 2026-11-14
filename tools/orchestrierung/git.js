@@ -79,13 +79,15 @@ export function blob(repo, commit, pfad) {
 }
 
 /** Hash über alle Dateien eines Verzeichnisses (ohne das Git-Verzeichnis und ohne die Präfixe aus `ausser`). */
-export function baumHash(dir, { ausser = [] } = {}) {
+export function baumHash(dir, { ausser = [], ausserDateien = [] } = {}) {
   const dateien = new Map();
   const geh = (d, rel) => {
     for (const e of fs.readdirSync(d, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
       if (e.name === '.git' && rel === '') continue;
       const r = rel ? `${rel}/${e.name}` : e.name;
       if (ausser.some((p) => r === p || r.startsWith(`${p}/`))) continue;
+      // exakte Dateien: nur eine Datei mit genau diesem Pfad; ein Verzeichnis gleichen Namens wird durchsucht
+      if (!e.isDirectory() && ausserDateien.includes(r)) continue;
       if (e.isDirectory()) geh(path.join(d, e.name), r);
       else if (e.isFile()) dateien.set(r, sha256(fs.readFileSync(path.join(d, e.name))));
     }
@@ -97,10 +99,10 @@ export function baumHash(dir, { ausser = [] } = {}) {
 }
 
 /** Abdruck von HEAD, Zweig, Stash, Refs, Index und Arbeitsbaum – zum Beweis „nichts verändert“. */
-export function zustand(repo, { ausser = [] } = {}) {
+export function zustand(repo, { ausser = [], ausserDateien = [] } = {}) {
   const gitDir = git(repo, ['rev-parse', '--absolute-git-dir']).trim();
   const zweig = gitStatus(repo, ['symbolic-ref', '-q', 'HEAD']);
-  const baum = baumHash(repo, { ausser });
+  const baum = baumHash(repo, { ausser, ausserDateien });
   return {
     head: git(repo, ['rev-parse', 'HEAD']).trim(),
     zweig: zweig.status === 0 ? zweig.stdout.toString().trim() : '(losgelöst)',

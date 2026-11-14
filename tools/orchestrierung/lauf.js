@@ -17,8 +17,13 @@ import { pruefeTore, bewerteTore } from './tore.js';
 
 export class LaufFehler extends Error { constructor(m) { super(m); this.name = 'LaufFehler'; } }
 
-/** Verzeichnisse, die im Abdruck des Hauptbaums nicht mitzählen. */
+/** Pfade, die im Abdruck des Hauptbaums nicht mitzählen: zwei Verzeichnisse des Werkzeugs selbst (samt Inhalt) und genau eine Datei. */
 export const AUSSER = Object.freeze(['.claude/worktrees', '.claude/orchestrierung']);
+// Die Datei (kein Muster, nur als Datei: ein Verzeichnis dieses Namens wird durchsucht): die kurzlebige Sperrdatei der Planer-Funktion von Claude Code.
+// Herkunft und Semantik sind nicht offiziell bestätigt, das Restrisiko hat Jonah am 12.11.2026 bewusst akzeptiert (`docs/orchestrierung.md`);
+// `scheduled_tasks.json` und `settings.json` bleiben überwacht.
+export const AUSSER_DATEIEN = Object.freeze(['.claude/scheduled_tasks.lock']);
+export const AUSSCHLUSS = Object.freeze({ ausser: AUSSER, ausserDateien: AUSSER_DATEIEN });
 export const MAX_SCHLEIFEN = 3;
 
 const vor = (p) => p.replace(/\\/g, '/');
@@ -74,7 +79,7 @@ export function pruefeUnterbrochene(w) {
 export function fremdeAenderungen(w) {
   const lies0 = (args) => git(w, args).split('\0').filter(Boolean);
   const alle = new Set([...lies0(['ls-files', '-z', '-m', '-d', '-o', '--exclude-standard']), ...lies0(['diff', '--cached', '--name-only', '-z'])]);
-  return [...alle].map(vor).filter((p) => !AUSSER.some((x) => p === x || p.startsWith(`${x}/`))).sort();
+  return [...alle].map(vor).filter((p) => !AUSSER.some((x) => p === x || p.startsWith(`${x}/`)) && !AUSSER_DATEIEN.includes(p)).sort();
 }
 
 /** Baum-Hash eines Snapshot-Commits. */
@@ -95,7 +100,7 @@ export function starten(w, { auftrag, dateien = [], kontext = [], id = null, aut
   }
   const wiederhergestellt = pruefeUnterbrochene(w);
   const laufId = id ?? `L${jetzt().replace(/[-:T]/g, '').slice(0, 14)}-${randomBytes(2).toString('hex')}`;
-  const vorher = zustand(w, { ausser: AUSSER });
+  const vorher = zustand(w, AUSSCHLUSS);
   const s0 = schnappschuss(w, { id: `${laufId}-s0` });
   const a = {
     id: laufId, status: 'aktiv', auftrag, dateien, kontext, haupt: vor(w), head: vorher.head, zweig: vorher.zweig,
@@ -164,6 +169,25 @@ const SCHWEREN = ['critical', 'major', 'minor', 'info'];
 const EINSTUFUNGEN = ['bestaetigt', 'widerlegt', 'hinweis'];
 const MIN_BELEG = 20;
 
+/** Die Befundliste eines Reviews: jede Meldung mit eindeutiger id und bekannter Schwere. */
+export function pruefeBefundListe(befunde) {
+  if (!Array.isArray(befunde)) throw new LaufFehler('befunde muss eine Liste sein');
+  const ids = new Set();
+  for (const b of befunde) {
+    if (!b || typeof b.id !== 'string' || !b.id.trim()) throw new LaufFehler('Jeder Befund braucht eine id');
+    if (ids.has(b.id)) throw new LaufFehler(`Befund ${b.id} doppelt gemeldet`);
+    ids.add(b.id);
+    if (!SCHWEREN.includes(b.schwere)) throw new LaufFehler(`Befund ${b.id}: schwere muss eine von ${SCHWEREN.join(', ')} sein`);
+  }
+}
+
+/** Die Einstufung eines Befunds `b` (aus dem gemeldeten Review): erlaubter Wert, Beleg bei widerlegt und hinweis, Hinweis nur bei minor und info. */
+export function pruefeEinstufung(b, einstufung, beleg) {
+  if (!EINSTUFUNGEN.includes(einstufung)) throw new LaufFehler(`einstufung muss eine von ${EINSTUFUNGEN.join(', ')} sein`);
+  if (einstufung !== 'bestaetigt' && String(beleg).trim().length < MIN_BELEG) throw new LaufFehler(`„${einstufung}“ braucht einen Beleg gegen den Code (mindestens ${MIN_BELEG} Zeichen)`);
+  if (einstufung === 'hinweis' && !['minor', 'info'].includes(b.schwere)) throw new LaufFehler(`Befund ${b.id} ist „${b.schwere}“: er kann nicht als bloßer Hinweis durchgehen (bestätigen oder mit Beleg widerlegen)`);
+}
+
 /**
  * Prüft und protokolliert die Kopffelder eines Codex-Ergebnisses, gebunden an das Review-Paket des aktuellen Stands (Codezustand = Baum der Basis).
  * `befunde`: alle Befunde, die das Ergebnis nennt, als [{id, schwere, kurz}]; jeder muss danach mit `befundMelden` eingestuft werden.
@@ -174,14 +198,7 @@ export function reviewMelden(w, kopf, befunde = []) {
   const baum = baumVon(w, a.basis);
   const paketEintrag = leseZeilen(path.join(laufDir(w, a.id), 'pakete.jsonl')).filter((x) => x.baum === baum).at(-1);
   if (!paketEintrag) throw new LaufFehler('Für den aktuellen Codezustand gibt es kein Review-Paket (zuerst: paket). Ein Review zählt nur für genau den Stand, den das Paket enthielt');
-  if (!Array.isArray(befunde)) throw new LaufFehler('befunde muss eine Liste sein');
-  const ids = new Set();
-  for (const b of befunde) {
-    if (!b || typeof b.id !== 'string' || !b.id.trim()) throw new LaufFehler('Jeder Befund braucht eine id');
-    if (ids.has(b.id)) throw new LaufFehler(`Befund ${b.id} doppelt gemeldet`);
-    ids.add(b.id);
-    if (!SCHWEREN.includes(b.schwere)) throw new LaufFehler(`Befund ${b.id}: schwere muss eine von ${SCHWEREN.join(', ')} sein`);
-  }
+  pruefeBefundListe(befunde);
   const r = pruefeReviewErgebnis(kopf);
   anhaengen(path.join(laufDir(w, a.id), 'reviews.jsonl'), {
     runde: a.runde, baum, gueltig: r.gueltig, gruende: r.gruende, verdict: kopf?.verdict ?? null, session_id: kopf?.session_id ?? null,
@@ -202,9 +219,7 @@ export function befundMelden(w, { id, einstufung, beleg = '' }) {
   if (!rv) throw new LaufFehler('Für den aktuellen Codezustand gibt es noch kein gemeldetes Review (review-melden)');
   const b = (rv.befunde ?? []).find((x) => x.id === id);
   if (!b) throw new LaufFehler(`Befund „${String(id)}“ gehört nicht zum Review des aktuellen Codezustands`);
-  if (!EINSTUFUNGEN.includes(einstufung)) throw new LaufFehler(`einstufung muss eine von ${EINSTUFUNGEN.join(', ')} sein`);
-  if (einstufung !== 'bestaetigt' && String(beleg).trim().length < MIN_BELEG) throw new LaufFehler(`„${einstufung}“ braucht einen Beleg gegen den Code (mindestens ${MIN_BELEG} Zeichen)`);
-  if (einstufung === 'hinweis' && !['minor', 'info'].includes(b.schwere)) throw new LaufFehler(`Befund ${id} ist „${b.schwere}“: er kann nicht als bloßer Hinweis durchgehen (bestätigen oder mit Beleg widerlegen)`);
+  pruefeEinstufung(b, einstufung, beleg);
   anhaengen(path.join(laufDir(w, a.id), 'befunde.jsonl'), { runde: a.runde, baum, session_id: rv.session_id, id, einstufung, beleg: String(beleg).slice(0, 1000), zeit: jetzt() });
   return { id, einstufung, baum };
 }
@@ -340,7 +355,7 @@ function testsAusfuehrenIntern(w, { worktree, suite = 'kurz', timeoutMs = 180000
   const vorher = gleichMitCommit(pfad, a.basis);
   if (vorher.length) throw new LaufFehler(`Der Worktree weicht vom gesicherten Stand ab (zuerst runde-ende, dann testen): ${vorher.slice(0, 3).join('; ')}`);
   // Abdruck von Hauptbaum, HEAD und Laufzustand vor den Tests; die Tests sind Code des Agenten und laufen unter dem Benutzerkonto
-  const z0 = zustand(w, { ausser: AUSSER }); const l0 = laufAbdruck(w); const g0 = gitAbdruck(w, { mitWorktrees: true });
+  const z0 = zustand(w, AUSSCHLUSS); const l0 = laufAbdruck(w); const g0 = gitAbdruck(w, { mitWorktrees: true });
   const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'bw-test-'));
   let r;
   try {
@@ -349,7 +364,7 @@ function testsAusfuehrenIntern(w, { worktree, suite = 'kurz', timeoutMs = 180000
   } finally {
     try { fs.rmSync(privat, { recursive: true, force: true, maxRetries: 3 }); } catch { /* egal */ }
   }
-  const verdacht = [...gitUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, { ausser: AUSSER })), ...abdruckUnterschiede(l0, laufAbdruck(w))];
+  const verdacht = [...gitUnterschiede(g0, gitAbdruck(w, { mitWorktrees: true }), 'git'), ...zustandsUnterschiede(z0, zustand(w, AUSSCHLUSS)), ...abdruckUnterschiede(l0, laufAbdruck(w))];
   if (verdacht.length) {
     sperren(w, a, `Manipulationsverdacht: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees: ${verdacht.slice(0, 5).join('; ')}`);
     throw new LaufFehler(`MANIPULATIONSVERDACHT: Während der Tests änderten sich ${verdacht.length} Stelle(n) außerhalb des Worktrees (${verdacht.slice(0, 5).join('; ')}). Der Lauf ist gesperrt, das Ergebnis wird nicht protokolliert. Stoppen und Jonah berichten`);
@@ -389,10 +404,18 @@ export function testsMelden(w, { worktree, suite, gruen, fehlgeschlagen, uebersp
  */
 export function freigabeStatus(w, a = brauche(w)) {
   const baum = baumVon(w, a.basis);
-  const gruende = [];
   const sperre = sperrGrund(w, a);
-  if (sperre) gruende.push(`Lauf gesperrt: ${sperre}`);
-  const dir = laufDir(w, a.id);
+  const n = bewerteNachweise(laufDir(w, a.id), baum);
+  return { ok: !sperre && n.gruende.length === 0, gruende: [...(sperre ? [`Lauf gesperrt: ${sperre}`] : []), ...n.gruende], baum, tests: n.tests, review: n.review };
+}
+
+/**
+ * Bewertet Tests, Review und Befunde einer Nachweis-Ablage (`tests.jsonl`, `reviews.jsonl`, `befunde.jsonl` im Verzeichnis) für genau einen Codezustand (Baum).
+ * Gemeinsam für Läufe (`freigabeStatus`) und vorbereitete Branches (`veroeffentlichen.js`).
+ */
+export function bewerteNachweise(dir, baum) {
+  const gruende = [];
+  const befundStand = []; // Befunde mit Schwere und Einstufung, für Freigabe-Hashes
   // je Suite zählt der jüngste Lauf für genau diesen Codezustand; die vollständige Suite `kurz` ist Pflicht, weitere gestartete Suiten müssen ebenfalls grün sein
   const jeSuite = new Map();
   for (const x of leseZeilen(path.join(dir, 'tests.jsonl'))) if (x.baum === baum) jeSuite.set(x.suite, x);
@@ -409,19 +432,20 @@ export function freigabeStatus(w, a = brauche(w)) {
     for (const e of leseZeilen(path.join(dir, 'befunde.jsonl'))) if (e.baum === baum && e.session_id === rv.session_id) eingestuft.set(e.id, e);
     for (const b of rv.befunde ?? []) {
       const e = eingestuft.get(b.id);
+      befundStand.push({ id: b.id, schwere: b.schwere, einstufung: e?.einstufung ?? null });
       if (!e) gruende.push(`Befund ${b.id} (${b.schwere}) ist nicht eingestuft`);
       else if (e.einstufung === 'bestaetigt') gruende.push(`Befund ${b.id} ist bestätigt und noch nicht behoben (neue Runde und neues Review nötig)`);
       else if (b.schwere === 'critical') gruende.push(`Kritischer Befund ${b.id} ist nur eingestuft („${e.einstufung}“), nicht behoben: das Urteil über einen kritischen Befund trifft Jonah, nicht der Koordinator (Rückfrage; automatisch geht es erst mit einem neuen Review ohne diesen Befund weiter)`);
     }
   }
-  return { ok: gruende.length === 0, gruende, baum, tests: t, review: rv };
+  return { gruende, tests: t, review: rv, befundStand };
 }
 
 /** Zustand des Hauptrepositories gegenüber dem Start des Laufs: nur die Buchführung (HEAD, Zweig, Stash, Refs, Index) und optional erwartete Dateiänderungen. */
 export function hauptKontrolle(w, { erwarteteDateien = [] } = {}) {
   const a = brauche(w);
   const vorher = leseJson(path.join(laufDir(w, a.id), 'vorher.json'));
-  const unterschiede = zustandsUnterschiede(vorher, zustand(w, { ausser: AUSSER }));
+  const unterschiede = zustandsUnterschiede(vorher, zustand(w, AUSSCHLUSS));
   const buch = unterschiede.filter((u) => !u.startsWith('datei:'));
   const dateien = unterschiede.filter((u) => u.startsWith('datei:')).map((u) => u.slice(6));
   const unerwartet = dateien.filter((p) => !erwarteteDateien.includes(p));
@@ -490,4 +514,4 @@ export function status(w) {
   return { aktiv: a.status === 'aktiv', id: a.id, auftrag: a.auftrag, runde: a.runde, maxSchleifen: MAX_SCHLEIFEN, s0: a.s0.slice(0, 10), basis: a.basis.slice(0, 10), worktrees: worktrees(w, a.id).map((x) => x.pfad), runden: a.runden, uebernommen: Boolean(a.uebernommen), autonom: Boolean(a.autonom), abschluss: a.abschluss ?? null, unterbrochen: offeneJournale(sicherungsWurzel(w)).map(vor) };
 }
 
-export { wiederherstellen, brauche, speichere, laufDir, leseZeilen, baumVon, vor };
+export { wiederherstellen, brauche, speichere, laufDir, leseZeilen, baumVon, vor, jetzt, leseJson, schreibeJson };

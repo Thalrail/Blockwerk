@@ -481,6 +481,7 @@ function teilePanel() {
   if (z.umbau) return '<h3>Bauteile</h3><p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
   const teile = teileFelder();
   let h = '<h3>Bauteile</h3><p class="klein">Hier änderst du Größe, Lage und Name der Teile, fügst Teile hinzu oder entfernst sie. Vorher siehst du, was mit deinen Einzelblockänderungen geschieht. Eine Änderung ist eine neue Fassung und läuft über die Umbauhinweise.</p>';
+  if (teileBeschaeftigt) return h + '<p class="klein">Wird geprüft …</p>';
   if (t.meldung) h += `<p class="fehler">${esc(t.meldung)}</p>`;
   if (t.bestaetigung) {
     const b = t.bestaetigung;
@@ -520,7 +521,7 @@ async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = n
   if (teileBeschaeftigt || stilBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
   if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
   if (!z.name.trim()) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
-  t.meldung = ''; teileBeschaeftigt = true;
+  t.meldung = ''; teileBeschaeftigt = true; render(); // während der Prüfung zeigt der Reiter nur „Wird geprüft“ (kein Abbrechen oder Ändern mittendrin)
   const ausgang = z.spec, nr = startNr, rev = t.rev;
   try {
     const v = await anfrage({ typ: 'teileVorschau', spezifikation: neu, aenderungen: z.planfassung, messungen: z.messungen, planVorher: { aenderungen: z.daten.plan.aenderungen ?? [] } });
@@ -529,13 +530,12 @@ async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = n
     if (v.rueckfragen.length) { t.meldung = `Das lässt sich so nicht übernehmen: ${v.rueckfragen.map((q) => q.frage).join(' ')}`; return; }
     if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel, basis: ausgang, nr }; return; }
   } catch (f) { t.meldung = String(f.message ?? f); return; } finally { teileBeschaeftigt = false; render(); }
-  await stilAnwenden(neu);
-  if (z.spec !== ausgang) { t.bestaetigung = null; t.neu = null; render(); } // erst wenn die neue Fassung angenommen ist, entfällt der Entwurf; bei einer Ablehnung bleibt er erhalten
+  if (await stilAnwenden(neu)) { t.bestaetigung = null; t.neu = null; render(); } // erst wenn genau diese Fassung angenommen ist, entfällt der Entwurf; bei einer Ablehnung bleibt er erhalten
 }
 async function teileAktion(name) {
   const t = z.teile, info = t.info; if (!info) return;
   try {
-    if (name === 'tl-nein') { t.bestaetigung = null; render(); return; }
+    if (name === 'tl-nein') { t.rev++; t.bestaetigung = null; render(); return; }
     if (name === 'tl-ja') {
       const b = t.bestaetigung; if (!b) return;
       if (z.spec !== b.basis || startNr !== b.nr) { t.bestaetigung = null; t.meldung = 'Inzwischen gilt eine andere Fassung. Bitte die Änderung noch einmal prüfen.'; render(); return; } // die Liste der Folgen gehört zum alten Stand
@@ -612,24 +612,26 @@ function stilWahlPanel() {
 }
 /** Neue Spezifikation übernehmen: Prüfer (bearbeitet → neue Version), Freigabe durch dich, dann der gewohnte Bau mit Umbauhinweisen. Nichts wird geraten oder still angewandt. */
 let stilBeschaeftigt = false, wartendeFassung = null; // nur eine Stiländerung zugleich; die neue Fassung geht erst in den Raum, wenn sie hier wirklich gilt
+/** @returns {Promise<boolean>} true, wenn die neue Fassung angenommen und gestartet wurde (sie gilt, sobald der Bau und eine nötige Bestätigung der Umbauhinweise durch sind) */
 async function stilAnwenden(neu) {
-  if (stilBeschaeftigt || teileBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
-  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
+  if (stilBeschaeftigt || teileBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return false; }
+  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return false; }
   const von = z.name.trim();
-  if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
+  if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return false; }
   stilBeschaeftigt = true;
   const ausgang = z.spec, nr = startNr;
   try {
     const p = await anfrage({ typ: 'pruefe', spezifikation: neu, bearbeitet: true, vorher: ausgang, messungen: z.messungen });
-    if (z.spec !== ausgang || startNr !== nr) return; // inzwischen gilt oder rechnet eine andere Fassung (z. B. aus dem Raum): nichts davon veralten lassen
-    if (!p.freigebbar) { toast(`Das lässt sich so nicht übernehmen: ${p.rueckfragen.map((q) => q.frage).join(' ')}`); return; }
-    if (p.spezifikation.version === ausgang.version) { toast('Das ist schon so gewählt.'); return; }
+    if (z.spec !== ausgang || startNr !== nr) return false; // inzwischen gilt oder rechnet eine andere Fassung (z. B. aus dem Raum): nichts davon veralten lassen
+    if (!p.freigebbar) { toast(`Das lässt sich so nicht übernehmen: ${p.rueckfragen.map((q) => q.frage).join(' ')}`); return false; }
+    if (p.spezifikation.version === ausgang.version) { toast('Das ist schon so gewählt.'); return false; }
     const f = await anfrage({ typ: 'freigebe', spezifikation: p.spezifikation, von, messungen: z.messungen });
-    if (z.spec !== ausgang || startNr !== nr) return;
+    if (z.spec !== ausgang || startNr !== nr) return false;
     z.stil.picker = null;
     startProjekt(f.spezifikation, null, z.messungen);
     wartendeFassung = f.spezifikation; // wird veröffentlicht, sobald sie gilt (kein Umbauhinweis nötig oder bestätigt)
-  } catch (f) { toast(String(f.message ?? f)); } finally { stilBeschaeftigt = false; render(); } // render: das Auswahlfeld zeigt wieder den wirklichen Stand
+    return true;
+  } catch (f) { toast(String(f.message ?? f)); return false; } finally { stilBeschaeftigt = false; render(); } // render: das Auswahlfeld zeigt wieder den wirklichen Stand
 }
 function veroeffentlicheWartende() {
   const w = wartendeFassung; wartendeFassung = null;

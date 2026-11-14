@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U5 umgesetzt (14.11.2026); U6 und U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U6 umgesetzt (14.11.2026); U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -67,7 +67,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U5 um
 - Schutz: ein Träger mit Kindern wird nicht stumm entfernt (Regel besteht), die Oberfläche zeigt die Meldung und die Folge für gebundene Änderungen („Änderung C3 wird verwaist“) **vor** dem Übernehmen.
 - Tests: Spezifikation → Plan für Größenänderung mit vorhandenen Änderungen (Verwaisung wird vorab gezeigt).
 
-### U6 Verwaistes und Konflikte verstehen und lösen (Priorität 3)
+### U6 Verwaistes und Konflikte verstehen und lösen (Priorität 3) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene5.md`
 - **Panel „Änderungen“:** Liste nach Status; je Eintrag Teil, Zelle, Block, Grund in einem Satz („Der Block ist in der neuen Fassung weggefallen“, „Das Teil gibt es nicht mehr“).
 - **Verwaist:** drei Knöpfe wie in den Optionen: *verwerfen*, *neu verankern* (Zielzelle in der Schicht anklicken), *zulassen und weiterbauen*. Verankern in der Planfassung wird eine **Gruppe**: beide Operationen gelten ganz oder gar nicht (Lücke 5; kleine Erweiterung von `wende`, mit Tests).
 - **Mehrspieler-Konflikt:** `aenderung-konflikt` zeigt „Deine Fassung / Fassung von Anna“ und lässt wählen; es wird nie still überschrieben (bleibt wie in P10).
@@ -110,3 +110,6 @@ Auswirkung A: Schemaänderung in Ebene 4 (optionales Feld, Version der Spezifika
 - **Link-Größe:** viele Änderungen sprengen 200.000 Zeichen; die Oberfläche zeigt die Grenze und rät zur Datei oder zum Raum.
 - **Spezifikationsweg ändert die Teil-Kennung:** bleibt die `ref` erhalten, bleiben Änderungen gebunden; Umbenennen einer `ref` in der Spezifikation verwaist sie. U5 zeigt das vorab.
 - **Rechenzeit:** Plan wird bei jeder Änderung neu gebaut (Zitadelle mehrere Sekunden); U3 nutzt den Worker mit Auftragsnummer, Teilneuberechnung nur auf Freigabe von Jonah (Roadmap Punkt 6).
+
+## Offene Integrationsprüfung vor dem Abschluss von U7
+Der **Zwei-Browser-Tab-Test** zu U6 (Konfliktanzeige, Zulassung im Raum, abgelehnte Gruppe, Widerruf, Dienst ohne Formatangabe; Ablauf in `docs/referenz/stand-ebene5.md`, „Offene Integrationsprüfung“) wird nach dem Merge von U6 durchgeführt, **bevor U7 abgeschlossen wird**. U7 darf begonnen werden, gilt aber erst nach diesem Test als fertig.

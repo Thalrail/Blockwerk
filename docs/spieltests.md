@@ -413,3 +413,13 @@ Reine Änderung der Spezifikation; getestet wird, ob der neue Bauplan im Spiel s
 3. **Teil hinzufügen:** Einen Raum „Anbau“ neben dem Haus anlegen (ein größerer Bauplatz ist dafür nötig). Er steht als eigener Abschnitt im Plan; im Spiel nachbauen und die Lücke zum Haus prüfen.
 4. **Teil entfernen:** Das Dach entfernen. Die Bestätigung nennt die Folgen; danach fehlt das Dach im Plan. Ein Haus mit Obergeschoss kann man nur so entfernen, dass erst alles darauf Bezogene weg ist (Meldung).
 5. **Einzelblockänderungen:** Erst im Reiter „Zelle“ einen Block an der Außenkante setzen, dann das Teil verkleinern. Die Vorschau nennt die Änderung als „wird verwaist“; sie bleibt gespeichert und ändert den Plan nicht.
+
+## Änderungen auflösen (14.11.2026, `ungeprüft`)
+Nur die Anzeige und die Planfassung ändern sich; im Spiel prüfst du, ob der Plan danach stimmt. Testwelt (Kreativ), Wohnhaus aus der Haus-Sonde.
+1. **Zulassen:** Eine Änderung setzen und das Teil danach so verkleinern, dass sie außerhalb liegt (Reiter „Teile“). Reiter „Änderungen“ → „Zulassen und weiterbauen“: Der Plan zeigt die Wand ohne den Block, nichts wartet mehr, die Änderung bleibt in der Liste „Zugelassen“.
+2. **Neu verankern:** Dieselbe Änderung „Neu verankern …“ und eine Wandzelle anklicken: Der Block steht im Plan an der neuen Zelle. Im Spiel an dieser Stelle nachbauen.
+3. **Verwerfen und Zurücknehmen:** Verwerfen entfernt die Änderung ganz; bei einer wirkenden Änderung heißt der Knopf „Zurücknehmen“.
+4. **Technik neu prüfen** (Markthalle mit Handelsnischen aus der Zitadelle-Vorlage): Nach einer Änderung im Umkreis der Anlage steht sie auf „nicht bestätigt“; „Technik neu prüfen“ bestätigt sie wieder oder nennt Verstöße mit Koordinate. Im Spiel: Funktioniert die Anlage trotz der Änderung (Dorfbewohner, Bett, Berufsblock)?
+5. **Zwei Spieler:** Beide ändern dieselbe Zelle fast gleichzeitig. Der Zweite sieht im Reiter „Änderungen“ „Deine Fassung / Fassung von …“ und entscheidet; nichts wird still überschrieben.
+
+(Zusatz zu „Änderungen auflösen“) **Zwei Fenster:** Der Ablauf des Zwei-Browser-Tab-Tests steht in `docs/referenz/stand-ebene5.md` unter „Offene Integrationsprüfung“; er wird nach dem Merge von U6 gemeinsam durchgeführt.

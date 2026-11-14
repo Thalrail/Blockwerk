@@ -143,7 +143,7 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
   /** Die Änderungen des Entwurfs als Einträge der gemeinsamen Planfassung (ohne Version; die führt der Raum). */
   function zuPlanfassung(entwurf) {
     const eintraege = {};
-    for (const a of entwurf.aenderungen ?? []) eintraege[planfassungsSchluessel(a)] = { teil: a.teil, zelle: { ...a.zelle }, op: a.op, ...(a.block ? { block: kopie(a.block) } : {}), von: a.von };
+    for (const a of entwurf.aenderungen ?? []) eintraege[planfassungsSchluessel(a)] = { teil: a.teil, zelle: { ...a.zelle }, op: a.op, ...(a.block ? { block: kopie(a.block) } : {}), ...(a.zugelassen === true ? { zugelassen: true } : {}), von: a.von };
     return { version: 0, eintraege };
   }
 
@@ -155,7 +155,7 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
     const e = kopie(entwurf);
     const liste = Object.keys(planfassung.eintraege).sort().map((k, i) => {
       const x = planfassung.eintraege[k];
-      return { id: `C${i + 1}`, teil: x.teil, zelle: { x: x.zelle.x, y: x.zelle.y, z: x.zelle.z }, op: x.op, ...(x.block ? { block: kopie(x.block) } : {}), von: x.von, quelle: 'benutzer' };
+      return { id: `C${i + 1}`, teil: x.teil, zelle: { x: x.zelle.x, y: x.zelle.y, z: x.zelle.z }, op: x.op, ...(x.block ? { block: kopie(x.block) } : {}), ...(x.zugelassen === true ? { zugelassen: true } : {}), von: x.von, quelle: 'benutzer' };
     });
     for (const a of liste) pruefeAenderungForm(a);
     e.aenderungen = liste;

@@ -4,6 +4,7 @@ import { ladeEngine, erzeugeEbene5, bauePlan, erzeugeEntwurfsspeicher } from '..
 import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
 import * as Stil from '../src/ebene5/stil.js';
 import * as Teile from '../src/ebene5/teile.js';
+import * as Loesen from '../src/ebene5/loesen.js';
 import { berichtAlsText } from '../src/ebene3/index.js';
 import { eingabe as eingabeModul } from '../src/ebene5/index.js';
 import { liesJson, abdruck } from '../src/ebene4/index.js';
@@ -90,6 +91,11 @@ async function bearbeiten(data) {
   const e = await engine();
   if (data.typ === 'blockSuche') { const t = Bearbeiten.blockSuche(e.ebene0, data.text, 41); return { typ: 'bloecke', treffer: t.slice(0, 40), mehr: t.length > 40 }; }
   if (data.typ === 'blockInfo') return { typ: 'blockinfo', info: Bearbeiten.blockInfo(e.ebene0, data.id) };
+  if (data.typ === 'technikPruefen') { // neue Prüfung der Technikanlagen durch Ebene 1 am gezeigten Plan; ändert nichts
+    const letzter = merker.hole(data.erzeugung);
+    if (!letzter) throw new Error('Dieser Bauplan ist nicht mehr im Speicher der Berechnung. Bitte den Plan neu berechnen lassen.');
+    return { typ: 'technik', pruefung: Loesen.technikPruefen(e.ebene3.bestaetigung, letzter.entwurf) };
+  }
   if (data.typ === 'teileInfo') return { typ: 'teileinfo', info: Teile.teileInfo(e.ebene4.vokabular) };
   if (data.typ === 'teileVorschau') return { typ: 'vorschau', ...Teile.vorschau(e, data) };
   if (data.typ === 'stilInfo') return { typ: 'stilinfo', info: Stil.stilInfo({ paletten: e.ebene3.paletten, vokabular: e.ebene4.vokabular }) };
@@ -101,7 +107,7 @@ self.onmessage = async ({ data }) => {
   try {
     if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf, data.aenderungen, merker.beginne())), lauf: data.lauf }); // beginne(): ab jetzt gilt nur noch der Plan dieses Auftrags // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
     else if (data.typ === 'waehleZelle') self.postMessage({ typ: 'zelle', ...(await waehleZelle(data.zelle, data.erzeugung)), anfrage: data.anfrage, lauf: data.lauf });
-    else if (['blockSuche', 'blockInfo', 'bearbeiteOperation', 'stilInfo', 'materialSuche', 'teileInfo', 'teileVorschau'].includes(data.typ)) self.postMessage({ ...(await bearbeiten(data)), anfrage: data.anfrage });
+    else if (['blockSuche', 'blockInfo', 'bearbeiteOperation', 'stilInfo', 'materialSuche', 'teileInfo', 'teileVorschau', 'technikPruefen'].includes(data.typ)) self.postMessage({ ...(await bearbeiten(data)), anfrage: data.anfrage });
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
     self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });

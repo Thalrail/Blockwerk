@@ -25,7 +25,8 @@ export const neuerRaum = () => ({ spezifikation: null, fortschritt: F.leer(), ae
 const aenderungenVon = (raum) => raum.aenderungen ?? PF.leer(); // ältere gespeicherte Räume kennen noch keine Änderungen
 export const spielerListe = (raum) => Object.values(raum.spieler).map((s) => s.name).sort();
 const version = (raum) => raum.spezifikation?.version ?? 0;
-const zustandVon = (raum) => ({ typ: 'zustand', spezifikation: raum.spezifikation, fortschritt: raum.fortschritt, aenderungen: aenderungenVon(raum), spieler: spielerListe(raum) });
+// `format`: das Planfassungsformat, das der Raum versteht (2 = mit Zulassungen). Ein älterer Dienst nennt es nicht; die Seite sendet ihm dann keine Zulassungen (sie gingen dort still verloren).
+const zustandVon = (raum) => ({ typ: 'zustand', spezifikation: raum.spezifikation, fortschritt: raum.fortschritt, aenderungen: aenderungenVon(raum), spieler: spielerListe(raum), format: PF.FORMAT });
 
 /** Liest den Text einer Nachricht (Größe und Form werden geprüft, bevor etwas geparst wird, das groß sein könnte). */
 export function liesNachricht(text) {
@@ -99,11 +100,11 @@ export function verarbeite(raum, m, absender) {
     // manuelle Einzelblockänderungen (P10): je Zelle Vergleichen-und-Setzen, Konflikte kommen sichtbar zurück, der Raum überschreibt nie still
     const alt = aenderungenVon(raum);
     let e;
-    try { e = PF.wende(alt, m.operationen, raum.spieler[absender].name); } catch (f) {
+    try { e = PF.wende(alt, m.operationen, raum.spieler[absender].name, { gruppe: m.gruppe === true }); } catch (f) {
       if (f instanceof PF.PlanfassungFehler) return abgelehnt(raum, f.grund, f.message);
       throw f;
     }
-    const senden = [{ an: 'absender', nachricht: { typ: 'aenderung-ergebnis', version: e.planfassung.version, angenommen: e.angenommen, konflikte: e.konflikte, zellen: e.zellen } }];
+    const senden = [{ an: 'absender', nachricht: { typ: 'aenderung-ergebnis', version: e.planfassung.version, angenommen: e.angenommen, konflikte: e.konflikte, zellen: e.zellen, ...(e.gruppeAbgelehnt ? { gruppeAbgelehnt: true } : {}) } }];
     if (e.angenommen.length) senden.push({ an: 'andere', nachricht: { typ: 'aenderungen', von: raum.spieler[absender].name, version: e.planfassung.version, operationen: e.angenommen } });
     return { raum: e.geaendert ? { ...raum, aenderungen: e.planfassung } : raum, senden };
   }
@@ -150,11 +151,20 @@ export function austritt(raum, absender) {
  * Anteil der Seite: hält den lokalen Stand und macht aus Ereignissen des Dienstes Meldungen für die Anzeige. Sendet nie selbst; die Seite reicht die Nachrichten weiter.
  * @param {{name: string, fortschritt?: object}} start
  */
+/** Inhalt eines Eintrags als Erwartung (ohne Autor, mit Zulassung). */
+const inhalt = (e) => (e ? { op: e.op, ...(e.block ? { block: e.block } : {}), ...(e.zugelassen === true ? { zugelassen: true } : {}) } : null);
+
 export function erzeugeKlient({ name, fortschritt = F.leer() }) {
-  const z = { name, fortschritt, gesendet: {}, raumVersion: 0, spieler: [], vorschlag: null, aenderungen: PF.leer() };
+  const z = { name, fortschritt, gesendet: {}, raumVersion: 0, spieler: [], vorschlag: null, aenderungen: PF.leer(), raumFormat: 1 };
   const gleich = (a, b) => a && b && a.wert === b.wert && a.uhr === b.uhr && a.von === b.von;
   /** Alle Einträge, die der Raum noch nicht von uns kennt. */
   const neuesVon = (f) => Object.fromEntries(Object.entries(f.eintraege).filter(([k, e]) => !gleich(z.gesendet[k], e)));
+  /** Zulassungen und atomare Gruppen versteht nur ein Dienst mit Planfassungsformat 2: ein älterer wendet eine Gruppe einzeln an und entfernt Zulassungen still. Darum wird ihm beides nicht gesendet. */
+  const braucheFormat2 = (ops, gruppe) => {
+    if (z.raumFormat >= PF.FORMAT) return;
+    if (gruppe) throw new Error('Der Dienst dieses Raums ist älter und kennt keine zusammengehörigen Änderungen (Neu verankern). Es wurde nichts gesendet, damit nichts halb ankommt. Bitte den Dienst aktualisieren.');
+    if (ops.some((o) => o?.neu?.zugelassen === true)) throw new Error('Der Dienst dieses Raums ist älter und kennt keine Zulassungen. Es wurde nichts gesendet, damit die Zulassung nicht still verloren geht. Bitte den Dienst aktualisieren.');
+  };
   return {
     zustand: z,
     /** Beim (Wieder-)Verbinden: anmelden, danach den ganzen lokalen Stand schicken (die LWW-Map verträgt Wiederholungen). */
@@ -172,13 +182,17 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
      * hat inzwischen jemand anders dort etwas geändert, antwortet der Raum mit einem Konflikt statt zu überschreiben. Lokal ändert sich erst etwas, wenn der Raum annimmt.
      */
     aendere(teil, zelle, neu) {
+      braucheFormat2([{ neu }], false);
       const k = PF.schluessel(teil, zelle), aktuell = z.aenderungen.eintraege[k] ?? null;
-      return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: aktuell ? { op: aktuell.op, ...(aktuell.block ? { block: aktuell.block } : {}) } : null, neu }] }];
+      return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: inhalt(aktuell), neu }] }];
     },
     /** Eine fertige Operation der Oberfläche (bearbeiten.js): ihre Erwartung ist der Stand zum Zeitpunkt der Auswahl, nicht der jüngste lokale Stand; so bleibt eine Änderung der Mitspieler dazwischen ein Konflikt. */
-    aendereOperation(op) { return [{ typ: 'aenderung', operationen: [PF.pruefeOperation(op)] }]; },
+    aendereOperation(op) { braucheFormat2([op], false); return [{ typ: 'aenderung', operationen: [PF.pruefeOperation(op)] }]; },
+    /** Eine Gruppe von Operationen, die der Raum ganz oder gar nicht annimmt (U6: „neu verankern“ = alten Eintrag löschen und neuen setzen). */
+    aendereGruppe(ops) { braucheFormat2(ops, true); return [{ typ: 'aenderung', gruppe: true, operationen: ops.map(PF.pruefeOperation) }]; },
     /** Viele fertige Operationen (z. B. die lokalen Änderungen in einen neuen Raum ohne Änderungen), in Päckchen nach der Grenze für Operationen je Nachricht. */
     aendereOperationen(ops) {
+      braucheFormat2(ops, false);
       const gepruefte = ops.map(PF.pruefeOperation), aus = [];
       for (let i = 0; i < gepruefte.length; i += PF.PF_GRENZEN.operationen) aus.push({ typ: 'aenderung', operationen: gepruefte.slice(i, i + PF.PF_GRENZEN.operationen) });
       return aus;
@@ -187,7 +201,8 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
     konfliktLoesen(konflikt, wahl) {
       if (wahl === 'ihre') return [];
       if (wahl !== 'meine') throw new Error('wahl muss „meine“ oder „ihre“ sein');
-      return [{ typ: 'aenderung', operationen: [{ teil: konflikt.teil, zelle: konflikt.zelle, erwartet: konflikt.aktuell ? { op: konflikt.aktuell.op, ...(konflikt.aktuell.block ? { block: konflikt.aktuell.block } : {}) } : null, neu: konflikt.vorschlag }] }];
+      braucheFormat2([{ neu: konflikt.vorschlag }], false); // ein Konflikt kann eine Wiederverbindung überdauern: auch hier geht keine Zulassung an einen älteren Dienst
+      return [{ typ: 'aenderung', operationen: [{ teil: konflikt.teil, zelle: konflikt.zelle, erwartet: inhalt(konflikt.aktuell), neu: konflikt.vorschlag }] }];
     },
     /** Eine neue Planversion für den Raum (der Absender nennt die Version, die er kennt). */
     planVeroeffentlichen(spec) { return [{ typ: 'plan', basis: z.raumVersion, spezifikation: spec }]; },
@@ -197,13 +212,14 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
       if (m.typ === 'zustand') {
         z.spieler = m.spieler;
         z.raumVersion = m.spezifikation?.version ?? 0;
+        z.raumFormat = Number.isInteger(m.format) ? m.format : 1; // ohne Angabe ein älterer Dienst
         z.aenderungen = PF.pruefeForm(m.aenderungen ?? PF.leer());
         const merged = F.zusammenfuehren(z.fortschritt, F.pruefe(m.fortschritt));
         const mein = neuesVon(merged); // lokal Neueres geht jetzt in den Raum
         for (const [k, e] of Object.entries(m.fortschritt.eintraege)) if (gleich(merged.eintraege[k], e)) z.gesendet[k] = e;
         z.fortschritt = merged;
         if (Object.keys(mein).length) { Object.assign(z.gesendet, kopie(mein)); senden.push({ typ: 'haken', eintraege: mein }); }
-        meldungen.push({ art: 'zustand', spezifikation: m.spezifikation ?? null, fortschritt: merged, aenderungen: z.aenderungen });
+        meldungen.push({ art: 'zustand', spezifikation: m.spezifikation ?? null, fortschritt: merged, aenderungen: z.aenderungen, format: z.raumFormat });
       } else if (m.typ === 'eintraege') {
         const eingang = F.pruefe({ eintraege: m.eintraege, uhr: Math.max(0, ...Object.values(m.eintraege).map((e) => e.uhr)) });
         z.fortschritt = F.zusammenfuehren(z.fortschritt, eingang);
@@ -220,7 +236,7 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
           z.aenderungen = PF.setzeZellen(alt, m.zellen, m.version);
           meldungen.push({ art: 'aenderungen-angenommen', version: m.version, anzahl: m.angenommen.length, aenderungen: z.aenderungen });
         }
-        if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, abgleich: luecke, aenderungen: z.aenderungen });
+        if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, abgleich: luecke, aenderungen: z.aenderungen, gruppe: m.gruppeAbgelehnt === true });
         if (luecke) senden.push({ typ: 'hallo', name: z.name });
       } else if (m.typ === 'aenderungen') {
         const alt = z.aenderungen;

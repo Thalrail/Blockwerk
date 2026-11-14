@@ -69,6 +69,7 @@ function pruefe(d) {
       if (f instanceof PF.PlanfassungFehler) throw new TeilenFehler(`die Änderungen sind ungültig: ${f.message}`);
       throw f;
     }
+    if (d.version === VERSION && PF.enthaeltZulassung(d.aenderungen)) throw new TeilenFehler(`die Änderungen enthalten Zulassungen, tragen aber die Version ${VERSION}; ältere Versionen würden sie still entfernen. Erwartet wird Version ${VERSION_MIT_ZULASSUNG}`);
   }
   return d;
 }

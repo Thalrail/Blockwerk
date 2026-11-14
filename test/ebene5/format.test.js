@@ -86,3 +86,33 @@ test('Raum: der Dienst nennt sein Planfassungsformat; ein älterer Dienst (ohne 
   const kaputt = { ...alt, format: 'zwei' };
   assert.equal(LV.erzeugeKlient({ name: 'Dora', fortschritt: F.leer() }).beiNachricht(kaputt).meldungen.find((x) => x.art === 'zustand').format, 1, 'eine unbrauchbare Angabe gilt nicht als Format 2');
 });
+
+test('Review: die Speicherform ist eindeutig (flach mit Zulassung und Mischformen werden abgelehnt), Version 1 trägt keine Zulassungen', async () => {
+  const b = mit();
+  // flach mit Zulassung: falsch gekennzeichnet, würde von älteren Versionen still verstümmelt
+  assert.throws(() => PF.ausSpeicher(JSON.parse(JSON.stringify(b))), (f) => f instanceof PF.PlanfassungFehler && f.grund === 'format' && /falsch gekennzeichnet/.test(f.message));
+  // Mischform: Einwicklung und Planfassung zugleich
+  for (const misch of [{ format: 2, planfassung: b, version: 7, eintraege: {} }, { format: 2, planfassung: b, eintraege: {} }, { format: 2, planfassung: ohne(), version: 1 }]) assert.throws(() => PF.ausSpeicher(misch), (f) => f.grund === 'format' && /widersprüchlich/.test(f.message));
+  assert.deepEqual(PF.ausSpeicher(PF.fuerSpeicher(b)), b, 'die saubere Einwicklung geht weiter');
+  // Datei: Version 1 mit Zulassungen ist falsch gekennzeichnet
+  const spec = await holeJson('data/beispiele/zitadelle-klein.json');
+  const falsch = JSON.parse(teilen.exportDatei({ spezifikation: spec, aenderungen: b })); falsch.version = 1;
+  assert.throws(() => teilen.importDatei(JSON.stringify(falsch)), /Zulassungen.*Version 1.*Version 2/);
+});
+
+test('Review: einem älteren Dienst (ohne format) werden weder Zulassungen noch Gruppen gesendet; einem Dienst mit Format 2 schon', () => {
+  const ohneAngabe = LV.erzeugeKlient({ name: 'Ben', fortschritt: F.leer() });
+  ohneAngabe.beiNachricht({ typ: 'zustand', spezifikation: null, fortschritt: F.leer(), aenderungen: PF.leer(), spieler: ['Ben'] }); // kein format: älterer Dienst
+  const zulassung = op('t', 1, 0, 0, { op: 'leere', zugelassen: true }, { op: 'leere' });
+  assert.throws(() => ohneAngabe.aendereOperation(zulassung), /kennt keine Zulassungen.*nichts gesendet/);
+  assert.throws(() => ohneAngabe.aendereOperationen([zulassung]), /kennt keine Zulassungen/);
+  assert.throws(() => ohneAngabe.aendereGruppe([op('t', 1, 0, 0, null, { op: 'leere' }), op('t', 2, 0, 0, { op: 'leere' })]), /zusammengehörige.*nichts gesendet/, 'auch eine Gruppe ohne Zulassung: der ältere Dienst würde sie einzeln anwenden');
+  // gewöhnliche Änderungen gehen weiter
+  assert.equal(ohneAngabe.aendereOperation(op('t', 1, 0, 0, { op: 'leere' }))[0].operationen.length, 1);
+  assert.equal(ohneAngabe.aendereOperationen([op('t', 1, 0, 0, { op: 'leere' })]).length, 1);
+  // Format 2: alles geht
+  const neu = LV.erzeugeKlient({ name: 'Cem', fortschritt: F.leer() });
+  neu.beiNachricht({ typ: 'zustand', spezifikation: null, fortschritt: F.leer(), aenderungen: PF.leer(), spieler: ['Cem'], format: 2 });
+  assert.equal(neu.aendereOperation(zulassung)[0].operationen[0].neu.zugelassen, true);
+  assert.equal(neu.aendereGruppe([op('t', 1, 0, 0, null, { op: 'leere' }), op('t', 2, 0, 0, { op: 'leere' })])[0].gruppe, true);
+});

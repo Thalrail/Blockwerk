@@ -119,11 +119,12 @@ function ladePlanfassung(spec) {
   let text = null; try { text = localStorage.getItem(k); } catch { /* Speicher gesperrt: dann gibt es nichts zu lesen */ }
   if (text === null) return PF.leer();
   try { return PF.ausSpeicher(JSON.parse(text)); } catch (f) { // beschädigt (auch kein JSON): nicht erfinden, aber auch nicht überschreiben: der Rohtext bleibt als Kopie erhalten
-    try { localStorage.setItem(`${k}.defekt`, text); } catch { /* Speicher voll */ }
+    try { localStorage.setItem(`${k}.defekt`, text); } catch { gesperrteAenderungen.add(k); } // ohne Sicherungskopie bleibt das Original unangetastet (kein Überschreiben)
     setTimeout(() => toast(`Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.`), 0); return PF.leer();
   }
 }
-const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (k) speicher.schreib(k, PF.fuerSpeicher(pf)); }; // mit Zulassungen in der Speicherform, die ältere Versionen sichtbar ablehnen (planfassung.js)
+const gesperrteAenderungen = new Set(); // Schlüssel mit unlesbaren Daten ohne gelungene Sicherungskopie: werden nie überschrieben
+const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (!k) return; if (gesperrteAenderungen.has(k)) { toast('Die gespeicherten Änderungen dieses Projekts sind unlesbar und ließen sich nicht sichern; neue Änderungen werden deshalb nicht gespeichert, damit das Original nicht überschrieben wird. Bitte Speicher freigeben und die Seite neu laden.'); return; } speicher.schreib(k, PF.fuerSpeicher(pf)); }; // mit Zulassungen in der Speicherform, die ältere Versionen sichtbar ablehnen (planfassung.js)
 
 /** Eine neue Planfassung (eigene Änderung oder Änderung aus dem Raum) wird gebaut. Die Seite zeigt den bisherigen Plan, bis der neue fertig und (bei geänderten Schichten) bestätigt ist. */
 function baueMitAenderungen(pf) {
@@ -479,7 +480,7 @@ function aenderungenPanel() {
 function loesenAnwenden(ops, gruppe = false) {
   if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
   if (live.istVerbunden()) {
-    if (ops.some((o) => o.neu?.zugelassen === true) && !live.raumKenntZulassung()) { toast('Der Dienst dieses Raums ist älter und kennt noch keine Zulassungen. Es wurde nichts gesendet, damit die Zulassung nicht still verloren geht. Bitte den Dienst aktualisieren.'); return; }
+    if ((gruppe || ops.some((o) => o.neu?.zugelassen === true)) && !live.raumKenntZulassung()) { toast(gruppe ? 'Der Dienst dieses Raums ist älter und kennt keine zusammengehörigen Änderungen (Neu verankern). Es wurde nichts gesendet, damit nichts halb ankommt. Bitte den Dienst aktualisieren.' : 'Der Dienst dieses Raums ist älter und kennt noch keine Zulassungen. Es wurde nichts gesendet, damit die Zulassung nicht still verloren geht. Bitte den Dienst aktualisieren.'); return; }
     if (!live.sendeOperationen(ops, { gruppe })) { toast('Der Raum ist gerade nicht erreichbar. Nichts wurde gesendet.'); return; }
     toast('Entscheidung an den Raum gesendet. Sie gilt, sobald der Raum sie annimmt.'); return;
   }

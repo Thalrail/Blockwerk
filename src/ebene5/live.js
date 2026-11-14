@@ -159,6 +159,12 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
   const gleich = (a, b) => a && b && a.wert === b.wert && a.uhr === b.uhr && a.von === b.von;
   /** Alle Einträge, die der Raum noch nicht von uns kennt. */
   const neuesVon = (f) => Object.fromEntries(Object.entries(f.eintraege).filter(([k, e]) => !gleich(z.gesendet[k], e)));
+  /** Zulassungen und atomare Gruppen versteht nur ein Dienst mit Planfassungsformat 2: ein älterer wendet eine Gruppe einzeln an und entfernt Zulassungen still. Darum wird ihm beides nicht gesendet. */
+  const braucheFormat2 = (ops, gruppe) => {
+    if (z.raumFormat >= PF.FORMAT) return;
+    if (gruppe) throw new Error('Der Dienst dieses Raums ist älter und kennt keine zusammengehörigen Änderungen (Neu verankern). Es wurde nichts gesendet, damit nichts halb ankommt. Bitte den Dienst aktualisieren.');
+    if (ops.some((o) => o?.neu?.zugelassen === true)) throw new Error('Der Dienst dieses Raums ist älter und kennt keine Zulassungen. Es wurde nichts gesendet, damit die Zulassung nicht still verloren geht. Bitte den Dienst aktualisieren.');
+  };
   return {
     zustand: z,
     /** Beim (Wieder-)Verbinden: anmelden, danach den ganzen lokalen Stand schicken (die LWW-Map verträgt Wiederholungen). */
@@ -180,11 +186,12 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
       return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: inhalt(aktuell), neu }] }];
     },
     /** Eine fertige Operation der Oberfläche (bearbeiten.js): ihre Erwartung ist der Stand zum Zeitpunkt der Auswahl, nicht der jüngste lokale Stand; so bleibt eine Änderung der Mitspieler dazwischen ein Konflikt. */
-    aendereOperation(op) { return [{ typ: 'aenderung', operationen: [PF.pruefeOperation(op)] }]; },
+    aendereOperation(op) { braucheFormat2([op], false); return [{ typ: 'aenderung', operationen: [PF.pruefeOperation(op)] }]; },
     /** Eine Gruppe von Operationen, die der Raum ganz oder gar nicht annimmt (U6: „neu verankern“ = alten Eintrag löschen und neuen setzen). */
-    aendereGruppe(ops) { return [{ typ: 'aenderung', gruppe: true, operationen: ops.map(PF.pruefeOperation) }]; },
+    aendereGruppe(ops) { braucheFormat2(ops, true); return [{ typ: 'aenderung', gruppe: true, operationen: ops.map(PF.pruefeOperation) }]; },
     /** Viele fertige Operationen (z. B. die lokalen Änderungen in einen neuen Raum ohne Änderungen), in Päckchen nach der Grenze für Operationen je Nachricht. */
     aendereOperationen(ops) {
+      braucheFormat2(ops, false);
       const gepruefte = ops.map(PF.pruefeOperation), aus = [];
       for (let i = 0; i < gepruefte.length; i += PF.PF_GRENZEN.operationen) aus.push({ typ: 'aenderung', operationen: gepruefte.slice(i, i + PF.PF_GRENZEN.operationen) });
       return aus;

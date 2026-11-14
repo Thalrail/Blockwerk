@@ -43,9 +43,12 @@ export const fuerSpeicher = (pf) => (enthaeltZulassung(pf) ? { format: FORMAT, p
 export function ausSpeicher(roh) {
   if (istObjekt(roh) && Object.hasOwn(roh, 'format')) {
     if (roh.format !== FORMAT) throw new PlanfassungFehler('format', `Diese Änderungen haben das Format ${String(roh.format).slice(0, 20)}, das diese Version von Blockwerk nicht kennt. Bitte Blockwerk aktualisieren; nichts wurde verändert.`);
+    if (Object.hasOwn(roh, 'version') || Object.hasOwn(roh, 'eintraege')) throw new PlanfassungFehler('format', 'Die gespeicherten Änderungen sind widersprüchlich (Einwicklung und Planfassung zugleich); es wird nichts davon gelesen.');
     return pruefeForm(roh.planfassung);
   }
-  return pruefeForm(roh);
+  const flach = pruefeForm(roh);
+  if (enthaeltZulassung(flach)) throw new PlanfassungFehler('format', 'Änderungen mit Zulassungen müssen in der Speicherform mit Format stehen; diese Daten sind falsch gekennzeichnet und werden nicht gelesen (ältere Versionen würden die Zulassungen still entfernen).');
+  return flach;
 }
 export const schluessel = (teil, zelle) => `${teil}|${zelle.x},${zelle.y},${zelle.z}`;
 

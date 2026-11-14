@@ -94,7 +94,8 @@ export function erzeugeLive(k) {
       k.setzePlanfassung(x.aenderungen, false);
     } else if (x.art === 'aenderung-konflikt') {
       const von = x.konflikte.map((q) => q.aktuell?.von).filter(Boolean)[0];
-      k.toast(`${von ? `${von} hat` : 'Jemand hat'} diese Zelle inzwischen anders geändert. Deine Änderung wurde nicht übernommen, nichts wurde überschrieben (die Auflösung folgt mit U6).`);
+      k.toast(`${von ? `${von} hat` : 'Jemand hat'} diese Zelle inzwischen anders geändert. Deine Änderung wurde nicht übernommen, nichts wurde überschrieben. Du entscheidest im Reiter „Änderungen“.`);
+      k.meldeKonflikte(x.konflikte);
     } else if (x.art === 'haken') {
       k.setzeFortschritt(x.fortschritt);
       const fertig = Object.entries(x.eintraege).filter(([, e]) => e.wert);
@@ -134,7 +135,9 @@ export function erzeugeLive(k) {
     lokalGeaendert(f) { if (live.klient && live.ws?.readyState === 1) sende(live.klient.lokalGeaendert(f)); },
     istVerbunden: () => live.status === 'verbunden',
     /** Eine fertige Änderung (bearbeiten.js) an den Raum. Lokal ändert sich erst etwas, wenn der Raum sie annimmt. @returns {boolean} gesendet */
-    sendeOperationen(ops) { if (!live.klient || live.ws?.readyState !== 1) return false; sende(live.klient.aendereOperationen(ops)); return true; },
+    sendeOperationen(ops, { gruppe = false } = {}) { if (!live.klient || live.ws?.readyState !== 1) return false; sende(gruppe ? live.klient.aendereGruppe(ops) : live.klient.aendereOperationen(ops)); return true; },
+    /** Ein Konflikt wurde entschieden: „meine“ überschreibt bewusst den Eintrag des anderen (mit dessen Stand als Erwartung), „ihre“ behält ihn (nichts wird gesendet). */
+    loeseKonflikt(konflikt, wahl) { if (!live.klient) return false; if (wahl === 'meine' && live.ws?.readyState !== 1) return false; sende(live.klient.konfliktLoesen(konflikt, wahl)); return true; },
     sendeOperation(op) { if (!live.klient || live.ws?.readyState !== 1) return false; sende(live.klient.aendereOperation(op)); return true; },
     /** Eine freigegebene Fassung in den Raum stellen. */
     veroeffentliche(spec) { if (live.klient && live.ws?.readyState === 1) sende(live.klient.planVeroeffentlichen(spec)); },

@@ -48,7 +48,7 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
         status: st.status, ...(st.grund !== undefined ? { grund: st.grund } : {}), ...(st.mit !== undefined ? { mit: st.mit } : {}),
         ort: st.ort ? { ...st.ort } : null, abschnitt: teilVon.get(a.teil)?.abschnitt ?? null,
         ...(rf ? { rueckfrage: { id: rf.id, optionen: (rf.optionen ?? []).map((o) => ({ id: o.id, text: o.text })) } } : {}),
-        zugelassen: !!ew && (entwurf.zulassungen ?? []).includes(ew.schluessel),
+        zugelassen: a.zugelassen === true || (!!ew && (entwurf.zulassungen ?? []).includes(ew.schluessel)),
       };
     });
   }

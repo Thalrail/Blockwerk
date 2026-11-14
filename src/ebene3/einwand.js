@@ -88,6 +88,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
     for (const [id, st] of (ohneAenderungen ? [] : [...(mat.aenderungen ?? [])]).sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
       if (st.status === 'angewandt' || st.status === 'ueberholt') continue;
       const a = entwurf.aenderungen.find((x) => x.id === id), teil = teilVon.get(st.teil) ?? null;
+      if (a.zugelassen === true) continue; // Jonah hat entschieden (U6): die Änderung bleibt gespeichert, der Bau geht ohne sie weiter, es gibt keinen Einwand mehr
       const was = `${a.op === 'setze' ? `${a.block.id} setzen` : 'Block entfernen'} an der Rahmenzelle (${a.zelle.x}, ${a.zelle.y}, ${a.zelle.z}) von „${a.teil}“`;
       const grund = {
         'teil-fehlt': 'das Teil gibt es nicht mehr',

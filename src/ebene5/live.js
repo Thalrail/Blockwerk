@@ -99,11 +99,11 @@ export function verarbeite(raum, m, absender) {
     // manuelle Einzelblockänderungen (P10): je Zelle Vergleichen-und-Setzen, Konflikte kommen sichtbar zurück, der Raum überschreibt nie still
     const alt = aenderungenVon(raum);
     let e;
-    try { e = PF.wende(alt, m.operationen, raum.spieler[absender].name); } catch (f) {
+    try { e = PF.wende(alt, m.operationen, raum.spieler[absender].name, { gruppe: m.gruppe === true }); } catch (f) {
       if (f instanceof PF.PlanfassungFehler) return abgelehnt(raum, f.grund, f.message);
       throw f;
     }
-    const senden = [{ an: 'absender', nachricht: { typ: 'aenderung-ergebnis', version: e.planfassung.version, angenommen: e.angenommen, konflikte: e.konflikte, zellen: e.zellen } }];
+    const senden = [{ an: 'absender', nachricht: { typ: 'aenderung-ergebnis', version: e.planfassung.version, angenommen: e.angenommen, konflikte: e.konflikte, zellen: e.zellen, ...(e.gruppeAbgelehnt ? { gruppeAbgelehnt: true } : {}) } }];
     if (e.angenommen.length) senden.push({ an: 'andere', nachricht: { typ: 'aenderungen', von: raum.spieler[absender].name, version: e.planfassung.version, operationen: e.angenommen } });
     return { raum: e.geaendert ? { ...raum, aenderungen: e.planfassung } : raum, senden };
   }
@@ -150,6 +150,9 @@ export function austritt(raum, absender) {
  * Anteil der Seite: hält den lokalen Stand und macht aus Ereignissen des Dienstes Meldungen für die Anzeige. Sendet nie selbst; die Seite reicht die Nachrichten weiter.
  * @param {{name: string, fortschritt?: object}} start
  */
+/** Inhalt eines Eintrags als Erwartung (ohne Autor, mit Zulassung). */
+const inhalt = (e) => (e ? { op: e.op, ...(e.block ? { block: e.block } : {}), ...(e.zugelassen === true ? { zugelassen: true } : {}) } : null);
+
 export function erzeugeKlient({ name, fortschritt = F.leer() }) {
   const z = { name, fortschritt, gesendet: {}, raumVersion: 0, spieler: [], vorschlag: null, aenderungen: PF.leer() };
   const gleich = (a, b) => a && b && a.wert === b.wert && a.uhr === b.uhr && a.von === b.von;
@@ -173,10 +176,12 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
      */
     aendere(teil, zelle, neu) {
       const k = PF.schluessel(teil, zelle), aktuell = z.aenderungen.eintraege[k] ?? null;
-      return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: aktuell ? { op: aktuell.op, ...(aktuell.block ? { block: aktuell.block } : {}) } : null, neu }] }];
+      return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: inhalt(aktuell), neu }] }];
     },
     /** Eine fertige Operation der Oberfläche (bearbeiten.js): ihre Erwartung ist der Stand zum Zeitpunkt der Auswahl, nicht der jüngste lokale Stand; so bleibt eine Änderung der Mitspieler dazwischen ein Konflikt. */
     aendereOperation(op) { return [{ typ: 'aenderung', operationen: [PF.pruefeOperation(op)] }]; },
+    /** Eine Gruppe von Operationen, die der Raum ganz oder gar nicht annimmt (U6: „neu verankern“ = alten Eintrag löschen und neuen setzen). */
+    aendereGruppe(ops) { return [{ typ: 'aenderung', gruppe: true, operationen: ops.map(PF.pruefeOperation) }]; },
     /** Viele fertige Operationen (z. B. die lokalen Änderungen in einen neuen Raum ohne Änderungen), in Päckchen nach der Grenze für Operationen je Nachricht. */
     aendereOperationen(ops) {
       const gepruefte = ops.map(PF.pruefeOperation), aus = [];
@@ -187,7 +192,7 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
     konfliktLoesen(konflikt, wahl) {
       if (wahl === 'ihre') return [];
       if (wahl !== 'meine') throw new Error('wahl muss „meine“ oder „ihre“ sein');
-      return [{ typ: 'aenderung', operationen: [{ teil: konflikt.teil, zelle: konflikt.zelle, erwartet: konflikt.aktuell ? { op: konflikt.aktuell.op, ...(konflikt.aktuell.block ? { block: konflikt.aktuell.block } : {}) } : null, neu: konflikt.vorschlag }] }];
+      return [{ typ: 'aenderung', operationen: [{ teil: konflikt.teil, zelle: konflikt.zelle, erwartet: inhalt(konflikt.aktuell), neu: konflikt.vorschlag }] }];
     },
     /** Eine neue Planversion für den Raum (der Absender nennt die Version, die er kennt). */
     planVeroeffentlichen(spec) { return [{ typ: 'plan', basis: z.raumVersion, spezifikation: spec }]; },

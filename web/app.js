@@ -8,6 +8,7 @@ import * as PF from '../src/ebene5/planfassung.js';
 import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
 import * as Stil from '../src/ebene5/stil.js';
 import * as Teile from '../src/ebene5/teile.js';
+import * as Loesen from '../src/ebene5/loesen.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -29,7 +30,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null, rev: 0 }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null, rev: 0 }, loesen: { verankern: null, technik: null, konflikte: [], erzeugung: null }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -40,6 +41,7 @@ let anfrageNr = 0;
 function anfrage(nachricht, uebertragen = []) {
   return new Promise((ok, nein) => { const nr = ++anfrageNr; offeneAnfragen.set(nr, { ok, nein }); worker.postMessage({ ...nachricht, anfrage: nr }, uebertragen); });
 }
+const meldeKonflikte = (liste) => { z.loesen.konflikte.push(...liste.map((k) => ({ roh: k, ansicht: Loesen.konfliktAnsicht(k) }))); z.reiter = 'aenderungen'; render(); };
 worker.onmessage = ({ data }) => {
   if (data.anfrage !== undefined) {
     const a = offeneAnfragen.get(data.anfrage); offeneAnfragen.delete(data.anfrage);
@@ -255,7 +257,7 @@ function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); li
 // ---------- Live mit Freunden ----------
 const live = Live.erzeugeLive({
   z, render: () => render(), toast: (t) => toast(t), name: () => z.name, projekt: () => z.spec, fortschritt: () => z.fortschritt,
-  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt),
+  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt), meldeKonflikte: (liste) => meldeKonflikte(liste),
   plan: () => z.daten?.plan ?? null, merke: (k, v) => speicher.schreib(k, v), gespeicherterDienst: () => speicher.lies('blockwerk.dienst', ''),
 });
 
@@ -364,6 +366,12 @@ async function zelleKlick(ev) {
   let auswahl;
   try { auswahl = Bearbeiten.auswahlAus(await anfrage({ typ: 'waehleZelle', zelle, erzeugung }), z.planfassung); } catch (f) { auswahl = { waehlbar: false, zelle, hinweis: String(f.message ?? f) }; }
   if (nr !== z.klickNr || z.daten?.erzeugung !== erzeugung) return; // inzwischen anderer Klick oder anderer Plan: diese Antwort ist überholt
+  if (z.loesen.verankern) { // Zielzelle für „neu verankern“ (U6): kein Wechsel der Auswahl, eine Gruppe aus löschen und setzen
+    const v = z.loesen.verankern;
+    if (!auswahl.waehlbar) { toast(auswahl.hinweis ?? 'Diese Zelle gehört zu keinem Teil. Bitte eine andere wählen.'); return; }
+    try { z.loesen.verankern = null; loesenAnwenden(Loesen.opsVerankern(z.planfassung, v.k, { teil: auswahl.teil, zelle: auswahl.zelle }), true); } catch (f) { toast(String(f.message ?? f)); z.loesen.verankern = v; }
+    render(); return;
+  }
   z.auswahl = auswahl; z.blockwahl = null; z.reiter = 'zelle';
   render();
 }
@@ -439,6 +447,68 @@ function zellePanel() {
   if (z.blockwahl) h += blockwahlPanel();
   return h + fuss;
 }
+// ---------- Änderungen auflösen, Konflikte, Technik (U6) ----------
+const eintragHtml = (e) => {
+  const knopf = (a, t, k = e.schluessel) => `<button data-a="lo-${a}" data-k="${esc(k)}">${t}</button>`;
+  return `<div class="eintrag"><b>${esc(e.text)}</b>${e.grund ? `<div class="klein">${esc(e.grund)}</div>` : ''}<div class="knoepfe">${e.aktionen.map((a) => ({
+    verwerfen: knopf('verwerfen', e.status === 'angewandt' ? 'Zurücknehmen' : 'Verwerfen'), verankern: knopf('verankern', 'Neu verankern …'),
+    zulassen: knopf('zulassen', 'Zulassen und weiterbauen'), 'zulassung-zurueck': knopf('zulassung-zurueck', 'Zulassung zurücknehmen'),
+  }[a])).join('')}</div></div>`;
+};
+/** Reiter „Änderungen“: Konflikte mit anderen Spielern, deine Änderungen nach Zustand (mit Verwerfen, Neu verankern, Zulassen) und die Technikanlagen. Jede Entscheidung ist eine Änderung der Planfassung. */
+function aenderungenPanel() {
+  const lo = z.loesen, p = Loesen.aenderungsPanel(z.daten.plan);
+  if (lo.erzeugung !== z.daten.erzeugung) { lo.technik = null; lo.erzeugung = z.daten.erzeugung; } // ein neuer Plan: die frühere „neu prüfen“-Anzeige gilt nicht mehr
+  let h = '<h3>Änderungen</h3><p class="klein">Deine Einzelblockänderungen. Was sich nicht anwenden lässt, ändert den Plan nicht; du entscheidest, was damit geschieht.</p>';
+  if (z.umbau) return h + '<p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
+  if (lo.verankern) h += `<div class="blockwahl"><strong>Neu verankern</strong><p class="klein">Klicke im Schichtplan die Zielzelle an. ${esc(lo.verankern.text)}</p><div class="knoepfe"><button data-a="lo-abbrechen">Abbrechen</button></div></div>`;
+  if (lo.konflikte.length) {
+    h += '<h4>Konflikte mit anderen Spielern</h4>' + lo.konflikte.map((k, i) => `<div class="eintrag"><b>${esc(k.ansicht.satz)}</b><div class="klein">Deine Fassung: ${esc(k.ansicht.deine)} · Fassung von ${esc(k.ansicht.von ?? 'jemand anders')}: ${esc(k.ansicht.ihre)}</div><div class="knoepfe"><button data-a="lo-konflikt-meine" data-i="${i}">Meine übernehmen</button><button data-a="lo-konflikt-ihre" data-i="${i}">Ihre behalten</button></div></div>`).join('');
+  }
+  h += `<h4>Warten auf deine Entscheidung (${p.offen.length})</h4>${p.offen.length ? p.offen.map(eintragHtml).join('') : '<p class="klein">Nichts wartet.</p>'}`;
+  if (p.zugelassen.length) h += `<h4>Zugelassen (${p.zugelassen.length})</h4><p class="klein">Der Bau geht ohne diese Änderungen weiter; sie bleiben gespeichert.</p>${p.zugelassen.map(eintragHtml).join('')}`;
+  if (p.ueberholt.length) h += `<h4>Ohne Wirkung (${p.ueberholt.length})</h4>${p.ueberholt.map(eintragHtml).join('')}`;
+  if (p.wirkt.length) h += `<details><summary>Wirken im Plan (${p.wirkt.length})</summary>${p.wirkt.map(eintragHtml).join('')}</details>`;
+  const technik = Loesen.technikAnsicht(z.daten.plan, lo.technik);
+  if (technik.length) {
+    h += `<h4>Technikanlagen</h4>${technik.map((t) => `<div class="eintrag"><b>${esc(t.name)}</b> <span class="klein">(${esc(t.abschnitt)})</span> <span class="plakette ${t.funktioniert ? 'simuliert' : 'entworfen'}">${t.funktioniert ? 'bestätigt' : 'nicht bestätigt'}</span><div class="klein">${esc(t.text)}</div>${t.geaendertDurch.length ? `<div class="klein">Geändert durch: ${esc(t.geaendertDurch.join(', '))}</div>` : ''}${t.verstoesse.length ? `<ul class="klein">${t.verstoesse.map((v) => `<li>x ${v.x}, y ${v.y}, z ${v.z}: ${esc(v.text)}</li>`).join('')}</ul>` : ''}</div>`).join('')}<div class="knoepfe"><button data-a="lo-technik">Technik neu prüfen</button></div><p class="klein">Nur eine bestätigte Anlage gilt als funktionsfähig.</p>`;
+  }
+  return h;
+}
+/** Operationen anwenden: im Raum sendet der Raum entscheidet, sonst lokal (Vergleichen-und-Setzen, Gruppen ganz oder gar nicht); der Plan wird neu gebaut. */
+function loesenAnwenden(ops, gruppe = false) {
+  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
+  if (live.istVerbunden()) {
+    if (!live.sendeOperationen(ops, { gruppe })) { toast('Der Raum ist gerade nicht erreichbar. Nichts wurde gesendet.'); return; }
+    toast('Entscheidung an den Raum gesendet. Sie gilt, sobald der Raum sie annimmt.'); return;
+  }
+  const r = Loesen.anwendenOps(z.planfassung, ops, z.name, { gruppe });
+  if (r.konflikte.length) { toast('Diese Änderung wurde inzwischen anders entschieden. Es wurde nichts geändert; bitte die Liste ansehen und neu entscheiden.'); render(); return; }
+  if (!r.geaendert) { toast('Es hat sich nichts geändert.'); return; }
+  baueMitAenderungen(r.planfassung);
+}
+async function loesenAktion(name, d) {
+  const lo = z.loesen;
+  try {
+    if (name === 'lo-abbrechen') { lo.verankern = null; render(); return; }
+    if (name === 'lo-verwerfen') { loesenAnwenden([Loesen.opVerwerfen(z.planfassung, d.k)]); return; }
+    if (name === 'lo-zulassen' || name === 'lo-zulassung-zurueck') { loesenAnwenden([Loesen.opZulassen(z.planfassung, d.k, name === 'lo-zulassen')]); return; }
+    if (name === 'lo-verankern') { const e = z.planfassung.eintraege[d.k]; if (!e) throw new Error('Diese Änderung gibt es nicht mehr.'); lo.verankern = { k: d.k, text: `Die Änderung ${Loesen.inhaltText(e)} an Zelle ${e.zelle.x}, ${e.zelle.y}, ${e.zelle.z} von „${e.teil}“ zieht dorthin um.` }; z.reiter = 'aenderungen'; render(); return; }
+    if (name === 'lo-technik') {
+      const erzeugung = z.daten.erzeugung;
+      const r = await anfrage({ typ: 'technikPruefen', erzeugung });
+      if (z.daten?.erzeugung === erzeugung) { lo.technik = r.pruefung; lo.erzeugung = erzeugung; render(); }
+      return;
+    }
+    if (name === 'lo-konflikt-meine' || name === 'lo-konflikt-ihre') {
+      const i = Number(d.i), k = lo.konflikte[i]; if (!k) return;
+      const wahl = name === 'lo-konflikt-meine' ? 'meine' : 'ihre';
+      if (!live.loeseKonflikt(k.roh, wahl)) { toast('Der Raum ist gerade nicht erreichbar. Der Konflikt bleibt offen.'); return; }
+      lo.konflikte.splice(i, 1); toast(wahl === 'meine' ? 'Deine Fassung wurde an den Raum gesendet (mit dem Stand des anderen als Erwartung).' : 'Die Fassung des anderen bleibt.'); render(); return;
+    }
+  } catch (f) { toast(String(f.message ?? f)); render(); }
+}
+
 // ---------- Bauteile (U5) ----------
 const REL_TEXT = (info, rel) => String(info.relationen[rel] ?? rel).replace('{bezug}', '…');
 const GROESSENART = { geometrie: 'Geometrie (skaliert frei)', menschenmass: 'Menschenmaß (bleibt fest)', technik: 'Technik (skaliert über Anzahl)' };
@@ -679,7 +749,7 @@ function blockwahlPanel() {
 }
 function rechteSpalte() {
   const a = abschnitt(), s = schicht(), r = z.reiter;
-  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['stil', 'Stil'], ['teile', 'Teile'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
+  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['stil', 'Stil'], ['teile', 'Teile'], ['aenderungen', 'Änderungen'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
   let inhalt = '';
   if (r === 'material') {
     const m = z.daten.material;
@@ -694,6 +764,7 @@ function rechteSpalte() {
   } else if (r === 'zelle') inhalt = zellePanel();
   else if (r === 'stil') inhalt = stilPanel();
   else if (r === 'teile') inhalt = teilePanel();
+  else if (r === 'aenderungen') inhalt = aenderungenPanel();
   else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {
     const st = z.daten.baustatus;
@@ -909,6 +980,7 @@ async function aktion(name, el) {
     else if (name === 'reiter') { z.reiter = d.k; render(); if (d.k === 'stil') await stilLaden(); if (d.k === 'teile') await teileLaden(); }
     else if (name.startsWith('st-')) await stilAktion(name, d);
     else if (name.startsWith('tl-') || name.startsWith('tn-')) await teileAktion(name);
+    else if (name.startsWith('lo-')) await loesenAktion(name, d);
     else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }
     else if (name === 'einpassen') { a3d?.einpassen(); }
     else if (name === 'bisAktuelle') { z.sicht.maxY = schicht().y; render(); }

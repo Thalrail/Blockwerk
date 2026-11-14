@@ -24,7 +24,7 @@ export function spielerName(name) {
 }
 
 /** Inhalt eines Eintrags ohne Autor (so, wie `wende` ihn als Erwartung vergleicht). */
-export const inhaltVon = (eintrag) => (eintrag ? { op: eintrag.op, ...(eintrag.block ? { block: { id: eintrag.block.id, ...(eintrag.block.zustand ? { zustand: { ...eintrag.block.zustand } } : {}) } } : {}) } : null);
+export const inhaltVon = (eintrag) => (eintrag ? { op: eintrag.op, ...(eintrag.block ? { block: { id: eintrag.block.id, ...(eintrag.block.zustand ? { zustand: { ...eintrag.block.zustand } } : {}) } } : {}), ...(eintrag.zugelassen === true ? { zugelassen: true } : {}) } : null);
 
 /**
  * Aus der Antwort der Zellenwahl wird die Auswahl der Oberfläche. `planfassung` ist der Stand, den die Benutzerin gerade sieht; der Eintrag an dieser Zelle wird jetzt

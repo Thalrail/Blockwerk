@@ -1,6 +1,7 @@
 // Ebene 5 – Planfassung: die gemeinsame, versionierte Menge der manuellen Einzelblockänderungen mehrerer Spieler (Paket P10 der Einbau-Architektur,
 // Bearbeitungsmodell B, Entscheidung 3: Änderungen gehören zu einer gemeinsamen Planfassung mit Version; Konflikte werden nie stillschweigend überschrieben).
-//   { version: <ganze Zahl ≥ 0>, eintraege: { '<teil>|<x>,<y>,<z>': { teil, zelle: {x,y,z}, op: 'setze'|'leere', block?: {id, zustand?}, von } } }
+//   { version: <ganze Zahl ≥ 0>, eintraege: { '<teil>|<x>,<y>,<z>': { teil, zelle: {x,y,z}, op: 'setze'|'leere', block?: {id, zustand?}, zugelassen?: true, von } } }
+// `zugelassen` (U6): Jonah hat entschieden, dass eine nicht anwendbare Änderung gespeichert bleibt und der Bau ohne sie weitergeht; es gehört zum Inhalt (wird mit verglichen und geteilt).
 // Eine Änderung wird nur angenommen, wenn die Zelle im Raum noch so ist, wie der Absender sie kannte (`erwartet`, Vergleichen-und-Setzen je Zelle). Andernfalls kommt
 // ein Konflikt mit dem aktuellen Eintrag zurück; der Raum bleibt unverändert, und der Absender (nur er, nach Rückfrage) kann mit dem aktuellen Eintrag als Erwartung
 // bewusst überschreiben. Verschiedene Zellen stören sich nie. Rein, deterministisch, ohne Uhr und Zufall.
@@ -29,16 +30,18 @@ function pruefeZelle(z) {
   if (!istObjekt(z) || ![z.x, z.y, z.z].every(ganz)) throw new PlanfassungFehler('zelle', `Die Zelle braucht ganze Zahlen x, y, z (höchstens ±${PF_GRENZEN.koordinate})`);
 }
 
-/** Inhalt einer Änderung ohne Autor: `{op}` oder `{op, block}` (Block `{id, zustand?}`). Wirft bei Formfehlern. */
+/** Inhalt einer Änderung ohne Autor: `{op}` oder `{op, block}` (Block `{id, zustand?}`), dazu optional `zugelassen: true`. Wirft bei Formfehlern. */
 export function pruefeInhalt(e) {
   if (!istObjekt(e) || !OPS.includes(e.op)) throw new PlanfassungFehler('op', `op muss ${OPS.join(' oder ')} sein`);
+  if (e.zugelassen !== undefined && e.zugelassen !== true && e.zugelassen !== false) throw new PlanfassungFehler('zugelassen', 'zugelassen muss wahr oder falsch sein');
+  const zu = e.zugelassen === true ? { zugelassen: true } : {};
   if (e.op === 'leere') {
     if (e.block !== undefined) throw new PlanfassungFehler('block', 'leere hat keinen Block');
-    return { op: 'leere' };
+    return { op: 'leere', ...zu };
   }
   if (!istObjekt(e.block) || typeof e.block.id !== 'string' || !BLOCK.test(e.block.id)) throw new PlanfassungFehler('block', 'setze braucht einen Block (minecraft:…)');
   if (e.block.zustand !== undefined && (!istObjekt(e.block.zustand) || JSON.stringify(e.block.zustand).length > PF_GRENZEN.zustand)) throw new PlanfassungFehler('block', `Der Blockzustand muss ein kleines Objekt sein (höchstens ${PF_GRENZEN.zustand} Zeichen)`);
-  return { op: 'setze', block: { id: e.block.id, ...(e.block.zustand ? { zustand: sortiert(e.block.zustand) } : {}) } };
+  return { op: 'setze', block: { id: e.block.id, ...(e.block.zustand ? { zustand: sortiert(e.block.zustand) } : {}) }, ...zu };
 }
 
 /** Stimmen zwei Inhalte überein (ohne Autor und Zelle)? `null` heißt „keine Änderung an dieser Zelle“. */
@@ -77,9 +80,11 @@ export function pruefeForm(pf) {
 /**
  * Wendet Operationen an (rein: liefert eine neue Planfassung). Je Operation gilt Vergleichen-und-Setzen: `erwartet` muss dem aktuellen Eintrag entsprechen,
  * sonst ist es ein Konflikt (nichts wird überschrieben). Die Version steigt einmal, wenn mindestens eine Operation etwas geändert hat.
- * @returns {{planfassung: object, angenommen: {teil, zelle, neu}[], konflikte: {teil, zelle, aktuell, vorschlag}[], geaendert: boolean}}
+ * Mit `gruppe: true` gelten alle Operationen ganz oder gar nicht (U6, z. B. „neu verankern“ = alten Eintrag löschen und neuen setzen): gibt es einen Konflikt, bleibt die
+ * Planfassung unverändert, nichts wird angenommen, und `gruppeAbgelehnt` ist wahr.
+ * @returns {{planfassung: object, angenommen: {teil, zelle, neu}[], konflikte: {teil, zelle, aktuell, vorschlag}[], geaendert: boolean, gruppeAbgelehnt?: boolean}}
  */
-export function wende(pf, operationen, von) {
+export function wende(pf, operationen, von, { gruppe = false } = {}) {
   if (!Array.isArray(operationen) || !operationen.length) throw new PlanfassungFehler('form', 'aenderung braucht mindestens eine Operation');
   if (operationen.length > PF_GRENZEN.operationen) throw new PlanfassungFehler('zu-gross', `Höchstens ${PF_GRENZEN.operationen} Operationen je Nachricht`);
   const ops = operationen.map(pruefeOperation); // alles prüfen, bevor etwas geändert wird: eine kaputte Operation lehnt die ganze Nachricht ab
@@ -103,10 +108,12 @@ export function wende(pf, operationen, von) {
   if (Object.keys(eintraege).length > PF_GRENZEN.eintraege) throw new PlanfassungFehler('zu-gross', `Eine Planfassung hat höchstens ${PF_GRENZEN.eintraege} Änderungen`);
   if (geaendert && JSON.stringify(eintraege).length > PF_GRENZEN.groesse) throw new PlanfassungFehler('zu-gross', `Die Änderungen sind zusammen größer als ${PF_GRENZEN.groesse} Zeichen`);
   // Endstand jeder berührten Zelle (angenommen oder Konflikt): das ist, was der Raum nach der Nachricht hält; der Absender übernimmt genau das
-  const endstand = (k) => (eintraege[k] ? { op: eintraege[k].op, ...(eintraege[k].block ? { block: eintraege[k].block } : {}), von: eintraege[k].von } : null);
+  const abgelehnt = gruppe && konflikte.length > 0; // eine Gruppe gilt ganz oder gar nicht: der Stand vor der Nachricht bleibt
+  if (abgelehnt) { for (const k of Object.keys(eintraege)) delete eintraege[k]; Object.assign(eintraege, pf.eintraege); geaendert = false; angenommen.length = 0; }
+  const endstand = (k) => (eintraege[k] ? { op: eintraege[k].op, ...(eintraege[k].block ? { block: eintraege[k].block } : {}), ...(eintraege[k].zugelassen ? { zugelassen: true } : {}), von: eintraege[k].von } : null);
   for (const x of konflikte) x.aktuell = endstand(schluessel(x.teil, x.zelle));
   const zellen = [...beruehrt].sort((p, q) => (p[0] < q[0] ? -1 : 1)).map(([k, c]) => ({ teil: c.teil, zelle: c.zelle, aktuell: endstand(k) }));
-  return { planfassung: geaendert ? { version: pf.version + 1, eintraege } : pf, angenommen, konflikte, zellen, geaendert };
+  return { planfassung: geaendert ? { version: pf.version + 1, eintraege } : pf, angenommen, konflikte, zellen, geaendert, ...(abgelehnt ? { gruppeAbgelehnt: true } : {}) };
 }
 
 /** Setzt die Endstände einzelner Zellen (Antwort des Raums) in eine lokale Kopie; `aktuell: null` löscht. */

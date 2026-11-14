@@ -70,17 +70,18 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
         if (!welt.istLuft(x, y, z)) continue;
         const frei = h.von.find((v) => v.art === 'freihaltung') ?? h.von[0];
         if (!aussparungenVon.has(y)) aussparungenVon.set(y, []);
-        aussparungenVon.get(y).push({ x, z, art: h.von.some((v) => v.art === 'oeffnung') ? 'oeffnung' : 'freihaltung', kind: refVon(frei.kind), traeger: refVon(h.traeger) });
+        aussparungenVon.get(y).push({ x, z, art: frei.art, kind: refVon(frei.kind), traeger: refVon(h.traeger) });
         aussparungenAnzahl++;
       }
       for (const liste of aussparungenVon.values()) liste.sort((p, q) => p.z - q.z || p.x - q.x);
       // Schichten von unten nach oben
       const nachY = new Map();
       for (const c of zellen.values()) { if (!nachY.has(c.y)) nachY.set(c.y, []); nachY.get(c.y).push(c); }
+      const ohneSchicht = [...aussparungenVon.keys()].filter((y) => !nachY.has(y)).sort((p, q) => p - q).flatMap((y) => aussparungenVon.get(y).map((q) => ({ ...q, y })));
       const schichten = [...nachY.keys()].sort((p, q) => p - q).map((y) => {
         const liste = nachY.get(y).sort((p, q) => p.z - q.z || p.x - q.x);
         const n = liste.length;
-        const sx = new Int32Array(n), sz = new Int32Array(n), sb = new Uint16Array(n), sr = new Uint8Array(n), st = new Uint8Array(n), sp = new Uint16Array(n);
+        const sx = new Int32Array(n), sz = new Int32Array(n), sb = new Uint16Array(n), sr = new Uint8Array(n), st = new Uint8Array(n), sp = new Uint32Array(n);
         const summe = {};
         const inhalte = [];
         let h = fnv(`${a.id}|${y}`);
@@ -107,7 +108,7 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
       const summeA = {};
       for (const s of schichten) for (const [id, m] of Object.entries(s.summe)) summeA[id] = (summeA[id] ?? 0) + m;
       const teileListe = teileA.map((t) => ({ id: t.id, ref: t.ref ?? t.id, baustein: t.baustein, name: t.name ?? a.name, art: t.art, traeger: t.traeger ?? null, bloecke: mat.teile.get(t.id).schluessel.size }));
-      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, aussparungen: aussparungenAnzahl });
+      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, aussparungen: aussparungenAnzahl, ...(ohneSchicht.length ? { aussparungenOhneSchicht: ohneSchicht } : {}) });
     }
     return { projekt: { name: entwurf.projekt.name }, abschnitte: ergebnis, summe: gesamt, bloecke: ergebnis.reduce((s, a) => s + a.bloecke, 0) };
   }

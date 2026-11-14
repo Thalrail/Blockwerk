@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { engine, holeJson, alsText } from './hilfe5.js';
 import { VARIANTEN, hausSpezifikation, laufe } from '../../tools/haus-sonde.js';
 import * as fortschritt from '../../src/ebene5/fortschritt.js';
+import { definiere } from '../../src/ebene2/index.js';
 
 async function umgebung() {
   const e = await engine();
@@ -137,4 +138,42 @@ test('Haken: wechselt nur der Besitz (Tür als Parameter des Raums oder als eige
   assert.deepEqual(b.teile.map((t) => t.ref), ['erdgeschoss', 'haustuer'], 'der Besitz ist ein anderer');
   assert.ok(b.schichten.some((s) => s.p.some((p) => p === 1)));
   assert.deepEqual(a.schichten.map((s) => s.abdruck), b.schichten.map((s) => s.abdruck), 'gleiche Blöcke, gleiche Abdrücke');
+});
+
+test('Haken: Pläne ohne Kinder behalten ihre Abdrücke aus der Zeit vor P7 (gespeicherte Haken bleiben gültig)', async () => {
+  const { e, e5 } = await umgebung();
+  const r = await laufe(hausSpezifikation(VARIANTEN.klein, { tuer: true, fenster: true }), e, e5);
+  // festgehalten am Stand vor P7 (Commit 9b40230), berechnet mit dessen bauplan.js
+  assert.deepEqual(r.plan.abschnitte.map((a) => [a.id, a.schichten.map((s) => s.abdruck)]), [
+    ['erdgeschoss', ['656b3e4c', '08264726', '92d7e649', 'fa3e7af0', 'b9eb9300']],
+    ['obergeschoss', ['4c7fcee3', '3432ed9e', '3307ab09', '9eaf02df']],
+    ['dach', ['a937878a', '511ce850', 'd0ae34b1', '93ae6662', 'd72d60e0']],
+  ]);
+});
+
+test('Bauplan: Aussparungen in einer Höhe ohne Blöcke gehen nicht verloren (aussparungenOhneSchicht, gezählt)', async () => {
+  const { e, e5 } = await umgebung();
+  // künstlicher Baustein (nur Test): ein Block weit über der Wand, der die ganze Wand freihält
+  const frei = definiere({
+    id: 'bau.test-freihalter', titel: 'Freihalter (nur Test)', quelle: 'https://beispiel.invalid/', testszenario: { start: 's', erwartung: 'e' }, parameter: [],
+    baue: () => ({ bloecke: [{ x: 0, y: 5, z: 0, rolle: 'wand' }], aussparungen: [{ art: 'freihaltung', von: { x: -2, y: 0, z: 0 }, bis: { x: 2, y: 0, z: 0 } }] }),
+  });
+  e.ebene2.bausteine.set(frei.id, frei);
+  try {
+    let en = e.ebene3.neuerEntwurf ? null : null; void en;
+    const { neuerEntwurf } = await import('../../src/ebene3/index.js');
+    let x = neuerEntwurf({ name: 'Probe' });
+    const a = (wer, aenderung) => { x = e.ebene3.aendere(x, wer, aenderung).entwurf; };
+    a('konstrukteur', { art: 'setze-abschnitt', abschnitt: { id: 'A1', name: 'Wand', reihenfolge: 1 } });
+    a('designer', { art: 'setze-palette', palette: { wand: 'minecraft:stone', akzent: 'minecraft:stone', boden: 'minecraft:stone', licht: 'minecraft:glowstone', glas: 'minecraft:glass' } });
+    a('architekt', { art: 'setze-teil', teil: { abschnitt: 'A1', baustein: 'bau.wand', ref: 'w', parameter: { laenge: 5, hoehe: 1, dicke: 1 }, lage: { x: 0, y: 0, z: 0, drehung: 0 } } });
+    a('architekt', { art: 'setze-teil', teil: { abschnitt: 'A1', baustein: frei.id, ref: 'f', parameter: {}, traeger: 'w', einbau: { zone: 'wand', anker: 'mitte', versatz: { x: 0, y: 5, z: 0 }, drehung: 0 } } });
+    const plan = e5.bauplan(x);
+    const ab = abschnitt(plan, 'A1');
+    assert.deepEqual(hoehen(ab), [5], 'nur der Block des Freihalters ist übrig; die Wand ist ausgespart');
+    assert.equal(ab.aussparungen, 5, 'alle fünf Wandblöcke sind Aussparungen');
+    assert.equal((ab.aussparungenOhneSchicht ?? []).length, 5, 'keine Schicht hat Blöcke in dieser Höhe, die Aussparungen stehen am Abschnitt');
+    assert.ok(ab.aussparungenOhneSchicht.every((q) => q.kind === 'f' && q.traeger === 'w' && q.art === 'freihaltung' && q.y === 0));
+    assert.equal(ab.schichten[0].aussparungen, undefined);
+  } finally { e.ebene2.bausteine.delete(frei.id); }
 });

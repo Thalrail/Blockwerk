@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { engine, holeJson } from './hilfe5.js';
 import { bauePlan } from '../../src/ebene5/bauen.js';
+import { ebene3 as ebene3Hilfe } from '../hilfe.js';
 import { VARIANTEN, hausSpezifikation } from '../../tools/haus-sonde.js';
 import { berichtAlsText } from '../../src/ebene3/index.js';
 import * as PF from '../../src/ebene5/planfassung.js';
@@ -166,4 +167,51 @@ test('Technik: eine Änderung im Prüfbereich einer Anlage wird mit neu geprüft
   assert.equal(ab(mit.r, 'T5'), ab(ohne.r, 'T5'));
   // in der Abschnittsliste steht es ebenfalls
   assert.deepEqual(mit.plan.abschnitte.find((a) => a.id === 'lagerkeller').technik.find((x) => x.ref === 'T1').geaendertDurch, ['C1']);
+});
+
+test('Technik: nur angewandte Änderungen gelten als „im Prüfbereich geändert“; ungültige und verwaiste werden gemeldet, nicht gezählt', async () => {
+  const spec = await holeJson('data/beispiele/zitadelle-klein.json');
+  const e = await engine();
+  const r = bauePlan(e, spec, [], pf([['T1', 9, 1, 3, 'leere'], ['T1', 9, 1, 4, 'minecraft:gibt_es_nicht'], ['T1', 99, 1, 0, 'minecraft:stone']]));
+  const plan = e.e5.bauplan(r.entwurf);
+  assert.equal(r.status, 'wartet');
+  assert.ok(r.entwurf.abschnitte.every((x) => x.status === 'fertig'), 'ein Einwand gegen eine manuelle Änderung öffnet keinen Abschnitt neu (Neuplanen kann ihn nicht beheben)');
+  assert.deepEqual(plan.aenderungen.map((a) => [a.id, a.status]), [['C1', 'angewandt'], ['C2', 'ungueltig'], ['C3', 'verwaist']]);
+  assert.deepEqual(plan.technik.find((x) => x.ref === 'T1').geaendertDurch, ['C1'], 'nur die angewandte Änderung');
+  // ohne die angewandte Änderung steht gar nichts an der Anlage
+  const nur = bauePlan(e, spec, [], pf([['T1', 9, 1, 4, 'minecraft:gibt_es_nicht'], ['T1', 99, 1, 0, 'minecraft:stone']]));
+  assert.equal(e.e5.bauplan(nur.entwurf).technik.find((x) => x.ref === 'T1').geaendertDurch, undefined);
+  // Ebene 3 liefert die Zuordnung (Ebene 5 zeigt sie nur)
+  const m = e.ebene3.materialisiere(r.entwurf);
+  assert.deepEqual([...e.ebene3.bestaetigung.geaendertDurch(r.entwurf, m)], [['T1', ['C1']]]);
+  assert.deepEqual([...e.ebene3.bestaetigung.geaendertDurch(e.ebene3.aenderungen.ausPlanfassung(r.entwurf, PF.leer()), e.ebene3.materialisiere(e.ebene3.aenderungen.ausPlanfassung(r.entwurf, PF.leer())))], []);
+});
+
+test('Keine Änderung geht verloren: auch wenn schon der Vorlauf wartet, bleibt die Planfassung im Entwurf; jeder angegebene, aber ungültige Wert wird abgelehnt (nur null und fehlend heißen „keine Änderungen“)', async () => {
+  const e = await engine();
+  const spec = haus();
+  delete spec.teile[0].stil; // keine Stimmung: die Planung stellt eine Rückfrage zur Palette
+  const frei = e.ebene4.freigeben(spec, 'test');
+  const r = bauePlan(e, frei, [], pf([GLAS]));
+  assert.equal(r.status, 'wartet');
+  assert.equal(r.entwurf.aenderungen.length, 1, 'die Änderung steht schon im wartenden Entwurf');
+  assert.throws(() => bauePlan(e, frei, [], { version: 1, eintraege: { 'a|1,1,1': { teil: 'a', zelle: { x: 1, y: 1, z: 1 }, op: 'tanzen' } } }), /Änderungen der Planfassung sind ungültig/);
+  const gut = e.ebene4.freigeben(haus(), 'test');
+  for (const falsch of [false, 0, '', 'text', [], 5]) assert.throws(() => bauePlan(e, gut, [], falsch), /Planfassung sind ungültig/, JSON.stringify(falsch));
+  for (const keine of [null, undefined]) assert.equal(bauePlan(e, gut, [], keine).status, 'fertig');
+});
+
+test('Wartet schon der Vorlauf (Einspruch des Technikers ohne Lösung, hier ein Zyklus), bleibt die Planfassung im Entwurf, und eine ungültige wird sofort abgelehnt', () => {
+  const huelle = (a, b, c, d, e, f) => ({ von: { x: a, y: b, z: c }, bis: { x: d, y: e, z: f } });
+  const sorten = ['minecraft:stone', 'minecraft:dirt'];
+  const vorgabe = () => ({ name: 'V', stimmung: 'glanz', abschnitte: [
+    { id: 'halle', name: 'Halle', huelle: huelle(-10, 0, -10, 20, 12, 20), zonen: [{ funktion: 'technik', anteil: 100 }], bedarf: [{ art: 'lager', sorten, braucht: ['lager'] }] },
+    { id: 'lager', name: 'Lager', huelle: huelle(100, 0, 0, 130, 12, 30), zonen: [{ funktion: 'technik', anteil: 100 }], bedarf: [{ art: 'lager', sorten, braucht: ['halle'] }] },
+  ] });
+  const ab = ebene3Hilfe().ablauf;
+  assert.equal(ab.vorlauf(vorgabe()).art, 'wartet', 'Ausgangslage: der Vorlauf wartet');
+  const r = ab.starte(vorgabe(), { aenderungen: pf([GLAS]) });
+  assert.equal(r.status, 'wartet');
+  assert.equal(r.entwurf.aenderungen.length, 1);
+  assert.throws(() => ab.starte(vorgabe(), { aenderungen: { version: 1, eintraege: { 'a|1,1,1': { teil: 'a', zelle: { x: 1, y: 1, z: 1 }, op: 'tanzen' } } } }), /Änderungen der Planfassung sind ungültig/);
 });

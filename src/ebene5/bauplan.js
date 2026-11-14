@@ -66,13 +66,7 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
     // manuelle Änderungen (ohne sie bleibt der Plan unverändert, kein zusätzliches Feld) und welche Technikanlage sie in ihrem Prüfbereich berühren:
     // die Anlage wurde nach der Änderung neu geprüft (Ebene 1), die Anzeige nennt die Änderungen dazu
     const aenderungen = (entwurf.aenderungen ?? []).length ? aenderungsListe(entwurf, mat) : null;
-    const durch = new Map();
-    if (aenderungen && technikStatus.length) {
-      for (const x of ebene3.bestaetigung.abdruecke(entwurf, mat)) {
-        const k = x.kasten, ids = aenderungen.filter((a) => a.ort && a.ort.x >= k.von.x && a.ort.x <= k.bis.x && a.ort.y >= k.von.y && a.ort.y <= k.bis.y && a.ort.z >= k.von.z && a.ort.z <= k.bis.z).map((a) => a.id);
-        if (ids.length) durch.set(x.ref, ids);
-      }
-    }
+    const durch = aenderungen && technikStatus.length ? ebene3.bestaetigung.geaendertDurch(entwurf, mat) : new Map(); // berechnet Ebene 3, hier wird nur angezeigt
     const technikAnzeige = ({ ref, name, status }) => ({ ref, name, status, ...(durch.has(ref) ? { geaendertDurch: durch.get(ref) } : {}) });
     const teilVon = new Map(entwurf.teile.map((t) => [t.id, t]));
     const refVon = (id) => teilVon.get(id)?.ref ?? id;

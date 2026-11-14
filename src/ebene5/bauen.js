@@ -5,8 +5,8 @@
  * @param {{ebene4: {baue: Function}}} e  geladene Engine
  * @param {object} spezifikation  freigegebene Spezifikation
  * @param {object[]} [messungen]
- * @param {{version: number, eintraege: object}|null} [aenderungen]  Planfassung (manuelle Einzelblockänderungen); ohne sie wird nur die Spezifikation gebaut
+ * @param {{version: number, eintraege: object}|null} [aenderungen]  Planfassung (manuelle Einzelblockänderungen); null oder fehlend = nur die Spezifikation; jeder andere Wert wird geprüft (ungültig ist ein Fehler, nie stillschweigend ignoriert)
  */
 export function bauePlan(e, spezifikation, messungen = [], aenderungen = null) {
-  return e.ebene4.baue(spezifikation, messungen, aenderungen ? { aenderungen } : {});
+  return e.ebene4.baue(spezifikation, messungen, aenderungen == null ? {} : { aenderungen });
 }

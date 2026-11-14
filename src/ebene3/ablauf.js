@@ -114,7 +114,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     for (const rf of r.rueckfragen) {
       const ew = e.einwaende.find((x) => x.id === rf.einwand);
       const a = ew?.abschnitt ? e.abschnitte.find((x) => x.id === ew.abschnitt) : null;
-      if (a && a.id !== aktuell && a.status === 'fertig' && (a.rueckgriffe ?? 0) < maxRueckgriffe) {
+      // eine manuelle Änderung lässt sich durch Neuplanen nicht beheben: nur Jonah entscheidet, der Abschnitt bleibt fertig (sonst sähen auch gültige Änderungen verwaist aus)
+      if (ew?.regel !== 'plan.aenderung' && a && a.id !== aktuell && a.status === 'fertig' && (a.rueckgriffe ?? 0) < maxRueckgriffe) {
         for (const x of r.rueckfragen) {
           e.rueckfragen.find((y) => y.id === x.id).status = 'rueckgriff';
           e.einwaende.find((y) => y.id === x.einwand).status = 'rueckgriff';
@@ -304,8 +305,9 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
   /** Startet den ganzen Ablauf aus einer Vorgabe. */
   function starte(vorgabe, optionen = {}) {
     const v = vorlauf(vorgabe);
-    if (v.art === 'wartet') return ergebnis(v.entwurf, 'wartet');
-    return fortsetzen(mitAenderungen(v.entwurf, optionen), optionen);
+    const e = mitAenderungen(v.entwurf, optionen); // auch wenn schon der Vorlauf wartet: die Änderungen gehen nie verloren, eine ungültige Planfassung ist sofort ein Fehler
+    if (v.art === 'wartet') return ergebnis(e, 'wartet');
+    return fortsetzen(e, optionen);
   }
 
   /** Setzt die manuellen Änderungen aus einer Planfassung (`optionen.aenderungen`, Ebene 5) in den Entwurf; ohne Angabe bleibt der Entwurf unverändert. */

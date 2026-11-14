@@ -71,6 +71,8 @@ test('Trägerwald: ref eindeutig, Träger vorhanden, kein Selbstbezug, keine Zyk
   ablehnen((x) => { teil(x, 'haus/w1').einbau.zone = ''; }, /zone/);
   ablehnen((x) => { teil(x, 'haus/w1').einbau.anker = 'oben'; }, /anker/);
   ablehnen((x) => { teil(x, 'haus/w1').einbau.versatz = { x: 0.5, y: 0, z: 0 }; }, /versatz/);
+  ablehnen((x) => { teil(x, 'haus/w1').einbau.versatz = { x: 2 ** 53, y: 0, z: 0 }; }, /versatz/);
+  ablehnen((x) => { teil(x, 'haus/w1').einbau.versatz = { x: 0, y: 1e20, z: 0 }; }, /versatz/);
   ablehnen((x) => { teil(x, 'haus/w1').einbau.drehung = 4; }, /drehung/);
   ablehnen((x) => { teil(x, 'haus/w1').traeger = ''; }, /traeger ungültig/);
   ablehnen((x) => { x.aenderungen = {}; }, /aenderungen/);

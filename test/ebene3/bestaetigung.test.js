@@ -157,7 +157,12 @@ test('Bestätigung: auch Inventarinhalt und Wesen im Prüfbereich gehören zum A
   assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.8)]), 'Bewegung innerhalb derselben Blockzelle');
   assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { baby: true })]), 'anderes Merkmal');
   assert.equal(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { nr: 99 })]), 'die laufende Nummer zählt nicht');
-  assert.equal(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { sitztIn: 3 })]), 'sitztIn hängt von der Einfügereihenfolge ab und zählt nicht');
+  // Sitzbeziehung: zählt über die Daten des Fahrzeugs, nicht über dessen Nummer
+  const lore = (nr, extra = {}) => ({ id: 'minecraft:minecart', x: mitte + 0.2, y: kastenHoch.von.y + 0.5, z: kastenHoch.von.z + 0.5, yaw: 0, nr, ...extra });
+  assert.equal(abd([], [lore(3), dorfi(mitte + 0.2, { sitztIn: 3 })]), abd([], [lore(8), dorfi(mitte + 0.2, { sitztIn: 8 })]), 'Umnummerieren des Fahrzeugs ändert nichts');
+  assert.notEqual(abd([], [lore(3), dorfi(mitte + 0.2, { sitztIn: 3 })]), abd([], [lore(3), dorfi(mitte + 0.2)]), 'Einsteigen/Aussteigen bei gleicher Position zählt');
+  assert.notEqual(abd([], [lore(3), lore(4, { yaw: 90 }), dorfi(mitte + 0.2, { sitztIn: 3 })]), abd([], [lore(3), lore(4, { yaw: 90 }), dorfi(mitte + 0.2, { sitztIn: 4 })]), 'Fahrzeugwechsel zählt');
+  assert.notEqual(abd([], [dorfi(mitte + 0.2, { sitztIn: 3 })]), abd([], [dorfi(mitte + 0.2)]), 'verwaiste Sitzbeziehung (Fahrzeug fehlt) zählt ebenfalls');
   assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { yaw: 90 })]), 'die Blickrichtung zählt');
   assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { beruf: 'minecraft:farmer' })]), 'ein weiteres Merkmal (Beruf) zählt');
   assert.equal(abd([], [dorfi(kastenHoch.bis.x + 50)]), basis, 'ein Wesen weit weg zählt nicht');

@@ -61,7 +61,14 @@ export function erzeugeBestaetigung({ regelwerk, materialisierung }) {
         h = fnv(`;${b.x},${b.y},${b.z},${b.id},${JSON.stringify(sortiert(b.zustand ?? {}))}${b.inhalt?.length ? JSON.stringify(sortiert(b.inhalt)) : ''}`, h);
       }
       // Wesen im Prüfbereich: alle Daten außer der laufenden Nummer (`nr`, `sitztIn` hängen von der Einfügereihenfolge ab), mit exakter Position; die abgerundete Zelle dient nur der Zuordnung
-      const dort = wesen.filter((x) => imKasten({ x: Math.floor(x.x), y: Math.floor(x.y), z: Math.floor(x.z) }, kasten)).map(({ nr, sitztIn, ...rest }) => JSON.stringify(sortiert(rest))).sort();
+      // `sitztIn` ist eine Nummer: sie wird durch die Daten des Fahrzeugs ersetzt (ohne dessen Nummer und Sitzbeziehung), damit Umnummerieren nichts ändert, Ein-/Aussteigen und Fahrzeugwechsel aber schon
+      const nachNr = new Map(wesen.filter((x) => x.nr !== undefined).map((x) => [x.nr, x]));
+      const ohneNr = ({ nr, sitztIn, ...rest }) => rest;
+      const dort = wesen.filter((x) => imKasten({ x: Math.floor(x.x), y: Math.floor(x.y), z: Math.floor(x.z) }, kasten)).map((w) => {
+        const rest = ohneNr(w);
+        if (w.sitztIn !== undefined && w.sitztIn !== null) rest.sitzt = nachNr.has(w.sitztIn) ? ohneNr(nachNr.get(w.sitztIn)) : 'unbekannt';
+        return JSON.stringify(sortiert(rest));
+      }).sort();
       for (const w of dort) h = fnv(`#${w}`, h);
       return { id: t.id, ref: refVon(t), name: t.name ?? t.baustein, abschnitt: t.abschnitt, baustein: t.baustein, kasten, abdruck: hex8(h) };
     });

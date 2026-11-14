@@ -79,7 +79,7 @@ export function pruefeTraegerwald(e, fehler = (m) => { throw new Error(`Entwurf:
     const ei = t.einbau;
     if (!ei || typeof ei !== 'object' || typeof ei.zone !== 'string' || !ei.zone) fehler(`Teil ${t.id}: einbau braucht eine zone`);
     if (!ANKER.includes(ei.anker)) fehler(`Teil ${t.id}: anker "${String(ei.anker)}" unbekannt (${ANKER.join(', ')})`);
-    if (!pos(ei.versatz)) fehler(`Teil ${t.id}: einbau.versatz braucht ganze Zahlen x, y, z`);
+    if (!posSicher(ei.versatz)) fehler(`Teil ${t.id}: einbau.versatz braucht ganze Zahlen x, y, z`);
     if (!ganz(ei.drehung) || ei.drehung < 0 || ei.drehung > 3) fehler(`Teil ${t.id}: einbau.drehung muss 0 bis 3 sein`);
   }
   // Zyklen: von jedem Teil aufwärts höchstens so viele Schritte wie Teile

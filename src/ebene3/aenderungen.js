@@ -65,7 +65,10 @@ export function erzeugeAenderungen({ ebene0, ebene2 }) {
     if (!e.teile.some((t) => t.ref === ziel)) throw new AenderungsFehler(`das Teil „${String(ziel)}“ gibt es nicht (ref)`);
     if (!ganz(zelle)) throw new AenderungsFehler('die neue Zelle braucht ganze Zahlen x, y, z');
     const neu = { ...alt, teil: ziel, zelle: { x: zelle.x, y: zelle.y, z: zelle.z } };
-    e.aenderungen = e.aenderungen.filter((x) => x.id !== id && !(x.teil === neu.teil && x.zelle.x === neu.zelle.x && x.zelle.y === neu.zelle.y && x.zelle.z === neu.zelle.z));
+    // Eine andere Änderung an der Zielzelle wird nie stillschweigend verdrängt: erst ausdrücklich verwerfen
+    const belegt = e.aenderungen.find((x) => x.id !== id && x.teil === neu.teil && x.zelle.x === neu.zelle.x && x.zelle.y === neu.zelle.y && x.zelle.z === neu.zelle.z);
+    if (belegt) throw new AenderungsFehler(`an der Zelle (${neu.zelle.x}, ${neu.zelle.y}, ${neu.zelle.z}) von Teil ${neu.teil} gibt es schon die Änderung ${belegt.id}; sie muss zuerst ausdrücklich verworfen werden`);
+    e.aenderungen = e.aenderungen.filter((x) => x.id !== id);
     e.aenderungen.push(neu);
     haengeAn(e, 'aenderung', { von: 'jonah', ziel: `Teil ${neu.teil}`, beschreibung: `Änderung ${id} neu verankert: von Teil ${alt.teil} Zelle (${alt.zelle.x}, ${alt.zelle.y}, ${alt.zelle.z}) nach Teil ${neu.teil} Zelle (${neu.zelle.x}, ${neu.zelle.y}, ${neu.zelle.z}) auf Entscheidung von ${von ?? 'Jonah'}`, art: 'blockaenderung-verankert' });
     return { entwurf: e };

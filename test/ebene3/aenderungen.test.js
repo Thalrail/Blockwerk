@@ -129,6 +129,20 @@ test('Verwaisung: eine Änderung außerhalb des Teils wird nicht angewendet und 
   assert.throws(() => A.verankere(klein, 'C1', { teil: 'nix', zelle: { x: 1, y: 1, z: 1 } }, 'Jonah'), /gibt es nicht/);
 });
 
+test('Neu verankern: eine schon vorhandene Änderung an der Zielzelle wird nie stillschweigend verdrängt', () => {
+  let e = A.setze(grund(), { teil: 'haus', zelle: { x: 2, y: 1, z: 0 }, op: 'setze', block: { id: 'minecraft:glass' } }, 'Jonah').entwurf;
+  e = A.setze(e, { teil: 'haus', zelle: { x: 3, y: 1, z: 0 }, op: 'setze', block: { id: 'minecraft:stone' } }, 'Jonah').entwurf;
+  const vorher = JSON.stringify(e.aenderungen);
+  assert.throws(() => A.verankere(e, 'C1', { zelle: { x: 3, y: 1, z: 0 } }, 'Jonah'), /gibt es schon die Änderung C2/);
+  assert.equal(JSON.stringify(e.aenderungen), vorher, 'beide Änderungen bleiben unverändert');
+  // erst ausdrücklich verwerfen, dann geht es
+  const frei = A.verwirf(e, 'C2', 'Jonah').entwurf;
+  const ok = A.verankere(frei, 'C1', { zelle: { x: 3, y: 1, z: 0 } }, 'Jonah').entwurf;
+  assert.deepEqual(ok.aenderungen.map((x) => [x.id, x.zelle.x]), [['C1', 3]]);
+  // dieselbe Zelle für sich selbst bleibt erlaubt
+  assert.equal(A.verankere(e, 'C1', { zelle: { x: 2, y: 1, z: 0 } }, 'Jonah').entwurf.aenderungen.length, 2);
+});
+
 test('Verwaisung: Größenänderung nach Osten und Süden lässt die Änderung an derselben Stelle relativ zur Nordwest-Ecke; Teil entfernt oder Block weg = verwaist', () => {
   const z = { x: 2, y: 1, z: 0 };
   const lage = { x: 4, y: 10, z: -3, drehung: 1 };

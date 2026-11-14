@@ -30,8 +30,8 @@ export function anhaengen(liste, neu) {
 export function liesListe(roh) {
   if (!Array.isArray(roh)) return [];
   const aus = [];
-  for (const x of roh.slice(-VERLAUF_MAX)) { try { aus.push(eintrag(x ?? {})); } catch { /* unbrauchbar: weglassen */ } }
-  return aus;
+  for (const x of roh) { try { aus.push(eintrag(x ?? {})); } catch { /* unbrauchbar: weglassen */ } }
+  return aus.slice(-VERLAUF_MAX); // erst prüfen, dann begrenzen: Unbrauchbares am Ende verdrängt nichts Gültiges
 }
 
 const mehrzahl = (n, eins, viele) => `${n} ${n === 1 ? eins : viele}`;

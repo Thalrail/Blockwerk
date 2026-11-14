@@ -60,7 +60,8 @@ test('Grenzen: Link (L채nge des Codes), Spezifikation, Fortschritt, Spieler; ein
   assert.equal(gross.stufe, 'voll');
   // ein unzul채ssiger Wert (zyklisch) bringt die Ansicht nicht zum Absturz
   const zyklisch = {}; zyklisch.sich = zyklisch;
-  assert.equal(nach(G.grenzenAnsicht({ spezifikation: zyklisch }), 'spezifikation').wert, 0);
+  const z = nach(G.grenzenAnsicht({ spezifikation: zyklisch }), 'spezifikation');
+  assert.equal(z.stufe, 'voll', 'nicht messbar gilt nie als leer und sicher');
 });
 
 test('Grenzen: eine Warnung kommt nur, wenn eine Grenze neu in die Warnung oder ins Volle ger채t', () => {
@@ -140,4 +141,10 @@ test('Grenzen: Prozent wird bei 999 gedeckelt; nur eine Zulassung z채hlt als ge�
   const eins = PF.wende(PF.leer(), [{ ...op, erwartet: null, neu: { op: 'leere' } }], 'A').planfassung;
   const zwei = PF.wende(eins, [{ ...op, erwartet: { op: 'leere' }, neu: { op: 'leere', zugelassen: true } }], 'A').planfassung;
   assert.equal(V.aenderungenText(eins, zwei), 'Einzelblock채nderungen: 1 ge채ndert (jetzt 1 Eintrag)');
+});
+
+test('Verlauf: Unbrauchbares am Ende der gespeicherten Liste verdr채ngt nichts G체ltiges', () => {
+  const gut = Array.from({ length: 5 }, (_, i) => ({ art: 'aenderungen', von: i, nach: i + 1, text: '', wer: '' }));
+  const roh = [...gut, ...Array.from({ length: 40 }, () => ({ art: 'kaputt' }))];
+  assert.deepEqual(V.liesListe(roh), gut);
 });

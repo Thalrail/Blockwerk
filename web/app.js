@@ -145,7 +145,7 @@ function baueMitAenderungen(pf, { vomRaum = false } = {}) {
   const basis = z.daten ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null); // läuft schon eine Berechnung, bleibt der zuletzt gezeigte Plan die Grundlage
   z.bleibe = z.daten ? { id: abschnitt().id, y: schicht().y } : z.bleibe; // nach dem Neubau an derselben Schicht bleiben (nicht zur nächsten ungebauten springen)
   z.vorher = basis; z.umbau = null; z.bearbeitung = !!basis; z.linkLaenge = null;
-  if (basis) z.uebergaenge = [{ art: 'aenderungen', von: z.planfassung.version, nach: pf.version, text: Verlauf.aenderungenText(z.planfassung, pf) }];
+  if (basis) { const ausgang = basis.planfassung ?? PF.leer(); z.uebergaenge = [{ art: 'aenderungen', von: ausgang.version, nach: pf.version, text: Verlauf.aenderungenText(ausgang, pf), wer: vomRaum ? '' : z.name }]; } // Ausgang = zuletzt gezeigte, gültige Fassung (nicht eine noch rechnende); vom Raum: Urheber unbekannt, also ohne Namen
   z.planfassung = pf;
   z.auswahl = null; z.blockwahl = null; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird mit den Änderungen neu berechnet …';
@@ -740,7 +740,7 @@ async function stilAnwenden(neu) {
 function verlaufBuchen() {
   if (!z.uebergaenge.length) return;
   let l = z.verlauf;
-  for (const u of z.uebergaenge) { try { l = Verlauf.anhaengen(l, { ...u, wer: z.name }); } catch { /* unbrauchbar: nicht buchen */ } }
+  for (const u of z.uebergaenge) { try { l = Verlauf.anhaengen(l, { wer: z.name, ...u }); } catch { /* unbrauchbar: nicht buchen */ } }
   z.uebergaenge = []; z.verlauf = l;
   speicher.schreib(`blockwerk.verlauf.${Projekt.idVon(z.spec) ?? 'ohne'}`, l);
 }
@@ -748,7 +748,7 @@ function verlaufBuchen() {
 function grenzenWarnen() {
   const jetzt = Grenzen.grenzenAnsicht({ spezifikation: z.spec, planfassung: z.planfassung, fortschritt: z.fortschritt, spieler: live.spielerAnzahl() });
   const w = Grenzen.neueWarnungen(z.grenzenVorher, jetzt); z.grenzenVorher = jetzt;
-  if (w.length) toast(w[0]);
+  if (w.length) toast(w.join(' | ')); // alle neuen Warnungen, sonst wären die übrigen nie mehr zu sehen
 }
 function veroeffentlicheWartende() {
   const w = wartendeFassung; wartendeFassung = null;

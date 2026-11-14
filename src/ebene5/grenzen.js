@@ -10,7 +10,8 @@ export const WARN_AB = 0.7;
 export const VOLL_AB = 0.95;
 
 const stufeVon = (anteil) => (anteil >= VOLL_AB ? 'voll' : anteil >= WARN_AB ? 'warn' : 'ok');
-const laenge = (w) => { try { return JSON.stringify(w ?? null).length; } catch { return 0; } };
+/** Länge als JSON; nicht messbar (zyklisch o. Ä.) gilt als „voll“ (Maximalwert), nie als leer und damit scheinbar sicher. */
+const laenge = (w) => { try { return JSON.stringify(w ?? null).length; } catch { return Number.MAX_SAFE_INTEGER; } };
 const eintrag = (id, name, wert, grenze, einheit, hinweis) => {
   const anteil = grenze > 0 ? wert / grenze : 0;
   const stufe = stufeVon(anteil);

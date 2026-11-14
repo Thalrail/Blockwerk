@@ -243,7 +243,7 @@ function umbauEntscheiden(ja) {
 /** Der Raum hat eine neue Planfassung (beim Beitritt, oder weil jemand eine Änderung gemacht hat): sie gilt für alle und wird gebaut. Eigene Änderungen aus der Zeit vor dem Beitritt gehen nicht verloren, sondern bleiben als Sicherung im Browser. */
 function raumAenderung(pf, beimBeitritt = false) {
   if (!z.spec) return;
-  if (Bearbeiten.gleicheEintraege(pf, z.planfassung)) { z.planfassung = pf; sichereAenderungen(); return; }
+  if (Bearbeiten.gleicheEintraege(pf, z.planfassung)) { z.planfassung = pf; if (z.bearbeitung) z.vomRaum = true; /* ein laufender Bau dieser Änderung gilt jetzt als vom Raum bestätigt: er wird nicht mehr lokal zurückgenommen */ sichereAenderungen(); return; }
   const lokal = Object.keys(z.planfassung.eintraege).length;
   if (beimBeitritt && lokal && !Object.keys(pf.eintraege).length) { // der Raum hat noch keine Änderungen: die eigenen gehen in den Raum (so beginnt der Raum mit dem Plan, den du siehst)
     try {

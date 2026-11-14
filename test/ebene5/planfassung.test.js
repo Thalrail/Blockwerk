@@ -73,6 +73,16 @@ test('Planfassung: Eingaben werden streng geprüft, eine kaputte Operation lehnt
   for (let i = 0; i < PF.PF_GRENZEN.eintraege / 100; i++) voll = PF.wende(voll, Array.from({ length: 100 }, (_, j) => op('haus', zelle(i * 100 + j), null, glas)), 'Anna').planfassung;
   assert.equal(Object.keys(voll.eintraege).length, PF.PF_GRENZEN.eintraege);
   assert.throws(() => PF.wende(voll, [op('haus', zelle(-1), null, glas)], 'Anna'), (f) => f.grund === 'zu-gross');
+  assert.ok(JSON.stringify(voll.eintraege).length <= PF.PF_GRENZEN.groesse, 'die tausend einfachen Einträge passen ins Gesamtbudget');
+  // Gesamtbudget: wenige Einträge mit großem Zustand sprengen die Größe, auch wenn jeder einzeln erlaubt ist
+  const grossStueck = (i) => op('haus', zelle(i), null, { op: 'setze', block: { id: 'minecraft:stone', zustand: { a: 'x'.repeat(480) } } });
+  let breit = PF.leer();
+  assert.throws(() => { for (let i = 0; i < 20; i++) breit = PF.wende(breit, Array.from({ length: 20 }, (_, j) => grossStueck(i * 20 + j)), 'Anna').planfassung; }, (f) => f.grund === 'zu-gross' && /zusammen größer/.test(f.message));
+  assert.ok(JSON.stringify(breit.eintraege).length <= PF.PF_GRENZEN.groesse, 'was angenommen wurde, bleibt im Budget');
+  assert.throws(() => PF.pruefeForm({ version: 1, eintraege: Object.fromEntries(Array.from({ length: 400 }, (_, i) => { const o = grossStueck(i); return [PF.schluessel(o.teil, o.zelle), { teil: o.teil, zelle: o.zelle, ...o.neu, von: 'A' }]; })) }), (f) => f.grund === 'zu-gross');
+  // Versionsgrenze
+  assert.throws(() => PF.wende({ version: PF.PF_GRENZEN.version, eintraege: {} }, [op('haus', zelle(), null, glas)], 'Anna'), (f) => f.grund === 'version');
+  assert.throws(() => PF.pruefeForm({ version: Number.MAX_SAFE_INTEGER, eintraege: {} }), (f) => f.grund === 'form');
   // Form einer ganzen Planfassung (Raum, Link, Datei)
   assert.deepEqual(PF.pruefeForm(voll).version, voll.version);
   for (const [x, grund] of [[null, 'form'], [{ version: -1, eintraege: {} }, 'form'], [{ version: 0, eintraege: { 'haus|1,1,0': { teil: 'andere', zelle: zelle(), op: 'leere', von: 'A' } } }, 'schluessel'], [{ version: 0, eintraege: { 'haus|1,1,0': { teil: 'haus', zelle: zelle(), op: 'leere' } } }, 'von'], [{ version: 0, eintraege: { 'haus|1,1,0': { teil: 'haus', zelle: zelle(), op: 'setze', von: 'A' } } }, 'block']]) {
@@ -182,14 +192,17 @@ test('Teilen: Änderungen reisen mit (Link und Datei), werden streng gelesen; zu
   for (const kaputt of [{ version: 0, eintraege: 5 }, { version: 0, eintraege: { 'haus|1,1,0': { teil: 'haus', zelle: zelle(), op: 'zaubere', von: 'A' } } }]) {
     assert.throws(() => importDatei(JSON.stringify({ typ: 'blockwerk-projekt', version: 1, spezifikation, aenderungen: kaputt })), (f) => f instanceof TeilenFehler && /die Änderungen sind ungültig/.test(f.message));
   }
-  // Link zu groß: Zufallstext in den Zuständen lässt sich schlecht komprimieren
+  // Link zu groß: Zufallstext lässt sich schlecht komprimieren; die Änderungen allein sprengen den Link nie (Gesamtbudget), mit einer großen Spezifikation schon
   let voll = PF.leer(), n = 0, zufall = 12345;
   const rnd = () => { zufall = (Math.imul(zufall, 1103515245) + 12345) >>> 0; return zufall.toString(36); };
-  while (Object.keys(voll.eintraege).length < PF.PF_GRENZEN.eintraege) {
-    voll = PF.wende(voll, Array.from({ length: 100 }, () => op('haus', zelle(n++, 1, 0), null, { op: 'setze', block: { id: 'minecraft:stone', zustand: { a: rnd() + rnd() + rnd() + rnd(), b: rnd() + rnd() + rnd() + rnd(), c: rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() + rnd() } } })), 'Anna').planfassung;
+  const zufallstext = (laenge) => { let s = ''; while (s.length < laenge) s += rnd(); return s.slice(0, laenge); };
+  while (JSON.stringify(voll.eintraege).length < PF.PF_GRENZEN.groesse - 2000) {
+    voll = PF.wende(voll, Array.from({ length: 2 }, () => op('haus', zelle(n++, 1, 0), null, { op: 'setze', block: { id: 'minecraft:stone', zustand: { a: zufallstext(200) } } })), 'Anna').planfassung;
   }
-  await assert.rejects(() => kodiere({ spezifikation, aenderungen: voll }), (f) => f instanceof TeilenFehler && /für einen Link zu groß/.test(f.message) && /zu viele Änderungen/.test(f.message) && /als Datei sichern/.test(f.message));
-  assert.equal(importDatei(exportDatei({ spezifikation, aenderungen: voll })).aenderungen.version, voll.version, 'die Datei verträgt es');
+  const grosseSpezifikation = { ...spezifikation, notiz: zufallstext(190000) };
+  await assert.rejects(() => kodiere({ spezifikation: grosseSpezifikation, aenderungen: voll }), (f) => f instanceof TeilenFehler && /für einen Link zu groß/.test(f.message) && /zu viele Änderungen/.test(f.message) && /als Datei sichern/.test(f.message));
+  await kodiere({ spezifikation, aenderungen: voll }); // dieselben Änderungen mit kleiner Spezifikation gehen als Link
+  assert.equal(importDatei(exportDatei({ spezifikation: grosseSpezifikation, aenderungen: voll })).aenderungen.version, voll.version, 'die Datei verträgt es');
   assert.ok(CODE_MAX >= 200000);
 });
 
@@ -208,6 +221,7 @@ test('Entwurf: die Planfassung wird zum Entwurf und zurück, mit gleichen Ids be
   assert.equal(hin.zaehler.aenderung, 3);
   const mat = e3.materialisiere(hin, { testmaterial: true }), matDirekt = e3.materialisiere(direkt, { testmaterial: true });
   assert.deepEqual([...mat.teile.get('T1').schluessel].sort(), [...matDirekt.teile.get('T1').schluessel].sort(), 'dieselben Blöcke wie bei direkten Änderungen');
+  for (const k of [...mat.teile.get('T1').schluessel]) { const [x, y, z] = k.split(',').map(Number); assert.deepEqual(mat.welt.leseBlock(x, y, z), matDirekt.welt.leseBlock(x, y, z), `Block und Zustand bei ${k}`); }
   assert.deepEqual([...mat.aenderungen.values()].map((s) => s.status).sort(), ['angewandt', 'angewandt']);
   assert.deepEqual(e3.aenderungen.zuPlanfassung(hin).eintraege, pf.eintraege, 'Rundreise');
   // die Liste wird ersetzt, nicht vermischt
@@ -216,17 +230,61 @@ test('Entwurf: die Planfassung wird zum Entwurf und zurück, mit gleichen Ids be
   assert.throws(() => e3.aenderungen.ausPlanfassung(e, { version: 1, eintraege: { x: { teil: 'a', zelle: { x: 1, y: 1 }, op: 'leere', von: 'A', quelle: 'x' } } }));
 });
 
-test('Live: geht die Rundsendung verloren, holt der Konflikt den Stand des Raums nach (der Spieler sieht den aktuellen Eintrag und nichts geht still verloren)', () => {
+test('Live: geht eine Rundsendung verloren, merkt der Klient die Versionslücke und holt den vollen Zustand nach; nichts bleibt dauerhaft veraltet', () => {
   const R = raumMit('Anna', 'Ben');
   const [a, b] = R.ids, A = R.klienten[a], B = R.klienten[b];
-  for (const m of A.aendere('haus', zelle(), glas)) R.sende(a, m);
+  for (const m of A.aendere('haus', zelle(1), glas)) R.sende(a, m);
   R.verteile(a);
-  R.z.post.set(b, (R.z.post.get(b) ?? []).filter((m) => m.typ !== 'aenderungen')); // Bens Verbindung hat Annas Meldung verpasst
+  R.z.post.set(b, (R.z.post.get(b) ?? []).filter((m) => m.typ !== 'aenderungen')); // Bens Verbindung hat Annas erste Meldung verpasst
   assert.deepEqual(B.zustand.aenderungen.eintraege, {}, 'Ben weiß nichts');
-  for (const m of B.aendere('haus', zelle(), stein)) R.sende(b, m);
+  // Anna ändert eine andere Zelle: bei Ben kommt Version 2 an, er kennt erst Version 0: Lücke
+  for (const m of A.aendere('haus', zelle(2), stein)) R.sende(a, m);
+  R.verteile(a);
   const meldungen = R.verteile(b);
-  assert.deepEqual(meldungen.map((m) => m.art), ['aenderungen-angenommen', 'aenderung-konflikt']);
-  assert.equal(B.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:glass', 'Ben kennt jetzt den Stand des Raums');
-  assert.equal(B.zustand.aenderungen.version, R.z.raum.aenderungen.version);
-  assert.equal(R.z.raum.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:glass');
+  assert.ok(meldungen.some((m) => m.art === 'zustand'), 'Ben hat den vollen Zustand geholt');
+  assert.deepEqual(B.zustand.aenderungen, R.z.raum.aenderungen, 'beide Zellen sind bei Ben angekommen');
+  assert.deepEqual(A.zustand.aenderungen, R.z.raum.aenderungen);
+  // Konflikt auf einer Zelle, deren Änderung Ben verpasst hat: der Endstand kommt an, die Lücke wird geschlossen
+  for (const m of A.aendere('haus', zelle(3), glas)) R.sende(a, m);
+  R.verteile(a);
+  R.z.post.set(b, (R.z.post.get(b) ?? []).filter((m) => m.typ !== 'aenderungen'));
+  for (const m of B.aendere('haus', zelle(3), stein)) R.sende(b, m);
+  const spaeter = R.verteile(b);
+  assert.deepEqual(spaeter.filter((m) => m.art !== 'zustand').map((m) => m.art), ['aenderungen-angenommen', 'aenderung-konflikt']);
+  assert.deepEqual(B.zustand.aenderungen, R.z.raum.aenderungen);
+  assert.equal(R.z.raum.aenderungen.eintraege['haus|3,1,0'].block.id, 'minecraft:glass', 'nichts wurde überschrieben');
+});
+
+test('Live: mehrere Operationen auf derselben Zelle in einer Nachricht (Annahme, Konflikt, Annahme): der Absender endet beim Endstand des Raums', () => {
+  const R = raumMit('Anna', 'Ben');
+  const [a, b] = R.ids, A = R.klienten[a];
+  R.sende(a, { typ: 'aenderung', operationen: [op('haus', zelle(), null, glas), op('haus', zelle(), null, stein), op('haus', zelle(), glas, stein)] });
+  const meldungen = R.verteile(a);
+  assert.ok(meldungen.some((m) => m.art === 'aenderung-konflikt'));
+  assert.equal(R.z.raum.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone', 'Endstand des Raums');
+  assert.equal(A.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone', 'der Absender hält denselben Endstand (nicht den Zwischenstand des Konflikts)');
+  assert.deepEqual(A.zustand.aenderungen, R.z.raum.aenderungen);
+  R.verteile(b);
+  assert.deepEqual(R.klienten[b].zustand.aenderungen, R.z.raum.aenderungen, 'auch Ben');
+  const konflikt = meldungen.find((m) => m.art === 'aenderung-konflikt').konflikte[0];
+  assert.equal(konflikt.aktuell.block.id, 'minecraft:stone', 'der Konflikt nennt den Endstand der Zelle');
+  const r = PF.wende(PF.leer(), [op('haus', zelle(), null, glas), op('haus', zelle(), null, stein), op('haus', zelle(), glas, stein)], 'Anna');
+  assert.deepEqual(r.zellen.map((x) => [x.teil, x.zelle, x.aktuell.block.id]), [['haus', zelle(), 'minecraft:stone']]);
+  assert.equal(r.konflikte[0].aktuell.block.id, 'minecraft:stone');
+});
+
+test('Klient: veraltete Nachrichten (kleinere Version) werden nicht angewendet und setzen neuere Stände nicht zurück', () => {
+  const k = erzeugeKlient({ name: 'Ben' });
+  k.beiNachricht({ typ: 'zustand', spezifikation: null, fortschritt: { eintraege: {}, uhr: 0 }, aenderungen: { version: 2, eintraege: { 'haus|1,1,0': { teil: 'haus', zelle: zelle(), op: 'setze', block: stein.block, von: 'Anna' } } }, spieler: ['Ben'] });
+  const alt = { teil: 'haus', zelle: zelle(), neu: { op: 'setze', block: glas.block, von: 'Anna' } };
+  const r1 = k.beiNachricht({ typ: 'aenderungen', von: 'Anna', version: 1, operationen: [alt] });
+  assert.deepEqual([r1.meldungen, r1.senden], [[], []], 'ein älteres Delta wird ignoriert');
+  assert.equal(k.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone');
+  const r2 = k.beiNachricht({ typ: 'aenderung-ergebnis', version: 1, angenommen: [], konflikte: [], zellen: [{ teil: 'haus', zelle: zelle(), aktuell: { op: 'setze', block: glas.block, von: 'Anna' } }] });
+  assert.equal(k.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone', 'eine veraltete Antwort setzt nichts zurück');
+  assert.deepEqual(r2.senden, [{ typ: 'hallo', name: 'Ben' }], 'stattdessen den vollen Zustand holen');
+  assert.equal(k.zustand.aenderungen.version, 2);
+  const r3 = k.beiNachricht({ typ: 'aenderungen', von: 'Anna', version: 5, operationen: [alt] });
+  assert.deepEqual([r3.meldungen.length, r3.senden], [0, [{ typ: 'hallo', name: 'Ben' }]], 'eine Lücke wird nicht angewendet, sondern löst den Abgleich aus');
+  assert.equal(k.zustand.aenderungen.eintraege['haus|1,1,0'].block.id, 'minecraft:stone');
 });

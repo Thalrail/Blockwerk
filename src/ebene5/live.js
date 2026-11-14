@@ -103,7 +103,7 @@ export function verarbeite(raum, m, absender) {
       if (f instanceof PF.PlanfassungFehler) return abgelehnt(raum, f.grund, f.message);
       throw f;
     }
-    const senden = [{ an: 'absender', nachricht: { typ: 'aenderung-ergebnis', version: e.planfassung.version, angenommen: e.angenommen, konflikte: e.konflikte } }];
+    const senden = [{ an: 'absender', nachricht: { typ: 'aenderung-ergebnis', version: e.planfassung.version, angenommen: e.angenommen, konflikte: e.konflikte, zellen: e.zellen } }];
     if (e.angenommen.length) senden.push({ an: 'andere', nachricht: { typ: 'aenderungen', von: raum.spieler[absender].name, version: e.planfassung.version, operationen: e.angenommen } });
     return { raum: e.geaendert ? { ...raum, aenderungen: e.planfassung } : raum, senden };
   }
@@ -198,13 +198,20 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
         for (const [k, e] of Object.entries(eingang.eintraege)) if (gleich(z.fortschritt.eintraege[k], e)) z.gesendet[k] = e;
         meldungen.push({ art: 'haken', von: m.von, eintraege: eingang.eintraege, fortschritt: z.fortschritt });
       } else if (m.typ === 'aenderung-ergebnis') {
-        // angenommene Änderungen gelten jetzt auch lokal; bei Konflikten wird der aktuelle Stand des Raums übernommen und der Konflikt gemeldet (nichts geht still verloren)
-        z.aenderungen = PF.uebernimm(z.aenderungen, [...m.angenommen.map((x) => ({ ...x, neu: x.neu && { ...x.neu, von: z.name } })), ...m.konflikte.map((x) => ({ teil: x.teil, zelle: x.zelle, neu: x.aktuell }))], m.version);
+        // Der Raum meldet den Endstand jeder berührten Zelle; den übernimmt der Absender (nichts geht still verloren). Ist die Antwort älter als der lokale Stand, wird sie nicht angewendet;
+        // fehlen uns Versionen dazwischen (verlorene Rundsendung), holt der Klient den vollen Zustand nach.
+        const alt = z.aenderungen;
+        if (m.version >= alt.version) z.aenderungen = PF.setzeZellen(alt, m.zellen, m.version);
+        const luecke = m.version < alt.version || (m.angenommen.length ? m.version !== alt.version + 1 : m.version !== alt.version);
         meldungen.push({ art: 'aenderungen-angenommen', version: m.version, anzahl: m.angenommen.length, aenderungen: z.aenderungen });
         if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, aenderungen: z.aenderungen });
+        if (luecke) senden.push({ typ: 'hallo', name: z.name });
       } else if (m.typ === 'aenderungen') {
-        z.aenderungen = PF.uebernimm(z.aenderungen, m.operationen, m.version);
-        meldungen.push({ art: 'aenderungen', von: m.von, version: m.version, operationen: m.operationen, aenderungen: z.aenderungen });
+        const alt = z.aenderungen;
+        if (m.version <= alt.version) { /* schon bekannt (oder älter): nichts tun */ } else if (m.version === alt.version + 1) {
+          z.aenderungen = PF.uebernimm(alt, m.operationen, m.version);
+          meldungen.push({ art: 'aenderungen', von: m.von, version: m.version, operationen: m.operationen, aenderungen: z.aenderungen });
+        } else senden.push({ typ: 'hallo', name: z.name }); // Lücke: den ganzen Zustand neu holen statt ein Teilstück anzuwenden
       } else if (m.typ === 'spieler') {
         z.spieler = m.spieler;
         meldungen.push({ art: 'spieler', spieler: m.spieler, neu: m.neu ?? null, weg: m.weg ?? null });

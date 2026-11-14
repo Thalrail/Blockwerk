@@ -6,7 +6,9 @@
 // bewusst überschreiben. Verschiedene Zellen stören sich nie. Rein, deterministisch, ohne Uhr und Zufall.
 
 /** Grenzen für fremde Eingaben (ein Ort für Dienst, Seite und Link). */
-export const PF_GRENZEN = Object.freeze({ eintraege: 2000, operationen: 200, koordinate: 100_000, zustand: 500, teil: 64 });
+// `groesse` ist das Gesamtbudget (Zeichen des gespeicherten JSON der Einträge): zusammen mit Spezifikation (200.000) und Fortschritt bleibt der Raum unter den Grenzen von
+// Nachricht und Speicher; ohne dieses Budget wären 1000 Einträge mit je 500 Zeichen Zustand weit darüber.
+export const PF_GRENZEN = Object.freeze({ eintraege: 1000, operationen: 200, koordinate: 100_000, zustand: 500, teil: 64, groesse: 120_000, version: 1_000_000_000 });
 const TEIL = /^[^|\s]{1,64}$/;
 const BLOCK = /^minecraft:[a-z0-9_]{1,64}$/;
 const OPS = ['setze', 'leere'];
@@ -56,7 +58,7 @@ export function pruefeOperation(op) {
 
 /** Prüft die Form einer ganzen Planfassung (nach dem Laden aus Raum, Link oder Datei) und liefert eine saubere Kopie. */
 export function pruefeForm(pf) {
-  if (!istObjekt(pf) || !Number.isSafeInteger(pf.version) || pf.version < 0 || !istObjekt(pf.eintraege)) throw new PlanfassungFehler('form', 'Planfassung ungültig (version, eintraege)');
+  if (!istObjekt(pf) || !Number.isSafeInteger(pf.version) || pf.version < 0 || pf.version > PF_GRENZEN.version || !istObjekt(pf.eintraege)) throw new PlanfassungFehler('form', 'Planfassung ungültig (version, eintraege)');
   const aus = {};
   const ks = Object.keys(pf.eintraege);
   if (ks.length > PF_GRENZEN.eintraege) throw new PlanfassungFehler('zu-gross', `Eine Planfassung hat höchstens ${PF_GRENZEN.eintraege} Änderungen`);
@@ -68,6 +70,7 @@ export function pruefeForm(pf) {
     if (typeof e.von !== 'string' || !e.von || e.von.length > 24) throw new PlanfassungFehler('von', 'Eine Änderung braucht den Namen des Spielers (höchstens 24 Zeichen)');
     aus[k] = { teil: e.teil, zelle: { x: e.zelle.x, y: e.zelle.y, z: e.zelle.z }, ...pruefeInhalt(e), von: e.von };
   }
+  if (JSON.stringify(aus).length > PF_GRENZEN.groesse) throw new PlanfassungFehler('zu-gross', `Die Änderungen sind zusammen größer als ${PF_GRENZEN.groesse} Zeichen`);
   return { version: pf.version, eintraege: aus };
 }
 
@@ -81,12 +84,14 @@ export function wende(pf, operationen, von) {
   if (operationen.length > PF_GRENZEN.operationen) throw new PlanfassungFehler('zu-gross', `Höchstens ${PF_GRENZEN.operationen} Operationen je Nachricht`);
   const ops = operationen.map(pruefeOperation); // alles prüfen, bevor etwas geändert wird: eine kaputte Operation lehnt die ganze Nachricht ab
   const eintraege = { ...pf.eintraege };
-  const angenommen = [], konflikte = [];
+  const angenommen = [], konflikte = [], beruehrt = new Map();
   let geaendert = false;
+  if (pf.version >= PF_GRENZEN.version) throw new PlanfassungFehler('version', 'Die Planfassung hat ihre höchste Versionsnummer erreicht');
   for (const op of ops) {
     const k = schluessel(op.teil, op.zelle), aktuell = eintraege[k] ?? null;
+    beruehrt.set(k, { teil: op.teil, zelle: op.zelle });
     if (!gleichInhalt(aktuell, op.erwartet)) {
-      konflikte.push({ teil: op.teil, zelle: op.zelle, aktuell: aktuell ? { op: aktuell.op, ...(aktuell.block ? { block: aktuell.block } : {}), von: aktuell.von } : null, vorschlag: op.neu });
+      konflikte.push({ teil: op.teil, zelle: op.zelle, aktuell: null, vorschlag: op.neu }); // `aktuell` wird unten mit dem Endstand der Zelle gefüllt (spätere Operationen derselben Nachricht können sie noch ändern)
       continue;
     }
     if (gleichInhalt(aktuell, op.neu)) continue; // schon so: nichts zu tun (Wiederholungen schaden nie)
@@ -96,7 +101,22 @@ export function wende(pf, operationen, von) {
     geaendert = true;
   }
   if (Object.keys(eintraege).length > PF_GRENZEN.eintraege) throw new PlanfassungFehler('zu-gross', `Eine Planfassung hat höchstens ${PF_GRENZEN.eintraege} Änderungen`);
-  return { planfassung: geaendert ? { version: pf.version + 1, eintraege } : pf, angenommen, konflikte, geaendert };
+  if (geaendert && JSON.stringify(eintraege).length > PF_GRENZEN.groesse) throw new PlanfassungFehler('zu-gross', `Die Änderungen sind zusammen größer als ${PF_GRENZEN.groesse} Zeichen`);
+  // Endstand jeder berührten Zelle (angenommen oder Konflikt): das ist, was der Raum nach der Nachricht hält; der Absender übernimmt genau das
+  const endstand = (k) => (eintraege[k] ? { op: eintraege[k].op, ...(eintraege[k].block ? { block: eintraege[k].block } : {}), von: eintraege[k].von } : null);
+  for (const x of konflikte) x.aktuell = endstand(schluessel(x.teil, x.zelle));
+  const zellen = [...beruehrt].sort((p, q) => (p[0] < q[0] ? -1 : 1)).map(([k, c]) => ({ teil: c.teil, zelle: c.zelle, aktuell: endstand(k) }));
+  return { planfassung: geaendert ? { version: pf.version + 1, eintraege } : pf, angenommen, konflikte, zellen, geaendert };
+}
+
+/** Setzt die Endstände einzelner Zellen (Antwort des Raums) in eine lokale Kopie; `aktuell: null` löscht. */
+export function setzeZellen(pf, zellen, version) {
+  const e = { ...pf.eintraege };
+  for (const x of zellen) {
+    const k = schluessel(x.teil, x.zelle);
+    if (x.aktuell == null) delete e[k]; else e[k] = { teil: x.teil, zelle: { x: x.zelle.x, y: x.zelle.y, z: x.zelle.z }, ...pruefeInhalt(x.aktuell), von: String(x.aktuell.von ?? '') };
+  }
+  return { version: Math.max(pf.version, version), eintraege: e };
 }
 
 /** Übernimmt schon entschiedene Einträge in eine lokale Kopie (Antwort oder Rundsendung des Raums); `neu: null` löscht. */

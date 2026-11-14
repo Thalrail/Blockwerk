@@ -2,6 +2,7 @@
 // damit die Seite während der mehrsekündigen Berechnung bedienbar bleibt. Die Oberfläche bekommt nur fertige, einfache Daten.
 import { ladeEngine, erzeugeEbene5, bauePlan, erzeugeEntwurfsspeicher } from '../src/ebene5/index.js';
 import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
+import * as Stil from '../src/ebene5/stil.js';
 import { berichtAlsText } from '../src/ebene3/index.js';
 import { eingabe as eingabeModul } from '../src/ebene5/index.js';
 import { liesJson, abdruck } from '../src/ebene4/index.js';
@@ -88,6 +89,8 @@ async function bearbeiten(data) {
   const e = await engine();
   if (data.typ === 'blockSuche') { const t = Bearbeiten.blockSuche(e.ebene0, data.text, 41); return { typ: 'bloecke', treffer: t.slice(0, 40), mehr: t.length > 40 }; }
   if (data.typ === 'blockInfo') return { typ: 'blockinfo', info: Bearbeiten.blockInfo(e.ebene0, data.id) };
+  if (data.typ === 'stilInfo') return { typ: 'stilinfo', info: Stil.stilInfo({ paletten: e.ebene3.paletten, vokabular: e.ebene4.vokabular }) };
+  if (data.typ === 'materialSuche') { const r = Stil.materialSuche({ ebene0: e.ebene0, paletten: e.ebene3.paletten }, data.text, data.rolle, data.form, 40); return { typ: 'material', treffer: r.treffer, mehr: r.mehr }; }
   return { typ: 'operation', operation: Bearbeiten.operation(e.ebene0, data.auswahl, data.aktion, data.block) };
 }
 
@@ -95,7 +98,7 @@ self.onmessage = async ({ data }) => {
   try {
     if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf, data.aenderungen, merker.beginne())), lauf: data.lauf }); // beginne(): ab jetzt gilt nur noch der Plan dieses Auftrags // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
     else if (data.typ === 'waehleZelle') self.postMessage({ typ: 'zelle', ...(await waehleZelle(data.zelle, data.erzeugung)), anfrage: data.anfrage, lauf: data.lauf });
-    else if (['blockSuche', 'blockInfo', 'bearbeiteOperation'].includes(data.typ)) self.postMessage({ ...(await bearbeiten(data)), anfrage: data.anfrage });
+    else if (['blockSuche', 'blockInfo', 'bearbeiteOperation', 'stilInfo', 'materialSuche'].includes(data.typ)) self.postMessage({ ...(await bearbeiten(data)), anfrage: data.anfrage });
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
     self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });

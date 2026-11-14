@@ -2,6 +2,7 @@
 // Die einzige KI-Stelle liegt außerhalb des Programms: Jonah gibt den Briefing-Prompt mit den Bildern im Claude-Chat ein und kopiert das JSON zurück.
 // Hier steckt alles Deterministische drumherum: Schema und Vokabular, Prüfer mit Rückfragen, Briefing-Prompt, lesbare Zusammenfassung, Freigabe und Versionen.
 import { erzeugeVokabular } from './vokabular.js';
+import { erzeugePaletten } from '../ebene3/designer.js'; // die Palettenregeln des Designers (Ebene 3) gelten auch für die Materialwahl in der Spezifikation
 import { erzeugePruefer } from './pruefer.js';
 import { erzeugeBriefing } from './briefing.js';
 import { erzeugeZusammenfassung } from './zusammenfassung.js';
@@ -21,7 +22,7 @@ export { erzeugeVokabular, erzeugePruefer, erzeugeBriefing, erzeugeZusammenfassu
  */
 export function erzeugeEbene4({ ebene0, ebene2, ebene3 = null, regelwerk }) {
   const vokabular = erzeugeVokabular({ regelwerk, ebene0, ebene2 });
-  const pruefer = erzeugePruefer({ regelwerk, vokabular });
+  const pruefer = erzeugePruefer({ regelwerk, vokabular, paletten: ebene3?.paletten ?? erzeugePaletten({ regelwerk, ebene0 }) });
   const briefing = erzeugeBriefing({ vokabular });
   const { zusammenfassung } = erzeugeZusammenfassung({ vokabular });
   const messung = erzeugeMessung({ regelwerk });

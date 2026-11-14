@@ -396,3 +396,12 @@ Die Oberfläche rechnet nichts selbst; getestet wird, ob das, was der Bauplan na
 4. **Zurücknehmen:** Eine geänderte Zelle anklicken, „Änderung zurücknehmen“: Der alte Block steht wieder da.
 5. **Umbauhinweise:** Eine Schicht abhaken, danach in dieser Schicht einen Block ändern: Blockwerk nennt den Block unter „Umbauhinweise“; erst nach „bestätigt“ gilt die neue Fassung, die Schicht ist wieder offen. „Bei der alten Fassung bleiben“ lässt Plan und Änderungen, wie sie waren.
 6. **Live (zwei Fenster oder mit einem Freund):** Im Raum eine Zelle ändern: Die andere Seite sieht dieselbe Änderung und baut den Plan neu.
+
+## Stimmung und Materialien bearbeiten (14.11.2026, `ungeprüft`)
+Das Aussehen ist reine Auswahl aus dem Register; getestet wird, ob der Bauplan im Spiel genauso aussieht. Testwelt (Kreativ), Wohnhaus aus der Haus-Sonde.
+1. **Wand wählen:** Reiter „Stil“, Gilt für „Erdgeschoss“, Wand → `stone_bricks`, Übernehmen. Im Schichtplan stehen Steinziegel dort, wo vorher Birkenbretter standen. Im Spiel nachbauen: Stimmt das Material der Wand?
+2. **Mehrere Formen:** Akzent: Block, Treppe und Tür getrennt wählen (z. B. Eisenblock, `stone_brick_stairs`, Eichentür). Die Treppen und Türen im Haus nehmen die gewählten Blöcke, und die Richtung der Treppen ist unverändert.
+3. **Licht und Glas:** Licht → `sea_lantern`; Glas → Scheibe `glass_pane`. Leuchten die Laternen, sind die Fenster gefüllt?
+4. **Säule:** Wand → `oak_log` mit Achse y: Stehen die Stämme senkrecht, auch nach einer Drehung des Hauses (Ausrichtung des Bauwerks ändern)?
+5. **Umbauhinweise:** Eine Schicht abhaken, danach die Wand ändern: Blockwerk nennt „ersetzen“ mit den Koordinaten; erst nach „bestätigt“ gilt die neue Fassung.
+6. **Stimmung statt Block:** Eine gewählte Wand wieder wegnehmen („Wahl wegnehmen“): Es gilt die Stimmung des Teils.

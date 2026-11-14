@@ -139,7 +139,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     let e = neuerEntwurf({ name: vorgabe.name, bauplatz: vorgabe.bauplatz, nullpunkt: vorgabe.nullpunkt });
     e = K.gliedere(e, vorgabe.abschnitte.map((a) => ({
       id: a.id, name: a.name, huelle: a.huelle, nach: a.nach, schnittstellen: a.schnittstellen,
-      vorgabe: { zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung },
+      vorgabe: { zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung, palette: a.palette },
     })));
     // Einspruch des Technikers: Bedarf mit „braucht“ gegen die Reihenfolge (auf einer Arbeitskopie mit dem ganzen Bedarf)
     for (let runde = 0; runde <= e.abschnitte.length; runde++) {
@@ -162,7 +162,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
       e = kopie(e);
       haengeAn(e, 'erledigt', { einwand: id, regel: ew.regel, runde: 0 });
     }
-    if (vorgabe.stimmung) e = D.setzePalette(e, vorgabe.stimmung);
+    if (vorgabe.stimmung || vorgabe.palette) e = D.setzePalette(e, vorgabe.stimmung, vorgabe.palette); // Stimmung, Materialwahl oder beides (die Materialwahl überschreibt je Rolle und Form)
     return { entwurf: e, art: 'ok' };
   }
 
@@ -201,7 +201,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
         if (r.rueckfrage) return { entwurf: e, art: 'wartet' };
       }
       // 5. Designer: Abschnittspalette
-      if (v.stimmung) e = D.setzeAbschnittspalette(e, id, v.stimmung);
+      if (v.stimmung || v.palette) e = D.setzeAbschnittspalette(e, id, v.stimmung, v.palette);
+      else if (Object.keys(e.paletten?.[id] ?? {}).length) e = fachleute.aendere(e, 'designer', { art: 'setze-abschnittspalette', abschnitt: id, palette: {}, ersetze: true }).entwurf; // die Stimmung oder Materialwahl des Abschnitts ist weggefallen: die alte Abschnittspalette darf nicht bleiben
       e = fachleute.aendere(e, 'konstrukteur', { art: 'setze-abschnitt', abschnitt: { ...a(), aufgebaut: true } }).entwurf;
     }
     // 6. Prüfer aus Ebene 1 über den Abschnitt und seine fertigen Nachbarn
@@ -263,7 +264,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
 
   const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v === null || typeof v !== 'object' ? v : Object.fromEntries(Object.keys(v).sort().filter((x) => v[x] !== undefined).map((x) => [x, v[x]]))));
   const inhalt = (a) => ({ name: a.name, huelle: a.huelle, nach: [...(a.nach ?? [])].sort(), schnittstellen: a.schnittstellen ?? [], vorgabe: a.vorgabe ?? {} });
-  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung });
+  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung, palette: a.palette });
   const abschnittAus = (a) => ({ id: a.id, name: a.name, huelle: a.huelle, nach: a.nach ?? [], schnittstellen: a.schnittstellen ?? [], vorgabe: vorgabeVon(a) });
 
   /**
@@ -283,7 +284,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     // 0. Projektangaben und Gesamtpalette der neuen Fassung (die Welt wird beim Prüfen aus Entwurf und Palette gebaut, es muss nichts neu gebaut werden)
     e = mitAenderungen(kopie(e), optionen);
     e.projekt = { ...e.projekt, name: vorgabe.name ?? e.projekt.name, bauplatz: { ...(vorgabe.bauplatz ?? e.projekt.bauplatz) }, nullpunkt: { ...(vorgabe.nullpunkt ?? e.projekt.nullpunkt) } };
-    if (vorgabe.stimmung) e = D.setzePalette(e, vorgabe.stimmung);
+    if (vorgabe.stimmung || vorgabe.palette) e = D.setzePalette(e, vorgabe.stimmung, vorgabe.palette);
     else if (Object.keys(e.palette).length) e = fachleute.aendere(e, 'designer', { art: 'setze-palette', palette: {}, ersetze: true }).entwurf;
     // 1. weggefallene Abschnitte leeren (ihre Teile gehen von den Besitzern), geänderte über den Rückgriff öffnen
     if (entfernt.length) e = bereinige(e, new Set(entfernt));

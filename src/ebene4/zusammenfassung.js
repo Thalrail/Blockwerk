@@ -8,6 +8,12 @@ const zahl = (n) => String(n).replace('.', ',');
  * @param {{vokabular: ReturnType<typeof import('./vokabular.js').erzeugeVokabular>}} quellen
  */
 export function erzeugeZusammenfassung({ vokabular: V }) {
+  const kurzId = (w) => String(typeof w === 'string' ? w : w?.id ?? '?').replace(/^minecraft:/, '');
+  /** Die Materialwahl von Hand als Text: „Wand Steinziegel …“ (Rolle = Block; bei mehreren Formen: Form = Block). */
+  const paletteText = (p) => Object.entries(p ?? {}).map(([rolle, w]) => {
+    const einfach = typeof w === 'string' || (w && typeof w === 'object' && 'id' in w);
+    return `${rolle} = ${einfach ? kurzId(w) : Object.entries(w ?? {}).map(([f, b]) => `${f} ${kurzId(b)}`).join(', ')}`;
+  }).join('; ');
   function teilText(t, i, namen) {
     const b = V.baustein(t.form?.baustein);
     const g = t.form?.groesse ?? {};
@@ -22,7 +28,7 @@ export function erzeugeZusammenfassung({ vokabular: V }) {
       else z.push(`   Bedarf: ${f.art} (noch ohne fertiges Modul).`);
     }
     if (t.stil) {
-      const s = [t.stil.stimmung && `Stimmung ${t.stil.stimmung}`, t.stil.farben?.length && `Farben ${t.stil.farben.join(', ')}`, t.stil.bemerkung].filter(Boolean);
+      const s = [t.stil.stimmung && `Stimmung ${t.stil.stimmung}`, t.stil.palette && `Materialwahl ${paletteText(t.stil.palette)}`, t.stil.farben?.length && `Farben ${t.stil.farben.join(', ')}`, t.stil.bemerkung].filter(Boolean);
       if (s.length) z.push(`   Stil: ${s.join('; ')}.`);
     }
     if (t.verbindungen?.length) z.push(`   Verbindungen: ${t.verbindungen.map((v) => `${v.art === 'gang' ? 'Gang' : 'Schienenweg'} zu „${namen.get(v.mit) ?? v.mit}“`).join(', ')}.`);
@@ -35,6 +41,7 @@ export function erzeugeZusammenfassung({ vokabular: V }) {
     const kopf = [
       `Bauspezifikation „${p.name}“, Version ${spec.version}.`,
       `Bauplatz: ${p.bauplatz.breite} × ${p.bauplatz.hoehe} × ${p.bauplatz.tiefe} Blöcke (Breite × Höhe × Tiefe)${p.massstab && p.massstab !== 1 ? `, Maßstab ${zahl(p.massstab)}` : ''}.`,
+      ...(p.stil ? [`Stil des Projekts: ${[p.stil.stimmung && `Stimmung ${p.stil.stimmung}`, p.stil.palette && `Materialwahl ${paletteText(p.stil.palette)}`].filter(Boolean).join('; ')}.`] : []),
       `${spec.teile.length} ${spec.teile.length === 1 ? 'Teil' : 'Teile'}: ${['muss', 'soll', 'kann'].map((w) => `${spec.teile.filter((t) => t.wichtigkeit === w).length} ${w}`).join(', ')}.`,
       '',
     ];

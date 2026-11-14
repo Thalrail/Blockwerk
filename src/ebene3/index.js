@@ -13,10 +13,12 @@ import { erzeugeAblauf } from './ablauf.js';
 import { erzeugeUebersetzung } from './uebersetzung.js';
 import { erzeugeLagen } from './lagen.js';
 import { erzeugeAenderungen } from './aenderungen.js';
+import { erzeugeBestaetigung } from './bestaetigung.js';
 
 export { VERSION, ANKER, neuerEntwurf, kopie, pruefeForm, pruefeTraegerwald, migriere, entwurfZuJson, entwurfAusJson } from './entwurf.js';
 export { erzeugeLagen, LagenFehler } from './lagen.js';
 export { erzeugeAenderungen, AenderungsFehler } from './aenderungen.js';
+export { erzeugeBestaetigung } from './bestaetigung.js';
 export { haengeAn, berichtAlsText } from './bericht.js';
 export { RechtFehler, erzeugeFachleute } from './fachleute.js';
 export { rueckfrage, stelleFrage } from './bauleiter.js';
@@ -46,7 +48,8 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
   const uebersetzung = erzeugeUebersetzung({ regelwerk, ebene2, techniker });
   const lagen = erzeugeLagen({ ebene0, ebene2 });
   const aenderungen = erzeugeAenderungen({ ebene0, ebene2 });
-  const ablauf = erzeugeAblauf({ regelwerk, fachleute, konstrukteur, techniker, grobdesigner, architekt, designer, einwaende, materialisierung, aenderungen });
+  const bestaetigung = erzeugeBestaetigung({ regelwerk, ebene0, materialisierung });
+  const ablauf = erzeugeAblauf({ regelwerk, fachleute, konstrukteur, techniker, grobdesigner, architekt, designer, einwaende, materialisierung, aenderungen, bestaetigung });
   return {
     fachleute,
     konstrukteur,
@@ -59,6 +62,7 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
     uebersetzung,
     lagen,
     aenderungen,
+    bestaetigung,
     loeseLagen: lagen.loeseLagen,
     aendere: fachleute.aendere,
     fixiere: fachleute.fixiere,

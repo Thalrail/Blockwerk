@@ -37,6 +37,10 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
     const welt = mat.welt;
     const abschnitte = [...entwurf.abschnitte].sort((a, b) => a.reihenfolge - b.reihenfolge);
     const alleWesen = welt.wesen();
+    // Technikanlagen: bestätigt (Ebene 1 hat geprüft, der Prüfbereich ist unverändert), nicht bestätigt (seitdem etwas im Prüfbereich verändert) oder noch ungeprüft; ohne Bestätigungen kein Rechenaufwand
+    const technikStatus = !entwurf.teile.some((t) => t.art === 'technik') ? []
+      : entwurf.bestaetigungen?.length ? ebene3.bestaetigung.status(entwurf, mat)
+        : entwurf.teile.filter((t) => t.art === 'technik').map((t) => ({ ref: t.ref ?? t.id, id: t.id, name: t.name ?? t.baustein, abschnitt: t.abschnitt, status: 'ungeprueft' }));
     const teilVon = new Map(entwurf.teile.map((t) => [t.id, t]));
     const refVon = (id) => teilVon.get(id)?.ref ?? id;
     const ergebnis = [];
@@ -108,9 +112,9 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
       const summeA = {};
       for (const s of schichten) for (const [id, m] of Object.entries(s.summe)) summeA[id] = (summeA[id] ?? 0) + m;
       const teileListe = teileA.map((t) => ({ id: t.id, ref: t.ref ?? t.id, baustein: t.baustein, name: t.name ?? a.name, art: t.art, traeger: t.traeger ?? null, bloecke: mat.teile.get(t.id).schluessel.size }));
-      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, aussparungen: aussparungenAnzahl, ...(ohneSchicht.length ? { aussparungenOhneSchicht: ohneSchicht } : {}) });
+      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, technik: technikStatus.filter((x) => x.abschnitt === a.id).map(({ ref, name, status }) => ({ ref, name, status })), aussparungen: aussparungenAnzahl, ...(ohneSchicht.length ? { aussparungenOhneSchicht: ohneSchicht } : {}) });
     }
-    return { projekt: { name: entwurf.projekt.name }, abschnitte: ergebnis, summe: gesamt, bloecke: ergebnis.reduce((s, a) => s + a.bloecke, 0) };
+    return { projekt: { name: entwurf.projekt.name }, abschnitte: ergebnis, technik: technikStatus.map(({ ref, name, abschnitt, status }) => ({ ref, name, abschnitt, status })), summe: gesamt, bloecke: ergebnis.reduce((s, a) => s + a.bloecke, 0) };
   }
 
   return { bauplan };

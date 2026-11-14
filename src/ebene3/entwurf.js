@@ -22,7 +22,7 @@ export function neuerEntwurf({ name, bauplatz = { breite: 256, hoehe: 320, tiefe
   return {
     version: VERSION,
     projekt: { name: name.trim(), bauplatz: { ...bauplatz }, nullpunkt: { ...nullpunkt } },
-    abschnitte: [], teile: [], aenderungen: [], zonen: [], sperrzonen: [], palette: {}, pruefungen: [],
+    abschnitte: [], teile: [], aenderungen: [], bestaetigungen: [], zonen: [], sperrzonen: [], palette: {}, pruefungen: [],
     bedarf: [], anfragen: [], formwuensche: [], paletten: {}, sperren: [], einwaende: [], bericht: [], rueckfragen: [],
     zaehler: { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1, aenderung: 1 },
   };
@@ -37,7 +37,7 @@ export function pruefeForm(e) {
   if (e.version !== VERSION) fehler(`Version ${String(e.version)} nicht unterstützt${e.version === 1 ? ' (ältere Fassung: mit migriere() auf Version 2 heben)' : ''}`);
   if (typeof e.projekt?.name !== 'string' || !pos(e.projekt?.nullpunkt)) fehler('projekt unvollständig');
   for (const f of FELDER) if (!Array.isArray(e[f])) fehler(`${f} fehlt`);
-  for (const f of ['bedarf', 'anfragen', 'formwuensche', 'zulassungen']) if (e[f] !== undefined && !Array.isArray(e[f])) fehler(`${f} ungültig`);
+  for (const f of ['bedarf', 'anfragen', 'formwuensche', 'zulassungen', 'bestaetigungen']) if (e[f] !== undefined && !Array.isArray(e[f])) fehler(`${f} ungültig`);
   if (e.paletten !== undefined && (!e.paletten || typeof e.paletten !== 'object' || Array.isArray(e.paletten))) fehler('paletten ungültig');
   if (!e.palette || typeof e.palette !== 'object' || Array.isArray(e.palette)) fehler('palette fehlt');
   for (const k of ['teil', 'einwand', 'bericht', 'rueckfrage']) if (!ganz(e.zaehler?.[k]) || e.zaehler[k] < 1) fehler(`zaehler.${k} fehlt`);

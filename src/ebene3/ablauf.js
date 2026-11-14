@@ -16,7 +16,7 @@ const istOffen = (r) => r.status === undefined || r.status === 'offen';
 /**
  * @param {{regelwerk: object, fachleute: object, konstrukteur: object, techniker: object, grobdesigner: object, architekt: object, designer: object, einwaende: object}} quellen
  */
-export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung, aenderungen }) {
+export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung, aenderungen, bestaetigung }) {
   const maxRueckgriffe = regelwerk.parameter('plan.rueckgriff', 'maximum');
   const antwortOptionen = regelwerk.parameter('plan.rueckgriff', 'optionen');
   const aenderbar = regelwerk.parameter('plan.rueckgriff', 'aenderbar');
@@ -233,6 +233,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     if (r.art === 'neustart') return fortsetzen(r.entwurf, optionen);
     if (r.art === 'wartet') return ergebnis(r.entwurf, 'wartet');
     e = T.bilanz(r.entwurf).entwurf;
+    // neue Prüfung durch Ebene 1 und Bestätigung der Technikanlagen (docs/architektur-einbau.md Abschnitt 7): ab jetzt zeigt der Plan sie als funktionsfähig, bis sich ihr Prüfbereich ändert
+    if (e.teile.some((t) => t.art === 'technik')) e = bestaetigung.bestaetige(e, { testmaterial: false }).entwurf;
     return ergebnis(e, 'fertig');
   }
 

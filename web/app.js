@@ -213,7 +213,7 @@ function rechnet() {
 function abschnittsliste() {
   return plan().abschnitte.map((a, i) => {
     const p = fortschritt.prozent(z.fortschritt, plan(), a.id);
-    return `<div class="abschnitt ${i === z.a ? 'aktiv' : ''}"><div class="titel" data-a="abschnitt" data-i="${i}"><span>${i + 1}. ${esc(a.name)}</span><span class="anteil">${p.fertigeSchichten}/${p.schichten}</span></div>
+    return `<div class="abschnitt ${i === z.a ? 'aktiv' : ''}"><div class="titel" data-a="abschnitt" data-i="${i}"><span>${i + 1}. ${esc(a.name)}${(a.technik ?? []).some((t) => t.status === 'nicht-bestaetigt') ? ' <span title="Technik nicht bestätigt: im Prüfbereich wurde etwas geändert, neu prüfen (Reiter Status)">⚠</span>' : ''}</span><span class="anteil">${p.fertigeSchichten}/${p.schichten}</span></div>
       <div class="balkenzeile"><i style="width:${Math.round(p.anteil * 100)}%"></i></div>
       ${i === z.a ? `<div class="schichten">${a.schichten.map((s, j) => `<div class="schicht ${fertig(a, s) ? 'fertig' : ''} ${j === z.s ? 'aktiv' : ''}" data-a="schicht" data-i="${i}" data-j="${j}" title="${s.n} Blöcke">${s.y}</div>`).join('')}</div>` : ''}</div>`;
   }).join('');
@@ -240,6 +240,7 @@ function rechteSpalte() {
     const st = z.daten.baustatus;
     inhalt = `<p class="klein">${st.anzahlRegeln} Regeln: ${st.regeln.simuliert} simuliert, ${st.regeln.entworfen} entworfen, ${st.regeln.geprueft} im Spiel geprüft. ${st.regeln.ungeprueft} enthalten Annahmen, die du noch im Spiel testen kannst (siehe docs/spieltests.md).</p>
       <table class="tabelle">${st.bausteine.map((b) => `<tr><td>${esc(b.titel)}</td><td class="zahl"><span class="plakette ${esc(b.status)}">${esc(b.status)}</span></td></tr>`).join('')}</table>
+      ${plan().technik?.length ? `<h3>Technikanlagen</h3><table class="tabelle">${plan().technik.map((t) => `<tr><td>${esc(t.name)} <span class="klein">(${esc(t.abschnitt)})</span></td><td class="zahl"><span class="plakette ${t.status === 'bestaetigt' ? 'simuliert' : 'entworfen'}">${t.status === 'bestaetigt' ? 'bestätigt' : t.status === 'nicht-bestaetigt' ? 'nicht bestätigt' : 'noch nicht geprüft'}</span></td></tr>`).join('')}</table><p class="klein">Eine Anlage gilt erst als funktionsfähig, wenn Ebene 1 sie geprüft hat und sich seitdem in ihrer Umgebung (Prüfbereich) nichts verändert hat. „Nicht bestätigt“: im Prüfbereich wurde etwas geändert, die Anlage muss neu geprüft werden.</p>` : ''}
       ${z.daten.anfragen.length ? `<h3>Noch offen</h3>${z.daten.anfragen.map((q) => `<p class="klein">Schaltungsanfrage ${esc(q.id)}: für „${esc(q.art)}“ gibt es noch kein Modul.</p>`).join('')}` : ''}`;
   } else inhalt = `<pre class="text">${esc(z.daten.zusammenfassung)}</pre>`;
   return `<div class="reiter">${reiter.map(([k, t]) => `<button class="${r === k ? 'an' : ''}" data-a="reiter" data-k="${k}">${t}</button>`).join('')}</div>${inhalt}`;

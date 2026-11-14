@@ -120,6 +120,19 @@
       "ungeprueft": false
     },
     {
+      "id": "plan.technik",
+      "titel": "Technikteile gelten erst nach der Prüfung durch Ebene 1 als bestätigt, solange sich ihr Prüfbereich nicht ändert",
+      "regel": "Ein Technikteil ist bestätigt, wenn die Prüfer aus Ebene 1 in seinem Prüfbereich keinen Verstoß melden und sich der Prüfbereich seitdem nicht verändert hat. Prüfbereich = Hülle des Teils plus Umkreis (Blöcke) plus seine Sperrzone; es zählen alle Blöcke und Leerzellen darin, auch die anderer Teile und Wesen. Verändert eine Aussparung, eine Änderung von Jonah oder ein anderes Teil dort etwas, auch nur in der Umgebung, ist die Anlage nicht bestätigt: die Oberfläche zeigt ihre Funktion nicht als funktionsfähig, bis der Abschluss sie neu geprüft hat. Der Umkreis von 8 Blöcken deckt die Reichweite von Wasser (7) und die Nachbarschaft von Redstone, Trichtern und Dorfbewohner-Regeln ab; er ist eine Annahme, die im Spiel nicht geprüft ist.",
+      "parameter": {
+        "umkreis": 8
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/entscheidungen.md (Bearbeitungsmodell B, Entscheidung 2) und docs/architektur-einbau.md (Abschnitt 7, Paket P9)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/bestaetigung.test.js::Bestätigung: eine Änderung im Prüfbereich oder nur in der Umgebung macht die Anlage nicht bestätigt, eine ferne Änderung nicht",
+      "ungeprueft": true,
+      "testanleitung": "Eine Technikanlage (z. B. Handelsnischen mit Lorenbahn) bauen und im Spiel prüfen, dann in ihrer Umgebung (bis etwa 8 Blöcke) einen Block setzen oder entfernen: Verhält sich die Anlage anders (Wasser, Redstone, Dorfbewohner-Wege)? Reicht der Umkreis von 8 Blöcken, oder fehlt eine Abhängigkeit?"
+    },
+    {
       "id": "plan.geometrie",
       "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
       "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Zone ohne Funktion gilt für alle Teile, eine Technikzone nur für Technikteile, jede andere Funktionszone nur für Teile, die der Architekt dort einplant). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",

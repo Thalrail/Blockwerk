@@ -173,7 +173,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       const zone = kindrelationen[l.relation];
       const zonen = (ebene2.baue(traeger.bs, traeger.groesse).einbauzonen ?? []).map((z) => z.id);
       if (!zonen.includes(zone)) { frage(`${pf}.relation`, `${t.name}: ${traeger.t.name} (${traeger.bs}) bietet keine Zone „${zone}“ (${zonen.length ? `vorhanden: ${zonen.join(', ')}` : 'es bietet überhaupt keine Zonen'}). Wohin soll ${t.name}?`); continue; }
-      const drehung = l.ausrichtung !== undefined ? ausrichtungen[l.ausrichtung] : l.relation.startsWith('wand-') ? WANDSEITE[l.relation.slice(5)] : 0;
+      const drehung = l.relation.startsWith('wand-') ? WANDSEITE[l.relation.slice(5)] : l.ausrichtung !== undefined ? ausrichtungen[l.ausrichtung] : 0; // die Wandseite legt die Ausrichtung fest (Jonah, 14.11.2026); der Prüfer der Spezifikation lehnt eine zusätzliche Ausrichtung ab
       const v = l.versatz ?? {};
       kinder.get(wurzel).push({
         ref: t.id, name: t.name, baustein: x.bs, parameter: x.groesse, traeger: l.bezug,

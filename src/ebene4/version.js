@@ -7,6 +7,8 @@ export class FreigabeFehler extends Error {
   constructor(nachricht, rueckfragen = []) { super(`Freigabe: ${nachricht}`); this.name = 'FreigabeFehler'; this.rueckfragen = rueckfragen; }
 }
 
+const ohneId = (p) => { if (!p || typeof p !== 'object' || !('id' in p)) return p; const { id, ...rest } = p; void id; return rest; };
+
 /** Alle Pfade (a.b[0].c), an denen sich zwei Werte unterscheiden. */
 function unterschiede(a, b, pfad = '') {
   if (JSON.stringify(a) === JSON.stringify(b)) return [];
@@ -47,7 +49,7 @@ export function erzeugeVersionen({ pruefer, abgleich = { abgleich: () => ({ ruec
   function vergleiche(alt, neu) {
     const a = new Map(alt.teile.map((t) => [t.id, t])), b = new Map(neu.teile.map((t) => [t.id, t]));
     return {
-      projekt: unterschiede(alt.projekt, neu.projekt, 'projekt'),
+      projekt: unterschiede(ohneId(alt.projekt), ohneId(neu.projekt), 'projekt'), // die Kennung ist kein Inhalt
       hinzugefuegt: [...b.keys()].filter((id) => !a.has(id)).sort(),
       entfernt: [...a.keys()].filter((id) => !b.has(id)).sort(),
       geaendert: [...b.keys()].filter((id) => a.has(id)).sort().map((id) => ({ id, felder: unterschiede(a.get(id), b.get(id)) })).filter((x) => x.felder.length),

@@ -34,7 +34,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Noch nichts umgeset
 
 ## 3. Pakete (Reihenfolge nach deiner Priorität; U0 ist Vorbedingung)
 
-### U0 Entscheidungen und Vorbereitung (klein)
+### U0 Entscheidungen und Vorbereitung (klein) – umgesetzt 14.11.2026 (Option A und A, siehe `docs/referenz/`)
 - **0a Wand-Ausrichtung** (Empfehlung unten): Regel im Prüfer der Spezifikation, Übersetzung, Test anpassen.
 - **0b projektId** (Empfehlung unten): `projekt.id` optional in der Spezifikation, von der Oberfläche beim ersten Freigeben erzeugt (dort darf Zufall sein), mitgeführt in Link, Datei, Raum; Zuordnung der Fassungen und Schlüssel (Fortschritt, Änderungen) darüber, alter Name als Rückfall mit Bestätigung.
 - Prüfung: Schema-, Übersetzungs- und Teilen-Tests; Zitadelle-Prüfstein unverändert.

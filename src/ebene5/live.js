@@ -4,7 +4,7 @@
 // eine neue Planversion wird nur angenommen, wenn der Absender den aktuellen Stand kannte (`basis`) und die Freigabe zum Inhalt passt – sonst wird sie abgelehnt.
 // Der Raum ändert sich bei einer Ablehnung nie. Deterministisch: keine Uhr, kein Zufall (die Raum-Nummer erzeugt die Seite).
 import * as F from './fortschritt.js';
-import { abdruck } from '../ebene4/spezifikation.js';
+import { abdruck, PROJEKT_ID } from '../ebene4/spezifikation.js';
 import * as PF from './planfassung.js';
 
 /** Grenzen (ein Ort für Dienst und Seite). */
@@ -115,6 +115,10 @@ export function verarbeite(raum, m, absender) {
   if (!istObjekt(spec)) return abgelehnt(raum, 'form', 'plan braucht eine Spezifikation');
   if (JSON.stringify(spec).length > GRENZEN.spezifikation) return abgelehnt(raum, 'zu-gross', `Die Spezifikation ist größer als ${GRENZEN.spezifikation} Zeichen`);
   if (!freigegeben(spec)) return abgelehnt(raum, 'freigabe', 'Nur freigegebene Spezifikationen können in den Raum (die Freigabe passt nicht zum Inhalt)');
+  // Ein Raum gehört zu einem Projekt: die Kennung bleibt erhalten, ein anderes Projekt kommt nie in einen bestehenden Raum
+  const neueKennung = spec.projekt?.id, raumKennung = raum.spezifikation?.projekt?.id;
+  if (neueKennung !== undefined && !(typeof neueKennung === 'string' && PROJEKT_ID.test(neueKennung))) return abgelehnt(raum, 'form', 'Die Projektkennung hat nicht die Form p-<32 Hexzeichen>');
+  if (raumKennung !== undefined && neueKennung !== raumKennung) return abgelehnt(raum, 'projekt', neueKennung === undefined ? 'Dem Plan fehlt die Projektkennung des Raums' : 'Der Raum gehört zu einem anderen Projekt (andere Projektkennung)');
   if (spec.version <= version(raum)) return abgelehnt(raum, 'version', `Die neue Version muss größer als ${version(raum)} sein`);
   const neu = { ...raum, spezifikation: kopie(spec) };
   return { raum: neu, senden: [{ an: 'andere', nachricht: { typ: 'plan', von: raum.spieler[absender].name, spezifikation: neu.spezifikation } }, { an: 'absender', nachricht: { typ: 'plan-angenommen', version: spec.version } }] };

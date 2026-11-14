@@ -3,6 +3,7 @@
 import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
 import * as Umbau from '../src/ebene5/umbau.js';
+import * as Projekt from '../src/ebene5/projektid.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -51,11 +52,25 @@ worker.onmessage = ({ data }) => {
 };
 worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebrochen: ${e.message ?? e}`; render(); };
 
-function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = []) {
+const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
+
+function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null) {
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
   const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt } : (z.vorher ?? null);
-  const gleichesProjekt = basis && basis.spec.projekt?.name === spezifikation.projekt?.name && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
+  // Zugehörigkeit über die Projektkennung (nicht über den Namen): gleiche Kennung = neue Fassung desselben Projekts, andere Kennung = eigenständiges Projekt;
+  // Altbestand ohne Kennung wird nicht geraten, sondern gefragt (identischer Inhalt ist eindeutig und braucht keine Frage)
+  const b = Projekt.bezug(basis?.spec ?? null, spezifikation);
+  if (b.art === 'unklar' && !entscheidung && !b.inhaltGleich) {
+    z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich };
+    render();
+    return;
+  }
+  z.idFrage = null;
+  const u = Projekt.uebernehme(basis?.spec ?? null, spezifikation, { entscheidung: b.art === 'unklar' ? (entscheidung ?? 'fortsetzung') : undefined, bytes: zufall() });
+  z.altSchluessel = u.vergeben && spezifikation.freigabe?.abdruck ? `blockwerk.fortschritt.${spezifikation.freigabe.abdruck}` : null; // Altbestand: der Fortschritt unter dem alten Schlüssel geht mit
+  spezifikation = u.spec;
+  const gleichesProjekt = basis && u.art === 'fortsetzung' && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
   z.vorher = gleichesProjekt ? basis : null;
   z.umbau = null;
   z.seite = null; z.messungen = messungen;
@@ -66,10 +81,14 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   worker.postMessage({ typ: 'baue', spezifikation, messungen, lauf: z.lauf = (z.lauf ?? 0) + 1 });
 }
 
-const speicherSchluessel = () => `blockwerk.fortschritt.${z.spec?.freigabe?.abdruck ?? 'ohne'}`;
+const speicherSchluessel = () => { const id = Projekt.idVon(z.spec), a = z.spec?.freigabe?.abdruck ?? 'ohne'; return id ? `blockwerk.fortschritt.${id}.${a}` : `blockwerk.fortschritt.${a}`; };
 function nachDemBauen() {
   let f = fortschritt.leer();
-  try { f = fortschritt.pruefe(speicher.lies(speicherSchluessel(), f)); } catch { /* beschädigter Speicher: neu anfangen */ }
+  try {
+    let roh = speicher.lies(speicherSchluessel(), null);
+    if (roh === null && z.altSchluessel) roh = speicher.lies(z.altSchluessel, null); // Altbestand ohne Kennung: Fortschritt unter dem alten Schlüssel übernehmen (der alte Eintrag bleibt)
+    if (roh !== null) f = fortschritt.pruefe(roh);
+  } catch { /* beschädigter Speicher: neu anfangen */ }
   let hinweis = '';
   if (z.empfangen) {
     try { f = fortschritt.zusammenfuehren(f, fortschritt.pruefe(z.empfangen)); hinweis = ' Der Fortschritt aus dem Link wurde mit deinem Stand zusammengeführt.'; } catch { hinweis = ' Der Fortschritt im Link war unbrauchbar und wurde ignoriert.'; }
@@ -94,6 +113,15 @@ function nachDemBauen() {
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   speichern();
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
+}
+
+/** Altbestand ohne Projektkennung: nicht raten, sondern fragen, ob die ankommende Spezifikation zum geöffneten Projekt gehört. */
+function idFragePanel() {
+  const q = z.idFrage;
+  return `<section class="umbau"><h2>Gehört das zum geöffneten Projekt?</h2>
+    <p>Die neue Spezifikation ${q.neuerName ? `„${esc(q.neuerName)}“ ` : ''}hat noch keine Projektkennung (ältere Datei oder Chat-Ergebnis). Geöffnet ist „${esc(q.name ?? '')}“${q.nameGleich ? ' (gleicher Name)' : ' (anderer Name)'}.
+    Ist es eine neue Fassung davon, bleiben Fortschritt und Umbauhinweise verbunden. Ist es ein eigenständiges Projekt, bekommt es eine neue Kennung und einen eigenen Fortschritt.</p>
+    <div class="knoepfe"><button class="haupt" data-a="id-fortsetzen">Neue Fassung des geöffneten Projekts</button><button data-a="id-neu">Eigenständiges, neues Projekt</button><button data-a="id-abbrechen">Abbrechen</button></div></section>`;
 }
 
 /** Umbauhinweise: was an schon gebauten Schichten geändert werden muss, bevor die neue Fassung gilt (Bestätigung nötig). */
@@ -249,7 +277,7 @@ function kopf() {
     <label>Spieler <input id="name" type="text" maxlength="24" placeholder="Name" value="${esc(z.name)}"></label>
     ${z.daten ? `<button data-a="modus" title="Taste M">${kompakt ? 'Vollansicht' : 'Kompaktmodus'}</button>
     <button data-a="pip" title="Kleines Fenster, das immer im Vordergrund bleibt (Chrome/Edge)">Immer im Vordergrund</button>
-    <button data-a="link">Link kopieren</button><button data-a="sichern">Datei sichern</button>` : ''}
+    <button data-a="link">Link kopieren</button><button data-a="sichern">Datei sichern</button><button data-a="kopie" title="Gleicher Inhalt, neue Projektkennung, eigener Fortschritt">Als eigene Kopie</button>` : ''}
     <button data-a="live-offen" title="Gemeinsam mit Freunden abhaken">Live</button>
     <button data-a="${z.seite === 'eingabe' ? 'eingabe-zu' : 'eingabe-offen'}">${z.seite === 'eingabe' ? (z.daten ? 'Zurück zum Bauplan' : 'Schließen') : 'Neue Vorlage'}</button>
     <button data-a="oeffnen">Datei öffnen</button><input id="datei" type="file" accept=".json,application/json" hidden>
@@ -350,7 +378,7 @@ function kompaktansicht() {
 
 function render() {
   const aktiv = document.activeElement?.id === 'name';
-  let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.umbau && z.daten ? umbauPanel() : '');
+  let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.idFrage ? idFragePanel() : '') + (z.umbau && z.daten ? umbauPanel() : '');
   if (z.status) html += rechnet();
   else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec, raumAktiv: live.istVerbunden() });
   else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
@@ -450,6 +478,9 @@ async function aktion(name, el) {
     else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
     else if (name === 'eingabe-zu') { z.seite = null; render(); }
     else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
+    else if (name === 'id-fortsetzen' || name === 'id-neu') { const q = z.idFrage; if (q) startProjekt(q.spezifikation, q.empfangen, q.messungen, name === 'id-neu' ? 'neu' : 'fortsetzung'); }
+    else if (name === 'id-abbrechen') { z.idFrage = null; render(); }
+    else if (name === 'kopie') { startProjekt(Projekt.eigenstaendigeKopie(z.spec, zufall())); toast('Eigenständige Kopie angelegt: neue Projektkennung, eigener Fortschritt, nie mit dem Original gemischt.'); }
     else if (name === 'umbau-ja') umbauEntscheiden(true);
     else if (name === 'umbau-nein') umbauEntscheiden(false);
     else if (name === 'oeffnen') document.getElementById('datei').click();

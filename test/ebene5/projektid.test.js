@@ -207,13 +207,16 @@ test('Ungültige Kennung auch beim geöffneten Projekt ein Fehler; alter Fortsch
   const alt = frei(s, 'aaaaaaaa');                              // geöffnet, ohne Kennung
   const mitKennung = frei(P.mitId({ ...s, version: 2 }, ID_B), 'bbbbbbbb'); // ankommend, mit Kennung
   const ohneKennung = frei({ ...s, version: 2 }, 'cccccccc');   // ankommend, ohne Kennung
-  const rueck = (v, a, opt) => P.alterFortschrittsAbdruck(P.uebernehme(v, a, opt), v);
+  const rueck = (v, a, opt) => P.alterFortschrittsAbdruck(P.uebernehme(v, a, opt), v, a);
   // kennungsloses geöffnetes Projekt + ankommend mit Kennung: „eigenständig“ erbt nichts, „Fortsetzung“ nimmt die Haken des geöffneten Projekts mit
   assert.equal(rueck(alt, mitKennung, { entscheidung: 'neu' }), null);
   assert.equal(rueck(alt, mitKennung, { entscheidung: 'fortsetzung' }), 'aaaaaaaa');
   // beide ohne Kennung: Fortsetzung bekommt eine neue Kennung, die Haken der ankommenden Fassung (alter Schlüssel) gelten; eigenständig ebenso nur ihre eigenen
   assert.equal(rueck(alt, ohneKennung, { entscheidung: 'fortsetzung', bytes: bytes(3) }), 'cccccccc');
   assert.equal(rueck(alt, ohneKennung, { entscheidung: 'neu', bytes: bytes(3) }), 'cccccccc');
+  // geöffnetes Projekt MIT Kennung, ankommende Alt-Fassung ohne Kennung: ihr eigener alter Fortschritt wird wiedergefunden (Fortsetzung wie eigenständig)
+  assert.equal(rueck(frei(P.mitId(s, ID_A), 'dddddddd'), ohneKennung, { entscheidung: 'fortsetzung' }), 'cccccccc');
+  assert.equal(rueck(frei(P.mitId(s, ID_A), 'dddddddd'), ohneKennung, { entscheidung: 'neu', bytes: bytes(4) }), 'cccccccc');
   // nichts offen: ein Altbestand nimmt seinen eigenen alten Schlüssel mit
   assert.equal(rueck(null, ohneKennung, { bytes: bytes(3) }), 'cccccccc');
   // geöffnetes Projekt mit Kennung, gleiche Kennung oder andere: kein alter Schlüssel

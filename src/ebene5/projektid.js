@@ -77,12 +77,14 @@ export function uebernehme(vorhanden, ankommend, { entscheidung, bytes } = {}) {
 
 /**
  * Abdruck der Fassung, deren Fortschritt unter dem alten Schlüssel (ohne Kennung) liegt und mitgenommen werden darf, sonst null.
- * Nur bei tatsächlicher Fortsetzung oder bei der Fassung, die selbst keine Kennung hatte: ein eigenständiges Projekt erbt nie fremde Haken.
- * @param {{spec: object, art: string, vergeben: boolean}} ergebnis  Rückgabe von `uebernehme`
+ * - Hatte die ankommende Fassung keine Kennung, gehört ihr eigener alter Fortschritt zu ihr (Fortsetzung wie eigenständig).
+ * - Hatte nur das geöffnete Projekt keine Kennung, geht dessen alter Fortschritt nur bei tatsächlicher Fortsetzung mit; ein eigenständiges Projekt erbt nie fremde Haken.
+ * @param {{art: string}} ergebnis  Rückgabe von `uebernehme`
  * @param {object|null} vorhanden  das bisher geöffnete Projekt
+ * @param {object} ankommend  die ankommende Spezifikation, wie sie ankam (vor der Kennungsvergabe)
  */
-export function alterFortschrittsAbdruck(ergebnis, vorhanden) {
-  if (ergebnis.vergeben) return ergebnis.spec.freigabe?.abdruck ?? null;
+export function alterFortschrittsAbdruck(ergebnis, vorhanden, ankommend) {
+  if (!idVon(ankommend)) return ankommend.freigabe?.abdruck ?? null;
   if (ergebnis.art === 'fortsetzung' && vorhanden && !idVon(vorhanden)) return vorhanden.freigabe?.abdruck ?? null;
   return null;
 }

@@ -63,7 +63,7 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   let b;
   try { b = Projekt.bezug(basis?.spec ?? null, spezifikation); } catch (f) { z.idFrage = null; z.fehler = String(f.message ?? f); z.status = null; render(); return; } // ungültige Kennung: sichtbarer Fehler, nichts wird ersetzt
   if (b.art === 'unklar' && !entscheidung && !b.inhaltGleich) {
-    z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich };
+    z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich, neueOhneKennung: !Projekt.idVon(spezifikation) };
     render();
     return;
   }
@@ -71,7 +71,7 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   let u;
   try { u = Projekt.uebernehme(basis?.spec ?? null, spezifikation, { entscheidung: b.art === 'unklar' ? (entscheidung ?? 'fortsetzung') : undefined, bytes: zufall() }); } catch (f) { z.idFrage = null; z.fehler = String(f.message ?? f); z.status = null; render(); return; }
   // Altbestand: der Fortschritt unter dem alten Schlüssel (ohne Kennung) geht mit, sei es von der ankommenden Fassung (Kennung neu vergeben) oder vom geöffneten Projekt (hatte keine)
-  const altAbdruck = Projekt.alterFortschrittsAbdruck(u, basis?.spec ?? null);
+  const altAbdruck = Projekt.alterFortschrittsAbdruck(u, basis?.spec ?? null, spezifikation);
   z.altSchluessel = altAbdruck ? `blockwerk.fortschritt.${altAbdruck}` : null;
   spezifikation = u.spec;
   const gleichesProjekt = basis && u.art === 'fortsetzung' && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
@@ -123,7 +123,7 @@ function nachDemBauen() {
 function idFragePanel() {
   const q = z.idFrage;
   return `<section class="umbau"><h2>Gehört das zum geöffneten Projekt?</h2>
-    <p>Die neue Spezifikation ${q.neuerName ? `„${esc(q.neuerName)}“ ` : ''}hat noch keine Projektkennung (ältere Datei oder Chat-Ergebnis). Geöffnet ist „${esc(q.name ?? '')}“${q.nameGleich ? ' (gleicher Name)' : ' (anderer Name)'}.
+    <p>Die neue Spezifikation ${q.neuerName ? `„${esc(q.neuerName)}“ ` : ''}${q.neueOhneKennung ? 'hat noch keine Projektkennung (ältere Datei oder Chat-Ergebnis)' : 'hat eine Projektkennung, das geöffnete Projekt aber noch nicht (Altbestand)'}. Geöffnet ist „${esc(q.name ?? '')}“${q.nameGleich ? ' (gleicher Name)' : ' (anderer Name)'}.
     Ist es eine neue Fassung davon, bleiben Fortschritt und Umbauhinweise verbunden. Ist es ein eigenständiges Projekt, bekommt es eine neue Kennung und einen eigenen Fortschritt.</p>
     <div class="knoepfe"><button class="haupt" data-a="id-fortsetzen">Neue Fassung des geöffneten Projekts</button><button data-a="id-neu">Eigenständiges, neues Projekt</button><button data-a="id-abbrechen">Abbrechen</button></div></section>`;
 }

@@ -151,6 +151,15 @@ function zeichne(leinwand, a, s, kompakt) {
     }
     if (cs >= 12) { g.strokeStyle = '#00000040'; g.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1); }
   }
+  // Aussparungen (Durchbruch, den ein Kind seinem Träger genommen hat): rot gestrichelt, hier bewusst leer lassen
+  for (const q of s.aussparungen ?? []) {
+    if (q.x < b.x0 || q.x > b.x1 || q.z < b.z0 || q.z > b.z1) continue;
+    const x = ox + (q.x - b.x0) * cs, y = oy + (q.z - b.z0) * cs;
+    g.save(); g.fillStyle = 'rgba(211,51,51,0.18)'; g.fillRect(x, y, cs, cs);
+    g.strokeStyle = '#d33'; g.lineWidth = Math.max(1, cs / 12); g.setLineDash([Math.max(2, cs / 6), Math.max(2, cs / 6)]); g.strokeRect(x + 1.5, y + 1.5, cs - 3, cs - 3);
+    if (cs >= 9) { g.setLineDash([]); g.fillStyle = '#d33'; g.fillText('×', x + cs / 2, y + cs / 2 + 1); }
+    g.restore();
+  }
   if (!kompakt) { // Maßband: absolute Koordinaten alle 5 Blöcke
     const stil = getComputedStyle(document.body).color;
     g.fillStyle = stil; g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle';
@@ -171,7 +180,9 @@ function hinweisUnterMaus(ev) {
   const r = l.getBoundingClientRect();
   const cx = Math.floor((ev.clientX - r.left - geo.ox) / geo.cs) + geo.b.x0, cz = Math.floor((ev.clientY - r.top - geo.oy) / geo.cs) + geo.b.z0;
   const s = geo.s; let text = `x ${cx}, z ${cz}, Höhe ${s.y}`;
-  for (let i = 0; i < s.n; i++) if (s.x[i] === cx && s.z[i] === cz) { const li = geo.a.legende[s.b[i]]; text = `${li.name} · ${text}${s.r[i] ? ` · Richtung ${PFEIL[s.r[i]]} ${RICHTUNGEN[s.r[i]]}` : ''}`; break; }
+  for (let i = 0; i < s.n; i++) if (s.x[i] === cx && s.z[i] === cz) { const li = geo.a.legende[s.b[i]], teil = geo.a.teile?.[s.p?.[i]]; text = `${li.name}${teil && geo.a.teile.length > 1 ? ` (${teil.name})` : ''} · ${text}${s.r[i] ? ` · Richtung ${PFEIL[s.r[i]]} ${RICHTUNGEN[s.r[i]]}` : ''}`; break; }
+  const luecke = (s.aussparungen ?? []).find((q) => q.x === cx && q.z === cz);
+  if (luecke) text = `Aussparung: leer lassen (${luecke.art === 'oeffnung' ? 'Öffnung' : 'Durchbruch und Kopffreiheit'} für ${luecke.kind} in ${luecke.traeger}) · ${text}`;
   const ziel = l.closest('.mitte, .kompakt')?.querySelector('.hinweis-zeile'); if (ziel) ziel.textContent = text;
 }
 
@@ -222,6 +233,7 @@ function rechteSpalte() {
     inhalt = `<h3>Legende</h3><table class="tabelle">${a.legende.filter((l) => s.summe[l.id]).map((l) => `<tr><td><span class="symbol">${l.symbol}</span><span class="farbe ${l.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(l)}" title="${Tex.feldTitel(l)}"></span>${esc(l.name)}</td><td class="zahl">${s.summe[l.id]}</td></tr>`).join('')}</table>
       <p class="klein">Pfeile zeigen die Blickrichtung (↑ Norden, → Osten, ↓ Süden, ← Westen); Norden ist oben.</p>
       ${s.inhalte.length ? `<h3>Behälter in dieser Schicht</h3>${s.inhalte.map((i) => `<p class="klein">${esc(a.legende.find((l) => l.id === i.id).name)} bei x ${i.x}, z ${i.z}: ${i.inhalt.map((g) => `${g.anzahl}× ${esc(g.gegenstand.replace('minecraft:', ''))}`).join(', ')}</p>`).join('')}` : ''}
+      ${(s.aussparungen ?? []).length ? `<h3>Aussparungen</h3><p class="klein">${s.aussparungen.length} rot gestrichelte Zellen bleiben leer: ${[...new Set(s.aussparungen.map((q) => `${q.kind} in ${q.traeger}`))].map(esc).join(', ')}. Dort wird kein Block gesetzt (Durchbruch, Kopffreiheit).</p>` : ''}
       ${a.wesen.filter((w) => w.y === s.y).length ? `<h3>Wesen</h3>${a.wesen.filter((w) => w.y === s.y).map((w) => `<p class="klein">${esc(w.id.replace('minecraft:', ''))}${w.baby ? ' (Baby)' : ''} bei x ${w.x}, z ${w.z}</p>`).join('')}` : ''}`;
   } else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {

@@ -37,18 +37,22 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
     const welt = mat.welt;
     const abschnitte = [...entwurf.abschnitte].sort((a, b) => a.reihenfolge - b.reihenfolge);
     const alleWesen = welt.wesen();
+    const teilVon = new Map(entwurf.teile.map((t) => [t.id, t]));
+    const refVon = (id) => teilVon.get(id)?.ref ?? id;
     const ergebnis = [];
     const gesamt = {};
     for (const a of abschnitte) {
       // Zellen aller Teile des Abschnitts (ohne Doppelte)
+      // Besitz: jede Zelle gehört dem Teil, das sie belegt (Index in `teile` des Abschnitts); Kinder (Treppe, Tür …) stehen im Abschnitt ihres Trägers
+      const teileA = entwurf.teile.filter((x) => x.abschnitt === a.id);
       const zellen = new Map();
-      for (const t of entwurf.teile.filter((x) => x.abschnitt === a.id)) {
+      for (const [ti, t] of teileA.entries()) {
         for (const k of mat.teile.get(t.id).schluessel) {
           if (zellen.has(k)) continue;
           const [x, y, z] = k.split(',').map(Number);
           const b = welt.leseBlock(x, y, z);
           if (b.id === luft) continue;
-          zellen.set(k, { x, y, z, id: b.id, zustand: b.zustand, inhalt: b.inhalt ?? null, art: Math.max(0, ARTEN.indexOf(t.art)) });
+          zellen.set(k, { x, y, z, id: b.id, zustand: b.zustand, inhalt: b.inhalt ?? null, art: Math.max(0, ARTEN.indexOf(t.art)), teil: ti });
         }
       }
       // Legende: häufigste Blöcke zuerst, feste Symbole
@@ -57,19 +61,32 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
       const ids = Object.keys(zaehler).sort((p, q) => zaehler[q] - zaehler[p] || (p < q ? -1 : 1));
       const legende = ids.map((id, i) => ({ symbol: SYMBOLE[i] ?? '?', ...darstellung.block(id), anzahl: zaehler[id] }));
       const index = new Map(ids.map((id, i) => [id, i]));
+      // Aussparungen: Zellen, die ein Kind seinem Träger (in diesem Abschnitt) genommen hat und die leer bleiben (Durchbruch für die Treppe …); die Öffnungen von Tür und Fenster füllt das Kind selbst
+      const aussparungenVon = new Map();
+      let aussparungenAnzahl = 0;
+      for (const [k, h] of mat.einbau?.herkunft ?? []) {
+        if (teilVon.get(h.traeger)?.abschnitt !== a.id) continue;
+        const [x, y, z] = k.split(',').map(Number);
+        if (!welt.istLuft(x, y, z)) continue;
+        const frei = h.von.find((v) => v.art === 'freihaltung') ?? h.von[0];
+        if (!aussparungenVon.has(y)) aussparungenVon.set(y, []);
+        aussparungenVon.get(y).push({ x, z, art: h.von.some((v) => v.art === 'oeffnung') ? 'oeffnung' : 'freihaltung', kind: refVon(frei.kind), traeger: refVon(h.traeger) });
+        aussparungenAnzahl++;
+      }
+      for (const liste of aussparungenVon.values()) liste.sort((p, q) => p.z - q.z || p.x - q.x);
       // Schichten von unten nach oben
       const nachY = new Map();
       for (const c of zellen.values()) { if (!nachY.has(c.y)) nachY.set(c.y, []); nachY.get(c.y).push(c); }
       const schichten = [...nachY.keys()].sort((p, q) => p - q).map((y) => {
         const liste = nachY.get(y).sort((p, q) => p.z - q.z || p.x - q.x);
         const n = liste.length;
-        const sx = new Int32Array(n), sz = new Int32Array(n), sb = new Uint16Array(n), sr = new Uint8Array(n), st = new Uint8Array(n);
+        const sx = new Int32Array(n), sz = new Int32Array(n), sb = new Uint16Array(n), sr = new Uint8Array(n), st = new Uint8Array(n), sp = new Uint16Array(n);
         const summe = {};
         const inhalte = [];
         let h = fnv(`${a.id}|${y}`);
         let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
         liste.forEach((c, i) => {
-          sx[i] = c.x; sz[i] = c.z; sb[i] = index.get(c.id); sr[i] = richtungsNummer(c.id, c.zustand); st[i] = c.art;
+          sx[i] = c.x; sz[i] = c.z; sb[i] = index.get(c.id); sr[i] = richtungsNummer(c.id, c.zustand); st[i] = c.art; sp[i] = c.teil;
           summe[c.id] = (summe[c.id] ?? 0) + 1;
           if (c.x < x0) x0 = c.x; if (c.x > x1) x1 = c.x; if (c.z < z0) z0 = c.z; if (c.z > z1) z1 = c.z;
           h = fnv(`;${c.x},${c.z},${c.id},${sr[i]}`, h);
@@ -79,7 +96,9 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
           }
         });
         for (const [id, m] of Object.entries(summe)) gesamt[id] = (gesamt[id] ?? 0) + m;
-        return { y, n, x: sx, z: sz, b: sb, r: sr, t: st, bereich: { x0, x1, z0, z1 }, summe, inhalte, abdruck: hex8(h) };
+        // der Abdruck umfasst nur die Blöcke (Ort, Block, Richtung, Inhalt): wer eine Zelle besitzt (`p`) oder wo ausgespart wurde (`aussparungen`), ändert den Haken nicht
+        const luecken = aussparungenVon.get(y);
+        return { y, n, x: sx, z: sz, b: sb, r: sr, t: st, p: sp, bereich: { x0, x1, z0, z1 }, summe, inhalte, ...(luecken ? { aussparungen: luecken } : {}), abdruck: hex8(h) };
       });
       const huelle = a.huelle;
       const wesen = alleWesen
@@ -87,7 +106,8 @@ export function erzeugeBauplan({ ebene0, ebene3, darstellung }) {
         .map((w) => ({ id: w.id, x: Math.floor(w.x), y: Math.floor(w.y), z: Math.floor(w.z), baby: !!w.baby }));
       const summeA = {};
       for (const s of schichten) for (const [id, m] of Object.entries(s.summe)) summeA[id] = (summeA[id] ?? 0) + m;
-      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size });
+      const teileListe = teileA.map((t) => ({ id: t.id, ref: t.ref ?? t.id, baustein: t.baustein, name: t.name ?? a.name, art: t.art, traeger: t.traeger ?? null, bloecke: mat.teile.get(t.id).schluessel.size }));
+      ergebnis.push({ id: a.id, name: a.name, status: a.status, huelle, legende, schichten, wesen, summe: summeA, bloecke: zellen.size, teile: teileListe, aussparungen: aussparungenAnzahl });
     }
     return { projekt: { name: entwurf.projekt.name }, abschnitte: ergebnis, summe: gesamt, bloecke: ergebnis.reduce((s, a) => s + a.bloecke, 0) };
   }

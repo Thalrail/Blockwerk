@@ -99,13 +99,15 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
    * Fremden); Freihaltungen werden als Mengen mit Herkunft gemerkt (die Prüfung steht in einwand.js). Gibt zurück:
    *  - `schnitt`: Träger-ID → Zellenschlüssel, die dem Träger entfallen,
    *  - `kinder`: Kind-ID → { traeger, zone (Zellen der Einbauzone in der Welt), ersetzt (Blöcke des Trägers, die das Kind per Öffnung ersetzt) },
-   *  - `freihaltung`: Zellenschlüssel → Menge der Kind-IDs, die die Zelle freihalten wollen.
+   *  - `freihaltung`: Zellenschlüssel → Menge der Kind-IDs, die die Zelle freihalten wollen,
+   *  - `herkunft`: Zellenschlüssel der tatsächlich entfernten Trägerblöcke → { traeger, von: [{ kind, art }] } (für die Anzeige im Bauplan).
    * Der Ablauf ist je Träger gleich dem rekursiven Zusammenbau (Blöcke, dann Aussparungen der direkten Kinder); Ketten Raum → Wand → Tür ergeben sich daraus,
    * weil jedes Kind nur seinen eigenen Träger schneidet.
    */
   function einbauVon(entwurf, roh) {
     const nachRef = new Map(entwurf.teile.filter((t) => t.ref !== undefined).map((t) => [t.ref, t]));
-    const schnitt = new Map(), kinder = new Map(), freihaltung = new Map();
+    const schnitt = new Map(), kinder = new Map(), freihaltung = new Map(), herkunft = new Map();
+    const merke = (c, tr, kind, art) => { if (!herkunft.has(c)) herkunft.set(c, { traeger: tr.id, von: [] }); herkunft.get(c).von.push({ kind: kind.id, art }); };
     const ks = (z) => key(z.x, z.y, z.z);
     for (const kind of [...entwurf.teile].filter((t) => t.traeger !== undefined).sort((a, b) => (a.ref < b.ref ? -1 : 1))) {
       const tr = nachRef.get(kind.traeger);
@@ -115,9 +117,9 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
       const frei = aussparungsZellen(ebene0, paketK, 'freihaltung', kind.lage).map(ks);
       const cut = schnitt.get(tr.id) ?? new Set();
       const ersetzt = new Set();
-      for (const c of oeffnung) if (trBloecke.has(c)) { cut.add(c); ersetzt.add(c); }
+      for (const c of oeffnung) if (trBloecke.has(c)) { cut.add(c); ersetzt.add(c); merke(c, tr, kind, 'oeffnung'); }
       for (const c of frei) {
-        if (trBloecke.has(c)) cut.add(c);
+        if (trBloecke.has(c)) { cut.add(c); merke(c, tr, kind, 'freihaltung'); }
         if (!freihaltung.has(c)) freihaltung.set(c, new Set());
         freihaltung.get(c).add(kind.id);
       }
@@ -130,7 +132,7 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
       const [x0, x1] = achse('x'), [y0, y1] = achse('y'), [z0, z1] = achse('z');
       kinder.set(kind.id, { traeger: tr.id, zone: { von: { x: x0, y: y0, z: z0 }, bis: { x: x1, y: y1, z: z1 } }, ersetzt });
     }
-    return { schnitt, kinder, freihaltung };
+    return { schnitt, kinder, freihaltung, herkunft };
   }
 
   /** Teil ohne die Zellen, die ihm ein Kind ausspart (neues Objekt; der gemerkte Eintrag bleibt unverändert). */

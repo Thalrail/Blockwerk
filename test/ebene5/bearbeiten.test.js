@@ -238,3 +238,14 @@ test('Lokale Änderungen in einen leeren Raum übertragen: operationenAus gibt f
   assert.deepEqual(neu.planfassung.eintraege, pf.eintraege);
   assert.deepEqual(B.operationenAus(PF.leer()), []);
 });
+
+test('Review: gleicheEintraege ignoriert den Autor, neueProbleme erkennt ein ausgetauschtes Problem (gleiche Anzahl, andere Änderung)', () => {
+  const op = { teil: 't', zelle: { x: 1, y: 2, z: 3 }, erwartet: null, neu: { op: 'setze', block: { id: 'minecraft:stone' } } };
+  const vonA = PF.wende(PF.leer(), [op], 'A').planfassung, vonB = PF.wende(PF.leer(), [op], 'B').planfassung;
+  assert.equal(B.gleicheEintraege(vonA, vonB), true, 'derselbe Block, anderer Autor: derselbe Plan');
+  const anders = PF.wende(PF.leer(), [{ ...op, neu: { op: 'setze', block: { id: 'minecraft:glass' } } }], 'A').planfassung;
+  assert.equal(B.gleicheEintraege(vonA, anders), false);
+  const problem = (teil) => ({ plan: { aenderungen: [{ teil, zelle: { x: 1, y: 1, z: 1 }, rueckfrage: { id: 'R1' } }] }, rueckfragenOffen: [{ art: 'aenderung', frage: `Problem ${teil}` }] });
+  assert.equal(B.neueProbleme(problem('b'), problem('a')), 'Problem b', 'a ist behoben, b ist neu: gleiche Anzahl, trotzdem ein neues Problem');
+  assert.equal(B.neueProbleme(problem('a'), problem('a')), null);
+});

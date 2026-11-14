@@ -125,7 +125,7 @@ export const operationenAus = (planfassung) => Object.keys(planfassung?.eintraeg
 export const beschreibung = (pf) => { const n = Object.keys(pf?.eintraege ?? {}).length; return `${n} ${n === 1 ? 'Änderung' : 'Änderungen'}, Fassung ${pf?.version ?? 0}`; };
 
 /** Gleicher Inhalt (Einträge)? Die Versionsnummer allein zählt nicht (eine zurückgenommene und neu gesetzte Änderung ändert den Plan nicht). */
-export const gleicheEintraege = (a, b) => JSON.stringify(Object.entries(a?.eintraege ?? {}).sort(([p], [q]) => (p < q ? -1 : 1))) === JSON.stringify(Object.entries(b?.eintraege ?? {}).sort(([p], [q]) => (p < q ? -1 : 1)));
+export const gleicheEintraege = (a, b) => { const kanon = (pf) => JSON.stringify(Object.keys(pf?.eintraege ?? {}).sort().map((k) => [k, PF.pruefeInhalt(inhaltVon(pf.eintraege[k]))])); return kanon(a) === kanon(b); }; // ohne Autor: gleicher Plan = gleiche Änderung
 
 // ---------- Probleme nach einer Änderung ----------
 
@@ -139,7 +139,8 @@ export const offeneAenderungen = (daten) => (daten?.plan?.aenderungen ?? []).fil
  * @param {{plan: object}} alt  der bisher gezeigte Plan
  */
 export function neueProbleme(neu, alt) {
-  if (offeneAenderungen(neu).length <= offeneAenderungen(alt).length) return null;
+  const id = (a) => `${a.teil}|${a.zelle.x},${a.zelle.y},${a.zelle.z}`, bekannt = new Set(offeneAenderungen(alt).map(id)); // nicht die Anzahl zählt: ein behobenes und ein neues Problem sind zwei verschiedene
+  if (!offeneAenderungen(neu).some((a) => !bekannt.has(id(a)))) return null;
   return (neu.rueckfragenOffen ?? []).filter((q) => q.art === 'aenderung').map((q) => q.frage).join(' ') || 'Die Änderung lässt sich nicht anwenden.';
 }
 

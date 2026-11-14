@@ -82,10 +82,10 @@ export function erzeugeLive(k) {
       const lokal = k.projekt();
       if (x.spezifikation && !lokal) k.startProjekt(x.spezifikation, x.fortschritt, [], null, x.aenderungen ?? null);
       else if (x.spezifikation && lokal && x.spezifikation.freigabe?.abdruck !== lokal.freigabe?.abdruck) {
-        if (x.spezifikation.version > (lokal.version ?? 0)) live.vorschlag = { von: 'dem Raum', spezifikation: x.spezifikation };
+        if (x.spezifikation.version > (lokal.version ?? 0)) live.vorschlag = { von: 'dem Raum', spezifikation: x.spezifikation, aenderungen: x.aenderungen ?? null };
         else if (x.spezifikation.version < (lokal.version ?? 0) && lokal.freigabe) sende(live.klient.planVeroeffentlichen(lokal)); // wir haben die neuere Fassung: sie in den Raum stellen
       } else if (!x.spezifikation && lokal?.freigabe) sende(live.klient.planVeroeffentlichen(lokal));
-      if (lokal && x.aenderungen) k.setzePlanfassung(x.aenderungen, true); // im Raum gilt der Stand des Raums (ohne Projekt bekommt startProjekt ihn schon)
+      if (lokal && x.aenderungen && x.spezifikation?.freigabe?.abdruck === lokal.freigabe?.abdruck) k.setzePlanfassung(x.aenderungen, true); // nur zur selben Fassung: sonst bleiben sie beim Vorschlag // im Raum gilt der Stand des Raums (ohne Projekt bekommt startProjekt ihn schon)
     } else if (x.art === 'aenderungen-angenommen') {
       k.setzePlanfassung(x.aenderungen, false);
     } else if (x.art === 'aenderungen') {
@@ -140,7 +140,7 @@ export function erzeugeLive(k) {
     uebernehmen() {
       const v = live.vorschlag ?? live.abgelehnt; if (!v) return;
       live.klient?.vorschlagErledigt(); live.vorschlag = null; live.abgelehnt = null;
-      k.startProjekt(v.spezifikation, k.fortschritt(), []);
+      k.startProjekt(v.spezifikation, k.fortschritt(), [], null, v.aenderungen ?? null);
     },
     spaeter() { live.klient?.vorschlagErledigt(); live.vorschlag = null; live.abgelehnt = null; k.render(); },
     link: () => raumLink(location.origin + location.pathname, live.raum, live.dienst),

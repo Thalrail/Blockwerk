@@ -54,7 +54,7 @@ worker.onmessage = ({ data }) => {
   else if (data.typ === 'fertig') { z.daten = data; z.fehler = null; z.rueckfragen = null; nachDemBauen(); }
   render();
 };
-worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebrochen: ${e.message ?? e}`; render(); };
+worker.onerror = (e) => { z.status = null; if (z.bearbeitung && z.vorher) { bearbeitungVerwerfen(`Die Berechnung ist abgebrochen: ${e.message ?? e}`); render(); return; } z.fehler = `Die Berechnung ist abgebrochen: ${e.message ?? e}`; render(); };
 
 const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
 
@@ -105,7 +105,10 @@ const mitEintraegen = (pf) => (Object.keys(pf.eintraege).length ? pf : null); //
 const pfSchluessel = (spec) => { const id = Projekt.idVon(spec); return id ? `blockwerk.aenderungen.${id}` : null; };
 function ladePlanfassung(spec) {
   const k = pfSchluessel(spec); if (!k) return PF.leer();
-  try { const roh = speicher.lies(k, null); return roh === null ? PF.leer() : PF.pruefeForm(roh); } catch { return PF.leer(); } // beschädigt: nicht erfinden, neu anfangen
+  const roh = speicher.lies(k, null);
+  try { return roh === null ? PF.leer() : PF.pruefeForm(roh); } catch (f) { // beschädigt: nicht erfinden, aber auch nicht überschreiben: eine Kopie bleibt erhalten
+    speicher.schreib(`${k}.defekt`, roh); setTimeout(() => toast(`Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.`), 0); return PF.leer();
+  }
 }
 const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (k) speicher.schreib(k, pf); };
 
@@ -123,6 +126,7 @@ function baueMitAenderungen(pf) {
 /** Notausgang, wenn der Plan mit den gespeicherten Änderungen nicht entsteht (z. B. Änderungen aus einer Datei, die zu einer anderen Fassung gehören): die Änderungen lassen sich verwerfen. Das Auflösen einzelner Änderungen folgt mit U6. */
 function aenderungenNotausgang() {
   const n = Object.keys(z.planfassung.eintraege).length;
+  if (live.istVerbunden()) return ''; // im Raum gehören die Änderungen allen; erst trennen (die Auflösung im Raum folgt mit U6)
   return n ? `<button data-a="aenderungen-verwerfen" title="Alle ${n} gespeicherten Änderungen dieses Projekts entfernen und den Plan neu berechnen (eine Sicherung bleibt im Browser)">Änderungen verwerfen (${n})</button>` : '';
 }
 /** Nach einer Änderung bleibt die Ansicht an der Schicht, an der gearbeitet wurde (falls es sie noch gibt). */
@@ -613,7 +617,9 @@ async function blockAktion(name, d) {
   if (name === 'bk-aendern') { z.blockwahl = { suche: '', treffer: [], gewaehlt: null }; render(); document.getElementById('bk-suche')?.focus(); return; }
   if (name === 'bk-waehle') {
     const w = z.blockwahl; if (!w) return;
+    const nr = (w.infoNr = (w.infoNr ?? 0) + 1);
     const info = (await anfrage({ typ: 'blockInfo', id: d.id })).info, zustand = {};
+    if (z.blockwahl !== w || w.infoNr !== nr) return; // ein späterer Klick oder ein anderer Dialog gilt
     for (const za of info.zustaende) if (za.pflicht) zustand[za.name] = za.vorschlag; // Richtungen sind nötig; alles andere bleibt Standard, bis du es wählst
     w.gewaehlt = { info, zustand }; render(); return;
   }
@@ -647,11 +653,9 @@ async function aktion(name, el) {
     else if (name.startsWith('bk-')) await blockAktion(name, d);
     else if (name === 'aenderungen-verwerfen') {
       const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, z.planfassung); // nichts geht endgültig verloren
-      z.fehler = null; z.rueckfragen = null; z.vorher = null; z.bearbeitung = false;
-      z.planfassung = PF.leer(); sichereAenderungen();
-      toast('Die Änderungen wurden verworfen; der Plan wird nur aus der Spezifikation neu berechnet.');
-      z.status = 'Bauplan wird berechnet …'; render();
-      worker.postMessage({ typ: 'baue', spezifikation: z.spec, messungen: z.messungen, aenderungen: null, lauf: z.lauf = (z.lauf ?? 0) + 1 });
+      z.fehler = null; z.rueckfragen = null;
+      toast('Die Änderungen werden verworfen; der Plan wird nur aus der Spezifikation neu berechnet.');
+      baueMitAenderungen(PF.leer()); // der normale Weg: Umbauhinweise für schon gebaute Schichten, gespeichert wird erst nach dem Bau
     }
     else if (name === 'umbau-ja') umbauEntscheiden(true);
     else if (name === 'umbau-nein') umbauEntscheiden(false);

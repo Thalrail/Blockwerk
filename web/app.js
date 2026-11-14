@@ -42,6 +42,7 @@ worker.onmessage = ({ data }) => {
     return;
   }
   if (data.typ === 'status') { z.status = data.text; render(); return; }
+  if (data.lauf !== undefined && data.lauf !== z.lauf) return; // Antwort auf einen überholten Auftrag (inzwischen wurde ein neueres Projekt gestartet)
   z.status = null;
   if (data.typ === 'fehler') { z.fehler = data.text; z.daten = null; }
   else if (data.typ === 'rueckfragen') { z.rueckfragen = data.rueckfragen; z.daten = null; z.fehler = null; }
@@ -52,15 +53,17 @@ worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebr
 
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = []) {
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
-  const gleichesProjekt = z.daten && z.spec && z.spec.projekt?.name === spezifikation.projekt?.name && z.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
-  z.vorher = gleichesProjekt ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt } : null;
+  // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
+  const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt } : (z.vorher ?? null);
+  const gleichesProjekt = basis && basis.spec.projekt?.name === spezifikation.projekt?.name && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
+  z.vorher = gleichesProjekt ? basis : null;
   z.umbau = null;
   z.seite = null; z.messungen = messungen;
   z.spec = spezifikation; z.empfangen = empfangenerFortschritt; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird berechnet …';
   speicher.schreib('blockwerk.projekt', spezifikation);
   render();
-  worker.postMessage({ typ: 'baue', spezifikation, messungen });
+  worker.postMessage({ typ: 'baue', spezifikation, messungen, lauf: z.lauf = (z.lauf ?? 0) + 1 });
 }
 
 const speicherSchluessel = () => `blockwerk.fortschritt.${z.spec?.freigabe?.abdruck ?? 'ohne'}`;
@@ -77,6 +80,7 @@ function nachDemBauen() {
     f = fortschritt.zusammenfuehren(f, v.fortschritt); // der Fortschritt der alten Fassung geht mit (Haken unveränderter Schichten gelten weiter)
     const h = Umbau.hinweise(v.daten.plan, z.daten.plan, v.fortschritt);
     if (h.noetig) {
+      f = Umbau.offeneSchichten(f, z.daten.plan, h, z.name || 'Blockwerk'); // geänderte gebaute Schichten sind offen, auch gegen alte Haken desselben Abdrucks
       // schon gebaute Schichten ändern sich: bis zur Bestätigung der Umbauhinweise gilt weiter die alte Fassung
       z.umbau = { hinweise: h, neu: { spec: z.spec, daten: z.daten, fortschritt: f }, hinweis };
       z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt;
@@ -104,9 +108,18 @@ function umbauPanel() {
 }
 function umbauEntscheiden(ja) {
   const u = z.umbau; if (!u) return;
+  if (!ja) { z.umbau = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
+  // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
+  const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
+  if (JSON.stringify(h) !== JSON.stringify(u.hinweise)) {
+    u.hinweise = h;
+    if (h.noetig) { toast('Der Fortschritt hat sich geändert, die Umbauhinweise wurden aktualisiert: bitte noch einmal bestätigen.'); render(); return; }
+  }
   z.umbau = null;
-  if (!ja) { toast('Die alte Fassung bleibt gültig.'); render(); return; }
-  z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = u.neu.fortschritt;
+  let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
+  f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
+  z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f;
   speicher.schreib('blockwerk.projekt', z.spec);
   const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
@@ -440,7 +453,11 @@ async function aktion(name, el) {
     else if (name === 'umbau-ja') umbauEntscheiden(true);
     else if (name === 'umbau-nein') umbauEntscheiden(false);
     else if (name === 'oeffnen') document.getElementById('datei').click();
-    else if (name === 'neu') { z.fehler = null; z.rueckfragen = null; z.daten = null; render(); }
+    else if (name === 'neu') {
+      z.fehler = null; z.rueckfragen = null; z.daten = null;
+      if (z.vorher) { const v = z.vorher; z.vorher = null; z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; speicher.schreib('blockwerk.projekt', v.spec); toast('Die bisherige Fassung gilt weiter.'); } // die neue Fassung ließ sich nicht bauen
+      render();
+    }
     else if (name === 'modus') { z.modus = z.modus === 'kompakt' ? 'voll' : 'kompakt'; speicher.schreib('blockwerk.modus', z.modus); render(); }
     else if (name === 'pip') await pip();
     else if (name === 'abschnitt') { z.a = Number(d.i); z.s = Math.min(z.s, abschnitt().schichten.length - 1); const n = abschnitt().schichten.findIndex((s) => !fertig(abschnitt(), s)); z.s = n >= 0 ? n : 0; render(); }

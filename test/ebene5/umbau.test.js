@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { engine, holeJson, alsText } from './hilfe5.js';
 import { VARIANTEN, hausSpezifikation, laufe } from '../../tools/haus-sonde.js';
 import * as F from '../../src/ebene5/fortschritt.js';
-import { hinweise, uebernahme, hinweisText } from '../../src/ebene5/umbau.js';
+import { hinweise, uebernahme, hinweisText, offeneSchichten } from '../../src/ebene5/umbau.js';
 
 async function umgebung() {
   const e = await engine();
@@ -87,12 +87,12 @@ const schluesselAlle = (p) => F.haken(F.leer(), p.abschnitte.flatMap((a) => a.sc
 test('Umbauhinweise: Richtung, verschwundene Schicht, verschwundener Abschnitt und reine Abdruck-Änderung', () => {
   const alt = plan([
     { id: 'a', legende: ['stein', 'treppe'], schichten: [{ y: 0, abdruck: 'a0', zellen: [[0, 0, 0], [1, 0, 1, 1]] }, { y: 1, abdruck: 'a1', zellen: [[0, 0, 0]] }, { y: 2, abdruck: 'a2', zellen: [[5, 5, 0]] }] },
-    { id: 'b', legende: ['glas'], schichten: [{ y: 0, abdruck: 'b0', zellen: [[0, 0, 0], [1, 0, 0]] }] },
-    { id: 'c', legende: ['truhe'], schichten: [{ y: 0, abdruck: 'c0', zellen: [[0, 0, 0]] }] },
+    { id: 'b', legende: ['glas'], schichten: [{ y: 0, abdruck: 'b0', zellen: [[10, 0, 0], [11, 0, 0]] }] },
+    { id: 'c', legende: ['truhe'], schichten: [{ y: 0, abdruck: 'c0', zellen: [[20, 0, 0]] }] },
   ]);
   const neu = plan([
     { id: 'a', legende: ['stein', 'treppe'], schichten: [{ y: 0, abdruck: 'neu0', zellen: [[0, 0, 0], [1, 0, 1, 3]] }, { y: 2, abdruck: 'a2', zellen: [[5, 5, 0]] }] }, // Treppe dreht sich, Schicht 1 entfällt, Schicht 2 gleich
-    { id: 'c', legende: ['truhe'], schichten: [{ y: 0, abdruck: 'c1', zellen: [[0, 0, 0]] }] },                                                                       // nur der Abdruck (z. B. Inhalt) ändert sich
+    { id: 'c', legende: ['truhe'], schichten: [{ y: 0, abdruck: 'c1', zellen: [[20, 0, 0]] }] },                                                                       // nur der Abdruck (z. B. Inhalt) ändert sich
   ]);
   const h = hinweise(alt, neu, schluesselAlle(alt));
   assert.deepEqual(h.schichten.map((s) => [s.abschnitt, s.y]), [['a', 0], ['a', 1], ['b', 0]], 'Abschnitt c: nur der Abdruck, kein Block ändert sich: kein Hinweis');
@@ -125,4 +125,48 @@ test('Übernahme: Hinweise verlangen die ausdrückliche Bestätigung, ohne gebau
   // nichts gebaut oder nichts geändert: sofort übernommen, ohne Bestätigung
   assert.equal(uebernahme(ohne.plan, mit.plan, F.leer()).status, 'uebernommen');
   assert.equal(uebernahme(ohne.plan, ohne.plan, f).status, 'uebernommen');
+});
+
+test('Umbauhinweise: ein schon gebauter Block, der in der neuen Fassung in einem anderen Abschnitt steht, muss nicht entfernt werden', () => {
+  const alt = plan([{ id: 'a', legende: ['stein', 'glas'], schichten: [{ y: 0, abdruck: 'a0', zellen: [[0, 0, 0], [1, 0, 0], [2, 0, 1]] }] }]);
+  // Umstrukturierung: die Blöcke bei x 1 und 2 gehören jetzt zu einem neuen Abschnitt „n“, unverändert; der Block bei x 0 entfällt
+  const neu = plan([{ id: 'a', legende: ['stein'], schichten: [{ y: 0, abdruck: 'x', zellen: [] }] }, { id: 'n', legende: ['stein', 'glas'], schichten: [{ y: 0, abdruck: 'n0', zellen: [[1, 0, 0], [2, 0, 1]] }] }]);
+  const h = hinweise(alt, neu, schluesselAlle(alt));
+  assert.deepEqual(h.schichten.map((s) => [s.abschnitt, s.y, s.entfernen.map((c) => [c.x, c.z]), s.ersetzen.length, s.ergaenzen.length]), [['a', 0, [[0, 0]], 0, 0]], 'nur der wirklich entfallene Block');
+  // derselbe Ort mit anderem Block in einem anderen Abschnitt: ersetzen
+  const neu2 = plan([{ id: 'a', legende: ['stein'], schichten: [{ y: 0, abdruck: 'x', zellen: [] }] }, { id: 'n', legende: ['glas'], schichten: [{ y: 0, abdruck: 'n1', zellen: [[1, 0, 0]] }] }]);
+  const h2 = hinweise(alt, neu2, schluesselAlle(alt));
+  assert.deepEqual(h2.schichten[0].ersetzen.map((c) => [c.x, c.alt, c.neu]), [[1, 'stein', 'glas']]);
+  assert.deepEqual(h2.schichten[0].entfernen.map((c) => c.x).sort(), [0, 2]);
+});
+
+test('Übernahme: geänderte gebaute Schichten werden ausdrücklich offen gesetzt, auch gegen historische Haken desselben Abdrucks (A → B → A) und nach einer Zusammenführung', async () => {
+  const { e, e5 } = await umgebung();
+  const A = await laufe(hausSpezifikation(VARIANTEN.klein), e, e5);
+  const B = await laufe(hausSpezifikation(VARIANTEN.klein, { treppe: true }), e, e5);
+  const fA = alleHaken(A.plan);                         // A ist gebaut, alle Haken
+  const hAB = hinweise(A.plan, B.plan, fA);
+  assert.ok(hAB.noetig);
+  // B wird übernommen: die geänderten Schichten von B sind offen; B wird gebaut (alle Haken von B)
+  let fB = offeneSchichten(fA, B.plan, hAB, 'Jonah');
+  for (const s of hAB.schichten) assert.equal(F.istAbgehakt(fB, F.schluessel(s.abschnitt, B.plan.abschnitte.find((a) => a.id === s.abschnitt).schichten.find((x) => x.y === s.y))), false, 'geändert und offen');
+  fB = F.haken(fB, B.plan.abschnitte.flatMap((x) => x.schichten.map((s) => F.schluessel(x.id, s))), true, 'Jonah'); // B wird gebaut (Haken mit höherer Uhr)
+  // zurück zu A: die gebauten Schichten von B, die sich ändern, müssen offen sein, obwohl für A noch die alten Haken (fA) existieren
+  const hBA = hinweise(B.plan, A.plan, fB);
+  assert.ok(hBA.noetig);
+  const historisch = F.zusammenfuehren(fA, fB);        // Zusammenführung mit dem alten Stand (wie beim Laden des gespeicherten Fortschritts)
+  const nachA = offeneSchichten(historisch, A.plan, hBA, 'Jonah');
+  for (const s of hBA.schichten) {
+    const a = A.plan.abschnitte.find((x) => x.id === s.abschnitt), schicht = a.schichten.find((x) => x.y === s.y);
+    assert.equal(F.istAbgehakt(historisch, F.schluessel(a.id, schicht)), true, 'ohne die ausdrückliche Öffnung würde der alte Haken wieder gelten');
+    assert.equal(F.istAbgehakt(nachA, F.schluessel(a.id, schicht)), false, 'mit der Öffnung ist die Schicht offen');
+    // und bleibt es bei einer späteren Zusammenführung mit dem historischen Stand
+    assert.equal(F.istAbgehakt(F.zusammenfuehren(nachA, historisch), F.schluessel(a.id, schicht)), false);
+  }
+  // unveränderte Schichten behalten ihren Haken
+  const unveraendert = A.plan.abschnitte.flatMap((a) => a.schichten.map((s) => [a, s])).filter(([a, s]) => !hBA.schichten.some((h) => h.abschnitt === a.id && h.y === s.y));
+  assert.ok(unveraendert.length > 0);
+  for (const [a, s] of unveraendert) assert.equal(F.istAbgehakt(nachA, F.schluessel(a.id, s)), F.istAbgehakt(historisch, F.schluessel(a.id, s)));
+  // ohne Hinweise bleibt der Fortschritt dasselbe Objekt
+  assert.equal(offeneSchichten(fA, A.plan, { schichten: [] }, 'Jonah'), fA);
 });

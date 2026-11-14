@@ -71,9 +71,9 @@ async function baue(spezifikation, messungen = []) {
 
 self.onmessage = async ({ data }) => {
   try {
-    if (data.typ === 'baue') self.postMessage(await baue(data.spezifikation, data.messungen));
+    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
-    self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage });
+    self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });
   }
 };

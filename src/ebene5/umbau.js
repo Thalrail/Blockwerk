@@ -11,6 +11,12 @@ const zellenVon = (abschnitt, schicht) => {
   return m;
 };
 const ordnung = (p, q) => p.z - q.z || p.x - q.x;
+/** Alle Blöcke des neuen Plans nach Weltkoordinate (über alle Abschnitte): ein schon gebauter Block, der jetzt in einem anderen Abschnitt steht, ist nichts, was entfernt werden müsste. */
+const weltIndex = (plan) => {
+  const m = new Map();
+  for (const a of plan.abschnitte) for (const s of a.schichten) for (let i = 0; i < s.n; i++) m.set(`${s.x[i]},${s.y},${s.z[i]}`, { id: a.legende[s.b[i]].id, r: s.r[i] });
+  return m;
+};
 
 /**
  * Vergleicht die alte mit der neuen Fassung für alle Schichten, die nach der alten gebaut sind (`fortschritt` gehört zur alten Fassung).
@@ -21,6 +27,7 @@ const ordnung = (p, q) => p.z - q.z || p.x - q.x;
  */
 export function hinweise(alt, neu, fortschritt) {
   const neuVon = new Map(neu.abschnitte.map((a) => [a.id, a]));
+  const imNeuen = weltIndex(neu);
   const schichten = [];
   for (const a of alt.abschnitte) {
     const b = neuVon.get(a.id);
@@ -28,10 +35,10 @@ export function hinweise(alt, neu, fortschritt) {
       if (!F.istAbgehakt(fortschritt, F.schluessel(a.id, s))) continue; // nicht gebaut: nichts umzubauen
       const t = b?.schichten.find((x) => x.y === s.y);
       if (t && t.abdruck === s.abdruck) continue; // dieselbe Schicht, nichts zu tun
-      const vorher = zellenVon(a, s), nachher = t ? zellenVon(b, t) : new Map();
+      const vorher = zellenVon(a, s), nachher = t ? zellenVon(b, t) : new Map(); // `nachher` nur für „ergänzen“ (gleicher Abschnitt und Höhe)
       const entfernen = [], ersetzen = [], ergaenzen = [];
       for (const [k, c] of vorher) {
-        const n = nachher.get(k);
+        const n = imNeuen.get(`${c.x},${s.y},${c.z}`); // über alle Abschnitte des neuen Plans
         if (!n) entfernen.push({ x: c.x, y: s.y, z: c.z, alt: c.id, ...(c.r ? { altRichtung: c.r } : {}) });
         else if (n.id !== c.id || n.r !== c.r) ersetzen.push({ x: c.x, y: s.y, z: c.z, alt: c.id, neu: n.id, ...(c.r ? { altRichtung: c.r } : {}), ...(n.r ? { neuRichtung: n.r } : {}) });
       }
@@ -64,4 +71,19 @@ export function hinweisText(s) {
   if (s.ersetzen.length) teile.push(`${s.ersetzen.length} Blöcke ersetzen`);
   if (s.ergaenzen.length) teile.push(`${s.ergaenzen.length} Blöcke ergänzen`);
   return `Abschnitt ${s.abschnitt}, Höhe ${s.y}: ${teile.join(', ')}`;
+}
+
+/**
+ * Setzt die geänderten, schon gebauten Schichten der neuen Fassung ausdrücklich auf OFFEN (mit einer höheren logischen Uhr als alle vorhandenen Einträge). Ein alter Haken für
+ * denselben Abdruck (z. B. beim Zurückwechseln A → B → A) gilt damit auch nach einer Zusammenführung nicht wieder: die Schicht muss erst nach den Hinweisen umgebaut werden.
+ * @returns {object} neuer Fortschritt
+ */
+export function offeneSchichten(fortschritt, neuPlan, h, von) {
+  const schluessel = [];
+  for (const s of h.schichten) {
+    const a = neuPlan.abschnitte.find((x) => x.id === s.abschnitt);
+    const t = a?.schichten.find((x) => x.y === s.y);
+    if (t) schluessel.push(F.schluessel(a.id, t));
+  }
+  return schluessel.length ? F.haken(fortschritt, schluessel, false, von) : fortschritt;
 }

@@ -182,6 +182,7 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
      * hat inzwischen jemand anders dort etwas geändert, antwortet der Raum mit einem Konflikt statt zu überschreiben. Lokal ändert sich erst etwas, wenn der Raum annimmt.
      */
     aendere(teil, zelle, neu) {
+      braucheFormat2([{ neu }], false);
       const k = PF.schluessel(teil, zelle), aktuell = z.aenderungen.eintraege[k] ?? null;
       return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: inhalt(aktuell), neu }] }];
     },
@@ -200,6 +201,7 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
     konfliktLoesen(konflikt, wahl) {
       if (wahl === 'ihre') return [];
       if (wahl !== 'meine') throw new Error('wahl muss „meine“ oder „ihre“ sein');
+      braucheFormat2([{ neu: konflikt.vorschlag }], false); // ein Konflikt kann eine Wiederverbindung überdauern: auch hier geht keine Zulassung an einen älteren Dienst
       return [{ typ: 'aenderung', operationen: [{ teil: konflikt.teil, zelle: konflikt.zelle, erwartet: inhalt(konflikt.aktuell), neu: konflikt.vorschlag }] }];
     },
     /** Eine neue Planversion für den Raum (der Absender nennt die Version, die er kennt). */

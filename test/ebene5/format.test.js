@@ -116,3 +116,23 @@ test('Review: einem älteren Dienst (ohne format) werden weder Zulassungen noch 
   assert.equal(neu.aendereOperation(zulassung)[0].operationen[0].neu.zugelassen, true);
   assert.equal(neu.aendereGruppe([op('t', 1, 0, 0, null, { op: 'leere' }), op('t', 2, 0, 0, { op: 'leere' })])[0].gruppe, true);
 });
+
+test('Review: auch aendere und konfliktLoesen senden einem älteren Dienst keine Zulassung (alle Wege, die Operationen bauen, laufen durch dieselbe Prüfung)', () => {
+  const zustandOhne = { typ: 'zustand', spezifikation: null, fortschritt: F.leer(), aenderungen: PF.leer(), spieler: ['Ben'] };
+  const alt = LV.erzeugeKlient({ name: 'Ben', fortschritt: F.leer() });
+  alt.beiNachricht(zustandOhne);
+  assert.throws(() => alt.aendere('t', { x: 1, y: 0, z: 0 }, { op: 'leere', zugelassen: true }), /kennt keine Zulassungen/);
+  assert.equal(alt.aendere('t', { x: 1, y: 0, z: 0 }, { op: 'leere' })[0].operationen.length, 1, 'gewöhnliche Änderungen gehen');
+  assert.equal(alt.aendere('t', { x: 1, y: 0, z: 0 }, null)[0].operationen[0].neu, null, 'Entfernen geht');
+  const konflikt = { teil: 't', zelle: { x: 1, y: 0, z: 0 }, aktuell: { op: 'leere', von: 'Anna' }, vorschlag: { op: 'leere', zugelassen: true } };
+  assert.throws(() => alt.konfliktLoesen(konflikt, 'meine'), /kennt keine Zulassungen/);
+  assert.deepEqual(alt.konfliktLoesen(konflikt, 'ihre'), [], 'ihre behalten sendet nichts und ist immer möglich');
+  assert.equal(alt.konfliktLoesen({ ...konflikt, vorschlag: { op: 'leere' } }, 'meine')[0].operationen.length, 1);
+  // ein Konflikt aus einem Raum mit Format 2, aufgelöst nach der Wiederverbindung mit einem älteren Dienst
+  const neu = LV.erzeugeKlient({ name: 'Cem', fortschritt: F.leer() });
+  neu.beiNachricht({ ...zustandOhne, format: 2 });
+  assert.equal(neu.konfliktLoesen(konflikt, 'meine')[0].operationen[0].neu.zugelassen, true);
+  neu.beiNachricht(zustandOhne); // Wiederverbindung mit einem Dienst ohne Format
+  assert.throws(() => neu.konfliktLoesen(konflikt, 'meine'), /kennt keine Zulassungen/);
+  assert.throws(() => neu.aendere('t', { x: 1, y: 0, z: 0 }, { op: 'leere', zugelassen: true }), /kennt keine Zulassungen/);
+});

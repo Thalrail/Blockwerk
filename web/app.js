@@ -119,8 +119,9 @@ function ladePlanfassung(spec) {
   let text = null; try { text = localStorage.getItem(k); } catch { /* Speicher gesperrt: dann gibt es nichts zu lesen */ }
   if (text === null) return PF.leer();
   try { return PF.ausSpeicher(JSON.parse(text)); } catch (f) { // beschädigt (auch kein JSON): nicht erfinden, aber auch nicht überschreiben: der Rohtext bleibt als Kopie erhalten
-    try { localStorage.setItem(`${k}.defekt`, text); } catch { gesperrteAenderungen.add(k); } // ohne Sicherungskopie bleibt das Original unangetastet (kein Überschreiben)
-    setTimeout(() => toast(`Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.`), 0); return PF.leer();
+    let gesichert = true;
+    try { localStorage.setItem(`${k}.defekt`, text); } catch { gesichert = false; gesperrteAenderungen.add(k); } // ohne Sicherungskopie bleibt das Original unangetastet (kein Überschreiben)
+    setTimeout(() => toast(gesichert ? `Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.` : `Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}) und ließen sich nicht sichern (Speicher voll?). Das Original bleibt unangetastet, neue Änderungen werden nicht gespeichert, bis Speicher frei ist und die Seite neu geladen wurde.`), 0); return PF.leer();
   }
 }
 const gesperrteAenderungen = new Set(); // Schlüssel mit unlesbaren Daten ohne gelungene Sicherungskopie: werden nie überschrieben

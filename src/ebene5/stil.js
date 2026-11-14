@@ -43,6 +43,7 @@ export function setzeStimmung(spec, ebene, name, stimmungen = null) {
  * Andere Formen derselben Rolle bleiben. Ein Block ohne Zustand steht als Text, sonst als `{id, zustand}`; nur die Form „voll“ steht ohne Formnamen.
  */
 export function setzeMaterial(spec, ebene, rolle, form, block, { rollen = null, formen = null } = {}) {
+  if (typeof rolle !== 'string' || !/^[a-z][a-z0-9_]{0,39}$/.test(rolle)) throw new MaterialFehler('Der Rollenname ist nicht möglich.');
   if (rollen && !rollen.includes(rolle)) throw new MaterialFehler(`Die Rolle „${String(rolle)}“ gibt es nicht (${rollen.join(', ')}).`);
   if (formen && !formen.includes(form)) throw new MaterialFehler(`Die Form „${String(form)}“ gibt es nicht (${formen.join(', ')}).`);
   const neu = structuredClone(spec), ort = stilOrt(neu, ebene);

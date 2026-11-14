@@ -118,3 +118,7 @@ test('Review: manipulierte Daten (null, Zahl, Liste als Block oder Palette) lass
   s.projekt.stil = { palette: { wand: { id: 'minecraft:stone', zustand: [1] } } };
   assert.deepEqual(M.wahlFuer(s, 'projekt', 'wand', 'voll'), { id: 'minecraft:stone' }, 'ein Zustand, der kein Objekt ist, wird ignoriert');
 });
+
+test('Review: Rollennamen, die keine einfachen Namen sind (__proto__, Punkt, Klammer), werden von setzeMaterial abgelehnt', () => {
+  for (const rolle of ['__proto__', 'wand.voll', 'teile[0]', '', 'Wand']) assert.throws(() => M.setzeMaterial(haus(), 'projekt', rolle, 'voll', { id: 'minecraft:stone' }), /Rollenname/, rolle);
+});

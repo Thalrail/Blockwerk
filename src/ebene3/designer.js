@@ -23,13 +23,13 @@ export const formKarte = (wert) => {
  * @param {object} basis @param {object} ueberschreibung @returns {object}
  */
 export function mischePaletten(basis = {}, ueberschreibung = {}) {
-  const aus = {};
+  const eintraege = []; // Object.fromEntries am Ende: ein Rollenname wie __proto__ wird so nie zum Prototyp-Setter
   for (const rolle of [...new Set([...Object.keys(basis), ...Object.keys(ueberschreibung)])].sort()) {
     const karte = { ...formKarte(basis[rolle]), ...formKarte(ueberschreibung[rolle]) };
     const formen = Object.keys(karte).sort();
-    aus[rolle] = formen.length === 1 && formen[0] === 'voll' ? structuredClone(karte.voll) : Object.fromEntries(formen.map((f) => [f, structuredClone(karte[f])]));
+    eintraege.push([rolle, formen.length === 1 && formen[0] === 'voll' ? structuredClone(karte.voll) : Object.fromEntries(formen.map((f) => [f, structuredClone(karte[f])]))]);
   }
-  return aus;
+  return Object.fromEntries(eintraege);
 }
 
 /**

@@ -59,7 +59,9 @@ worker.onerror = (e) => { z.status = null; if (z.bearbeitung && z.vorher) { bear
 
 const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
 
+let startNr = 0; // zählt jeden Start einer Fassung: eine Stiländerung, die in der Zwischenzeit von einer anderen Fassung (z. B. aus dem Raum) überholt wurde, wird verworfen
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null, vonRaum = false) {
+  startNr++;
   wartendeFassung = null; // eine neue Fassung ersetzt jede noch wartende Veröffentlichung
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
@@ -488,14 +490,14 @@ async function stilAnwenden(neu) {
   const von = z.name.trim();
   if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
   stilBeschaeftigt = true;
-  const ausgang = z.spec;
+  const ausgang = z.spec, nr = startNr;
   try {
     const p = await anfrage({ typ: 'pruefe', spezifikation: neu, bearbeitet: true, vorher: ausgang, messungen: z.messungen });
-    if (z.spec !== ausgang) return; // inzwischen gilt eine andere Fassung (z. B. aus dem Raum): nichts davon veralten lassen
+    if (z.spec !== ausgang || startNr !== nr) return; // inzwischen gilt oder rechnet eine andere Fassung (z. B. aus dem Raum): nichts davon veralten lassen
     if (!p.freigebbar) { toast(`Das lässt sich so nicht übernehmen: ${p.rueckfragen.map((q) => q.frage).join(' ')}`); return; }
     if (p.spezifikation.version === ausgang.version) { toast('Das ist schon so gewählt.'); return; }
     const f = await anfrage({ typ: 'freigebe', spezifikation: p.spezifikation, von, messungen: z.messungen });
-    if (z.spec !== ausgang) return;
+    if (z.spec !== ausgang || startNr !== nr) return;
     z.stil.picker = null;
     startProjekt(f.spezifikation, null, z.messungen);
     wartendeFassung = f.spezifikation; // wird veröffentlicht, sobald sie gilt (kein Umbauhinweis nötig oder bestätigt)

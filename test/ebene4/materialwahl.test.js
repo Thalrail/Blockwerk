@@ -198,3 +198,10 @@ test('Review: Treppen und Türen behalten bei einer Materialwahl ihren vollen Bl
   }
   assert.ok(geprueft >= 6, `Treppen und Türen vorhanden (${geprueft})`);
 });
+
+test('Review: ein Rollenname __proto__ geht beim Mischen nicht verloren und verändert keinen Prototyp', () => {
+  const ueb = JSON.parse('{"__proto__": "minecraft:stone", "wand": "minecraft:stone"}');
+  const r = mischePaletten({}, ueb);
+  assert.deepEqual(Object.keys(r).sort(), ['__proto__', 'wand']);
+  assert.equal(Object.getPrototypeOf(r), Object.prototype);
+});

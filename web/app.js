@@ -4,6 +4,8 @@ import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
 import * as Umbau from '../src/ebene5/umbau.js';
 import * as Projekt from '../src/ebene5/projektid.js';
+import * as PF from '../src/ebene5/planfassung.js';
+import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -25,7 +27,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, liveOffen: false, einladung: null, messungen: [], e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -45,8 +47,10 @@ worker.onmessage = ({ data }) => {
   if (data.lauf !== undefined && data.lauf !== z.lauf) return; // Antwort oder Statusmeldung eines überholten Auftrags (inzwischen wurde ein neueres Projekt gestartet)
   if (data.typ === 'status') { z.status = data.text; render(); return; }
   z.status = null;
+  if (z.bearbeitung && z.vorher && (data.typ === 'fehler' || data.typ === 'rueckfragen')) { bearbeitungVerwerfen(data.typ === 'fehler' ? data.text : data.rueckfragen.map((q) => q.frage).join(' ')); render(); return; }
   if (data.typ === 'fehler') { z.fehler = data.text; z.daten = null; }
   else if (data.typ === 'rueckfragen') { z.rueckfragen = data.rueckfragen; z.daten = null; z.fehler = null; }
+  else if (data.typ === 'fertig' && z.bearbeitung && z.vorher && Bearbeiten.neueProbleme(data, z.vorher.daten)) { bearbeitungVerwerfen(Bearbeiten.neueProbleme(data, z.vorher.daten)); }
   else if (data.typ === 'fertig') { z.daten = data; z.fehler = null; z.rueckfragen = null; nachDemBauen(); }
   render();
 };
@@ -54,16 +58,16 @@ worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebr
 
 const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
 
-function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null) {
+function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null) {
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
-  const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt } : (z.vorher ?? null);
+  const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null);
   // Zugehörigkeit über die Projektkennung (nicht über den Namen): gleiche Kennung = neue Fassung desselben Projekts, andere Kennung = eigenständiges Projekt;
   // Altbestand ohne Kennung wird nicht geraten, sondern gefragt (identischer Inhalt ist eindeutig und braucht keine Frage)
   let b;
   try { b = Projekt.bezug(basis?.spec ?? null, spezifikation); } catch (f) { z.idFrage = null; z.fehler = String(f.message ?? f); z.status = null; render(); return; } // ungültige Kennung: sichtbarer Fehler, nichts wird ersetzt
   if (b.art === 'unklar' && !entscheidung && !b.inhaltGleich) {
-    z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich, neueOhneKennung: !Projekt.idVon(spezifikation) };
+    z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, aenderungen: empfangeneAenderungen, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich, neueOhneKennung: !Projekt.idVon(spezifikation) };
     render();
     return;
   }
@@ -74,15 +78,66 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   const altAbdruck = Projekt.alterFortschrittsAbdruck(u, basis?.spec ?? null, spezifikation);
   z.altSchluessel = altAbdruck ? `blockwerk.fortschritt.${altAbdruck}` : null;
   spezifikation = u.spec;
-  const gleichesProjekt = basis && u.art === 'fortsetzung' && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
+  // Manuelle Änderungen (Planfassung) gehören zum Projekt (Kennung), nicht zur Fassung: lokal gespeicherte, dazu die aus Link oder Datei. Nichts geht still verloren:
+  // eigene lokale Änderungen haben Vorrang, abweichende aus der Datei werden gemeldet (das Zusammenführen mehrerer Spieler kommt mit U6/U7).
+  let pf = ladePlanfassung(spezifikation);
+  if (empfangeneAenderungen) {
+    try {
+      const emp = PF.pruefeForm(empfangeneAenderungen);
+      if (!Object.keys(pf.eintraege).length) pf = emp;
+      else if (!Bearbeiten.gleicheEintraege(emp, pf)) toast(`Der Link oder die Datei enthält andere Änderungen (${Bearbeiten.beschreibung(emp)}); deine eigenen (${Bearbeiten.beschreibung(pf)}) bleiben.`);
+    } catch (f) { toast(`Die Änderungen im Link oder in der Datei sind unbrauchbar und wurden ignoriert: ${f.message}`); }
+  }
+  const gleichesProjekt = basis && u.art === 'fortsetzung' && (basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck || !Bearbeiten.gleicheEintraege(basis.planfassung ?? PF.leer(), pf));
   z.vorher = gleichesProjekt ? basis : null;
+  z.bearbeitung = false; z.auswahl = null; z.blockwahl = null; z.planfassung = pf;
   z.umbau = null;
   z.seite = null; z.messungen = messungen;
   z.spec = spezifikation; z.empfangen = empfangenerFortschritt; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird berechnet …';
   speicher.schreib('blockwerk.projekt', spezifikation);
   render();
-  worker.postMessage({ typ: 'baue', spezifikation, messungen, lauf: z.lauf = (z.lauf ?? 0) + 1 });
+  worker.postMessage({ typ: 'baue', spezifikation, messungen, aenderungen: mitEintraegen(pf), lauf: z.lauf = (z.lauf ?? 0) + 1 });
+}
+
+// ---------- Manuelle Änderungen (Planfassung) ----------
+const mitEintraegen = (pf) => (Object.keys(pf.eintraege).length ? pf : null); // leere Planfassung = nur die Spezifikation (der Plan bleibt Byte für Byte derselbe)
+const pfSchluessel = (spec) => { const id = Projekt.idVon(spec); return id ? `blockwerk.aenderungen.${id}` : null; };
+function ladePlanfassung(spec) {
+  const k = pfSchluessel(spec); if (!k) return PF.leer();
+  try { const roh = speicher.lies(k, null); return roh === null ? PF.leer() : PF.pruefeForm(roh); } catch { return PF.leer(); } // beschädigt: nicht erfinden, neu anfangen
+}
+const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (k) speicher.schreib(k, pf); };
+
+/** Eine neue Planfassung (eigene Änderung oder Änderung aus dem Raum) wird gebaut. Die Seite zeigt den bisherigen Plan, bis der neue fertig und (bei geänderten Schichten) bestätigt ist. */
+function baueMitAenderungen(pf) {
+  if (!z.spec) return;
+  const basis = z.daten ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null); // läuft schon eine Berechnung, bleibt der zuletzt gezeigte Plan die Grundlage
+  z.bleibe = z.daten ? { id: abschnitt().id, y: schicht().y } : z.bleibe; // nach dem Neubau an derselben Schicht bleiben (nicht zur nächsten ungebauten springen)
+  z.vorher = basis; z.umbau = null; z.planfassung = pf; z.bearbeitung = !!basis;
+  z.auswahl = null; z.blockwahl = null; z.daten = null; z.fehler = null; z.rueckfragen = null;
+  z.status = 'Bauplan wird mit den Änderungen neu berechnet …';
+  render();
+  worker.postMessage({ typ: 'baue', spezifikation: z.spec, messungen: z.messungen, aenderungen: mitEintraegen(pf), lauf: z.lauf = (z.lauf ?? 0) + 1 });
+}
+/** Notausgang, wenn der Plan mit den gespeicherten Änderungen nicht entsteht (z. B. Änderungen aus einer Datei, die zu einer anderen Fassung gehören): die Änderungen lassen sich verwerfen. Das Auflösen einzelner Änderungen folgt mit U6. */
+function aenderungenNotausgang() {
+  const n = Object.keys(z.planfassung.eintraege).length;
+  return n ? `<button data-a="aenderungen-verwerfen" title="Alle ${n} gespeicherten Änderungen dieses Projekts entfernen und den Plan neu berechnen (eine Sicherung bleibt im Browser)">Änderungen verwerfen (${n})</button>` : '';
+}
+/** Nach einer Änderung bleibt die Ansicht an der Schicht, an der gearbeitet wurde (falls es sie noch gibt). */
+function behaltePosition(b) {
+  if (!b || !z.daten) return;
+  const ai = z.daten.plan.abschnitte.findIndex((a) => a.id === b.id); if (ai < 0) return;
+  const si = z.daten.plan.abschnitte[ai].schichten.findIndex((q) => q.y === b.y);
+  if (si >= 0) { z.a = ai; z.s = si; }
+}
+/** Die Änderung ließ sich nicht bauen (Rückfrage oder Fehler der Planung): nichts wird still angewandt, der bisherige Plan und die bisherigen Änderungen gelten weiter. */
+function bearbeitungVerwerfen(grund) {
+  const v = z.vorher; z.vorher = null; z.bearbeitung = false;
+  z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; z.planfassung = v.planfassung ?? PF.leer();
+  z.fehler = null; z.rueckfragen = null; z.auswahl = null; z.blockwahl = null; z.bleibe = null;
+  toast(`Die Änderung wurde nicht übernommen, der bisherige Plan gilt weiter: ${String(grund).slice(0, 300)}`);
 }
 
 const speicherSchluessel = () => { const id = Projekt.idVon(z.spec), a = z.spec?.freigabe?.abdruck ?? 'ohne'; return id ? `blockwerk.fortschritt.${id}.${a}` : `blockwerk.fortschritt.${a}`; };
@@ -105,17 +160,20 @@ function nachDemBauen() {
     if (h.noetig) {
       f = Umbau.offeneSchichten(f, z.daten.plan, h, z.name || 'Blockwerk'); // geänderte gebaute Schichten sind offen, auch gegen alte Haken desselben Abdrucks
       // schon gebaute Schichten ändern sich: bis zur Bestätigung der Umbauhinweise gilt weiter die alte Fassung
-      z.umbau = { hinweise: h, neu: { spec: z.spec, daten: z.daten, fortschritt: f }, hinweis };
-      z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt;
-      speicher.schreib('blockwerk.projekt', v.spec);
+      z.umbau = { hinweise: h, neu: { spec: z.spec, daten: z.daten, fortschritt: f, planfassung: z.planfassung }, hinweis, bleibe: z.bleibe ?? null }; z.bleibe = null;
+      z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; z.planfassung = v.planfassung ?? PF.leer(); // bis zur Bestätigung gilt die alte Fassung samt ihren Änderungen
+      z.bearbeitung = false;
+      speicher.schreib('blockwerk.projekt', v.spec); sichereAenderungen();
       toast('Die neue Fassung ändert schon gebaute Schichten: bitte die Umbauhinweise ansehen und bestätigen.');
       return;
     }
   }
   z.fortschritt = f;
+  z.bearbeitung = false;
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
-  speichern();
+  behaltePosition(z.bleibe); z.bleibe = null;
+  speichern(); sichereAenderungen();
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
 }
 
@@ -140,7 +198,7 @@ function umbauPanel() {
 }
 function umbauEntscheiden(ja) {
   const u = z.umbau; if (!u) return;
-  if (!ja) { z.umbau = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  if (!ja) { z.umbau = null; z.auswahl = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
   // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
   // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
   const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
@@ -151,13 +209,30 @@ function umbauEntscheiden(ja) {
   z.umbau = null;
   let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
   f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
-  z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f;
-  speicher.schreib('blockwerk.projekt', z.spec);
+  z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f; z.planfassung = u.neu.planfassung ?? PF.leer();
+  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen();
   const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
+  behaltePosition(u.bleibe);
   speichern();
   toast(`Neue Fassung übernommen: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${u.hinweis ?? ''}`);
   render();
+}
+
+/** Der Raum hat eine neue Planfassung (beim Beitritt, oder weil jemand eine Änderung gemacht hat): sie gilt für alle und wird gebaut. Eigene Änderungen aus der Zeit vor dem Beitritt gehen nicht verloren, sondern bleiben als Sicherung im Browser. */
+function raumAenderung(pf, beimBeitritt = false) {
+  if (!z.spec) return;
+  if (Bearbeiten.gleicheEintraege(pf, z.planfassung)) { z.planfassung = pf; sichereAenderungen(); return; }
+  const lokal = Object.keys(z.planfassung.eintraege).length;
+  if (beimBeitritt && lokal && !Object.keys(pf.eintraege).length) { // der Raum hat noch keine Änderungen: die eigenen gehen in den Raum (so beginnt der Raum mit dem Plan, den du siehst)
+    if (live.sendeOperationen(Bearbeiten.operationenAus(z.planfassung))) toast(`Deine ${lokal} ${lokal === 1 ? 'Änderung wird' : 'Änderungen werden'} in den Raum übertragen.`);
+    return;
+  }
+  if (beimBeitritt && lokal) {
+    const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, z.planfassung);
+    toast(`Der Raum hat andere Änderungen (${Bearbeiten.beschreibung(pf)}) als du (${Bearbeiten.beschreibung(z.planfassung)}). Im Raum gilt der Stand des Raums; deine bisherigen bleiben als Sicherung im Browser (${k}.sicherung).`);
+  }
+  baueMitAenderungen(pf);
 }
 
 function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); live?.lokalGeaendert(z.fortschritt); }
@@ -165,7 +240,7 @@ function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); li
 // ---------- Live mit Freunden ----------
 const live = Live.erzeugeLive({
   z, render: () => render(), toast: (t) => toast(t), name: () => z.name, projekt: () => z.spec, fortschritt: () => z.fortschritt,
-  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a),
+  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt),
   plan: () => z.daten?.plan ?? null, merke: (k, v) => speicher.schreib(k, v), gespeicherterDienst: () => speicher.lies('blockwerk.dienst', ''),
 });
 
@@ -246,6 +321,10 @@ function zeichne(leinwand, a, s, kompakt) {
     if (cs >= 9) { g.setLineDash([]); g.fillStyle = '#d33'; g.fillText('×', x + cs / 2, y + cs / 2 + 1); }
     g.restore();
   }
+  if (!kompakt && z.auswahl && ortVon(z.auswahl).y === s.y) { // gewählte Zelle (für „Zelle ändern“)
+    const o = ortVon(z.auswahl);
+    if (o.x >= b.x0 && o.x <= b.x1 && o.z >= b.z0 && o.z <= b.z1) { g.save(); g.strokeStyle = '#ffd400'; g.lineWidth = Math.max(2, cs / 8); g.strokeRect(ox + (o.x - b.x0) * cs + 1, oy + (o.z - b.z0) * cs + 1, cs - 2, cs - 2); g.strokeStyle = '#000'; g.lineWidth = 1; g.strokeRect(ox + (o.x - b.x0) * cs - 0.5, oy + (o.z - b.z0) * cs - 0.5, cs + 1, cs + 1); g.restore(); }
+  }
   if (!kompakt) { // Maßband: absolute Koordinaten alle 5 Blöcke
     const stil = getComputedStyle(document.body).color;
     g.fillStyle = stil; g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle';
@@ -260,6 +339,20 @@ function fuelle(g, l, x, y, cs) {
   if (bild) { g.imageSmoothingEnabled = false; g.drawImage(bild, x, y, cs, cs); } else { g.fillStyle = l.farbe; g.fillRect(x, y, cs, cs); }
 }
 function luminanz(hex) { const n = parseInt(hex.slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; }
+
+/** Klick auf eine Zelle des Schichtplans: die Engine sagt, welchem Teil sie gehört (U2), die Seite hält die Auswahl samt dem Stand der Änderungen zu diesem Zeitpunkt (U3). */
+async function zelleKlick(ev) {
+  const l = ev.currentTarget, geo = l._geo; if (!geo || !z.daten) return;
+  const r = l.getBoundingClientRect();
+  const x = Math.floor((ev.clientX - r.left - geo.ox) / geo.cs) + geo.b.x0, zz = Math.floor((ev.clientY - r.top - geo.oy) / geo.cs) + geo.b.z0;
+  const zelle = { x, y: geo.s.y, z: zz }, erzeugung = z.daten.erzeugung, nr = ++z.klickNr;
+  let auswahl;
+  try { auswahl = Bearbeiten.auswahlAus(await anfrage({ typ: 'waehleZelle', zelle, erzeugung }), z.planfassung); } catch (f) { auswahl = { waehlbar: false, zelle, hinweis: String(f.message ?? f) }; }
+  if (nr !== z.klickNr || z.daten?.erzeugung !== erzeugung) return; // inzwischen anderer Klick oder anderer Plan: diese Antwort ist überholt
+  z.auswahl = auswahl; z.blockwahl = null; z.reiter = 'zelle';
+  render();
+}
+const ortVon = (a) => (a.waehlbar ? a.welt : a.zelle);
 
 function hinweisUnterMaus(ev) {
   const l = ev.currentTarget, geo = l._geo; if (!geo) return;
@@ -307,9 +400,47 @@ function abschnittsliste() {
 function tabelle(liste, mitStack = true) {
   return `<table class="tabelle">${liste.map((m) => `<tr><td><span class="farbe ${m.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(m)}" title="${Tex.feldTitel(m)}"></span>${esc(m.name)}</td><td class="zahl">${m.anzahl}</td>${mitStack ? `<td class="klein">${esc(m.text)}</td>` : ''}</tr>`).join('')}</table>`;
 }
+const kurzId = (id) => String(id).replace(/^minecraft:/, '');
+const zustandText = (zu) => { const k = Object.keys(zu ?? {}).sort(); return k.length ? ` [${k.map((n) => `${kurzId(n)}=${zu[n]}`).join(', ')}]` : ''; };
+const STATUS_TEXT = { angewandt: 'wirkt im Plan', ueberholt: 'überholt (ein Einbauteil hat die Zelle schon ausgespart)', verwaist: 'verwaist', konflikt: 'Konflikt', ungueltig: 'ungültig' };
+/** Seitenleiste „Zelle“: gewählte Zelle, ihr Block, das Teil, der Stand der Änderung und die möglichen Aktionen (Block ändern, entfernen, zurücknehmen). */
+function zellePanel() {
+  const a = z.auswahl, anzahl = Bearbeiten.beschreibung(z.planfassung);
+  const offen = Bearbeiten.offeneAenderungen(z.daten).length;
+  const fuss = `${offen ? `<p class="fehler">${offen} ${offen === 1 ? 'Änderung lässt' : 'Änderungen lassen'} sich nicht anwenden (verwaist oder im Konflikt) und ${offen === 1 ? 'wartet' : 'warten'} auf eine Entscheidung. ${offen === 1 ? 'Sie ändert' : 'Sie ändern'} den Plan nicht; das Auflösen folgt mit U6.</p><div class="knoepfe">${aenderungenNotausgang()}</div>` : ''}<p class="klein">Änderungen im Projekt: ${esc(anzahl)}. Sie werden im Browser gespeichert und gehen mit Link und Datei.</p>`;
+  if (!a) return `<p class="klein">Klicke im Schichtplan auf eine Zelle, um ihren Block zu sehen und zu ändern.</p>${fuss}`;
+  const o = ortVon(a);
+  let h = `<h3>Zelle x ${o.x}, y ${o.y}, z ${o.z}</h3>`;
+  if (!a.waehlbar) return h + `<p class="klein">${esc(a.hinweis)}</p>` + fuss;
+  const von = z.planfassung.eintraege[PF.schluessel(a.teil, a.zelle)]?.von;
+  h += `<p>Block: <b>${esc(a.block ? kurzId(a.block.id) + zustandText(a.block.zustand) : 'leer (Luft)')}</b></p>
+    <p class="klein">Teil: ${esc(a.teilName)} (${esc(a.teil)}), Zelle im Teil: ${a.zelle.x}, ${a.zelle.y}, ${a.zelle.z}${a.besitzt ? '' : '. Hier hat das Teil keinen Block (leere Zelle in seiner Hülle).'}</p>`;
+  if (a.aenderung) h += `<p class="klein">Änderung ${esc(a.aenderung.id)}: ${a.erwartet?.op === 'leere' ? 'Block entfernt' : `Block gesetzt: ${esc(kurzId(a.erwartet?.block?.id ?? ''))}${esc(zustandText(a.erwartet?.block?.zustand))}`}${von ? ` (von ${esc(von)})` : ''} · Status: <span class="plakette ${a.aenderung.status === 'angewandt' ? 'simuliert' : 'entworfen'}">${esc(STATUS_TEXT[a.aenderung.status] ?? a.aenderung.status)}</span></p>`;
+  if (a.hinweis) h += `<p class="klein">${esc(a.hinweis)}</p>`;
+  const grund = z.umbau ? 'Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.' : null;
+  if (grund) return h + `<p class="fehler">${esc(grund)}</p>` + fuss;
+  const m = Bearbeiten.moeglicheAktionen(a);
+  h += `<div class="knoepfe"><button class="haupt" data-a="bk-aendern">${a.block ? 'Block ändern …' : 'Block setzen …'}</button>${m.includes('entfernen') ? '<button data-a="bk-entfernen">Block entfernen</button>' : ''}${m.includes('zuruecknehmen') ? '<button data-a="bk-zurueck">Änderung zurücknehmen</button>' : ''}</div>`;
+  if (z.blockwahl) h += blockwahlPanel();
+  return h + fuss;
+}
+function trefferListe(w) {
+  return w.treffer.length ? w.treffer.map((t) => `<button class="treffer" data-a="bk-waehle" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('') + (w.mehr ? '<span class="klein">Es gibt mehr Treffer, bitte genauer suchen (z. B. oak_stairs).</span>' : '') : (w.suche ? '<span class="klein">Kein Block gefunden.</span>' : '<span class="klein">Tippe einen Teil des Namens, z. B. glass, oak_stairs, lantern.</span>');
+}
+/** Blockauswahl: Suche im Register (1463 Blöcke) und die erlaubten Zustände des gewählten Blocks. Richtungen wählst du so, wie du sie im Plan siehst (Norden oben). */
+function blockwahlPanel() {
+  const w = z.blockwahl, g = w.gewaehlt;
+  let h = `<div class="blockwahl"><input id="bk-suche" type="text" autocomplete="off" placeholder="Block suchen, z. B. glass" value="${esc(w.suche)}"><div id="bk-treffer" class="trefferliste">${trefferListe(w)}</div>`;
+  if (g) {
+    h += `<h4>${esc(g.info.name)}</h4>${g.info.zustaende.length ? '' : '<p class="klein">Dieser Block hat keine Zustände.</p>'}`;
+    h += g.info.zustaende.map((za, i) => `<label class="klein zustand">${esc(kurzId(za.name))}${za.pflicht ? ' (nötig)' : ''} <select id="bk-z-${i}" data-i="${i}">${za.pflicht ? '' : '<option value="-1">(Standard)</option>'}${za.werte.map((v, j) => `<option value="${j}" ${g.zustand[za.name] !== undefined && g.zustand[za.name] === v ? 'selected' : ''}>${esc(String(v))}</option>`).join('')}</select></label>`).join('');
+    h += '<div class="knoepfe"><button class="haupt" data-a="bk-setzen">Übernehmen</button><button data-a="bk-abbrechen">Abbrechen</button></div>';
+  } else h += '<div class="knoepfe"><button data-a="bk-abbrechen">Abbrechen</button></div>';
+  return h + '</div>';
+}
 function rechteSpalte() {
   const a = abschnitt(), s = schicht(), r = z.reiter;
-  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
+  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
   let inhalt = '';
   if (r === 'material') {
     const m = z.daten.material;
@@ -321,7 +452,8 @@ function rechteSpalte() {
       ${s.inhalte.length ? `<h3>Behälter in dieser Schicht</h3>${s.inhalte.map((i) => `<p class="klein">${esc(a.legende.find((l) => l.id === i.id).name)} bei x ${i.x}, z ${i.z}: ${i.inhalt.map((g) => `${g.anzahl}× ${esc(g.gegenstand.replace('minecraft:', ''))}`).join(', ')}</p>`).join('')}` : ''}
       ${(s.aussparungen ?? []).length ? `<h3>Aussparungen</h3><p class="klein">${s.aussparungen.length} rot gestrichelte Zellen bleiben leer: ${[...new Set(s.aussparungen.map((q) => `${q.kind} in ${q.traeger}`))].map(esc).join(', ')}. Dort wird kein Block gesetzt (Durchbruch, Kopffreiheit).</p>` : ''}
       ${a.wesen.filter((w) => w.y === s.y).length ? `<h3>Wesen</h3>${a.wesen.filter((w) => w.y === s.y).map((w) => `<p class="klein">${esc(w.id.replace('minecraft:', ''))}${w.baby ? ' (Baby)' : ''} bei x ${w.x}, z ${w.z}</p>`).join('')}` : ''}`;
-  } else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
+  } else if (r === 'zelle') inhalt = zellePanel();
+  else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {
     const st = z.daten.baustatus;
     inhalt = `<p class="klein">${st.anzahlRegeln} Regeln: ${st.regeln.simuliert} simuliert, ${st.regeln.entworfen} entworfen, ${st.regeln.geprueft} im Spiel geprüft. ${st.regeln.ungeprueft} enthalten Annahmen, die du noch im Spiel testen kannst (siehe docs/spieltests.md).</p>
@@ -385,8 +517,8 @@ function render() {
   let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.idFrage ? idFragePanel() : '') + (z.umbau && z.daten ? umbauPanel() : '');
   if (z.status) html += rechnet();
   else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec, raumAktiv: live.istVerbunden() });
-  else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
-  else if (z.rueckfragen) html += `<section class="start"><h2>Rückfragen vor dem Bauen</h2><p>Die Spezifikation hat noch offene Fragen. Das Beantworten kommt in einem nächsten Schritt; so lange gilt:</p><ul>${z.rueckfragen.map((q) => `<li>${esc(q.frage)}</li>`).join('')}</ul><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
+  else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button>${aenderungenNotausgang()}</div></section>`;
+  else if (z.rueckfragen) html += `<section class="start"><h2>Rückfragen vor dem Bauen</h2><p>Die Spezifikation hat noch offene Fragen. Das Beantworten kommt in einem nächsten Schritt; so lange gilt:</p><ul>${z.rueckfragen.map((q) => `<li>${esc(q.frage)}</li>`).join('')}</ul><div class="knoepfe"><button data-a="neu">Zurück</button>${aenderungenNotausgang()}</div></section>`;
   else if (!z.daten) html += startseite();
   else html += z.modus === 'kompakt' ? kompaktansicht() : vollansicht();
   $app.innerHTML = html;
@@ -395,7 +527,7 @@ function render() {
   if (z.daten && !z.status && z.modus !== 'kompakt' && z.ansicht === '3d') aktualisiere3d(true);
   if (z.daten && !z.status && !(z.modus !== 'kompakt' && z.ansicht === '3d')) {
     const l = $app.querySelector('canvas');
-    if (l) { requestAnimationFrame(() => { zeichne(l, abschnitt(), schicht(), z.modus === 'kompakt'); }); l.addEventListener('mousemove', hinweisUnterMaus); }
+    if (l) { requestAnimationFrame(() => { zeichne(l, abschnitt(), schicht(), z.modus === 'kompakt'); }); l.addEventListener('mousemove', hinweisUnterMaus); if (z.modus !== 'kompakt') { l.addEventListener('click', zelleKlick); l.style.cursor = 'crosshair'; } }
   }
   if (z.pip && !z.pip.closed) renderPip();
 }
@@ -474,6 +606,33 @@ const kontextEingabe = () => ({
   speichern: () => speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)),
 });
 async function datenLaden(pfad) { const r = await fetch(new URL(`../${pfad}`, import.meta.url)); if (!r.ok) throw new Error(`${pfad}: ${r.status}`); return r.json(); }
+/** Aktionen der Zellen-Seitenleiste. Jede Änderung ist genau eine Operation (bearbeiten.js → Planfassung); die Oberfläche rechnet nichts am Plan. */
+async function blockAktion(name, d) {
+  const a = z.auswahl;
+  if (name === 'bk-abbrechen') { z.blockwahl = null; render(); return; }
+  if (name === 'bk-aendern') { z.blockwahl = { suche: '', treffer: [], gewaehlt: null }; render(); document.getElementById('bk-suche')?.focus(); return; }
+  if (name === 'bk-waehle') {
+    const w = z.blockwahl; if (!w) return;
+    const info = (await anfrage({ typ: 'blockInfo', id: d.id })).info, zustand = {};
+    for (const za of info.zustaende) if (za.pflicht) zustand[za.name] = za.vorschlag; // Richtungen sind nötig; alles andere bleibt Standard, bis du es wählst
+    w.gewaehlt = { info, zustand }; render(); return;
+  }
+  if (!a?.waehlbar) return;
+  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); return; }
+  const aktionName = { 'bk-setzen': 'aendern', 'bk-entfernen': 'entfernen', 'bk-zurueck': 'zuruecknehmen' }[name];
+  if (!aktionName) return;
+  let block;
+  if (aktionName === 'aendern') { const g = z.blockwahl?.gewaehlt; if (!g) { toast('Bitte zuerst einen Block aus der Liste wählen.'); return; } block = { id: g.info.id, ...(Object.keys(g.zustand).length ? { zustand: g.zustand } : {}) }; }
+  const op = (await anfrage({ typ: 'bearbeiteOperation', auswahl: a, aktion: aktionName, block })).operation; // prüft Block und Zustand und dreht Richtungen in den Rahmen des Teils
+  if (live.istVerbunden()) { // im Raum entscheidet der Raum; lokal ändert sich erst etwas, wenn er die Änderung annimmt
+    if (!live.sendeOperation(op)) { toast('Der Raum ist gerade nicht erreichbar. Die Änderung wurde nicht gesendet.'); return; }
+    z.blockwahl = null; toast('Änderung an den Raum gesendet. Sie gilt, sobald der Raum sie annimmt.'); render(); return;
+  }
+  const r = Bearbeiten.anwenden(z.planfassung, op, z.name);
+  if (r.konflikt) { z.auswahl = null; z.blockwahl = null; toast('Diese Zelle wurde inzwischen anders geändert. Bitte die Zelle noch einmal wählen und neu entscheiden.'); render(); return; }
+  if (!r.geaendert) { toast('Die Zelle ist schon so.'); return; }
+  baueMitAenderungen(r.planfassung);
+}
 async function aktion(name, el) {
   const d = el?.dataset ?? {};
   try {
@@ -482,15 +641,24 @@ async function aktion(name, el) {
     else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
     else if (name === 'eingabe-zu') { z.seite = null; render(); }
     else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
-    else if (name === 'id-fortsetzen' || name === 'id-neu') { const q = z.idFrage; if (q) startProjekt(q.spezifikation, q.empfangen, q.messungen, name === 'id-neu' ? 'neu' : 'fortsetzung'); }
+    else if (name === 'id-fortsetzen' || name === 'id-neu') { const q = z.idFrage; if (q) startProjekt(q.spezifikation, q.empfangen, q.messungen, name === 'id-neu' ? 'neu' : 'fortsetzung', q.aenderungen ?? null); }
     else if (name === 'id-abbrechen') { z.idFrage = null; render(); }
     else if (name === 'kopie') { startProjekt(Projekt.eigenstaendigeKopie(z.spec, zufall())); toast('Eigenständige Kopie angelegt: neue Projektkennung, eigener Fortschritt, nie mit dem Original gemischt.'); }
+    else if (name.startsWith('bk-')) await blockAktion(name, d);
+    else if (name === 'aenderungen-verwerfen') {
+      const k = pfSchluessel(z.spec); if (k) speicher.schreib(`${k}.sicherung`, z.planfassung); // nichts geht endgültig verloren
+      z.fehler = null; z.rueckfragen = null; z.vorher = null; z.bearbeitung = false;
+      z.planfassung = PF.leer(); sichereAenderungen();
+      toast('Die Änderungen wurden verworfen; der Plan wird nur aus der Spezifikation neu berechnet.');
+      z.status = 'Bauplan wird berechnet …'; render();
+      worker.postMessage({ typ: 'baue', spezifikation: z.spec, messungen: z.messungen, aenderungen: null, lauf: z.lauf = (z.lauf ?? 0) + 1 });
+    }
     else if (name === 'umbau-ja') umbauEntscheiden(true);
     else if (name === 'umbau-nein') umbauEntscheiden(false);
     else if (name === 'oeffnen') document.getElementById('datei').click();
     else if (name === 'neu') {
       z.fehler = null; z.rueckfragen = null; z.daten = null;
-      if (z.vorher) { const v = z.vorher; z.vorher = null; z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; speicher.schreib('blockwerk.projekt', v.spec); toast('Die bisherige Fassung gilt weiter.'); } // die neue Fassung ließ sich nicht bauen
+      if (z.vorher) { const v = z.vorher; z.vorher = null; z.bearbeitung = false; z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; z.planfassung = v.planfassung ?? z.planfassung; speicher.schreib('blockwerk.projekt', v.spec); sichereAenderungen(); toast('Die bisherige Fassung gilt weiter.'); } // die neue Fassung ließ sich nicht bauen
       render();
     }
     else if (name === 'modus') { z.modus = z.modus === 'kompakt' ? 'voll' : 'kompakt'; speicher.schreib('blockwerk.modus', z.modus); render(); }
@@ -508,11 +676,11 @@ async function aktion(name, el) {
       const a = abschnitt(), alle = a.schichten.every((s) => fertig(a, s));
       haken({ keys: a.schichten.map((s) => key(a, s)), wert: !alle }); render();
     } else if (name === 'link') {
-      const { link, zuLang } = await teilen.link(location.href, { spezifikation: z.spec, fortschritt: z.fortschritt });
+      const { link, zuLang } = await teilen.link(location.href, { spezifikation: z.spec, fortschritt: z.fortschritt, aenderungen: z.planfassung });
       await navigator.clipboard.writeText(link);
       toast(zuLang ? 'Link kopiert – er ist ziemlich lang. Falls ein Chat ihn abschneidet, nimm „Datei sichern“.' : 'Link kopiert. Wer ihn öffnet, sieht denselben Bauplan mit deinem Fortschritt.');
     } else if (name === 'sichern') {
-      const text = teilen.exportDatei({ spezifikation: z.spec, fortschritt: z.fortschritt });
+      const text = teilen.exportDatei({ spezifikation: z.spec, fortschritt: z.fortschritt, aenderungen: z.planfassung });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = `${(plan().projekt.name || 'blockwerk').replace(/[^\w-]+/g, '-')}.blockwerk.json`; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -533,6 +701,11 @@ document.addEventListener('input', (ev) => {
   const id = ev.target.id;
   if (id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); if (z.seite === 'eingabe') render(); }
   else if (Eingabe.eingabeGeaendert(id, ev.target.value, z.e)) { speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)); if (id === 'e-text') { const b = document.querySelector('[data-a="e-pruefen"]'); if (b) b.disabled = !ev.target.value.trim(); } }
+  else if (id === 'bk-suche') { // nur die Trefferliste neu schreiben, damit das Eingabefeld seinen Fokus behält
+    const w = z.blockwahl; if (!w) return;
+    w.suche = ev.target.value; const nr = (w.suchNr = (w.suchNr ?? 0) + 1);
+    anfrage({ typ: 'blockSuche', text: w.suche }).then((r) => { if (z.blockwahl !== w || w.suchNr !== nr) return; w.treffer = r.treffer; w.mehr = r.mehr; const ziel = document.getElementById('bk-treffer'); if (ziel) ziel.innerHTML = trefferListe(w); }).catch((f) => toast(String(f.message ?? f)));
+  }
   else if (id === 's3-hoehe') { // der Regler bleibt beim Ziehen im Bild, darum kein komplettes Neuzeichnen der Seite
     const h = hoehen(), v = Number(ev.target.value);
     z.sicht.maxY = v >= h.hi ? null : v;
@@ -542,7 +715,11 @@ document.addEventListener('input', (ev) => {
 });
 document.addEventListener('change', (ev) => {
   const id = ev.target.id;
-  if (id === 's3-abschnitte') { z.sicht.abschnitte = ev.target.value; render(); }
+  if (id.startsWith('bk-z-')) { // Zustandswert gewählt (der Wert ist der Index in der Liste der erlaubten Werte, so bleiben Zahlen und Wahrheitswerte echt)
+    const g = z.blockwahl?.gewaehlt; const za = g?.info.zustaende[Number(ev.target.dataset.i)]; if (!za) return;
+    const j = Number(ev.target.value); if (j < 0) delete g.zustand[za.name]; else g.zustand[za.name] = za.werte[j];
+  }
+  else if (id === 's3-abschnitte') { z.sicht.abschnitte = ev.target.value; render(); }
   else if (['s3-technik', 's3-verbindungen', 's3-fortschritt', 's3-hervorheben'].includes(id)) { z.sicht[id.slice(3)] = ev.target.checked; render(); }
 });
 document.addEventListener('change', async (ev) => {
@@ -550,7 +727,7 @@ document.addEventListener('change', async (ev) => {
   if (ev.target.id === 'e-im-raum') { z.e.imRaum = ev.target.checked; return; }
   if (ev.target.id === 'e-teil' || ev.target.id === 'e-art') { Eingabe.eingabeGeaendert(ev.target.id, ev.target.value, z.e); return; }
   if (ev.target.id !== 'datei' || !ev.target.files[0]) return;
-  try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null); } catch (f) { z.fehler = String(f.message ?? f); render(); }
+  try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null, [], null, d.aenderungen ?? null); } catch (f) { z.fehler = String(f.message ?? f); render(); }
   ev.target.value = '';
 });
 window.addEventListener('resize', () => { if (z.daten) render(); });
@@ -576,7 +753,7 @@ async function linkPruefen() {
     const p = await teilen.ausLink(location.href);
     if (!p) return false;
     history.replaceState(null, '', location.pathname + location.search);
-    startProjekt(p.spezifikation, p.fortschritt ?? null);
+    startProjekt(p.spezifikation, p.fortschritt ?? null, [], null, p.aenderungen ?? null);
   } catch (f) { z.fehler = String(f.message ?? f); render(); }
   return true;
 }

@@ -44,7 +44,7 @@ export function erzeugeZellenwahl({ ebene2, lagen, materialisierung }) {
       const pz = weltZuPaket(weltzelle, t.lage);
       if (pz.x < h.von.x || pz.x > h.bis.x || pz.y < h.von.y || pz.y > h.bis.y || pz.z < h.von.z || pz.z > h.bis.z) return;
       const volumen = (h.bis.x - h.von.x + 1) * (h.bis.y - h.von.y + 1) * (h.bis.z - h.von.z + 1);
-      kandidaten.push({ teil: t.ref ?? t.id, id: t.id, baustein: t.baustein, name: t.name ?? t.baustein, abschnitt: t.abschnitt ?? null, zelle: paketZuRahmen(paket, pz), besitzt: !!m.teile.get(t.id)?.schluessel.has(k), volumen, reihenfolge });
+      kandidaten.push({ teil: t.ref ?? t.id, id: t.id, baustein: t.baustein, name: t.name ?? t.baustein, abschnitt: t.abschnitt ?? null, zelle: paketZuRahmen(paket, pz), drehung: t.lage.drehung, besitzt: !!m.teile.get(t.id)?.schluessel.has(k), volumen, reihenfolge });
     });
     // gewählt wird, wer einen Block dort hat; sonst das kleinste (innerste) Teil; bei Gleichstand die Reihenfolge im Entwurf
     kandidaten.sort((a, b) => Number(b.besitzt) - Number(a.besitzt) || a.volumen - b.volumen || a.reihenfolge - b.reihenfolge);

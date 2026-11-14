@@ -175,6 +175,14 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
       const k = PF.schluessel(teil, zelle), aktuell = z.aenderungen.eintraege[k] ?? null;
       return [{ typ: 'aenderung', operationen: [{ teil, zelle, erwartet: aktuell ? { op: aktuell.op, ...(aktuell.block ? { block: aktuell.block } : {}) } : null, neu }] }];
     },
+    /** Eine fertige Operation der Oberfläche (bearbeiten.js): ihre Erwartung ist der Stand zum Zeitpunkt der Auswahl, nicht der jüngste lokale Stand; so bleibt eine Änderung der Mitspieler dazwischen ein Konflikt. */
+    aendereOperation(op) { return [{ typ: 'aenderung', operationen: [PF.pruefeOperation(op)] }]; },
+    /** Viele fertige Operationen (z. B. die lokalen Änderungen in einen neuen Raum ohne Änderungen), in Päckchen nach der Grenze für Operationen je Nachricht. */
+    aendereOperationen(ops) {
+      const gepruefte = ops.map(PF.pruefeOperation), aus = [];
+      for (let i = 0; i < gepruefte.length; i += PF.PF_GRENZEN.operationen) aus.push({ typ: 'aenderung', operationen: gepruefte.slice(i, i + PF.PF_GRENZEN.operationen) });
+      return aus;
+    },
     /** Ein Konflikt wurde entschieden: `meine` überschreibt bewusst den aktuellen Eintrag des anderen Spielers, `ihre` behält ihn (nichts wird gesendet). */
     konfliktLoesen(konflikt, wahl) {
       if (wahl === 'ihre') return [];

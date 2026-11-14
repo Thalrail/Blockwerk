@@ -4,6 +4,8 @@ import { live as L, fortschritt as F } from '../../src/ebene5/index.js';
 import { abdruck } from '../../src/ebene4/spezifikation.js';
 import { holeJson, zufall } from './hilfe5.js';
 
+import { PF_GRENZEN } from '../../src/ebene5/planfassung.js';
+const PF_GRENZEN_OPERATIONEN = PF_GRENZEN.operationen;
 const spezV = async (version = 1, name = 'Zitadelle') => {
   const s = await holeJson('data/beispiele/zitadelle-klein.json');
   delete s.freigabe;
@@ -290,4 +292,38 @@ test('Alle echten Haken-Schlüssel des Beispielprojekts bestehen die Schlüsselp
   d.empfange(a, JSON.stringify({ typ: 'haken', eintraege: f.eintraege }));
   assert.equal(a.post.length, 1, 'nur der Zustand, keine Ablehnung');
   assert.equal(Object.keys(d.raum.fortschritt.eintraege).length, n);
+});
+
+test('Klient (U3): eine fertige Operation geht mit der Erwartung vom Zeitpunkt der Auswahl in den Raum; eine Änderung dazwischen ist ein Konflikt und überschreibt nichts', () => {
+  const d = new Dienst();
+  const anna = new Spieler(d, 'Anna', F.leer()), ben = new Spieler(d, 'Ben', F.leer());
+  anna.pump(); ben.pump();
+  const zelle = { x: 3, y: 4, z: 5 };
+  // Ben wählt die Zelle (nichts dort), Anna ändert sie, danach schickt Ben seine Operation mit der alten Erwartung (null)
+  const benOperation = { teil: 'haus', zelle, erwartet: null, neu: { op: 'setze', block: { id: 'minecraft:stone' } } };
+  anna.sende(anna.k.aendereOperation({ teil: 'haus', zelle, erwartet: null, neu: { op: 'setze', block: { id: 'minecraft:glass' } } }));
+  anna.pump(); ben.pump();
+  assert.equal(ben.k.zustand.aenderungen.eintraege['haus|3,4,5'].block.id, 'minecraft:glass', 'Ben kennt Annas Änderung jetzt');
+  ben.meldungen.length = 0;
+  ben.sende(ben.k.aendereOperation(benOperation)); // `aendere()` hätte hier die neue Erwartung (Annas Stand) benutzt und still überschrieben
+  ben.pump(); anna.pump();
+  assert.equal(d.raum.aenderungen.eintraege['haus|3,4,5'].block.id, 'minecraft:glass', 'Annas Änderung bleibt');
+  assert.ok(ben.meldungen.some((m) => m.art === 'aenderung-konflikt' && m.konflikte[0].aktuell.von === 'Anna'));
+  assert.throws(() => ben.k.aendereOperation({ teil: 'haus', zelle, erwartet: null }), /erwartet und neu/);
+});
+
+test('Klient (U3): viele Operationen gehen in Päckchen unter der Grenze je Nachricht in den leeren Raum; alle werden angenommen', () => {
+  const d = new Dienst();
+  const anna = new Spieler(d, 'Anna', F.leer()), ben = new Spieler(d, 'Ben', F.leer());
+  anna.pump(); ben.pump();
+  const n = PF_GRENZEN_OPERATIONEN + 5; // PF.PF_GRENZEN.operationen + 5: zwei Päckchen
+  const ops = Array.from({ length: n }, (_, i) => ({ teil: 'haus', zelle: { x: i, y: 0, z: 0 }, erwartet: null, neu: { op: 'leere' } }));
+  const pakete = anna.k.aendereOperationen(ops);
+  assert.equal(pakete.length, 2);
+  assert.ok(pakete.every((p) => p.operationen.length <= PF_GRENZEN_OPERATIONEN));
+  anna.sende(pakete); anna.pump(); ben.pump();
+  assert.equal(Object.keys(d.raum.aenderungen.eintraege).length, n);
+  assert.equal(Object.keys(anna.k.zustand.aenderungen.eintraege).length, n);
+  assert.deepEqual(ben.k.zustand.aenderungen.eintraege, anna.k.zustand.aenderungen.eintraege);
+  assert.deepEqual(anna.k.aendereOperationen([]), []);
 });

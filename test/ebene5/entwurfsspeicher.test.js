@@ -25,3 +25,23 @@ test('Entwurfsspeicher: nur der neueste Auftrag darf setzen; ein langsamer, übe
   assert.equal(t.setze(1, { x: 1 }), true);
   assert.deepEqual(s.hole(), { entwurf: 'dritter' });
 });
+
+test('Entwurfsspeicher (U3): die letzten fertigen Entwürfe bleiben unter ihrer Erzeugung abrufbar; ein älterer, nicht mehr gezeigter fällt heraus', () => {
+  const s = erzeugeEntwurfsspeicher();
+  const g = [];
+  for (let i = 1; i <= 5; i++) { g.push(s.beginne()); assert.equal(s.setze(g[i - 1], { i }), true); }
+  assert.deepEqual(s.hole(g[4]), { i: 5 });
+  assert.deepEqual(s.hole(g[3]), { i: 4 });
+  assert.deepEqual(s.hole(g[2]), { i: 3 }, 'drei bleiben erhalten: angezeigt, wartend, neu');
+  assert.equal(s.hole(g[1]), null, 'der vierte zurück ist weg');
+  assert.equal(s.hole(999), null);
+  assert.deepEqual(s.hole(), { i: 5 }, 'ohne Angabe der neueste');
+  // ein neuer Start lässt den „neuesten“ leer, die fertigen bleiben abrufbar (die Seite zeigt noch den alten Plan)
+  const n = s.beginne();
+  assert.equal(s.hole(), null);
+  assert.deepEqual(s.hole(g[4]), { i: 5 });
+  assert.equal(s.setze(g[4], { i: 'zu spät' }), false, 'ein überholter Auftrag überschreibt nie');
+  assert.deepEqual(s.hole(g[4]), { i: 5 });
+  s.setze(n, { i: 6 });
+  assert.deepEqual(s.hole(n), { i: 6 });
+});

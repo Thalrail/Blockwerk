@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 umgesetzt (14.11.2026); U1 bis U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U3 umgesetzt (14.11.2026); U4 bis U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -49,7 +49,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 umgesetzt
 - Reine Funktion (Ebene 3 oder 5 lesend): gegeben Abschnitt, Höhe y, Welt-x, Welt-z → Besitzer-Teil und Rahmenzelle, auch für leere Zellen im Innenraum und in Aussparungen (Besitzkarte plus Hülle). Gegenprobe für alle vier Drehungen, mehrere Teile, Kinder.
 - Tests: Hin- und Rückweg mit `zellenInWelt`, Rotation, Randfälle (Zelle außerhalb jedes Teils → Fehlermeldung, keine Änderung).
 
-### U3 Einzelblockänderungen in der Oberfläche (Priorität 1)
+### U3 Einzelblockänderungen in der Oberfläche (Priorität 1) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene5.md`
 - Schichtplan: Klick auf eine Zelle wählt sie; Seitenleiste „Zelle (x, y, z) von Teil …“ zeigt Block, Besitzer, Änderungsstatus.
 - Aktionen: *Block ändern* (Suche im Register 1463 Blöcke mit Faithful-Textur, nur gültige Zustände), *Block entfernen* (leeren), *Änderung zurücknehmen*. Jede Aktion = eine Planfassungs-Operation mit `erwartet` (der Stand, den der Benutzer sah) → bei Mitspielern korrekt als Konflikt.
 - Eigenes reines Modul `src/ebene5/bearbeiten.js` (Aktion → Operation → neue Planfassung), die Oberfläche ruft es nur.

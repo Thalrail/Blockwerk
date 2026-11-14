@@ -58,7 +58,7 @@ worker.onerror = (e) => { z.status = null; if (z.bearbeitung && z.vorher) { bear
 
 const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
 
-function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null) {
+function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null, vonRaum = false) {
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
   const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null);
@@ -85,6 +85,10 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
     try {
       const emp = PF.pruefeForm(empfangeneAenderungen);
       if (!Object.keys(pf.eintraege).length) pf = emp;
+      else if (vonRaum) { // im Raum gilt der Stand des Raums; die eigenen bleiben als Sicherung
+        if (!Bearbeiten.gleicheEintraege(emp, pf)) { const k = pfSchluessel(spezifikation); if (k) speicher.schreib(`${k}.sicherung`, pf); toast(`Im Raum gelten andere Änderungen (${Bearbeiten.beschreibung(emp)}); deine bisherigen (${Bearbeiten.beschreibung(pf)}) bleiben als Sicherung im Browser.`); }
+        pf = emp;
+      }
       else if (!Bearbeiten.gleicheEintraege(emp, pf)) toast(`Der Link oder die Datei enthält andere Änderungen (${Bearbeiten.beschreibung(emp)}); deine eigenen (${Bearbeiten.beschreibung(pf)}) bleiben.`);
     } catch (f) { toast(`Die Änderungen im Link oder in der Datei sind unbrauchbar und wurden ignoriert: ${f.message}`); }
   }
@@ -105,9 +109,11 @@ const mitEintraegen = (pf) => (Object.keys(pf.eintraege).length ? pf : null); //
 const pfSchluessel = (spec) => { const id = Projekt.idVon(spec); return id ? `blockwerk.aenderungen.${id}` : null; };
 function ladePlanfassung(spec) {
   const k = pfSchluessel(spec); if (!k) return PF.leer();
-  const roh = speicher.lies(k, null);
-  try { return roh === null ? PF.leer() : PF.pruefeForm(roh); } catch (f) { // beschädigt: nicht erfinden, aber auch nicht überschreiben: eine Kopie bleibt erhalten
-    speicher.schreib(`${k}.defekt`, roh); setTimeout(() => toast(`Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.`), 0); return PF.leer();
+  let text = null; try { text = localStorage.getItem(k); } catch { /* Speicher gesperrt: dann gibt es nichts zu lesen */ }
+  if (text === null) return PF.leer();
+  try { return PF.pruefeForm(JSON.parse(text)); } catch (f) { // beschädigt (auch kein JSON): nicht erfinden, aber auch nicht überschreiben: der Rohtext bleibt als Kopie erhalten
+    try { localStorage.setItem(`${k}.defekt`, text); } catch { /* Speicher voll */ }
+    setTimeout(() => toast(`Die gespeicherten Änderungen dieses Projekts sind unbrauchbar (${f.message}); eine Kopie liegt im Browser unter ${k}.defekt.`), 0); return PF.leer();
   }
 }
 const sichereAenderungen = (pf = z.planfassung, spec = z.spec) => { const k = pfSchluessel(spec); if (k) speicher.schreib(k, pf); };

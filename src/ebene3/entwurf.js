@@ -10,6 +10,7 @@ export const kopie = (entwurf) => structuredClone(entwurf);
 
 const ganz = (n) => Number.isInteger(n);
 const pos = (p) => p && ganz(p.x) && ganz(p.y) && ganz(p.z);
+const posSicher = (p) => p !== null && typeof p === 'object' && [p.x, p.y, p.z].every(Number.isSafeInteger);
 
 /**
  * @param {{name: string, bauplatz?: {breite:number, hoehe:number, tiefe:number}, nullpunkt?: {x:number,y:number,z:number}}} projekt
@@ -23,7 +24,7 @@ export function neuerEntwurf({ name, bauplatz = { breite: 256, hoehe: 320, tiefe
     projekt: { name: name.trim(), bauplatz: { ...bauplatz }, nullpunkt: { ...nullpunkt } },
     abschnitte: [], teile: [], aenderungen: [], zonen: [], sperrzonen: [], palette: {}, pruefungen: [],
     bedarf: [], anfragen: [], formwuensche: [], paletten: {}, sperren: [], einwaende: [], bericht: [], rueckfragen: [],
-    zaehler: { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1 },
+    zaehler: { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1, aenderung: 1 },
   };
 }
 
@@ -90,6 +91,12 @@ export function pruefeTraegerwald(e, fehler = (m) => { throw new Error(`Entwurf:
     }
   }
   if (!Array.isArray(e.aenderungen)) fehler('aenderungen fehlt');
+  const aids = new Set();
+  for (const a of e.aenderungen) {
+    pruefeAenderungForm(a, fehler);
+    if (aids.has(a.id)) fehler(`Änderung-ID doppelt: ${a.id}`);
+    aids.add(a.id);
+  }
 }
 
 /**
@@ -106,6 +113,24 @@ export function migriere(e) {
   for (const t of neu.teile ?? []) if (t.ref === undefined && typeof t.id === 'string') t.ref = t.id;
   return neu;
 }
+
+export const OPERATIONEN = Object.freeze(['setze', 'leere']);
+
+/** Prüft die Form einer gespeicherten Änderung (auch nach dem Laden); wirft einen `Error` mit Klartext. */
+export function pruefeAenderungForm(a, fehler = (m) => { throw new Error(`Entwurf: ${m}`); }) {
+  if (!a || typeof a !== 'object') fehler('Änderung ist kein Objekt');
+  if (typeof a.id !== 'string' || !a.id) fehler('Änderung ohne id');
+  if (typeof a.teil !== 'string' || !a.teil) fehler(`Änderung ${a.id}: teil (ref) fehlt`);
+  if (!posSicher(a.zelle)) fehler(`Änderung ${a.id}: zelle braucht ganze Zahlen x, y, z`);
+  if (!OPERATIONEN.includes(a.op)) fehler(`Änderung ${a.id}: op „${String(a.op)}“ unbekannt (${OPERATIONEN.join(', ')})`);
+  if (a.op === 'setze') {
+    if (typeof a.block?.id !== 'string' || !a.block.id.startsWith('minecraft:')) fehler(`Änderung ${a.id}: setze braucht block.id (minecraft:…)`);
+    if (a.block.zustand !== undefined && (a.block.zustand === null || typeof a.block.zustand !== 'object' || Array.isArray(a.block.zustand))) fehler(`Änderung ${a.id}: block.zustand muss ein Objekt sein`);
+  } else if (a.block !== undefined) fehler(`Änderung ${a.id}: leere hat keinen block`);
+  if (typeof a.von !== 'string' || !a.von) fehler(`Änderung ${a.id}: von (Name) fehlt`);
+  if (a.quelle !== 'benutzer') fehler(`Änderung ${a.id}: quelle muss „benutzer“ sein`);
+}
+
 
 /** Sortiert alle Schlüssel rekursiv (kanonische Reihenfolge, damit gleiche Entwürfe gleichen Text ergeben). */
 function sortiert(w) {

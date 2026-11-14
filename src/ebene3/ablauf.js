@@ -4,7 +4,7 @@
 // Regeln als Daten: data/regeln/planung.json (plan.ablauf, plan.rueckgriff, plan.abschluss).
 import { neuerEntwurf, kopie } from './entwurf.js';
 import { haengeAn } from './bericht.js';
-import { stelleFrage } from './bauleiter.js';
+import { stelleFrage, AENDERUNGSOPTIONEN } from './bauleiter.js';
 
 /** Fehler des Ablaufs: Vorgabe oder Antwort sind unbrauchbar (kein Raten). */
 export class AblaufFehler extends Error {
@@ -16,7 +16,7 @@ const istOffen = (r) => r.status === undefined || r.status === 'offen';
 /**
  * @param {{regelwerk: object, fachleute: object, konstrukteur: object, techniker: object, grobdesigner: object, architekt: object, designer: object, einwaende: object}} quellen
  */
-export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung }) {
+export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung, aenderungen }) {
   const maxRueckgriffe = regelwerk.parameter('plan.rueckgriff', 'maximum');
   const antwortOptionen = regelwerk.parameter('plan.rueckgriff', 'optionen');
   const aenderbar = regelwerk.parameter('plan.rueckgriff', 'aenderbar');
@@ -310,7 +310,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
    * Jonahs Antwort auf eine Rückfrage: `zulassen`, `abschnitt-neu` oder `aendern` (mit `aenderung` am Abschnitt). Danach `fortsetzen`.
    * @returns {object} neuer Entwurf
    */
-  function antworte(entwurf, rueckfrageId, { option, aenderung = null }) {
+  function antworte(entwurf, rueckfrageId, { option, aenderung = null, teil = null, zelle = null, von = 'Jonah' }) {
     const r = entwurf.rueckfragen.find((x) => x.id === rueckfrageId);
     if (!r) throw new AblaufFehler(`Rückfrage ${String(rueckfrageId)} gibt es nicht`);
     if (!istOffen(r)) throw new AblaufFehler(`Rückfrage ${rueckfrageId} ist schon beantwortet`);
@@ -321,6 +321,24 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
       e.rueckfragen.find((x) => x.id === rueckfrageId).status = 'beantwortet';
       e.einwaende.find((x) => x.id === r.einwand).status = 'beantwortet';
       haengeAn(e, 'entscheidung', { von: 'jonah', text: `wählt die Stimmung „${name}“ für die Gesamtpalette` });
+      return e;
+    }
+    if (r.art === 'aenderung') {
+      // manuelle Änderung (Bearbeitungsmodell B): nur Jonah entscheidet, nichts wird automatisch verworfen oder verschoben
+      const ew = entwurf.einwaende.find((x) => x.id === r.einwand);
+      const id = /^plan\.aenderung\|([^|]+)\|/.exec(String(ew?.schluessel))?.[1];
+      if (!AENDERUNGSOPTIONEN.some((o) => o.id === option)) throw new AblaufFehler(`Option „${String(option)}“ unbekannt (${AENDERUNGSOPTIONEN.map((o) => o.id).join(', ')})`);
+      let e = entwurf;
+      try {
+        if (option === 'verwerfen') e = aenderungen.verwirf(entwurf, id, von).entwurf;
+        else if (option === 'verankern') e = aenderungen.verankere(entwurf, id, { teil: teil ?? undefined, zelle }, von).entwurf;
+      } catch (f) { throw new AblaufFehler(f.message); }
+      e = kopie(e);
+      e.rueckfragen.find((x) => x.id === rueckfrageId).status = 'beantwortet';
+      const w = e.einwaende.find((x) => x.id === r.einwand);
+      w.status = option === 'zulassen' ? 'zugelassen' : 'beantwortet';
+      if (option === 'zulassen') { e.zulassungen ??= []; if (!e.zulassungen.includes(w.schluessel)) e.zulassungen.push(w.schluessel); }
+      haengeAn(e, 'entscheidung', { von: 'jonah', text: `entscheidet zur Änderung ${id}: ${AENDERUNGSOPTIONEN.find((o) => o.id === option).text.toLowerCase()}` });
       return e;
     }
     if (!antwortOptionen.includes(option)) throw new AblaufFehler(`Option „${String(option)}“ unbekannt (${antwortOptionen.join(', ')})`);

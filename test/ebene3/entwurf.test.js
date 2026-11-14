@@ -15,7 +15,7 @@ test('Entwurf: Form, JSON-Rundreise, kanonisch und unveränderlich', () => {
   const leer = neuerEntwurf({ name: ' Zitadelle ' });
   assert.equal(leer.projekt.name, 'Zitadelle');
   assert.deepEqual(leer.abschnitte, []);
-  assert.deepEqual(leer.zaehler, { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1 });
+  assert.deepEqual(leer.zaehler, { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1, aenderung: 1 });
   assert.throws(() => neuerEntwurf({ name: '' }), /Projektname/);
   assert.throws(() => neuerEntwurf({ name: 'x', bauplatz: { breite: 0, hoehe: 1, tiefe: 1 } }), /Bauplatz/);
   assert.throws(() => neuerEntwurf({ name: 'x', nullpunkt: { x: 1.5, y: 0, z: 0 } }), /Nullpunkt/);

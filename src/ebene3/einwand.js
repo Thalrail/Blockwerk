@@ -3,7 +3,7 @@
 // Quellen: Meldungen der Prüfer aus Ebene 1 (Zuständigkeitstabelle plan.zustaendigkeit) und die eigenen Geometrieregeln (plan.geometrie).
 import { kopie } from './entwurf.js';
 import { haengeAn } from './bericht.js';
-import { rueckfrage } from './bauleiter.js';
+import { rueckfrage, AENDERUNGSOPTIONEN } from './bauleiter.js';
 import { RechtFehler } from './fachleute.js';
 
 const key = (x, y, z) => `${x},${y},${z}`;
@@ -82,6 +82,25 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
         const { von, an, ziel } = kindId === blockId ? { von: 'bauleiter', an: fachleute.besitzer(kind), ziel: kind } : rang(kind, block);
         liste.push({ regel: 'plan.freiraum', von, an, ort: zelleVon(kleinste(zellen)), schwere: 'verstoss', ziel: `teil:${ziel.id}`, abschnitt: ziel.abschnitt, text: `${block.baustein} (${block.id}) steht in ${zellen.size} Zellen, die ${kind.baustein} (${kind.id}) freihalten muss (Kopffreiheit)`, schluessel: `plan.freiraum|${kind.id}|${block.id}` });
       }
+    }
+    // Manuelle Einzelblockänderungen (Bearbeitungsmodell B): verwaiste, widersprüchliche oder ungültige Änderungen sind ein Einwand an Jonah; nichts wird automatisch verworfen oder verschoben
+    for (const [id, st] of [...(mat.aenderungen ?? [])].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+      if (st.status === 'angewandt' || st.status === 'ueberholt') continue;
+      const a = entwurf.aenderungen.find((x) => x.id === id), teil = teilVon.get(st.teil) ?? null;
+      const was = `${a.op === 'setze' ? `${a.block.id} setzen` : 'Block entfernen'} an der Rahmenzelle (${a.zelle.x}, ${a.zelle.y}, ${a.zelle.z}) von „${a.teil}“`;
+      const grund = {
+        'teil-fehlt': 'das Teil gibt es nicht mehr',
+        'teil-leer': 'das Teil hat keine Blöcke mehr',
+        ausserhalb: 'die Zelle liegt nicht mehr im Teil (das Teil ist kleiner geworden)',
+        'kein-block': 'an der Zelle steht im Teil kein Block mehr',
+        'fremder-block': `dort steht ein Block eines anderen Teils (${st.mit})`,
+        freiraum: `die Zelle muss freigehalten werden (${[].concat(st.mit ?? []).join(', ')})`,
+      }[st.grund] ?? st.grund;
+      liste.push({
+        regel: 'plan.aenderung', von: 'bauleiter', an: teil ? fachleute.besitzer(teil) : 'architekt', ort: st.ort ? { ...st.ort } : { ...entwurf.projekt.nullpunkt }, schwere: 'verstoss',
+        ziel: teil ? `teil:${teil.id}` : null, abschnitt: teil?.abschnitt ?? null,
+        text: `Änderung ${id} (${was}) lässt sich nicht anwenden: ${grund}. Jonah entscheidet: verwerfen oder neu verankern`, schluessel: `plan.aenderung|${id}|${st.status}|${st.grund ?? ''}`,
+      });
     }
     // Sperrzonen des Technikers
     for (const sz of entwurf.sperrzonen) {
@@ -198,7 +217,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       const ew = bekannt ?? registriere(e, draft, runden + 1);
       ew.status = 'eskaliert';
       eskaliert.push(ew.id);
-      rueckfragen.push(rueckfrage(e, ew, { runden: maxRunden }));
+      rueckfragen.push(rueckfrage(e, ew, { runden: maxRunden, ...(ew.regel === 'plan.aenderung' ? { optionen: AENDERUNGSOPTIONEN, art: 'aenderung' } : {}) }));
     }
     return { entwurf: e, erledigt, eskaliert, rueckfragen, hinweise, runden };
   }

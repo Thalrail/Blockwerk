@@ -110,6 +110,16 @@
       "ungeprueft": false
     },
     {
+      "id": "plan.aenderung",
+      "titel": "Manuelle Einzelblockänderungen hängen am Bauteil; Verwaistes entscheidet Jonah",
+      "regel": "Eine manuelle Änderung (Block setzen oder entfernen) nennt ein Teil (stabile Kennung) und eine Zelle im Referenzrahmen des Teils (Ecke Nordwest unten seiner Blöcke). Sie wird nach den Aussparungen der Kinder angewendet und wandert mit, wenn das Teil gedreht oder verschoben wird. Liegt die Zelle nicht mehr im Teil (Teil kleiner oder entfernt, kein Block mehr dort), ist die Änderung verwaist; setzt sie auf den Block eines anderen Teils oder in eine Freihaltung, ist sie ein Konflikt. Beides meldet die Planung als Einwand an Jonah; nichts wird automatisch verworfen, verschoben oder überschrieben. Jonah verwirft die Änderung oder verankert sie neu.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/entscheidungen.md (Bearbeitungsmodell B, 13.11.2026) und docs/architektur-einbau.md (Paket P8)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/aenderungen.test.js::Verwaisung: eine Änderung außerhalb des Teils wird nicht angewendet und ist ein Einwand an Jonah, nichts geschieht automatisch",
+      "ungeprueft": false
+    },
+    {
       "id": "plan.geometrie",
       "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
       "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Zone ohne Funktion gilt für alle Teile, eine Technikzone nur für Technikteile, jede andere Funktionszone nur für Teile, die der Architekt dort einplant). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",

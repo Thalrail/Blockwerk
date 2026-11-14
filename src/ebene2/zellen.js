@@ -83,3 +83,15 @@ export function aussparungsZellen(ebene0, paket, art, lage) {
   const zellen = (paket.aussparungen ?? []).filter((a) => a.art === art).flatMap((a) => quaderZellen(a.von, a.bis));
   return zellenInWelt(ebene0, zellen, lage);
 }
+
+/**
+ * Blöcke (mit Zustand) eines Pakets in die Welt: dieselbe Kette wie `zellenInWelt`, aber die Blöcke behalten ihren Zustand und drehen ihn mit
+ * (Treppe, Tür …: `facing` dreht der Vermesser mit). Wirft, wenn ein Zustand nicht gedreht werden kann (unvollständiger Richtungszustand).
+ * Ergebnis in der Reihenfolge des Vermessers (sortiert nach y, z, x); keine Doppelten zu erwarten, wenn die Eingabe keine hat.
+ */
+export function bloeckeInWelt(ebene0, bloecke, lage) {
+  if (!Number.isInteger(lage?.drehung) || ![lage.x, lage.y, lage.z].every(Number.isSafeInteger)) throw new Error('Lage braucht ganze Zahlen x, y, z und drehung');
+  const teil = { bloecke: bloecke.map((b) => { if (!istGanz(b)) throw new Error('Block braucht ganze Zahlen x, y, z'); return { ...b, zustand: b.zustand ?? {} }; }), wesen: [] };
+  const gedreht = ebene0.vermesser.drehe(teil, lage.drehung);
+  return ebene0.vermesser.verschiebe(gedreht, { x: lage.x, y: lage.y, z: lage.z }).bloecke;
+}

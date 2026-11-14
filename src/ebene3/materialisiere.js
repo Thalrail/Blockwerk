@@ -4,6 +4,7 @@
 import { dreheRichtung } from '../ebene0/richtungen.js';
 import { TESTPALETTE, aussparungsZellen, zellenInWelt } from '../ebene2/index.js';
 import { erzeugeLagen } from './lagen.js';
+import { erzeugeAenderungen } from './aenderungen.js';
 
 const key = (x, y, z) => `${x},${y},${z}`;
 
@@ -20,6 +21,7 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   const pruefstart = regelwerk.parameter('plan.geometrie', 'pruefstart');
   const rollen = regelwerk.parameter('plan.palette', 'rollen');
   const lagen = erzeugeLagen({ ebene0, ebene2 });
+  const aenderungsmodul = erzeugeAenderungen({ ebene0, ebene2 });
 
   /**
    * Palette eines Abschnitts: Gesamtpalette, darüber die Abschnittspalette (Rolle → Block oder Block je Form).
@@ -153,6 +155,7 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
    * @param {{testmaterial?: boolean}} [optionen]
    * Hat der Entwurf Kinder (`traeger`), werden ihre Lagen vorher mit `loeseLagen` abgeleitet, die Aussparungen angewendet und `besitz` (Zelle → erstes Teil, das sie belegt)
    * sowie `einbau` (siehe `einbauVon`) mitgeliefert; ohne Kinder ist das Ergebnis wie zuvor.
+   * Manuelle Änderungen (`entwurf.aenderungen`) werden danach angewendet; `aenderungen` (ID → { status, teil, ort, grund }) liefert ihren Stand (null ohne Änderungen).
    * @returns {{welt: object, teile: Map<string, {schluessel: Set<string>, arbeitsbloecke: Set<string>, start: object|null, huelle: object|null}>, besitz: Map<string, string>, einbau: object|null}}
    */
   function materialisiere(entwurf, optionen = {}) {
@@ -168,17 +171,21 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
     const reihe = teileInReihenfolge(eff);
     const roh = new Map(reihe.map((teil) => [teil.id, baueTeil(eff, teil, optionen)]));
     const einbau = hatKinder ? einbauVon(eff, roh) : null;
+    const fertig = new Map(reihe.map((teil) => {
+      const t = roh.get(teil.id), weg = einbau?.schnitt.get(teil.id);
+      return [teil.id, weg ? ohneZellen(t, weg) : t];
+    }));
+    // manuelle Einzelblockänderungen (docs/architektur-einbau.md, Bearbeitungsmodell B): nach den Aussparungen der Kinder; gemerkte Teile bleiben unverändert
+    const aenderungen = (eff.aenderungen ?? []).length ? aenderungsmodul.wendeAn(eff, reihe, fertig, einbau).status : null;
     for (const teil of reihe) {
-      let t = roh.get(teil.id);
-      const weg = einbau?.schnitt.get(teil.id);
-      if (weg) t = ohneZellen(t, weg);
+      const t = fertig.get(teil.id);
       welt.fuegeBauteilEin(t.bauteil);
       teile.set(teil.id, { schluessel: t.schluessel, arbeitsbloecke: t.arbeitsbloecke, start: t.start, huelle: t.huelle });
     }
     // Besitzkarte erst beim ersten Zugriff aufbauen (Entwürfe ohne Kinder, z. B. die Zitadelle, brauchen sie bei Hunderten von Prüfläufen nicht)
     let besitz = null;
     return {
-      welt, teile, einbau,
+      welt, teile, einbau, aenderungen,
       get besitz() {
         if (!besitz) {
           besitz = new Map();

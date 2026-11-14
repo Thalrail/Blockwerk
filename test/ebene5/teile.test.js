@@ -258,3 +258,18 @@ test('Review: ein fehlendes Feld ist keine Angabe (löscht nichts), ein vorhande
   assert.deepEqual(r.spec.teile[0].verbindungen, [{ mit: 'obergeschoss', art: 'gang' }], 'andere Verbindungen bleiben');
   assert.equal('verbindungen' in r.spec.teile[1], false, 'eine leer gewordene Liste entfällt');
 });
+
+test('Review: wird ein Teil mit Einzelblockänderungen entfernt, zeigt die Vorschau jede davon als verwaist („das Teil gibt es nicht mehr“) – im echten Probebau', async () => {
+  const e = await engine(), i = info(e);
+  const s = haus(), bau = bauen(e, s);
+  const dachZellen = [...zellen(bau.plan)].map(([k]) => k.split(',').map(Number));
+  let g = null;
+  for (const [x, y, z] of dachZellen) { const w = e.ebene3.zellenwahl.waehle(bau.entwurf, { x, y, z }).gewaehlt; if (w?.teil === 'dach') { g = w; break; } }
+  assert.ok(g, 'eine Zelle des Dachs');
+  const pf = PF.wende(PF.leer(), [{ teil: 'dach', zelle: g.zelle, erwartet: null, neu: { op: 'leere' } }], 'Jonah').planfassung;
+  const ohneDach = T.entferneTeil(s, 'dach', i.kindrelationen).spec;
+  const v = T.vorschau(e, { spezifikation: ohneDach, aenderungen: pf, planVorher: bauen(e, s, pf).plan });
+  assert.deepEqual(v.rueckfragen, []);
+  assert.equal(v.folgen.length, 1);
+  assert.match(v.folgen[0].text, /von „dach“\) wird verwaist: das Teil gibt es nicht mehr/);
+});

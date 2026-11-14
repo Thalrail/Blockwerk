@@ -29,7 +29,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null, rev: 0 }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -521,15 +521,16 @@ async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = n
   if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
   if (!z.name.trim()) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
   t.meldung = ''; teileBeschaeftigt = true;
-  const ausgang = z.spec, nr = startNr;
+  const ausgang = z.spec, nr = startNr, rev = t.rev;
   try {
     const v = await anfrage({ typ: 'teileVorschau', spezifikation: neu, aenderungen: z.planfassung, messungen: z.messungen, planVorher: { aenderungen: z.daten.plan.aenderungen ?? [] } });
     if (z.spec !== ausgang || startNr !== nr) return; // inzwischen gilt oder rechnet eine andere Fassung: diese Vorschau ist überholt
+    if (t.rev !== rev) { toast('Das Formular wurde inzwischen geändert. Bitte noch einmal übernehmen.'); return; }
     if (v.rueckfragen.length) { t.meldung = `Das lässt sich so nicht übernehmen: ${v.rueckfragen.map((q) => q.frage).join(' ')}`; return; }
     if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel, basis: ausgang, nr }; return; }
-    t.bestaetigung = null; t.neu = null;
   } catch (f) { t.meldung = String(f.message ?? f); return; } finally { teileBeschaeftigt = false; render(); }
   await stilAnwenden(neu);
+  if (z.spec !== ausgang) { t.bestaetigung = null; t.neu = null; render(); } // erst wenn die neue Fassung angenommen ist, entfällt der Entwurf; bei einer Ablehnung bleibt er erhalten
 }
 async function teileAktion(name) {
   const t = z.teile, info = t.info; if (!info) return;
@@ -540,8 +541,9 @@ async function teileAktion(name) {
       if (z.spec !== b.basis || startNr !== b.nr) { t.bestaetigung = null; t.meldung = 'Inzwischen gilt eine andere Fassung. Bitte die Änderung noch einmal prüfen.'; render(); return; } // die Liste der Folgen gehört zum alten Stand
       await teileAnwenden(b.spec, { bestaetigt: true }); return;
     }
-    if (name === 'tn-zu') { t.neu = null; t.meldung = ''; render(); return; }
+    if (name === 'tn-zu') { t.rev++; t.neu = null; t.meldung = ''; render(); return; }
     if (name === 'tl-neu') {
+      t.rev++;
       const teile = Teile.teilListe(z.spec, info.kindrelationen), b = info.bausteine[0];
       t.neu = { name: '', baustein: b.id, art: info.teilarten[0], wicht: 'soll', rel: 'neben-osten', bezug: (teile.find((x) => !x.kind) ?? teile[0])?.id ?? 'projekt', abstand: '', anker: '', ausr: '' }; t.meldung = ''; render(); return;
     }
@@ -611,7 +613,7 @@ function stilWahlPanel() {
 /** Neue Spezifikation übernehmen: Prüfer (bearbeitet → neue Version), Freigabe durch dich, dann der gewohnte Bau mit Umbauhinweisen. Nichts wird geraten oder still angewandt. */
 let stilBeschaeftigt = false, wartendeFassung = null; // nur eine Stiländerung zugleich; die neue Fassung geht erst in den Raum, wenn sie hier wirklich gilt
 async function stilAnwenden(neu) {
-  if (stilBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
+  if (stilBeschaeftigt || teileBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
   if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
   const von = z.name.trim();
   if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
@@ -932,6 +934,7 @@ document.addEventListener('keydown', taste);
 /** Eingaben der Teile-Formulare gehen sofort in den Zustand: ein Neuaufbau der Seite (Live-Meldung, Statuswechsel) verliert nichts. */
 function merkeTeileFeld(ev) {
   const id = ev.target?.id ?? '';
+  if (id.startsWith('tl-') || id.startsWith('tn-')) z.teile.rev++; // jede Eingabe macht eine laufende Vorschau überholt
   if (id.startsWith('tl-') && id !== 'tl-teil' && z.teile.felder) z.teile.felder = { ...z.teile.felder, [id.slice(3)]: ev.target.value };
   else if (id.startsWith('tn-') && z.teile.neu) z.teile.neu = { ...z.teile.neu, [id.slice(3)]: ev.target.value };
 }
@@ -960,7 +963,7 @@ document.addEventListener('input', (ev) => {
 document.addEventListener('change', async (ev) => {
   const id = ev.target.id;
   merkeTeileFeld(ev);
-  if (id === 'tl-teil') { z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
+  if (id === 'tl-teil') { z.teile.rev++; z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
   if (id === 'tl-rel' || id === 'tl-bezug') { const f = liesFelder('tl-'); delete f.teil; z.teile.felder = f; render(); return; }
   if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; render(); return; }
   if (id.startsWith('st-z-')) { // Zustandswert der Materialwahl (Index in der Liste der erlaubten Werte)

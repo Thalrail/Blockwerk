@@ -55,12 +55,12 @@ async function eingabe(data) {
   return null;
 }
 
-async function baue(spezifikation, messungen = []) {
+async function baue(spezifikation, messungen = [], lauf) {
   const e = await engine();
-  self.postMessage({ typ: 'status', text: 'Spezifikation wird geprüft …' });
+  self.postMessage({ typ: 'status', text: 'Spezifikation wird geprüft …', lauf });
   const r = e.ebene4.baue(spezifikation, messungen);
   if (r.status === 'rueckfragen') return { typ: 'rueckfragen', rueckfragen: r.rueckfragen };
-  self.postMessage({ typ: 'status', text: 'Bauplan wird angelegt …' });
+  self.postMessage({ typ: 'status', text: 'Bauplan wird angelegt …', lauf });
   const plan = e.e5.bauplan(r.entwurf);
   return {
     typ: 'fertig', status: r.status, plan, material: e.e5.material(plan),
@@ -71,7 +71,7 @@ async function baue(spezifikation, messungen = []) {
 
 self.onmessage = async ({ data }) => {
   try {
-    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
+    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
     self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });

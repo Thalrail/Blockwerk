@@ -41,8 +41,8 @@ worker.onmessage = ({ data }) => {
     if (data.typ === 'fehler') a?.nein(new Error(data.text)); else a?.ok(data);
     return;
   }
+  if (data.lauf !== undefined && data.lauf !== z.lauf) return; // Antwort oder Statusmeldung eines überholten Auftrags (inzwischen wurde ein neueres Projekt gestartet)
   if (data.typ === 'status') { z.status = data.text; render(); return; }
-  if (data.lauf !== undefined && data.lauf !== z.lauf) return; // Antwort auf einen überholten Auftrag (inzwischen wurde ein neueres Projekt gestartet)
   z.status = null;
   if (data.typ === 'fehler') { z.fehler = data.text; z.daten = null; }
   else if (data.typ === 'rueckfragen') { z.rueckfragen = data.rueckfragen; z.daten = null; z.fehler = null; }

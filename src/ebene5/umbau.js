@@ -28,6 +28,9 @@ const weltIndex = (plan) => {
 export function hinweise(alt, neu, fortschritt) {
   const neuVon = new Map(neu.abschnitte.map((a) => [a.id, a]));
   const imNeuen = weltIndex(neu);
+  // Alles, was nach der alten Fassung schon steht (gebaute Schichten, über alle Abschnitte): ein neuer Block an einer Stelle, an der schon ein Block steht, ist nichts zum Ergänzen
+  const gebaut = new Set();
+  for (const a of alt.abschnitte) for (const s of a.schichten) if (F.istAbgehakt(fortschritt, F.schluessel(a.id, s))) for (let i = 0; i < s.n; i++) gebaut.add(`${s.x[i]},${s.y},${s.z[i]}`);
   const schichten = [];
   for (const a of alt.abschnitte) {
     const b = neuVon.get(a.id);
@@ -42,7 +45,7 @@ export function hinweise(alt, neu, fortschritt) {
         if (!n) entfernen.push({ x: c.x, y: s.y, z: c.z, alt: c.id, ...(c.r ? { altRichtung: c.r } : {}) });
         else if (n.id !== c.id || n.r !== c.r) ersetzen.push({ x: c.x, y: s.y, z: c.z, alt: c.id, neu: n.id, ...(c.r ? { altRichtung: c.r } : {}), ...(n.r ? { neuRichtung: n.r } : {}) });
       }
-      for (const [k, n] of nachher) if (!vorher.has(k)) ergaenzen.push({ x: n.x, y: s.y, z: n.z, neu: n.id, ...(n.r ? { neuRichtung: n.r } : {}) });
+      for (const [k, n] of nachher) if (!vorher.has(k) && !gebaut.has(`${n.x},${s.y},${n.z}`)) ergaenzen.push({ x: n.x, y: s.y, z: n.z, neu: n.id, ...(n.r ? { neuRichtung: n.r } : {}) });
       if (!entfernen.length && !ersetzen.length && !ergaenzen.length) continue; // nur der Abdruck hat sich geändert (z. B. Inhalt von Behältern), kein Block
       schichten.push({ abschnitt: a.id, y: s.y, entfernen: entfernen.sort(ordnung), ersetzen: ersetzen.sort(ordnung), ergaenzen: ergaenzen.sort(ordnung) });
     }
@@ -79,11 +82,22 @@ export function hinweisText(s) {
  * @returns {object} neuer Fortschritt
  */
 export function offeneSchichten(fortschritt, neuPlan, h, von) {
-  const schluessel = [];
+  const schluessel = new Set();
+  // 1. die überlebende Schicht mit derselben Abschnitts-Id und Höhe (geänderte gebaute Schicht, auch bei reinen Entfernungen)
   for (const s of h.schichten) {
     const a = neuPlan.abschnitte.find((x) => x.id === s.abschnitt);
     const t = a?.schichten.find((x) => x.y === s.y);
-    if (t) schluessel.push(F.schluessel(a.id, t));
+    if (t) schluessel.add(F.schluessel(a.id, t));
   }
-  return schluessel.length ? F.haken(fortschritt, schluessel, false, von) : fortschritt;
+  // 2. die Schichten, in denen die ersetzten und ergänzten Blöcke im neuen Plan stehen (sie können zu einem anderen Abschnitt gehören)
+  const ziele = new Set();
+  for (const s of h.schichten) for (const c of [...s.ersetzen, ...s.ergaenzen]) ziele.add(`${c.x},${c.y},${c.z}`);
+  if (ziele.size) {
+    for (const a of neuPlan.abschnitte) {
+      for (const t of a.schichten) {
+        for (let k = 0; k < t.n; k++) if (ziele.has(`${t.x[k]},${t.y},${t.z[k]}`)) { schluessel.add(F.schluessel(a.id, t)); break; }
+      }
+    }
+  }
+  return schluessel.size ? F.haken(fortschritt, [...schluessel].sort(), false, von) : fortschritt;
 }

@@ -170,3 +170,34 @@ test('Übernahme: geänderte gebaute Schichten werden ausdrücklich offen gesetz
   // ohne Hinweise bleibt der Fortschritt dasselbe Objekt
   assert.equal(offeneSchichten(fA, A.plan, { schichten: [] }, 'Jonah'), fA);
 });
+
+test('Umbauhinweise: ein Block, der zwischen zwei gebauten Abschnitten wandert, ohne die Koordinate zu ändern, ist weder „entfernen“ noch „ergänzen“', () => {
+  const alt = plan([
+    { id: 'a', legende: ['stein'], schichten: [{ y: 0, abdruck: 'a0', zellen: [[0, 0, 0], [1, 0, 0]] }] },
+    { id: 'n', legende: ['stein'], schichten: [{ y: 0, abdruck: 'n0', zellen: [[5, 0, 0]] }] },
+  ]);
+  const neu = plan([
+    { id: 'a', legende: ['stein'], schichten: [{ y: 0, abdruck: 'a1', zellen: [[0, 0, 0]] }] },
+    { id: 'n', legende: ['stein'], schichten: [{ y: 0, abdruck: 'n1', zellen: [[5, 0, 0], [1, 0, 0]] }] },
+  ]);
+  const h = hinweise(alt, neu, schluesselAlle(alt));
+  assert.deepEqual(h, { noetig: false, schichten: [], summe: { entfernen: 0, ersetzen: 0, ergaenzen: 0, schichten: 0 } }, 'alle Blöcke stehen schon an ihrem Platz');
+  // ist der Zielabschnitt dagegen NICHT gebaut, fehlt der Block dort nicht (er steht ja im Quellabschnitt): ebenfalls nichts zu ergänzen
+  const nurA = F.haken(F.leer(), ['a|0|a0'], true, 'Jonah');
+  assert.equal(hinweise(alt, neu, nurA).noetig, false);
+});
+
+test('Übernahme: eine ersetzte Zelle öffnet die Schicht, in der sie im neuen Plan steht, auch wenn sie zu einem anderen Abschnitt gehört (historischer Haken)', () => {
+  const alt = plan([{ id: 'a', legende: ['stein'], schichten: [{ y: 0, abdruck: 'a0', zellen: [[1, 0, 0], [2, 0, 0]] }] }]);
+  const neu = plan([
+    { id: 'a', legende: ['stein'], schichten: [{ y: 0, abdruck: 'a1', zellen: [[2, 0, 0]] }] },
+    { id: 'n', legende: ['glas'], schichten: [{ y: 0, abdruck: 'n1', zellen: [[1, 0, 0], [9, 0, 0]] }] },
+  ]);
+  const f = F.haken(schluesselAlle(alt), ['n|0|n1'], true, 'Jonah'); // historischer Haken der Zielschicht (z. B. aus einer früheren Fassung)
+  const h = hinweise(alt, neu, f);
+  assert.deepEqual(h.schichten[0].ersetzen.map((c) => [c.x, c.alt, c.neu]), [[1, 'stein', 'glas']]);
+  const nach = offeneSchichten(f, neu, h, 'Jonah');
+  assert.equal(F.istAbgehakt(nach, 'n|0|n1'), false, 'die Zielschicht des ersetzten Blocks ist offen');
+  assert.equal(F.istAbgehakt(nach, 'a|0|a1'), false, 'die überlebende Schicht auch');
+  assert.equal(F.istAbgehakt(F.zusammenfuehren(nach, f), 'n|0|n1'), false, 'auch nach der Zusammenführung mit dem historischen Stand');
+});

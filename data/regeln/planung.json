@@ -100,6 +100,39 @@
       "ungeprueft": false
     },
     {
+      "id": "plan.freiraum",
+      "titel": "Freihaltungen und Einbauzonen prüft die Planung selbst",
+      "regel": "Ein Kind (z. B. Treppe, Tür, Fenster) liegt in der Einbauzone seines Trägers oder ersetzt Blöcke des Trägers durch eine Öffnung. Seine Aussparungen entfernen Blöcke nur aus dem direkten Träger. Eine Freihaltung (z. B. Kopffreiheit über der Treppe, 3 Zellen über jedem Stufenblock) bleibt für alle leer: steht dort ein Block irgendeines Teils, auch des Kindes selbst, meldet die Planung einen Einwand an den Niederrangigen (bei gleichem Besitzer an diesen).",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/architektur-einbau.md (Einbau-Architektur B + C, Paket P5)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/zusammenbau.test.js::Freiraum: ein Block in der Kopffreiheit der Treppe ist ein Einwand (auch ein Teil des Geschwisters), außerhalb der Freihaltung nicht",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.aenderung",
+      "titel": "Manuelle Einzelblockänderungen hängen am Bauteil; Verwaistes entscheidet Jonah",
+      "regel": "Eine manuelle Änderung (Block setzen oder entfernen) nennt ein Teil (stabile Kennung) und eine Zelle im Referenzrahmen des Teils (Ecke Nordwest unten seiner Blöcke). Sie wird nach den Aussparungen der Kinder angewendet und wandert mit, wenn das Teil gedreht oder verschoben wird. Liegt die Zelle nicht mehr im Teil (Teil kleiner oder entfernt, kein Block mehr dort), ist die Änderung verwaist; setzt sie auf den Block eines anderen Teils oder in eine Freihaltung, ist sie ein Konflikt. Beides meldet die Planung als Einwand an Jonah; nichts wird automatisch verworfen, verschoben oder überschrieben. Jonah verwirft die Änderung oder verankert sie neu.",
+      "parameter": {},
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/entscheidungen.md (Bearbeitungsmodell B, 13.11.2026) und docs/architektur-einbau.md (Paket P8)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/aenderungen.test.js::Verwaisung: eine Änderung außerhalb des Teils wird nicht angewendet und ist ein Einwand an Jonah, nichts geschieht automatisch",
+      "ungeprueft": false
+    },
+    {
+      "id": "plan.technik",
+      "titel": "Technikteile gelten erst nach der Prüfung durch Ebene 1 als bestätigt, solange sich ihr Prüfbereich nicht ändert",
+      "regel": "Ein Technikteil ist bestätigt, wenn die Prüfer aus Ebene 1 in seinem Prüfbereich keinen Verstoß melden und sich der Prüfbereich seitdem nicht verändert hat. Prüfbereich = Hülle des Teils plus Umkreis (Blöcke) plus seine Sperrzone; es zählen alle Blöcke und Leerzellen darin, auch die anderer Teile und Wesen. Verändert eine Aussparung, eine Änderung von Jonah oder ein anderes Teil dort etwas, auch nur in der Umgebung, ist die Anlage nicht bestätigt: die Oberfläche zeigt ihre Funktion nicht als funktionsfähig, bis der Abschluss sie neu geprüft hat. Der Umkreis von 8 Blöcken deckt die Reichweite von Wasser (7) und die Nachbarschaft von Redstone, Trichtern und Dorfbewohner-Regeln ab; er ist eine Annahme, die im Spiel nicht geprüft ist.",
+      "parameter": {
+        "umkreis": 8
+      },
+      "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/entscheidungen.md (Bearbeitungsmodell B, Entscheidung 2) und docs/architektur-einbau.md (Abschnitt 7, Paket P9)",
+      "status": "simuliert",
+      "simulationstest": "test/ebene3/bestaetigung.test.js::Bestätigung: eine Änderung im Prüfbereich oder nur in der Umgebung macht die Anlage nicht bestätigt, eine ferne Änderung nicht",
+      "ungeprueft": true,
+      "testanleitung": "Eine Technikanlage (z. B. Handelsnischen mit Lorenbahn) bauen und im Spiel prüfen, dann in ihrer Umgebung (bis etwa 8 Blöcke) einen Block setzen oder entfernen: Verhält sich die Anlage anders (Wasser, Redstone, Dorfbewohner-Wege)? Reicht der Umkreis von 8 Blöcken, oder fehlt eine Abhängigkeit?"
+    },
+    {
       "id": "plan.geometrie",
       "titel": "Überschneidung, Sperrzone und Zone prüft die Planung selbst",
       "regel": "Zwei Teile dürfen keinen Block gemeinsam belegen (Einwand an den Niederrangigen, bei gleichem Besitzer an diesen). Teile ausgeschlossen von einer Sperrzone des Technikers dürfen nicht hinein: Sperrzone mit Verbot „alles“ lässt nur Technikteile zu, mit Verbot „arbeitsblock“ keine Arbeitsblöcke fremder Teile. Hat ein Abschnitt eine Zone des Grobdesigners, bleiben seine Teile darin (eine Zone ohne Funktion gilt für alle Teile, eine Technikzone nur für Technikteile, jede andere Funktionszone nur für Teile, die der Architekt dort einplant). Für Lorenstrecken (Antriebsstrecke, Steigung, Kurve) startet die Lorenprüfung am Anfang des Teils; Lage und Drehung des Teils werden mitgerechnet.",

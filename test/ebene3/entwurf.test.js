@@ -15,7 +15,7 @@ test('Entwurf: Form, JSON-Rundreise, kanonisch und unveränderlich', () => {
   const leer = neuerEntwurf({ name: ' Zitadelle ' });
   assert.equal(leer.projekt.name, 'Zitadelle');
   assert.deepEqual(leer.abschnitte, []);
-  assert.deepEqual(leer.zaehler, { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1 });
+  assert.deepEqual(leer.zaehler, { teil: 1, einwand: 1, bericht: 1, rueckfrage: 1, aenderung: 1 });
   assert.throws(() => neuerEntwurf({ name: '' }), /Projektname/);
   assert.throws(() => neuerEntwurf({ name: 'x', bauplatz: { breite: 0, hoehe: 1, tiefe: 1 } }), /Bauplatz/);
   assert.throws(() => neuerEntwurf({ name: 'x', nullpunkt: { x: 1.5, y: 0, z: 0 } }), /Nullpunkt/);
@@ -39,7 +39,7 @@ test('Entwurf: Form, JSON-Rundreise, kanonisch und unveränderlich', () => {
   assert.equal(e.teile[0].lage.x, 3, 'Kopie ist unabhängig');
 
   // Formfehler beim Laden
-  assert.throws(() => entwurfAusJson('{"version": 2}'), /Version/);
+  assert.throws(() => entwurfAusJson('{"version": 99}'), /Version/);
   assert.throws(() => pruefeForm({ ...kopie(e), teile: [{ id: 'T1', baustein: 'x', lage: { x: 0, y: 0, z: 0, drehung: 7 } }] }), /lage ungültig/);
   const doppelt = kopie(e);
   doppelt.teile.push({ ...doppelt.teile[0] });

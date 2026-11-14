@@ -82,7 +82,7 @@ test('Übersetzung: Lage und Hüllen', () => {
   assert.ok(gross[0].optionen.length >= 3);
   assert.match(frage(spec([teil('a', { bezug: 'projekt', relation: 'ueber' })]))[0].frage, /„ueber“ passt nicht zum Bauplatz\. Auf dem Bauplatz sind nur mitte, ecke-nordwest/);
   assert.match(frage(spec([teil('a', { bezug: 'projekt', relation: 'neben-osten' })]))[0].frage, /passt nicht zum Bauplatz/);
-  for (const rel of ['mitte', 'innen']) {
+  for (const rel of ['mitte']) { // innen ist seit Paket P6 eine Lage in einem Bauteil (uebersetzung-einbau.test.js)
     const f = frage(spec([A, teil('b', { bezug: 'a', relation: rel }, zyl(4, 4, 3))]));
     assert.match(f[0].frage, new RegExp(`B: „${rel}“ lässt sich bei „A“ nicht übersetzen`));
     assert.ok(f[0].optionen.some((o) => o.wert === 'neben-osten'));

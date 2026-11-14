@@ -3,7 +3,7 @@
 // Quellen: Meldungen der Prüfer aus Ebene 1 (Zuständigkeitstabelle plan.zustaendigkeit) und die eigenen Geometrieregeln (plan.geometrie).
 import { kopie } from './entwurf.js';
 import { haengeAn } from './bericht.js';
-import { rueckfrage } from './bauleiter.js';
+import { rueckfrage, AENDERUNGSOPTIONEN } from './bauleiter.js';
 import { RechtFehler } from './fachleute.js';
 
 const key = (x, y, z) => `${x},${y},${z}`;
@@ -45,6 +45,62 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       else if (fachleute.hoeher(besitzerA, besitzerB)) { von = besitzerA; an = besitzerB; ziel = b.id; }
       else { von = besitzerB; an = besitzerA; ziel = a.id; }
       liste.push({ regel: 'plan.geometrie', von, an, ort: zelleVon(kleinste(bloecke)), schwere: 'verstoss', ziel: `teil:${ziel}`, abschnitt: teilVon.get(ziel).abschnitt, text: `${a.baustein} (${a.id}) und ${b.baustein} (${b.id}) belegen ${bloecke.size} gemeinsame Blöcke`, schluessel: `plan.geometrie|ueberschneidung|${a.id}|${b.id}` });
+    }
+    // Einbau (docs/architektur-einbau.md 3.3): Kind in der Zone des Trägers, Freihaltungen bleiben leer
+    if (mat.einbau) {
+      const nachId = (id) => teilVon.get(id);
+      // Zwischen Anspruchsteller A und Blockierer B gilt dieselbe Rangregel wie bei Überschneidungen: der Niederrangige weicht (bei gleichem Besitzer der Bauleiter)
+      const rang = (a, b) => {
+        const besitzerA = fachleute.besitzer(a), besitzerB = fachleute.besitzer(b);
+        if (besitzerA === besitzerB) return { von: 'bauleiter', an: besitzerA, ziel: b };
+        return fachleute.hoeher(besitzerA, besitzerB) ? { von: besitzerA, an: besitzerB, ziel: b } : { von: besitzerB, an: besitzerA, ziel: a };
+      };
+      for (const [kindId, k] of [...mat.einbau.kinder].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+        const kind = nachId(kindId), traeger = nachId(k.traeger);
+        const draussen = [...mat.teile.get(kindId).schluessel].filter((c) => !imQuader(zelleVon(c), k.zone) && !k.ersetzt.has(c));
+        if (!draussen.length) continue;
+        const wer = fachleute.besitzer(kind);
+        liste.push({ regel: 'plan.geometrie', von: 'bauleiter', an: wer, ort: zelleVon(kleinste(draussen)), schwere: 'verstoss', ziel: `teil:${kind.id}`, abschnitt: kind.abschnitt, text: `${kind.baustein} (${kind.id}) liegt mit ${draussen.length} Blöcken außerhalb der Einbauzone "${kind.einbau.zone}" von ${traeger.baustein} (${traeger.id})`, schluessel: `plan.geometrie|einbau|${kind.id}` });
+      }
+      // Freihaltungen: in einer Freihaltezelle steht kein Block irgendeines Teils (auch nicht des Kindes selbst)
+      const verletzt = new Map(); // "kind|blockierer" → Zellen
+      const melde = (c, t) => { // jedes Teil, das die Zelle belegt (nicht nur das erste), wird einzeln gemeldet
+        for (const kindId of mat.einbau.freihaltung.get(c)) {
+          const paar = `${kindId}|${t.id}`;
+          if (!verletzt.has(paar)) verletzt.set(paar, new Set());
+          verletzt.get(paar).add(c);
+        }
+      };
+      for (const t of entwurf.teile) { // je Teil über die kleinere der beiden Mengen laufen: Kosten ~ min(Freihaltezellen, Blöcke des Teils)
+        const bloecke = mat.teile.get(t.id).schluessel, frei = mat.einbau.freihaltung;
+        if (frei.size <= bloecke.size) { for (const c of frei.keys()) if (bloecke.has(c)) melde(c, t); }
+        else for (const c of bloecke) if (frei.has(c)) melde(c, t);
+      }
+      for (const [paar, zellen] of [...verletzt].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+        const [kindId, blockId] = paar.split('|');
+        const kind = nachId(kindId), block = nachId(blockId);
+        const { von, an, ziel } = kindId === blockId ? { von: 'bauleiter', an: fachleute.besitzer(kind), ziel: kind } : rang(kind, block);
+        liste.push({ regel: 'plan.freiraum', von, an, ort: zelleVon(kleinste(zellen)), schwere: 'verstoss', ziel: `teil:${ziel.id}`, abschnitt: ziel.abschnitt, text: `${block.baustein} (${block.id}) steht in ${zellen.size} Zellen, die ${kind.baustein} (${kind.id}) freihalten muss (Kopffreiheit)`, schluessel: `plan.freiraum|${kind.id}|${block.id}` });
+      }
+    }
+    // Manuelle Einzelblockänderungen (Bearbeitungsmodell B): verwaiste, widersprüchliche oder ungültige Änderungen sind ein Einwand an Jonah; nichts wird automatisch verworfen oder verschoben
+    for (const [id, st] of [...(mat.aenderungen ?? [])].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
+      if (st.status === 'angewandt' || st.status === 'ueberholt') continue;
+      const a = entwurf.aenderungen.find((x) => x.id === id), teil = teilVon.get(st.teil) ?? null;
+      const was = `${a.op === 'setze' ? `${a.block.id} setzen` : 'Block entfernen'} an der Rahmenzelle (${a.zelle.x}, ${a.zelle.y}, ${a.zelle.z}) von „${a.teil}“`;
+      const grund = {
+        'teil-fehlt': 'das Teil gibt es nicht mehr',
+        'teil-leer': 'das Teil hat keine Blöcke mehr',
+        ausserhalb: 'die Zelle liegt nicht mehr im Teil (das Teil ist kleiner geworden)',
+        'kein-block': 'an der Zelle steht im Teil kein Block mehr',
+        'fremder-block': `dort steht ein Block eines anderen Teils (${st.mit})`,
+        freiraum: `die Zelle muss freigehalten werden (${[].concat(st.mit ?? []).join(', ')})`,
+      }[st.grund] ?? st.grund;
+      liste.push({
+        regel: 'plan.aenderung', von: 'bauleiter', an: teil ? fachleute.besitzer(teil) : 'architekt', ort: st.ort ? { ...st.ort } : { ...entwurf.projekt.nullpunkt }, schwere: 'verstoss',
+        ziel: teil ? `teil:${teil.id}` : null, abschnitt: teil?.abschnitt ?? null,
+        text: `Änderung ${id} (${was}) lässt sich nicht anwenden: ${grund}. Jonah entscheidet: verwerfen oder neu verankern`, schluessel: `plan.aenderung|${id}|${st.status}|${st.grund ?? ''}|${a.teil}|${a.zelle.x},${a.zelle.y},${a.zelle.z}|${[].concat(st.mit ?? []).join(',')}`, // an die konkrete Verankerung gebunden: eine frühere Zulassung deckt keinen neuen Konflikt
+      });
     }
     // Sperrzonen des Technikers
     for (const sz of entwurf.sperrzonen) {
@@ -161,7 +217,7 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       const ew = bekannt ?? registriere(e, draft, runden + 1);
       ew.status = 'eskaliert';
       eskaliert.push(ew.id);
-      rueckfragen.push(rueckfrage(e, ew, { runden: maxRunden }));
+      rueckfragen.push(rueckfrage(e, ew, { runden: maxRunden, ...(ew.regel === 'plan.aenderung' ? { optionen: AENDERUNGSOPTIONEN, art: 'aenderung' } : {}) }));
     }
     return { entwurf: e, erledigt, eskaliert, rueckfragen, hinweise, runden };
   }

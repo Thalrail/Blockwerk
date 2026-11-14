@@ -8,6 +8,13 @@ const OPTIONEN = [
   { id: 'abschnitt-neu', text: 'Den Abschnitt neu planen lassen' },
 ];
 
+/** Optionen bei einer Rückfrage zu einer manuellen Änderung (Bearbeitungsmodell B): Jonah entscheidet, die Planung ändert nichts selbst. */
+export const AENDERUNGSOPTIONEN = [
+  { id: 'verwerfen', text: 'Die Änderung verwerfen' },
+  { id: 'verankern', text: 'Die Änderung neu verankern (Teil und Zelle im Rahmen des Teils nennen)' },
+  { id: 'zulassen', text: 'Die Änderung nicht anwenden und weiterbauen (sie bleibt gespeichert und steht im Baubericht)' },
+];
+
 const ort = (o) => (o ? `(${o.x}, ${o.y}, ${o.z})` : 'ohne Ort');
 
 /** Erzeugt die Rückfrage zu einem eskalierten Einwand und trägt sie in Entwurf und Baubericht ein (verändert die übergebene Kopie). */

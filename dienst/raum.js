@@ -22,7 +22,7 @@ export class RaumHuelle {
     this.ctx = ctx; this.env = env; this.u = umgebung; this.raum = neuerRaum(); this.takt = new Map();
     ctx.blockConcurrencyWhile(async () => {
       const gespeichert = await ctx.storage.get('raum');
-      if (gespeichert) this.raum = { ...gespeichert, spieler: {} };
+      if (gespeichert) this.raum = { ...neuerRaum(), ...gespeichert, spieler: {} }; // ältere Räume kennen noch keine Änderungen
       for (const ws of ctx.getWebSockets()) { const a = ws.deserializeAttachment?.(); if (a?.id && a.name) this.raum.spieler[a.id] = { name: a.name }; } // nach dem Ruhezustand: wer ist noch da
     });
   }
@@ -53,7 +53,7 @@ export class RaumHuelle {
       ws.send(JSON.stringify({ typ: 'abgelehnt', grund: f.grund, text: f.message, version: this.raum.spezifikation?.version ?? 0 }));
       return;
     }
-    const geaendert = r.raum.spezifikation !== this.raum.spezifikation || r.raum.fortschritt !== this.raum.fortschritt; // nur das Gespeicherte zählt (Anmelden ändert nur die Spielerliste)
+    const geaendert = r.raum.spezifikation !== this.raum.spezifikation || r.raum.fortschritt !== this.raum.fortschritt || r.raum.aenderungen !== this.raum.aenderungen; // nur das Gespeicherte zählt (Anmelden ändert nur die Spielerliste)
     this.raum = r.raum;
     this.zustellen(r, a.id);
     if (geaendert) await this.speichern();

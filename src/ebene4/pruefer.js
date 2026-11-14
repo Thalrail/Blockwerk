@@ -154,6 +154,23 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
         } else if (l.bezug === t.id) frage(`${pf}.lage.bezug`, 'leser.schema', `${wer} kann sich nicht auf sich selbst beziehen.`, wahl(['projekt']));
         if (!V.relationen[l.relation]) unbekannt(`${pf}.lage.relation`, 'leser.schema', `Die Lagebeziehung von ${wer}`, l.relation, Object.keys(V.relationen));
         if (l.abstand !== undefined && !(ganz(l.abstand) && l.abstand >= 0 && l.abstand <= V.bauplatz.breite.max)) frage(`${pf}.lage.abstand`, 'leser.schema', `Der Abstand ${JSON.stringify(l.abstand)} ist nicht möglich (ganze Zahl ab 0 in Blöcken).`);
+        // Lage in einem anderen Bauteil (innen, wand-…): Anker, Versatz (relative Blockzahlen in der Zone des Trägers) und Ausrichtung; nur WAS und wo in Beziehung, nie Koordinaten
+        const inBauteil = typeof l.relation === 'string' && Object.hasOwn(V.kindrelationen, l.relation);
+        if (inBauteil) {
+          if (l.bezug === 'projekt') frage(`${pf}.lage.bezug`, 'leser.schema', `${wer} liegt „${V.relationen[l.relation].replace('{bezug}', 'einem Bauteil')}“ und braucht darum ein Teil als Bezug (Raum, Wand …), nicht den Bauplatz.`, wahl(bekannteIds.filter((x) => x !== t.id).slice(0, 6)));
+          if (l.abstand !== undefined) frage(`${pf}.lage.abstand`, 'leser.schema', `${wer} liegt in einem Bauteil; dort gibt es keinen Abstand, die Lage wird mit anker, versatz und ausrichtung angegeben.`, [{ id: 'entfernen', text: 'Abstand weglassen' }]);
+        } else for (const k of ['anker', 'versatz', 'ausrichtung']) {
+          if (l[k] !== undefined) frage(`${pf}.lage.${k}`, 'leser.schema', `„${k}“ gilt nur für Teile in einem anderen Bauteil (${Object.keys(V.kindrelationen).join(', ')}), nicht für „${String(l.relation)}“.`, [{ id: 'entfernen', text: `${k} weglassen` }]);
+        }
+        if (l.anker !== undefined && inBauteil && !(typeof l.anker === 'string' && Object.hasOwn(V.anker, l.anker))) unbekannt(`${pf}.lage.anker`, 'leser.schema', `Der Anker von ${wer}`, l.anker, Object.keys(V.anker));
+        if (l.ausrichtung !== undefined && inBauteil && !(typeof l.ausrichtung === 'string' && Object.hasOwn(V.ausrichtungen, l.ausrichtung))) unbekannt(`${pf}.lage.ausrichtung`, 'leser.schema', `Die Ausrichtung von ${wer}`, l.ausrichtung, Object.keys(V.ausrichtungen));
+        if (l.versatz !== undefined && inBauteil) {
+          if (!istObjekt(l.versatz)) frage(`${pf}.lage.versatz`, 'leser.schema', `Der Versatz von ${wer} muss ein Objekt mit ${V.versatz.achsen.join(', ')} sein (ganze Blockzahlen, auch negativ).`);
+          else for (const [k, w] of Object.entries(l.versatz)) {
+            if (!V.versatz.achsen.includes(k)) frage(`${pf}.lage.versatz.${k}`, 'leser.schema', `Der Versatz kennt „${k}“ nicht (erlaubt: ${V.versatz.achsen.join(', ')}).`, [{ id: 'entfernen', text: 'Eintrag weglassen' }]);
+            else if (!ganz(w) || Math.abs(w) > V.versatz.maximum) frage(`${pf}.lage.versatz.${k}`, 'leser.schema', `Der Versatz ${k} = ${JSON.stringify(w)} ist nicht möglich (ganze Zahl von -${V.versatz.maximum} bis ${V.versatz.maximum}).`);
+          }
+        }
       }
 
       // Funktionen (Bedarf)

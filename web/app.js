@@ -2,6 +2,7 @@
 // die Engine läuft im Worker (engine-worker.js), die Mengen- und Fortschrittslogik kommt aus src/ebene5.
 import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
+import * as Umbau from '../src/ebene5/umbau.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -40,6 +41,7 @@ worker.onmessage = ({ data }) => {
     if (data.typ === 'fehler') a?.nein(new Error(data.text)); else a?.ok(data);
     return;
   }
+  if (data.lauf !== undefined && data.lauf !== z.lauf) return; // Antwort oder Statusmeldung eines überholten Auftrags (inzwischen wurde ein neueres Projekt gestartet)
   if (data.typ === 'status') { z.status = data.text; render(); return; }
   z.status = null;
   if (data.typ === 'fehler') { z.fehler = data.text; z.daten = null; }
@@ -50,12 +52,18 @@ worker.onmessage = ({ data }) => {
 worker.onerror = (e) => { z.status = null; z.fehler = `Die Berechnung ist abgebrochen: ${e.message ?? e}`; render(); };
 
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = []) {
+  // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
+  // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
+  const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt } : (z.vorher ?? null);
+  const gleichesProjekt = basis && basis.spec.projekt?.name === spezifikation.projekt?.name && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;
+  z.vorher = gleichesProjekt ? basis : null;
+  z.umbau = null;
   z.seite = null; z.messungen = messungen;
   z.spec = spezifikation; z.empfangen = empfangenerFortschritt; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird berechnet …';
   speicher.schreib('blockwerk.projekt', spezifikation);
   render();
-  worker.postMessage({ typ: 'baue', spezifikation, messungen });
+  worker.postMessage({ typ: 'baue', spezifikation, messungen, lauf: z.lauf = (z.lauf ?? 0) + 1 });
 }
 
 const speicherSchluessel = () => `blockwerk.fortschritt.${z.spec?.freigabe?.abdruck ?? 'ohne'}`;
@@ -67,11 +75,57 @@ function nachDemBauen() {
     try { f = fortschritt.zusammenfuehren(f, fortschritt.pruefe(z.empfangen)); hinweis = ' Der Fortschritt aus dem Link wurde mit deinem Stand zusammengeführt.'; } catch { hinweis = ' Der Fortschritt im Link war unbrauchbar und wurde ignoriert.'; }
     z.empfangen = null;
   }
+  if (z.vorher) {
+    const v = z.vorher; z.vorher = null;
+    f = fortschritt.zusammenfuehren(f, v.fortschritt); // der Fortschritt der alten Fassung geht mit (Haken unveränderter Schichten gelten weiter)
+    const h = Umbau.hinweise(v.daten.plan, z.daten.plan, v.fortschritt);
+    if (h.noetig) {
+      f = Umbau.offeneSchichten(f, z.daten.plan, h, z.name || 'Blockwerk'); // geänderte gebaute Schichten sind offen, auch gegen alte Haken desselben Abdrucks
+      // schon gebaute Schichten ändern sich: bis zur Bestätigung der Umbauhinweise gilt weiter die alte Fassung
+      z.umbau = { hinweise: h, neu: { spec: z.spec, daten: z.daten, fortschritt: f }, hinweis };
+      z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt;
+      speicher.schreib('blockwerk.projekt', v.spec);
+      toast('Die neue Fassung ändert schon gebaute Schichten: bitte die Umbauhinweise ansehen und bestätigen.');
+      return;
+    }
+  }
   z.fortschritt = f;
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   speichern();
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
+}
+
+/** Umbauhinweise: was an schon gebauten Schichten geändert werden muss, bevor die neue Fassung gilt (Bestätigung nötig). */
+function umbauPanel() {
+  const h = z.umbau.hinweise, sm = h.summe, kurz = (id) => esc(String(id).replace('minecraft:', ''));
+  const zelle = (c, art) => `<li>x ${c.x}, z ${c.z}: ${art === 'entfernen' ? `${kurz(c.alt)} entfernen` : art === 'ersetzen' ? `${kurz(c.alt)} durch ${kurz(c.neu)} ersetzen${c.neuRichtung && c.neuRichtung !== c.altRichtung ? ` (Richtung ${PFEIL[c.neuRichtung]})` : ''}` : `${kurz(c.neu)} ergänzen`}</li>`;
+  const liste = (cs, art) => { const zeig = cs.slice(0, 12); return zeig.map((c) => zelle(c, art)).join('') + (cs.length > zeig.length ? `<li class="klein">… und ${cs.length - zeig.length} weitere</li>` : ''); };
+  return `<section class="umbau"><h2>Umbauhinweise</h2>
+    <p>Die neue Fassung ändert Schichten, die du schon gebaut hast: <b>${sm.entfernen}</b> Blöcke entfernen, <b>${sm.ersetzen}</b> ersetzen, <b>${sm.ergaenzen}</b> ergänzen (${sm.schichten} Schichten). Bis zu deiner Bestätigung gilt die alte Fassung.</p>
+    ${h.schichten.map((s) => `<details><summary>${esc(Umbau.hinweisText(s))}</summary><ul class="klein">${liste(s.entfernen, 'entfernen')}${liste(s.ersetzen, 'ersetzen')}${liste(s.ergaenzen, 'ergaenzen')}</ul></details>`).join('')}
+    <div class="knoepfe"><button class="haupt" data-a="umbau-ja">Hinweise bestätigt – neue Fassung übernehmen</button><button data-a="umbau-nein">Bei der alten Fassung bleiben</button></div></section>`;
+}
+function umbauEntscheiden(ja) {
+  const u = z.umbau; if (!u) return;
+  if (!ja) { z.umbau = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
+  // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
+  const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
+  if (JSON.stringify(h) !== JSON.stringify(u.hinweise)) {
+    u.hinweise = h;
+    if (h.noetig) { toast('Der Fortschritt hat sich geändert, die Umbauhinweise wurden aktualisiert: bitte noch einmal bestätigen.'); render(); return; }
+  }
+  z.umbau = null;
+  let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
+  f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
+  z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f;
+  speicher.schreib('blockwerk.projekt', z.spec);
+  const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
+  z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
+  speichern();
+  toast(`Neue Fassung übernommen: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${u.hinweis ?? ''}`);
+  render();
 }
 
 function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); live?.lokalGeaendert(z.fortschritt); }
@@ -151,6 +205,15 @@ function zeichne(leinwand, a, s, kompakt) {
     }
     if (cs >= 12) { g.strokeStyle = '#00000040'; g.strokeRect(x + 0.5, y + 0.5, cs - 1, cs - 1); }
   }
+  // Aussparungen (Durchbruch, den ein Kind seinem Träger genommen hat): rot gestrichelt, hier bewusst leer lassen
+  for (const q of s.aussparungen ?? []) {
+    if (q.x < b.x0 || q.x > b.x1 || q.z < b.z0 || q.z > b.z1) continue;
+    const x = ox + (q.x - b.x0) * cs, y = oy + (q.z - b.z0) * cs;
+    g.save(); g.fillStyle = 'rgba(211,51,51,0.18)'; g.fillRect(x, y, cs, cs);
+    g.strokeStyle = '#d33'; g.lineWidth = Math.max(1, cs / 12); g.setLineDash([Math.max(2, cs / 6), Math.max(2, cs / 6)]); g.strokeRect(x + 1.5, y + 1.5, cs - 3, cs - 3);
+    if (cs >= 9) { g.setLineDash([]); g.fillStyle = '#d33'; g.fillText('×', x + cs / 2, y + cs / 2 + 1); }
+    g.restore();
+  }
   if (!kompakt) { // Maßband: absolute Koordinaten alle 5 Blöcke
     const stil = getComputedStyle(document.body).color;
     g.fillStyle = stil; g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle';
@@ -171,7 +234,9 @@ function hinweisUnterMaus(ev) {
   const r = l.getBoundingClientRect();
   const cx = Math.floor((ev.clientX - r.left - geo.ox) / geo.cs) + geo.b.x0, cz = Math.floor((ev.clientY - r.top - geo.oy) / geo.cs) + geo.b.z0;
   const s = geo.s; let text = `x ${cx}, z ${cz}, Höhe ${s.y}`;
-  for (let i = 0; i < s.n; i++) if (s.x[i] === cx && s.z[i] === cz) { const li = geo.a.legende[s.b[i]]; text = `${li.name} · ${text}${s.r[i] ? ` · Richtung ${PFEIL[s.r[i]]} ${RICHTUNGEN[s.r[i]]}` : ''}`; break; }
+  for (let i = 0; i < s.n; i++) if (s.x[i] === cx && s.z[i] === cz) { const li = geo.a.legende[s.b[i]], teil = geo.a.teile?.[s.p?.[i]]; text = `${li.name}${teil && geo.a.teile.length > 1 ? ` (${teil.name})` : ''} · ${text}${s.r[i] ? ` · Richtung ${PFEIL[s.r[i]]} ${RICHTUNGEN[s.r[i]]}` : ''}`; break; }
+  const luecke = (s.aussparungen ?? []).find((q) => q.x === cx && q.z === cz);
+  if (luecke) text = `Aussparung: leer lassen (${luecke.art === 'oeffnung' ? 'Öffnung' : 'Durchbruch und Kopffreiheit'} für ${luecke.kind} in ${luecke.traeger}) · ${text}`;
   const ziel = l.closest('.mitte, .kompakt')?.querySelector('.hinweis-zeile'); if (ziel) ziel.textContent = text;
 }
 
@@ -202,7 +267,7 @@ function rechnet() {
 function abschnittsliste() {
   return plan().abschnitte.map((a, i) => {
     const p = fortschritt.prozent(z.fortschritt, plan(), a.id);
-    return `<div class="abschnitt ${i === z.a ? 'aktiv' : ''}"><div class="titel" data-a="abschnitt" data-i="${i}"><span>${i + 1}. ${esc(a.name)}</span><span class="anteil">${p.fertigeSchichten}/${p.schichten}</span></div>
+    return `<div class="abschnitt ${i === z.a ? 'aktiv' : ''}"><div class="titel" data-a="abschnitt" data-i="${i}"><span>${i + 1}. ${esc(a.name)}${(a.technik ?? []).some((t) => t.status !== 'bestaetigt') ? ' <span title="Technik nicht bestätigt oder noch nicht geprüft (Reiter Status)">⚠</span>' : ''}</span><span class="anteil">${p.fertigeSchichten}/${p.schichten}</span></div>
       <div class="balkenzeile"><i style="width:${Math.round(p.anteil * 100)}%"></i></div>
       ${i === z.a ? `<div class="schichten">${a.schichten.map((s, j) => `<div class="schicht ${fertig(a, s) ? 'fertig' : ''} ${j === z.s ? 'aktiv' : ''}" data-a="schicht" data-i="${i}" data-j="${j}" title="${s.n} Blöcke">${s.y}</div>`).join('')}</div>` : ''}</div>`;
   }).join('');
@@ -222,12 +287,14 @@ function rechteSpalte() {
     inhalt = `<h3>Legende</h3><table class="tabelle">${a.legende.filter((l) => s.summe[l.id]).map((l) => `<tr><td><span class="symbol">${l.symbol}</span><span class="farbe ${l.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(l)}" title="${Tex.feldTitel(l)}"></span>${esc(l.name)}</td><td class="zahl">${s.summe[l.id]}</td></tr>`).join('')}</table>
       <p class="klein">Pfeile zeigen die Blickrichtung (↑ Norden, → Osten, ↓ Süden, ← Westen); Norden ist oben.</p>
       ${s.inhalte.length ? `<h3>Behälter in dieser Schicht</h3>${s.inhalte.map((i) => `<p class="klein">${esc(a.legende.find((l) => l.id === i.id).name)} bei x ${i.x}, z ${i.z}: ${i.inhalt.map((g) => `${g.anzahl}× ${esc(g.gegenstand.replace('minecraft:', ''))}`).join(', ')}</p>`).join('')}` : ''}
+      ${(s.aussparungen ?? []).length ? `<h3>Aussparungen</h3><p class="klein">${s.aussparungen.length} rot gestrichelte Zellen bleiben leer: ${[...new Set(s.aussparungen.map((q) => `${q.kind} in ${q.traeger}`))].map(esc).join(', ')}. Dort wird kein Block gesetzt (Durchbruch, Kopffreiheit).</p>` : ''}
       ${a.wesen.filter((w) => w.y === s.y).length ? `<h3>Wesen</h3>${a.wesen.filter((w) => w.y === s.y).map((w) => `<p class="klein">${esc(w.id.replace('minecraft:', ''))}${w.baby ? ' (Baby)' : ''} bei x ${w.x}, z ${w.z}</p>`).join('')}` : ''}`;
   } else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {
     const st = z.daten.baustatus;
     inhalt = `<p class="klein">${st.anzahlRegeln} Regeln: ${st.regeln.simuliert} simuliert, ${st.regeln.entworfen} entworfen, ${st.regeln.geprueft} im Spiel geprüft. ${st.regeln.ungeprueft} enthalten Annahmen, die du noch im Spiel testen kannst (siehe docs/spieltests.md).</p>
       <table class="tabelle">${st.bausteine.map((b) => `<tr><td>${esc(b.titel)}</td><td class="zahl"><span class="plakette ${esc(b.status)}">${esc(b.status)}</span></td></tr>`).join('')}</table>
+      ${plan().technik?.length ? `<h3>Technikanlagen</h3><table class="tabelle">${plan().technik.map((t) => `<tr><td>${esc(t.name)} <span class="klein">(${esc(t.abschnitt)})</span></td><td class="zahl"><span class="plakette ${t.status === 'bestaetigt' ? 'simuliert' : 'entworfen'}">${t.status === 'bestaetigt' ? 'bestätigt' : t.status === 'nicht-bestaetigt' ? 'nicht bestätigt' : 'noch nicht geprüft'}</span></td></tr>`).join('')}</table><p class="klein">Eine Anlage gilt erst als funktionsfähig, wenn Ebene 1 sie geprüft hat und sich seitdem in ihrer Umgebung (Prüfbereich) nichts verändert hat. „Nicht bestätigt“: im Prüfbereich wurde etwas geändert, die Anlage muss neu geprüft werden.</p>` : ''}
       ${z.daten.anfragen.length ? `<h3>Noch offen</h3>${z.daten.anfragen.map((q) => `<p class="klein">Schaltungsanfrage ${esc(q.id)}: für „${esc(q.art)}“ gibt es noch kein Modul.</p>`).join('')}` : ''}`;
   } else inhalt = `<pre class="text">${esc(z.daten.zusammenfassung)}</pre>`;
   return `<div class="reiter">${reiter.map(([k, t]) => `<button class="${r === k ? 'an' : ''}" data-a="reiter" data-k="${k}">${t}</button>`).join('')}</div>${inhalt}`;
@@ -283,7 +350,7 @@ function kompaktansicht() {
 
 function render() {
   const aktiv = document.activeElement?.id === 'name';
-  let html = kopf() + live.leiste(z.liveOffen, z.einladung);
+  let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.umbau && z.daten ? umbauPanel() : '');
   if (z.status) html += rechnet();
   else if (z.seite === 'eingabe') html += Eingabe.seite(z.e, { name: z.name, hatProjekt: !!z.spec, raumAktiv: live.istVerbunden() });
   else if (z.fehler) html += `<section class="start"><h2>Das hat nicht geklappt</h2><p class="fehler">${esc(z.fehler)}</p><div class="knoepfe"><button data-a="neu">Zurück</button></div></section>`;
@@ -383,8 +450,14 @@ async function aktion(name, el) {
     else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
     else if (name === 'eingabe-zu') { z.seite = null; render(); }
     else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
+    else if (name === 'umbau-ja') umbauEntscheiden(true);
+    else if (name === 'umbau-nein') umbauEntscheiden(false);
     else if (name === 'oeffnen') document.getElementById('datei').click();
-    else if (name === 'neu') { z.fehler = null; z.rueckfragen = null; z.daten = null; render(); }
+    else if (name === 'neu') {
+      z.fehler = null; z.rueckfragen = null; z.daten = null;
+      if (z.vorher) { const v = z.vorher; z.vorher = null; z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; speicher.schreib('blockwerk.projekt', v.spec); toast('Die bisherige Fassung gilt weiter.'); } // die neue Fassung ließ sich nicht bauen
+      render();
+    }
     else if (name === 'modus') { z.modus = z.modus === 'kompakt' ? 'voll' : 'kompakt'; speicher.schreib('blockwerk.modus', z.modus); render(); }
     else if (name === 'pip') await pip();
     else if (name === 'abschnitt') { z.a = Number(d.i); z.s = Math.min(z.s, abschnitt().schichten.length - 1); const n = abschnitt().schichten.findIndex((s) => !fertig(abschnitt(), s)); z.s = n >= 0 ? n : 0; render(); }

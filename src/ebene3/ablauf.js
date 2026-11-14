@@ -4,7 +4,7 @@
 // Regeln als Daten: data/regeln/planung.json (plan.ablauf, plan.rueckgriff, plan.abschluss).
 import { neuerEntwurf, kopie } from './entwurf.js';
 import { haengeAn } from './bericht.js';
-import { stelleFrage } from './bauleiter.js';
+import { stelleFrage, AENDERUNGSOPTIONEN } from './bauleiter.js';
 
 /** Fehler des Ablaufs: Vorgabe oder Antwort sind unbrauchbar (kein Raten). */
 export class AblaufFehler extends Error {
@@ -16,7 +16,7 @@ const istOffen = (r) => r.status === undefined || r.status === 'offen';
 /**
  * @param {{regelwerk: object, fachleute: object, konstrukteur: object, techniker: object, grobdesigner: object, architekt: object, designer: object, einwaende: object}} quellen
  */
-export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung }) {
+export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker: T, grobdesigner: G, architekt: A, designer: D, einwaende, materialisierung, aenderungen, bestaetigung }) {
   const maxRueckgriffe = regelwerk.parameter('plan.rueckgriff', 'maximum');
   const antwortOptionen = regelwerk.parameter('plan.rueckgriff', 'optionen');
   const aenderbar = regelwerk.parameter('plan.rueckgriff', 'aenderbar');
@@ -68,7 +68,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     let e = entwurf;
     const als = (wer, a) => { e = fachleute.aendere(e, wer, a).entwurf; };
     const entfernt = new Set();
-    for (const t of [...e.teile].filter((x) => menge.has(x.abschnitt))) { als(fachleute.besitzer(t), { art: 'entferne-teil', id: t.id }); entfernt.add(t.id); }
+    const tiefe = (t) => { let n = 0; for (let k = t; k.traeger !== undefined && n <= e.teile.length; n++) k = e.teile.find((x) => x.ref === k.traeger) ?? { }; return n; };
+    for (const t of [...e.teile].filter((x) => menge.has(x.abschnitt)).sort((p, q) => tiefe(q) - tiefe(p))) { als(fachleute.besitzer(t), { art: 'entferne-teil', id: t.id }); entfernt.add(t.id); } // tiefste Kinder zuerst
     for (const z of [...e.zonen].filter((x) => menge.has(x.abschnitt))) als('grobdesigner', { art: 'entferne-zone', id: z.id });
     for (const s of [...e.sperrzonen].filter((x) => [...entfernt].some((t) => x.id === `SZ-${t}`))) als('techniker', { art: 'entferne-sperrzone', id: s.id });
     for (const p of [...e.pruefungen].filter((x) => menge.has(x.abschnitt) || menge.has(x.mit))) als('konstrukteur', { art: 'entferne-pruefung', id: p.id });
@@ -137,7 +138,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     let e = neuerEntwurf({ name: vorgabe.name, bauplatz: vorgabe.bauplatz, nullpunkt: vorgabe.nullpunkt });
     e = K.gliedere(e, vorgabe.abschnitte.map((a) => ({
       id: a.id, name: a.name, huelle: a.huelle, nach: a.nach, schnittstellen: a.schnittstellen,
-      vorgabe: { zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, verbindungen: a.verbindungen, stimmung: a.stimmung },
+      vorgabe: { zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung },
     })));
     // Einspruch des Technikers: Bedarf mit „braucht“ gegen die Reihenfolge (auf einer Arbeitskopie mit dem ganzen Bedarf)
     for (let runde = 0; runde <= e.abschnitte.length; runde++) {
@@ -190,6 +191,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
         e = A.setzeFormwuensche(e, v.formen.map((f, i) => ({ id: `${id}-F${i + 1}`, abschnitt: id, ...f })));
         e = A.setzeFormen(e, id).entwurf;
       }
+      // 3b. Architekt: Teile in Bauteilen (Treppe im Haus, Tür in der Wand …): Träger vor Kindern, Lage relativ zum Träger
+      if (v.kinder?.length) e = A.setzeKinder(e, id, v.kinder).entwurf;
       // 4. Konstrukteur: Verbindungen
       for (const [i, vb] of (v.verbindungen ?? []).entries()) {
         const r = K.verlege(e, { abschnitt: id, von: vb.von, nach: vb.nach, art: vb.art, name: `${id}-V${i + 1}` });
@@ -230,6 +233,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     if (r.art === 'neustart') return fortsetzen(r.entwurf, optionen);
     if (r.art === 'wartet') return ergebnis(r.entwurf, 'wartet');
     e = T.bilanz(r.entwurf).entwurf;
+    // neue Prüfung durch Ebene 1 und Bestätigung der Technikanlagen (docs/architektur-einbau.md Abschnitt 7): ab jetzt zeigt der Plan sie als funktionsfähig, bis sich ihr Prüfbereich ändert
+    if (e.teile.some((t) => t.art === 'technik')) e = bestaetigung.bestaetige(e, { testmaterial: false }).entwurf;
     return ergebnis(e, 'fertig');
   }
 
@@ -257,7 +262,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
 
   const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v === null || typeof v !== 'object' ? v : Object.fromEntries(Object.keys(v).sort().filter((x) => v[x] !== undefined).map((x) => [x, v[x]]))));
   const inhalt = (a) => ({ name: a.name, huelle: a.huelle, nach: [...(a.nach ?? [])].sort(), schnittstellen: a.schnittstellen ?? [], vorgabe: a.vorgabe ?? {} });
-  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, verbindungen: a.verbindungen, stimmung: a.stimmung });
+  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung });
   const abschnittAus = (a) => ({ id: a.id, name: a.name, huelle: a.huelle, nach: a.nach ?? [], schnittstellen: a.schnittstellen ?? [], vorgabe: vorgabeVon(a) });
 
   /**
@@ -307,7 +312,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
    * Jonahs Antwort auf eine Rückfrage: `zulassen`, `abschnitt-neu` oder `aendern` (mit `aenderung` am Abschnitt). Danach `fortsetzen`.
    * @returns {object} neuer Entwurf
    */
-  function antworte(entwurf, rueckfrageId, { option, aenderung = null }) {
+  function antworte(entwurf, rueckfrageId, { option, aenderung = null, teil = null, zelle = null, von = 'Jonah' }) {
     const r = entwurf.rueckfragen.find((x) => x.id === rueckfrageId);
     if (!r) throw new AblaufFehler(`Rückfrage ${String(rueckfrageId)} gibt es nicht`);
     if (!istOffen(r)) throw new AblaufFehler(`Rückfrage ${rueckfrageId} ist schon beantwortet`);
@@ -318,6 +323,24 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
       e.rueckfragen.find((x) => x.id === rueckfrageId).status = 'beantwortet';
       e.einwaende.find((x) => x.id === r.einwand).status = 'beantwortet';
       haengeAn(e, 'entscheidung', { von: 'jonah', text: `wählt die Stimmung „${name}“ für die Gesamtpalette` });
+      return e;
+    }
+    if (r.art === 'aenderung') {
+      // manuelle Änderung (Bearbeitungsmodell B): nur Jonah entscheidet, nichts wird automatisch verworfen oder verschoben
+      const ew = entwurf.einwaende.find((x) => x.id === r.einwand);
+      const id = /^plan\.aenderung\|([^|]+)\|/.exec(String(ew?.schluessel))?.[1];
+      if (!AENDERUNGSOPTIONEN.some((o) => o.id === option)) throw new AblaufFehler(`Option „${String(option)}“ unbekannt (${AENDERUNGSOPTIONEN.map((o) => o.id).join(', ')})`);
+      let e = entwurf;
+      try {
+        if (option === 'verwerfen') e = aenderungen.verwirf(entwurf, id, von).entwurf;
+        else if (option === 'verankern') e = aenderungen.verankere(entwurf, id, { teil: teil ?? undefined, zelle }, von).entwurf;
+      } catch (f) { throw new AblaufFehler(f.message); }
+      e = kopie(e);
+      e.rueckfragen.find((x) => x.id === rueckfrageId).status = 'beantwortet';
+      const w = e.einwaende.find((x) => x.id === r.einwand);
+      w.status = option === 'zulassen' ? 'zugelassen' : 'beantwortet';
+      if (option === 'zulassen') { e.zulassungen ??= []; if (!e.zulassungen.includes(w.schluessel)) e.zulassungen.push(w.schluessel); }
+      haengeAn(e, 'entscheidung', { von: 'jonah', text: `entscheidet zur Änderung ${id}: ${AENDERUNGSOPTIONEN.find((o) => o.id === option).text.toLowerCase()}` });
       return e;
     }
     if (!antwortOptionen.includes(option)) throw new AblaufFehler(`Option „${String(option)}“ unbekannt (${antwortOptionen.join(', ')})`);

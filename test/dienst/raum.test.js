@@ -99,7 +99,7 @@ test('Speichern: nur bei Änderung, Ablehnungen schreiben nichts; nach dem Ruhez
   await senden(h, a, { typ: 'plan', basis: 0, spezifikation: await spezV(3) });
   await senden(h, a, { typ: 'haken', eintraege: { k: { wert: 'x' } } });
   assert.equal(ctx.puts, 2, 'Ablehnungen speichern nichts');
-  assert.deepEqual(Object.keys(speicher.get('raum')).sort(), ['fortschritt', 'spezifikation'], 'Verbindungen werden nicht gespeichert');
+  assert.deepEqual(Object.keys(speicher.get('raum')).sort(), ['aenderungen', 'fortschritt', 'spezifikation'], 'Verbindungen werden nicht gespeichert');
   // Ruhezustand: neue Instanz, gleiche Sockets (mit Anhang), gleicher Speicher
   const { h: h2 } = await neueHuelle({ speicher, sockets: [a, b, roh], jetzt });
   assert.equal(h2.raum.spezifikation.version, 2);

@@ -2,7 +2,9 @@
 // Jedes Teil wird mit Ebene 2 gebaut (`baue`), in einer eigenen Welt platziert, über den Vermesser gedreht und verschoben und dann in die
 // Gesamtwelt eingefügt. Die Gesamtwelt wird nur über `welt.fuegeBauteilEin` beschrieben.
 import { dreheRichtung } from '../ebene0/richtungen.js';
-import { TESTPALETTE } from '../ebene2/index.js';
+import { TESTPALETTE, aussparungsZellen, zellenInWelt } from '../ebene2/index.js';
+import { erzeugeLagen } from './lagen.js';
+import { erzeugeAenderungen } from './aenderungen.js';
 
 const key = (x, y, z) => `${x},${y},${z}`;
 
@@ -18,6 +20,8 @@ export class PaletteFehler extends Error {
 export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   const pruefstart = regelwerk.parameter('plan.geometrie', 'pruefstart');
   const rollen = regelwerk.parameter('plan.palette', 'rollen');
+  const lagen = erzeugeLagen({ ebene0, ebene2 });
+  const aenderungsmodul = erzeugeAenderungen({ ebene0, ebene2 });
 
   /**
    * Palette eines Abschnitts: Gesamtpalette, darüber die Abschnittspalette (Rolle → Block oder Block je Form).
@@ -93,12 +97,66 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   }
 
   /**
+   * Einbau (docs/architektur-einbau.md 3.3): Aussparungen der Kinder werden aus den Blöcken ihres Trägers entfernt (nur aus denen des direkten Trägers, nie aus
+   * Fremden); Freihaltungen werden als Mengen mit Herkunft gemerkt (die Prüfung steht in einwand.js). Gibt zurück:
+   *  - `schnitt`: Träger-ID → Zellenschlüssel, die dem Träger entfallen,
+   *  - `kinder`: Kind-ID → { traeger, zone (Zellen der Einbauzone in der Welt), ersetzt (Blöcke des Trägers, die das Kind per Öffnung ersetzt) },
+   *  - `freihaltung`: Zellenschlüssel → Menge der Kind-IDs, die die Zelle freihalten wollen,
+   *  - `herkunft`: Zellenschlüssel der tatsächlich entfernten Trägerblöcke → { traeger, von: [{ kind, art }] } (für die Anzeige im Bauplan).
+   * Der Ablauf ist je Träger gleich dem rekursiven Zusammenbau (Blöcke, dann Aussparungen der direkten Kinder); Ketten Raum → Wand → Tür ergeben sich daraus,
+   * weil jedes Kind nur seinen eigenen Träger schneidet.
+   */
+  function einbauVon(entwurf, roh) {
+    const nachRef = new Map(entwurf.teile.filter((t) => t.ref !== undefined).map((t) => [t.ref, t]));
+    const schnitt = new Map(), kinder = new Map(), freihaltung = new Map(), herkunft = new Map();
+    const merke = (c, tr, kind, art) => { if (!herkunft.has(c)) herkunft.set(c, { traeger: tr.id, von: [] }); herkunft.get(c).von.push({ kind: kind.id, art }); };
+    const ks = (z) => key(z.x, z.y, z.z);
+    for (const kind of [...entwurf.teile].filter((t) => t.traeger !== undefined).sort((a, b) => (a.ref < b.ref ? -1 : 1))) {
+      const tr = nachRef.get(kind.traeger);
+      const trBloecke = roh.get(tr.id).schluessel;
+      const paketK = ebene2.baue(kind.baustein, kind.parameter ?? {}), paketT = ebene2.baue(tr.baustein, tr.parameter ?? {});
+      const oeffnung = aussparungsZellen(ebene0, paketK, 'oeffnung', kind.lage).map(ks);
+      const frei = aussparungsZellen(ebene0, paketK, 'freihaltung', kind.lage).map(ks);
+      const cut = schnitt.get(tr.id) ?? new Set();
+      const ersetzt = new Set();
+      for (const c of oeffnung) if (trBloecke.has(c)) { cut.add(c); ersetzt.add(c); merke(c, tr, kind, 'oeffnung'); }
+      for (const c of frei) {
+        if (trBloecke.has(c)) { cut.add(c); merke(c, tr, kind, 'freihaltung'); }
+        if (!freihaltung.has(c)) freihaltung.set(c, new Set());
+        freihaltung.get(c).add(kind.id);
+      }
+      if (cut.size) schnitt.set(tr.id, cut);
+      const zone = paketT.einbauzonen.find((z) => z.id === kind.einbau.zone);
+      // Die Zone wird nicht als Zellenmenge aufgebaut (große Räume): ihre acht Eckpunkte laufen durch die Lage des Trägers, das Ergebnis ist wieder ein achsenparalleler Quader
+      const ecken = [zone.von.x, zone.bis.x].flatMap((x) => [zone.von.y, zone.bis.y].flatMap((y) => [zone.von.z, zone.bis.z].map((z) => ({ x, y, z }))));
+      const w = zellenInWelt(ebene0, ecken, tr.lage);
+      const achse = (a) => [Math.min(...w.map((c) => c[a])), Math.max(...w.map((c) => c[a]))];
+      const [x0, x1] = achse('x'), [y0, y1] = achse('y'), [z0, z1] = achse('z');
+      kinder.set(kind.id, { traeger: tr.id, zone: { von: { x: x0, y: y0, z: z0 }, bis: { x: x1, y: y1, z: z1 } }, ersetzt });
+    }
+    return { schnitt, kinder, freihaltung, herkunft };
+  }
+
+  /** Teil ohne die Zellen, die ihm ein Kind ausspart (neues Objekt; der gemerkte Eintrag bleibt unverändert). */
+  function ohneZellen(t, weg) {
+    return {
+      ...t,
+      bauteil: { ...t.bauteil, bloecke: t.bauteil.bloecke.filter((b) => !weg.has(key(b.x, b.y, b.z))) },
+      schluessel: new Set([...t.schluessel].filter((k) => !weg.has(k))),
+      arbeitsbloecke: new Set([...t.arbeitsbloecke].filter((k) => !weg.has(k))),
+    };
+  }
+
+  /**
    * Entwurf → Welt. Gibt die Welt und je Teil die belegten Blöcke zurück.
    * Ohne `testmaterial: true` verlangt sie, dass die Palette jedes Abschnitts mit Teilen alle Rollen belegt, und wirft sonst `PaletteFehler`, bevor etwas gebaut wird
    * (nie ein halber Bauplan, nie stilles Testmaterial). `testmaterial: true` ist nur für Planungsgeometrie und Tests: fehlende Rollen füllt dann die TESTPALETTE.
    * @param {object} entwurf
    * @param {{testmaterial?: boolean}} [optionen]
-   * @returns {{welt: object, teile: Map<string, {schluessel: Set<string>, arbeitsbloecke: Set<string>, start: object|null, huelle: object|null}>}}
+   * Hat der Entwurf Kinder (`traeger`), werden ihre Lagen vorher mit `loeseLagen` abgeleitet, die Aussparungen angewendet und `besitz` (Zelle → erstes Teil, das sie belegt)
+   * sowie `einbau` (siehe `einbauVon`) mitgeliefert; ohne Kinder ist das Ergebnis wie zuvor.
+   * Manuelle Änderungen (`entwurf.aenderungen`) werden danach angewendet; `aenderungen` (ID → { status, teil, ort, grund }) liefert ihren Stand (null ohne Änderungen).
+   * @returns {{welt: object, teile: Map<string, {schluessel: Set<string>, arbeitsbloecke: Set<string>, start: object|null, huelle: object|null}>, besitz: Map<string, string>, einbau: object|null}}
    */
   function materialisiere(entwurf, optionen = {}) {
     optionen = { testmaterial: optionen.testmaterial === true };
@@ -106,14 +164,36 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
       const luecken = paletteLuecken(entwurf, { nurMitTeilen: true });
       if (luecken.length) throw new PaletteFehler(`${luecken.map((x) => `Abschnitt „${x.abschnitt}“ ohne Block für die Rollen ${x.rollen.join(', ')}`).join('; ')}. Ein Bauplan entsteht nicht aus Testmaterial; zuerst eine Stimmung wählen.`, luecken);
     }
+    const hatKinder = entwurf.teile.some((t) => t.traeger !== undefined);
+    const eff = hatKinder ? lagen.loeseLagen(entwurf) : entwurf; // die Lage der Kinder ist abgeleitet
     const welt = ebene0.neueWelt();
     const teile = new Map();
-    for (const teil of teileInReihenfolge(entwurf)) {
-      const t = baueTeil(entwurf, teil, optionen);
+    const reihe = teileInReihenfolge(eff);
+    const roh = new Map(reihe.map((teil) => [teil.id, baueTeil(eff, teil, optionen)]));
+    const einbau = hatKinder ? einbauVon(eff, roh) : null;
+    const fertig = new Map(reihe.map((teil) => {
+      const t = roh.get(teil.id), weg = einbau?.schnitt.get(teil.id);
+      return [teil.id, weg ? ohneZellen(t, weg) : t];
+    }));
+    // manuelle Einzelblockänderungen (docs/architektur-einbau.md, Bearbeitungsmodell B): nach den Aussparungen der Kinder; gemerkte Teile bleiben unverändert
+    const aenderungen = (eff.aenderungen ?? []).length ? aenderungsmodul.wendeAn(eff, reihe, fertig, einbau).status : null;
+    for (const teil of reihe) {
+      const t = fertig.get(teil.id);
       welt.fuegeBauteilEin(t.bauteil);
       teile.set(teil.id, { schluessel: t.schluessel, arbeitsbloecke: t.arbeitsbloecke, start: t.start, huelle: t.huelle });
     }
-    return { welt, teile };
+    // Besitzkarte erst beim ersten Zugriff aufbauen (Entwürfe ohne Kinder, z. B. die Zitadelle, brauchen sie bei Hunderten von Prüfläufen nicht)
+    let besitz = null;
+    return {
+      welt, teile, einbau, aenderungen,
+      get besitz() {
+        if (!besitz) {
+          besitz = new Map();
+          for (const teil of reihe) for (const k of teile.get(teil.id).schluessel) if (!besitz.has(k)) besitz.set(k, teil.id);
+        }
+        return besitz;
+      },
+    };
   }
 
   /** Teil, in dessen Blöcken (oder Hülle) die Zelle liegt; sonst null. */

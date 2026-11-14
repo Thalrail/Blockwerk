@@ -84,6 +84,7 @@ export function erzeugeBriefing({ vokabular: V }) {
     z.push('');
     z.push('Lagebeziehungen („lage.relation“):');
     z.push(...zeilen.relationen());
+    z.push(`Teile IN einem anderen Bauteil (${Object.keys(V.kindrelationen).join(', ')}; z. B. eine Treppe innen im Haus, eine Tür in der Südwand oder in einer Trennwand) bekommen optional „lage.anker“ (${Object.keys(V.anker).join(', ')}; Standard mitte), „lage.versatz“ (relative Blockzahlen ${V.versatz.achsen.join(', ')}, auch negativ, ±${V.versatz.maximum}) und „lage.ausrichtung“ (${Object.keys(V.ausrichtungen).join(', ')}). Sie haben keinen Abstand und keine eigene Hülle; der Bezug ist das Bauteil, in dem sie liegen.`);
     z.push('');
     z.push('Formen („form.baustein“ mit „form.groesse“; alle Parameter sind optional, sonst gilt der Standard):');
     z.push(...zeilen.bausteine());

@@ -18,6 +18,8 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
   const rand = P('rand'), luecke = P('luecke'), toleranz = P('toleranz'), erlaubtProjekt = P('relationenProjekt'), erlaubtTeil = P('relationenTeil'), strahlen = P('strahlen');
   const alleRelationen = Object.keys(regelwerk.parameter('leser.schema', 'relationen'));
   const rund = regelwerk.parameter('leser.messung', 'bausteinform').rund;
+  const kindrelationen = regelwerk.parameter('leser.schema', 'kindrelationen'), ankerNamen = regelwerk.parameter('leser.schema', 'anker'), ausrichtungen = regelwerk.parameter('leser.schema', 'ausrichtungen');
+  const WANDSEITE = { nord: 0, ost: 1, sued: 2, west: 3 }; // Wandseite des Trägers: das Kind schaut nach außen (Bausteine blicken im Paket nach Norden)
   void ID;
 
   /** @param {any} spec */
@@ -33,6 +35,8 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     const bauplatz = huelleAus(np.x, np.y, np.z, BB, BT, BH);
     const teile = spec.teile;
     const byId = new Map(teile.map((t, i) => [t.id, { t, i }]));
+    /** Teil in einem anderen Bauteil (innen, wand-…): kein eigener Abschnitt, keine Hülle, kein Rand (docs/architektur-einbau.md 3.4). */
+    const istKind = (t) => Object.hasOwn(kindrelationen, t.lage?.relation) && t.lage?.bezug !== 'projekt' && byId.has(t.lage?.bezug);
 
     // ---- 1. Maße je Teil: Form, Bedarf, Technikstreifen, Rand ----
     const info = new Map();
@@ -58,6 +62,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       let huelle;
       try { huelle = ebene2.baue(bs, groesse).platzbedarf.huelle; } catch (f) { frage(`${pf}.form.groesse`, `${t.name}: ${f.message}`); return; }
       const form = { w: huelle.bis.x - huelle.von.x + 1, d: huelle.bis.z - huelle.von.z + 1, h: huelle.bis.y - huelle.von.y + 1 };
+      if (istKind(t) && (t.funktionen ?? []).length) { frage(`${pf}.funktionen`, `${t.name}: Technik und Bedarf in einem Bauteil (${t.lage.relation}) kommt später; Funktionen gehören an ein eigenes Teil.`, [{ id: 'entfernen', text: 'Die Funktion weglassen' }]); return; }
       const bedarf = [];
       let braucheWeiche = false;
       for (const f of t.funktionen ?? []) {
@@ -96,6 +101,8 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       const { t, i, W, D, H } = x;
       const pf = `teile[${i}].lage`;
       const rel = t.lage.relation, bezug = t.lage.bezug;
+      if (istKind(t)) continue; // Kinder: siehe 2b
+      if (bezug !== 'projekt' && istKind(byId.get(bezug).t)) { frage(`${pf}.bezug`, `${t.name}: „${byId.get(bezug).t.name}“ liegt in einem anderen Bauteil und hat keine eigene Hülle; daran lässt sich „${rel}“ nicht anordnen. Worauf soll sich ${t.name} beziehen?`, wahl(['projekt', byId.get(byId.get(bezug).t.lage.bezug)?.t.id].filter(Boolean))); continue; }
       const abstand = t.lage.abstand;
       const projekt = bezug === 'projekt';
       const erlaubt = projekt ? erlaubtProjekt : erlaubtTeil;
@@ -155,6 +162,26 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     }
     if (rueckfragen.length) return leer();
 
+    // ---- 2b. Teile in Bauteilen: Wurzel (Abschnitt), Träger, Zone, Anker, Versatz, Ausrichtung ----
+    const kinder = new Map(teile.filter((t) => !istKind(t)).map((t) => [t.id, []]));
+    for (const x of reihenfolge) {
+      const { t, i } = x;
+      if (!istKind(t)) continue;
+      const pf = `teile[${i}].lage`, l = t.lage, traeger = info.get(l.bezug);
+      let wurzel = l.bezug;
+      while (istKind(byId.get(wurzel).t)) wurzel = byId.get(wurzel).t.lage.bezug;
+      const zone = kindrelationen[l.relation];
+      const zonen = (ebene2.baue(traeger.bs, traeger.groesse).einbauzonen ?? []).map((z) => z.id);
+      if (!zonen.includes(zone)) { frage(`${pf}.relation`, `${t.name}: ${traeger.t.name} (${traeger.bs}) bietet keine Zone „${zone}“ (${zonen.length ? `vorhanden: ${zonen.join(', ')}` : 'es bietet überhaupt keine Zonen'}). Wohin soll ${t.name}?`); continue; }
+      const drehung = l.ausrichtung !== undefined ? ausrichtungen[l.ausrichtung] : l.relation.startsWith('wand-') ? WANDSEITE[l.relation.slice(5)] : 0;
+      const v = l.versatz ?? {};
+      kinder.get(wurzel).push({
+        ref: t.id, name: t.name, baustein: x.bs, parameter: x.groesse, traeger: l.bezug,
+        einbau: { zone, anker: ankerNamen[l.anker ?? 'mitte'], versatz: { x: v.ost ?? 0, y: v.hoch ?? 0, z: v.sued ?? 0 }, drehung },
+      });
+    }
+    if (rueckfragen.length) return leer();
+
     // ---- 3. Verbindungen: Hüllenrand zu Hüllenrand auf gleicher Bodenhöhe ----
     const verb = new Map(teile.map((t) => [t.id, []]));
     const seiten = new Map(teile.map((t) => [t.id, new Set()]));
@@ -162,6 +189,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     for (const t of teile) {
       (t.verbindungen ?? []).forEach((v, j) => {
         const pf = `teile[${info.get(t.id).i}].verbindungen[${j}]`;
+        if (istKind(t) || istKind(byId.get(v.mit)?.t ?? t)) { frage(pf, `${t.name}: Verbindungen von und zu Teilen in einem anderen Bauteil kommen später (Gang und Schiene verbinden nur Abschnitte).`, [{ id: 'entfernen', text: 'Die Verbindung weglassen' }]); return; }
         const schluessel = `${[t.id, v.mit].sort().join('|')}|${v.art}`;
         if (gesehen.has(schluessel)) return;
         gesehen.add(schluessel);
@@ -193,7 +221,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     // ---- 4. Abhängigkeiten (nach): Bezug zuerst, Keller („unter“) vor dem Bezug ----
     const nach = new Map(teile.map((t) => [t.id, new Set()]));
     for (const t of teile) {
-      if (t.lage.bezug === 'projekt') continue;
+      if (t.lage.bezug === 'projekt' || istKind(t)) continue;
       if (t.lage.relation === 'unter') nach.get(t.lage.bezug).add(t.id);
       else nach.get(t.id).add(t.lage.bezug);
     }
@@ -202,7 +230,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     const stimmungen = new Map();
     for (const t of teile) if (t.stil?.stimmung) stimmungen.set(t.stil.stimmung, (stimmungen.get(t.stil.stimmung) ?? 0) + 1);
     const gesamt = [...stimmungen.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0];
-    const abschnitte = teile.map((t) => {
+    const abschnitte = teile.filter((t) => !istKind(t)).map((t) => {
       const x = info.get(t.id), hu = huellen.get(t.id);
       let zonen = [{ funktion: 'optik', anteil: 100 }];
       if (x.mind) {
@@ -217,7 +245,8 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       return {
         id: t.id, name: t.name, huelle: hu, nach: [...nach.get(t.id)].sort(),
         zonen, ...(x.bedarf.length ? { bedarf: x.bedarf } : {}),
-        formen: [{ baustein: x.bs, parameter: x.groesse, zone: 'optik', anker: 'mitte', ...(Object.keys(soll).length ? { soll } : {}) }],
+        formen: [{ baustein: x.bs, parameter: x.groesse, zone: 'optik', anker: 'mitte', ref: t.id, ...(Object.keys(soll).length ? { soll } : {}) }],
+        ...(kinder.get(t.id).length ? { kinder: kinder.get(t.id) } : {}),
         ...(verb.get(t.id).length ? { verbindungen: verb.get(t.id) } : {}),
         ...(t.stil?.stimmung ? { stimmung: t.stil.stimmung } : {}),
       };

@@ -164,6 +164,7 @@ Kreativ-Testwelt auf Stein; für Dorfbewohner ein Dorfbewohner-Ei oder Handel. A
 Die Formen sind reine Mathematik und brauchen keinen Spieltest. Wenn du trotzdem schauen willst, ob eine Rundung im Spiel gut aussieht: Baue in der Kreativwelt einen Kreis mit 11 Blöcken Breite und einen mit 12 Blöcken (Mitte bei 11 auf einem Block, bei 12 zwischen zwei Blöcken) nach dem Schichtplan der Seite und prüfe, ob alle vier Seiten gleich aussehen. Dasselbe mit einer Kuppel von 20 Blöcken Breite (Höhe 5 Schichten).
 
 ## Bogen und Dach: Sichttest (Ebene 2)
+Neu (Haus-Sonde, `dach.haus`): Satteldach mit `deckend = 1` und `giebel = 1` auf ein Haus gleicher Grundfläche (z. B. 9 × 7, Neigung 0,8) setzen. Reine Mathematik, aber zur Sicht: Bedeckt das Dach das Haus bis zum Rand (keine Lücke an der Traufe), schließt die Giebelwand bündig mit der Hauswand ab, und ist der Dachraum von außen dicht?
 Reine Mathematik, kein Spieltest nötig. Zum Anschauen in der Kreativwelt: ein Bogen mit 9 Blöcken lichter Weite (Pfeiler 2 hoch, Stich knapp 3) und ein Satteldach mit 11 Blöcken Breite (Firsthöhe 5 bis 6) nach den Querschnitten der Tests nachbauen und prüfen, ob beide Seiten gleich aussehen und ein Spieler unter dem Bogen durchpasst.
 
 ## Bauelemente: Türen und Treppen (Ebene 2)
@@ -171,6 +172,13 @@ Kreativwelt. Gebaut wird nach den Plänen der Seite; geprüft wird nur die Lage 
 1. **Tür:** einfache Tür mit Richtung Norden in eine Ost-West-Mauer setzen. Liegt die Türplatte quer zum Weg nach Norden, mit dem Scharnier links, und lässt sie sich durchqueren?
 2. **Doppeltür:** zwei Türen nebeneinander, Scharniere außen: öffnen sie beide nach außen?
 3. **Treppe:** Aufstieg nach Norden, 4 Stufen: geht es nach Norden hoch? Eine Wendeltreppe mit Radius 1 (8 Stufen je Umdrehung) im Uhrzeigersinn: stimmt die Laufrichtung?
+
+## Raum mit Tür und Fenstern: Tests (Ebene 2, `bau.raum`, ungeprüft)
+1. **Dicht:** Raum 5 × 5, Höhe 3, Tür nach Süden, ein Fenster je übrige Wand. Ist er ringsum geschlossen (Fackel innen, nachts nichts, was von draußen hereinkommt außer durch die Tür)?
+2. **Tür:** Geht man hinein, und schaut die Tür nach außen (Scharnier und Türplatte wie bei `bau.tuer`)? Auch bei den anderen drei Wänden und als Doppeltür (Raum mindestens 2 breit).
+3. **Wandstärke 2:** Tür und Scheiben sitzen in der **äußersten** Schicht, innen ist die Laibung frei (kein Block hinter der Tür). Ist das so gewollt oder besser innen?
+4. **Fenster:** Sitzen die Scheiben im Rahmen der Wand (Unterkante 1 über dem Boden), verbinden sich die Scheiben mit den Wänden? Gleichmäßig verteilt, mit mindestens 1 Block Wand dazwischen?
+5. **Obergeschoss:** Zweiter Raum mit `boden = 0` direkt auf die Decke des ersten setzen: Steht man im Obergeschoss auf der Decke des Erdgeschosses, ohne Spalt?
 
 ## Bahn-Module: Sichttest (Ebene 2)
 Die Abstände stammen aus deinen Messungen (`lore.*`, geprüft). Zum Anschauen: eine Antriebsstrecke mit 4 Abschnitten à 4 normalen Schienen und einer Antriebsschiene mit Redstone-Block darunter nach Norden bauen und eine Lore starten; ebenso eine Rampe 3 Blöcke hoch und eine Kurve mit 3 Schienen je Schenkel. Fährt die Lore durch?
@@ -373,3 +381,9 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 
 ## Hebel an der Antriebsschiene (Jonah, 24.10.2026)
 Schiene bei 96,-60,-4. Der Hebel versorgt sie, wenn er irgendwo an einem dieser Blöcke sitzt: 96,-60,-4; 97,-60,-4; 96,-60,-5; 95,-60,-4; 96,-60,-3; 97,-59,-4; 96,-59,-5; 95,-59,-4; 96,-59,-3; 96,-58,-4. Seit dem Update im Code (antrieb.hebel). Gemeint: „auf“ = Oberseite, „irgendwo an“ = jede Seite (oben, unten, seitlich), solange Platz ist.
+
+## Einbau: Treppe, Trennwand, Tür und Fenster als Teile im Haus (13.11.2026, `ungeprüft`)
+Alle Annahmen stammen aus der Simulation (Ebene 1), nichts davon ist im Spiel bestätigt. Testwelt (Kreativ), Haus nach dem Bauplan der Haus-Sonde (Wohnhaus 9 × 7, Geschosshöhe 3) mit Treppe, Trennwand mit Innentür, Haustür und Fenster als eigene Teile:
+1. **Treppe im Haus:** Kommst du vom Erdgeschoss die Treppe hinauf, ohne mit dem Kopf an die Decke zu stoßen und ohne zu springen? Der Durchbruch in der Decke muss über der ganzen Treppe offen sein (die Simulation verlangt **3 freie Blöcke** über jedem Stufenblock: 2 zum Stehen, 1 für den Schritt nach oben; reichen im Spiel 2?).
+2. **Trennwand mit Innentür:** Hält die Wand zwischen den Räumen, und geht man durch die Tür (Ausrichtung, Scharnier, schließt sie)?
+3. **Haustür und Fenster in der Außenwand:** Sitzen beide in der äußersten Wandschicht, ist das Haus ringsum dicht (nichts spawnt innen bei Licht), schauen Tür und Scheiben nach außen?

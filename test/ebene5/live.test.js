@@ -51,7 +51,7 @@ test('Anmelden: Zustand für den Neuen, Meldung an die anderen, Namen und Raumgr
   const d = new Dienst();
   const a = d.verbinde(), b = d.verbinde();
   d.empfange(a, '{"typ":"hallo","name":"Anna"}');
-  assert.deepEqual(a.post[0], { typ: 'zustand', spezifikation: null, fortschritt: F.leer(), spieler: ['Anna'] });
+  assert.deepEqual(a.post[0], { typ: 'zustand', spezifikation: null, fortschritt: F.leer(), aenderungen: { version: 0, eintraege: {} }, spieler: ['Anna'] });
   d.empfange(b, '{"typ":"hallo","name":"  Ben "}');
   assert.deepEqual(a.post[1], { typ: 'spieler', spieler: ['Anna', 'Ben'], neu: 'Ben' });
   assert.equal(b.post.length, 1, 'der Neue bekommt nur den Zustand');

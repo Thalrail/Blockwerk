@@ -40,7 +40,41 @@
           "strahl-suedwest": "strahlenförmig nach Südwest von {bezug} weg",
           "strahl-westen": "strahlenförmig nach Westen von {bezug} weg",
           "strahl-nordwest": "strahlenförmig nach Nordwest von {bezug} weg",
-          "innen": "innerhalb von {bezug}"
+          "innen": "innerhalb von {bezug}",
+          "wand": "in der Wand von {bezug}",
+          "wand-nord": "in der Nordwand von {bezug}",
+          "wand-ost": "in der Ostwand von {bezug}",
+          "wand-sued": "in der Südwand von {bezug}",
+          "wand-west": "in der Westwand von {bezug}"
+        },
+        "kindrelationen": {
+          "innen": "innenraum",
+          "wand": "wand",
+          "wand-nord": "wand-nord",
+          "wand-ost": "wand-ost",
+          "wand-sued": "wand-sued",
+          "wand-west": "wand-west"
+        },
+        "anker": {
+          "mitte": "mitte",
+          "nordwest": "nw",
+          "nordost": "ne",
+          "suedwest": "sw",
+          "suedost": "se"
+        },
+        "ausrichtungen": {
+          "norden": 0,
+          "osten": 1,
+          "sueden": 2,
+          "westen": 3
+        },
+        "versatz": {
+          "achsen": [
+            "ost",
+            "sued",
+            "hoch"
+          ],
+          "maximum": 256
         },
         "wichtigkeiten": [
           "muss",

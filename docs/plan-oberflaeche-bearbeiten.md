@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Noch nichts umgesetzt.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 umgesetzt (14.11.2026); U1 bis U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -86,7 +86,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Noch nichts umgeset
 ## 5. Spieltest-Strang (unabhängig)
 Bleibt eigener Strang (`docs/spieltests.md`). Zu jedem Paket kommt eine Testanleitung für Jonah: z. B. U3 „Block im Spiel setzen, Plan zeigt dasselbe; Schichtplan-Block Glas ersetzen“, U6 „Redstone-Anlage ändern → Neuprüfung → Ergebnis im Spiel vergleichen“. Status `geprüft` setzt nur Jonah. Offene Spieltests: Raum, Dach, Wand, Treppe (3 freie Blöcke), Technik-Umkreis 8.
 
-## 6. Entscheidungen
+## 6. Entscheidungen (entschieden von Jonah am 14.11.2026: Wand-Ausrichtung Option A, projektId Option A; die Tabellen bleiben als Begründung stehen)
 
 ### Wand-Ausrichtung (`wand-nord|ost|sued|west` mit `ausrichtung`)
 Heute überschreibt eine ausdrückliche `ausrichtung` die Außenrichtung, ein Test schreibt das fest; die Architektur sagt „nach außen“.

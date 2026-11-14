@@ -177,3 +177,20 @@ test('Raum: die Kennung bleibt erhalten; ein anderes Projekt oder ein Plan ohne 
   alt = plan(alt, fassung(null, 2), 1).raum; assert.equal(alt.spezifikation.version, 2);
   alt = plan(alt, fassung(ID_A, 3), 2).raum; assert.equal(alt.spezifikation.projekt.id, ID_A, 'der Altbestand wird mit der Kennung fortgesetzt');
 });
+
+test('Eine vorhandene, aber ungültige Kennung ist ein Fehler und wird nie stillschweigend ersetzt (Zuordnung, Übernahme, Datei, Link)', async () => {
+  const s = await beispiel();
+  for (const falsch of ['murks', '', 7, null, ID_A.toUpperCase(), ID_A + '0']) {
+    const t = JSON.parse(JSON.stringify(s)); t.projekt.id = falsch;
+    assert.throws(() => P.bezug(null, t), /Projektkennung .* hat nicht die Form/, JSON.stringify(falsch));
+    assert.throws(() => P.bezug(P.mitId(s, ID_A), t), /Projektkennung/);
+    assert.throws(() => P.uebernehme(null, t, { bytes: bytes(1) }), /Projektkennung/);
+    assert.throws(() => P.uebernehme(P.mitId(s, ID_A), t, { entscheidung: 'neu', bytes: bytes(1) }), /Projektkennung/);
+    assert.throws(() => teilen.importDatei(JSON.stringify({ typ: teilen.TYP, version: teilen.VERSION, spezifikation: t })), /Projektkennung ist ungültig/);
+  }
+  const kaputt = JSON.parse(JSON.stringify(s)); kaputt.projekt.id = 'murks';
+  await assert.rejects(async () => teilen.dekodiere((await teilen.kodiere({ spezifikation: kaputt })).code), /Projektkennung ist ungültig/);
+  // ein wirklich fehlendes Feld bleibt Altbestand, auch wenn es im Objekt `undefined` ist
+  const leer = JSON.parse(JSON.stringify(s)); leer.projekt.id = undefined;
+  assert.equal(P.bezug(null, leer).art, 'neu');
+});

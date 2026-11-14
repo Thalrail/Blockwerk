@@ -10,6 +10,12 @@ export class ProjektIdFehler extends Error {
 /** Die gültige Kennung einer Spezifikation oder null (fehlt oder ungültig). */
 export const idVon = (spec) => (typeof spec?.projekt?.id === 'string' && PROJEKT_ID.test(spec.projekt.id) ? spec.projekt.id : null);
 
+/** Eine vorhandene, aber ungültige Kennung ist ein Fehler (sie wird nie stillschweigend ersetzt); nur ein fehlendes Feld ist Altbestand. */
+export function pruefeKennung(spec) {
+  const id = spec?.projekt?.id;
+  if (id !== undefined && !(typeof id === 'string' && PROJEKT_ID.test(id))) throw new ProjektIdFehler(`die Projektkennung ${JSON.stringify(id)} hat nicht die Form p-<32 Hexzeichen>; bitte das Feld projekt.id entfernen (Blockwerk vergibt eine neue) oder korrigieren`);
+}
+
 /** Neue Kennung aus 16 Zufallsbytes (128 Bit): `p-` plus 32 Hexzeichen. */
 export function neueId(bytes) {
   if (!bytes || bytes.length !== 16 || ![...bytes].every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) throw new ProjektIdFehler('neue Kennungen brauchen genau 16 Zufallsbytes (0 bis 255)');
@@ -37,6 +43,7 @@ export const eigenstaendigeKopie = (spec, bytes) => mitId(spec, neueId(bytes));
  * - `unklar`: bei mindestens einer Seite fehlt die Kennung (Altbestand): der Benutzer entscheidet (`nameGleich`, `inhaltGleich` helfen dabei).
  */
 export function bezug(vorhanden, ankommend) {
+  pruefeKennung(ankommend);
   if (!vorhanden) return { art: 'neu' };
   const a = idVon(vorhanden), b = idVon(ankommend);
   const inhaltGleich = abdruck(vorhanden) === abdruck(ankommend);
@@ -52,6 +59,7 @@ export function bezug(vorhanden, ankommend) {
  * @returns {{spec: object, art: string, kennung: string, vergeben: boolean}}  `vergeben`: die Kennung wurde neu erzeugt (Altbestand übernommen)
  */
 export function uebernehme(vorhanden, ankommend, { entscheidung, bytes } = {}) {
+  pruefeKennung(ankommend);
   const b = bezug(vorhanden, ankommend);
   if (b.art === 'unklar' && !['fortsetzung', 'neu'].includes(entscheidung)) throw new ProjektIdFehler('es ist unklar, ob das eine Fortsetzung oder ein eigenständiges Projekt ist; der Benutzer muss entscheiden');
   const eigene = idVon(ankommend);

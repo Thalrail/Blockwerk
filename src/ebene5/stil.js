@@ -27,7 +27,7 @@ const aufraeumen = (ort) => {
 };
 
 /** Der Stil (Stimmung, Materialwahl) einer Ebene, wie er in der Spezifikation steht (leer, wenn nichts gewählt ist). */
-export const stilVon = (spec, ebene) => { const s = stilOrt(spec, ebene).stil ?? {}; return { stimmung: s.stimmung ?? null, palette: structuredClone(s.palette ?? {}) }; };
+export const stilVon = (spec, ebene) => { const s = stilOrt(spec, ebene).stil ?? {}; return { stimmung: typeof s.stimmung === 'string' ? s.stimmung : null, palette: s.palette && typeof s.palette === 'object' && !Array.isArray(s.palette) ? structuredClone(s.palette) : {} }; };
 
 /** Neue Spezifikation (Kopie) mit anderer Stimmung; `null` nimmt die Stimmung dieser Ebene weg. Die Version und die Freigabe regelt der bestehende Weg. */
 export function setzeStimmung(spec, ebene, name, stimmungen = null) {
@@ -62,7 +62,10 @@ export function setzeMaterial(spec, ebene, rolle, form, block, { rollen = null, 
 /** Die Wahl für Rolle und Form (Block mit Zustand oder null). */
 export function wahlFuer(spec, ebene, rolle, form) {
   const w = formKarte(stilOrt(spec, ebene).stil?.palette?.[rolle])[form];
-  return w === undefined ? null : (typeof w === 'string' ? { id: w } : { id: w.id, ...(w.zustand ? { zustand: { ...w.zustand } } : {}) });
+  // Daten aus Link oder Datei können alles enthalten: nur Text und Objekte mit Textkennung werden zur Wahl, alles andere gilt als nicht gewählt (der Prüfer meldet es)
+  if (typeof w === 'string') return { id: w };
+  if (w && typeof w === 'object' && typeof w.id === 'string') return { id: w.id, ...(w.zustand && typeof w.zustand === 'object' && !Array.isArray(w.zustand) ? { zustand: { ...w.zustand } } : {}) };
+  return null;
 }
 
 /** Angaben für die Oberfläche: Stimmungen, Rollen, welche Formen es je Rolle gibt (aus den Stimmungen), Beziehungen, die ein Kindteil kennzeichnen. */

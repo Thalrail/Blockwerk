@@ -104,3 +104,17 @@ test('Ring mit dem Prüfer: jeder angebotene Block wird vom Prüfer der Spezifik
   assert.equal(r.status, 'fertig');
   assert.ok(e.e5.bauplan(r.entwurf).abschnitte.some((a) => a.legende.some((l) => l.id === 'minecraft:stone_bricks')));
 });
+
+test('Review: manipulierte Daten (null, Zahl, Liste als Block oder Palette) lassen die Oberfläche nicht abstürzen', () => {
+  const s = haus();
+  for (const wert of [null, 5, [1], { id: 7 }, true]) {
+    s.projekt.stil = { stimmung: wert, palette: { wand: { voll: wert }, licht: wert } };
+    assert.doesNotThrow(() => M.stilVon(s, 'projekt'));
+    assert.equal(M.wahlFuer(s, 'projekt', 'wand', 'voll'), null);
+    assert.equal(M.wahlFuer(s, 'projekt', 'licht', 'voll'), null);
+  }
+  s.projekt.stil = { palette: [1, 2] };
+  assert.deepEqual(M.stilVon(s, 'projekt').palette, {});
+  s.projekt.stil = { palette: { wand: { id: 'minecraft:stone', zustand: [1] } } };
+  assert.deepEqual(M.wahlFuer(s, 'projekt', 'wand', 'voll'), { id: 'minecraft:stone' }, 'ein Zustand, der kein Objekt ist, wird ignoriert');
+});

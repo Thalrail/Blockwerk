@@ -60,6 +60,7 @@ worker.onerror = (e) => { z.status = null; if (z.bearbeitung && z.vorher) { bear
 const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
 
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null, vonRaum = false) {
+  wartendeFassung = null; // eine neue Fassung ersetzt jede noch wartende Veröffentlichung
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
   const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null);
@@ -184,7 +185,7 @@ function nachDemBauen() {
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(z.bleibe); z.bleibe = null;
-  speichern(); sichereAenderungen();
+  speichern(); sichereAenderungen(); veroeffentlicheWartende();
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
 }
 
@@ -209,7 +210,7 @@ function umbauPanel() {
 }
 function umbauEntscheiden(ja) {
   const u = z.umbau; if (!u) return;
-  if (!ja) { z.umbau = null; z.auswahl = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  if (!ja) { z.umbau = null; z.auswahl = null; wartendeFassung = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
   // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
   // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
   const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
@@ -221,7 +222,7 @@ function umbauEntscheiden(ja) {
   let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
   f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
   z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f; z.planfassung = u.neu.planfassung ?? PF.leer();
-  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen();
+  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen(); veroeffentlicheWartende();
   const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(u.bleibe);
@@ -448,6 +449,7 @@ const stilEbene = () => { const e = Stil.ebenen(z.spec, z.stil.info.kindrelation
 function stilPanel() {
   const s = z.stil, info = s.info;
   if (!info) return '<p class="klein">Wird geladen …</p>';
+  if (z.umbau) return '<h3>Stimmung und Materialien</h3><p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
   const ebene = stilEbene(), stil = Stil.stilVon(z.spec, ebene), liste = Stil.ebenen(z.spec, info.kindrelationen);
   let h = `<h3>Stimmung und Materialien</h3><p class="klein">Die Stimmung ist ein vorbereiteter Satz von Materialien. Darüber kannst du einzelne Blöcke wählen. Eine Änderung ist eine neue Fassung der Spezifikation und läuft über die Umbauhinweise.</p>
     <label class="klein zustand">Gilt für <select id="st-ebene">${liste.map((x) => `<option value="${esc(x.id)}" ${x.id === ebene ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
@@ -462,7 +464,6 @@ function stilPanel() {
   }
   h += '</table>';
   if (ebene === 'projekt') h += '<p class="klein">Die Wahl für das Projekt gilt für alle Teile ohne eigene Stimmung; ein Teil mit eigener Stimmung folgt dieser.</p>';
-  if (z.umbau) return h + '<p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
   if (s.picker) h += stilWahlPanel();
   return h;
 }
@@ -480,17 +481,29 @@ function stilWahlPanel() {
   return h;
 }
 /** Neue Spezifikation übernehmen: Prüfer (bearbeitet → neue Version), Freigabe durch dich, dann der gewohnte Bau mit Umbauhinweisen. Nichts wird geraten oder still angewandt. */
+let stilBeschaeftigt = false, wartendeFassung = null; // nur eine Stiländerung zugleich; die neue Fassung geht erst in den Raum, wenn sie hier wirklich gilt
 async function stilAnwenden(neu) {
-  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); return; }
+  if (stilBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
+  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
   const von = z.name.trim();
-  if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); return; }
-  const p = await anfrage({ typ: 'pruefe', spezifikation: neu, bearbeitet: true, vorher: z.spec, messungen: z.messungen });
-  if (!p.freigebbar) { toast(`Das lässt sich so nicht übernehmen: ${p.rueckfragen.map((q) => q.frage).join(' ')}`); return; }
-  if (p.spezifikation.version === z.spec.version) { toast('Das ist schon so gewählt.'); return; }
-  const f = await anfrage({ typ: 'freigebe', spezifikation: p.spezifikation, von, messungen: z.messungen });
-  if (live.istVerbunden()) live.veroeffentliche(f.spezifikation);
-  z.stil.picker = null;
-  startProjekt(f.spezifikation, null, z.messungen);
+  if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
+  stilBeschaeftigt = true;
+  const ausgang = z.spec;
+  try {
+    const p = await anfrage({ typ: 'pruefe', spezifikation: neu, bearbeitet: true, vorher: ausgang, messungen: z.messungen });
+    if (z.spec !== ausgang) return; // inzwischen gilt eine andere Fassung (z. B. aus dem Raum): nichts davon veralten lassen
+    if (!p.freigebbar) { toast(`Das lässt sich so nicht übernehmen: ${p.rueckfragen.map((q) => q.frage).join(' ')}`); return; }
+    if (p.spezifikation.version === ausgang.version) { toast('Das ist schon so gewählt.'); return; }
+    const f = await anfrage({ typ: 'freigebe', spezifikation: p.spezifikation, von, messungen: z.messungen });
+    if (z.spec !== ausgang) return;
+    z.stil.picker = null;
+    startProjekt(f.spezifikation, null, z.messungen);
+    wartendeFassung = f.spezifikation; // wird veröffentlicht, sobald sie gilt (kein Umbauhinweis nötig oder bestätigt)
+  } catch (f) { toast(String(f.message ?? f)); } finally { stilBeschaeftigt = false; render(); } // render: das Auswahlfeld zeigt wieder den wirklichen Stand
+}
+function veroeffentlicheWartende() {
+  const w = wartendeFassung; wartendeFassung = null;
+  if (w && z.spec && w.freigabe?.abdruck === z.spec.freigabe?.abdruck && live.istVerbunden()) live.veroeffentliche(w);
 }
 async function stilAktion(name, d) {
   const s = z.stil, info = s.info; if (!info) return;

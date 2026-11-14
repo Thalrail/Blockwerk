@@ -60,7 +60,9 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
       if (!istObjekt(palette)) { frage(pfad, 'leser.schema', `Die Materialwahl von ${wer} muss eine Zuordnung von Rollen zu Blöcken sein.`, [{ id: 'entfernen', text: 'Materialwahl weglassen' }]); return; }
       for (const rolle of Object.keys(palette)) {
         try { paletten.pruefe({ [rolle]: palette[rolle] }); } catch (f) {
-          frage(`${pfad}.${rolle}`, 'leser.schema', `${wer}: ${String(f.message).replace(/^Palette: /, '')}.`, [{ id: 'entfernen', text: `Die Wahl für „${rolle}“ weglassen` }]);
+          // ein Rollenname aus einer Datei kann Punkte oder Klammern enthalten: dann ließe sich der Pfad nicht eindeutig lesen, und „weglassen“ könnte ein anderes Feld treffen; die Option gibt es nur für einfache Namen
+          const einfach = /^[a-z][a-z0-9_]{0,39}$/.test(rolle);
+          frage(`${pfad}.${String(rolle).slice(0, 60)}`, 'leser.schema', `${wer}: ${String(f.message).replace(/^Palette: /, '').slice(0, 300)}.`, einfach ? [{ id: 'entfernen', text: `Die Wahl für „${rolle}“ weglassen` }] : []);
         }
       }
     };

@@ -169,3 +169,32 @@ test('Zusammenfassung und Briefing: die Materialwahl steht im Text für Jonah; d
   assert.match(prompt, /„stil\.palette“ und „projekt\.stil“ \(Materialwahl\) setzt nur Jonah von Hand/);
   assert.equal(JSON.stringify(e.ebene4.beispiel()).includes('palette'), false, 'das Beispiel im Prompt enthält keine Materialwahl');
 });
+
+test('Review: Rollennamen mit Punkt oder Klammern aus einer Datei bekommen keine „weglassen“-Option (der Pfad wäre nicht eindeutig); __proto__ bleibt eine gewöhnliche Rückfrage', async () => {
+  const e = await engine();
+  const s = haus();
+  s.projekt.stil = JSON.parse('{"palette": {"wand.voll": "minecraft:stone", "teile[0]": "minecraft:stone", "__proto__": "minecraft:stone", "wand": "minecraft:stone"}}');
+  const q = e.ebene4.pruefe(s).rueckfragen;
+  assert.equal(q.length, 3, JSON.stringify(q.map((x) => x.pfad)));
+  for (const f of q) {
+    assert.equal(f.optionen.some((o) => o.id === 'entfernen'), false, `${f.pfad}: keine Option, die ein anderes Feld treffen könnte`);
+    assert.ok(f.optionen.some((o) => o.id === 'anders'));
+  }
+  const gut = haus(); gut.projekt.stil = { palette: { fantasie: 'minecraft:stone' } };
+  assert.ok(e.ebene4.pruefe(gut).rueckfragen[0].optionen.some((o) => o.id === 'entfernen'), 'ein einfacher Name darf weggelassen werden');
+});
+
+test('Review: Treppen und Türen behalten bei einer Materialwahl ihren vollen Blockzustand (Richtung, Hälfte, Scharnier), nicht nur ihre Kennung', async () => {
+  const e = await engine();
+  const spec = (pal) => mitStil(haus({ treppe: 1, tuerInWand: 1, fensterTeil: 1 }), { stimmung: 'hell-nordisch', ...(pal ? { palette: pal } : {}) });
+  const a = bauen(e, spec(null)), b = bauen(e, spec({ wand: 'minecraft:stone_bricks', licht: 'minecraft:sea_lantern' }));
+  const idsA = blockIds(e, a);
+  let geprueft = 0;
+  for (const [k, id] of idsA) {
+    if (!/_stairs$|_door$/.test(id)) continue;
+    const [x, y, z] = k.split(',').map(Number);
+    assert.deepEqual(b.mat.welt.leseBlock(x, y, z), a.mat.welt.leseBlock(x, y, z), `${id} bei ${k}`);
+    geprueft++;
+  }
+  assert.ok(geprueft >= 6, `Treppen und Türen vorhanden (${geprueft})`);
+});

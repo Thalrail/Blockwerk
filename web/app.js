@@ -481,7 +481,7 @@ function teilePanel() {
   if (z.umbau) return '<h3>Bauteile</h3><p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
   const teile = teileFelder();
   let h = '<h3>Bauteile</h3><p class="klein">Hier änderst du Größe, Lage und Name der Teile, fügst Teile hinzu oder entfernst sie. Vorher siehst du, was mit deinen Einzelblockänderungen geschieht. Eine Änderung ist eine neue Fassung und läuft über die Umbauhinweise.</p>';
-  if (teileBeschaeftigt) return h + '<p class="klein">Wird geprüft …</p>';
+  if (teileBeschaeftigt || stilBeschaeftigt) return h + '<p class="klein">Wird geprüft …</p>';
   if (t.meldung) h += `<p class="fehler">${esc(t.meldung)}</p>`;
   if (t.bestaetigung) {
     const b = t.bestaetigung;
@@ -530,7 +530,7 @@ async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = n
     if (v.rueckfragen.length) { t.meldung = `Das lässt sich so nicht übernehmen: ${v.rueckfragen.map((q) => q.frage).join(' ')}`; return; }
     if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel, basis: ausgang, nr }; return; }
   } catch (f) { t.meldung = String(f.message ?? f); return; } finally { teileBeschaeftigt = false; render(); }
-  if (await stilAnwenden(neu)) { t.bestaetigung = null; t.neu = null; render(); } // erst wenn genau diese Fassung angenommen ist, entfällt der Entwurf; bei einer Ablehnung bleibt er erhalten
+  await stilAnwenden(neu); // der Entwurf entfällt erst, wenn genau diese Fassung gilt (veroeffentlicheWartende); bei Rückfragen des Baus, Ablehnung oder „bei der alten Fassung bleiben“ bleibt er erhalten
 }
 async function teileAktion(name) {
   const t = z.teile, info = t.info; if (!info) return;
@@ -618,7 +618,7 @@ async function stilAnwenden(neu) {
   if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return false; }
   const von = z.name.trim();
   if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return false; }
-  stilBeschaeftigt = true;
+  stilBeschaeftigt = true; render();
   const ausgang = z.spec, nr = startNr;
   try {
     const p = await anfrage({ typ: 'pruefe', spezifikation: neu, bearbeitet: true, vorher: ausgang, messungen: z.messungen });
@@ -635,6 +635,7 @@ async function stilAnwenden(neu) {
 }
 function veroeffentlicheWartende() {
   const w = wartendeFassung; wartendeFassung = null;
+  if (w && z.spec && w.freigabe?.abdruck === z.spec.freigabe?.abdruck) { z.teile.neu = null; z.teile.bestaetigung = null; z.teile.felder = null; } // die Fassung gilt: Entwürfe der Teile-Formulare entfallen
   if (w && z.spec && w.freigabe?.abdruck === z.spec.freigabe?.abdruck && live.istVerbunden()) live.veroeffentliche(w);
 }
 async function stilAktion(name, d) {

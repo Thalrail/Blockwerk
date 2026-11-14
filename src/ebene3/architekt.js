@@ -103,10 +103,26 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     let e = entwurf;
     const ids = [];
     for (const { wunsch, lage } of p.platzierungen) {
-      e = aendere(e, { art: 'setze-teil', teil: { abschnitt, baustein: wunsch.baustein, parameter: wunsch.parameter, lage, wunsch: wunsch.id, zone: wunsch.zone } });
+      e = aendere(e, { art: 'setze-teil', teil: { abschnitt, baustein: wunsch.baustein, parameter: wunsch.parameter, lage, wunsch: wunsch.id, zone: wunsch.zone, ...(wunsch.ref !== undefined ? { ref: wunsch.ref } : {}) } });
       ids.push(e.teile.at(-1).id);
     }
     return { entwurf: e, teile: ids, offen: p.fehler.map((f) => f.wunsch.id) };
+  }
+
+  /**
+   * Setzt die Teile in Bauteilen (Kinder) eines Abschnitts: jedes mit seiner stabilen `ref`, dem Träger und der Relativlage (`einbau`); die Weltlage
+   * leitet `loeseLagen` beim Zusammenbau ab. Die Reihenfolge der Liste (Träger vor Kindern) bleibt erhalten. Ein Kind erbt den Abschnitt seines Trägers.
+   * @returns {{entwurf: object, teile: string[]}}
+   */
+  function setzeKinder(entwurf, abschnitt, kinder) {
+    if (!entwurf.abschnitte.some((a) => a.id === abschnitt)) throw new FormFehler(`Abschnitt ${String(abschnitt)} gibt es nicht`);
+    let e = entwurf;
+    const ids = [];
+    for (const k of kinder ?? []) {
+      e = aendere(e, { art: 'setze-teil', teil: { abschnitt, baustein: k.baustein, parameter: k.parameter ?? {}, lage: { x: 0, y: 0, z: 0, drehung: 0 }, ref: k.ref, traeger: k.traeger, einbau: k.einbau, name: k.name } });
+      ids.push(e.teile.at(-1).id);
+    }
+    return { entwurf: e, teile: ids };
   }
 
   /**
@@ -161,5 +177,5 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     return liste;
   }
 
-  return { setzeFormwuensche, plane, setzeFormen, miss, einwaende, FormFehler };
+  return { setzeFormwuensche, plane, setzeFormen, setzeKinder, miss, einwaende, FormFehler };
 }

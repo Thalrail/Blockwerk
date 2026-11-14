@@ -20,7 +20,7 @@ export const VARIANTEN = {
 /**
  * Die natürliche Beschreibung eines Wohnhauses mit den vorhandenen Begriffen: je Geschoss ein geschlossener Raum (`bau.raum`, seit dem ersten Paket nach der
  * Haus-Sonde; vorher ein offener `bau.gang`), darauf das Satteldach. Das Obergeschoss hat keinen eigenen Boden, es steht auf der Decke des Erdgeschosses.
- * `mit` schaltet zu: `tuer` und `fenster` (Parameter des Raums im Erdgeschoss), `tuerTeil` (Tür als eigenes Teil `bau.tuer`), `treppe` (Treppe im Haus, `innen`).
+ * `mit` schaltet zu: `tuer` und `fenster` (Parameter des Raums im Erdgeschoss), `tuerTeil` (Tür als eigenes Teil `bau.tuer`), `treppe` (Treppe im Haus, `innen`), `trennwand` (Trennwand `innen` mit Innentür in der Wand), `tuerInWand` und `fensterTeil` (Haustür und Fenster als Teile in einer Außenwand).
  * Alle Maße kommen aus der Variante, nichts ist fest codiert.
  */
 export function hausSpezifikation({ breite, tiefe, geschoss, neigung }, mit = {}) {
@@ -31,7 +31,14 @@ export function hausSpezifikation({ breite, tiefe, geschoss, neigung }, mit = {}
     { id: 'dach', name: 'Dach', art: 'halle', wichtigkeit: 'muss', form: { baustein: 'form.satteldach', groesse: { breite, laenge: tiefe, neigung, deckend: 1, giebel: 1 } }, lage: { bezug: 'obergeschoss', relation: 'ueber' } },
   ];
   if (mit.tuerTeil) teile.push({ id: 'haustuer', name: 'Haustür', art: 'tor', wichtigkeit: 'soll', form: { baustein: 'bau.tuer', groesse: { fluegel: 1 } }, lage: { bezug: 'erdgeschoss', relation: 'neben-sueden' } });
-  if (mit.treppe) teile.push({ id: 'treppe', name: 'Treppe', art: 'anlage', wichtigkeit: 'muss', form: { baustein: 'bau.treppe', groesse: { stufen: geschoss + 1, breite: 2 } }, lage: { bezug: 'erdgeschoss', relation: 'innen' } });
+  if (mit.treppe) teile.push({ id: 'treppe', name: 'Treppe', art: 'anlage', wichtigkeit: 'muss', form: { baustein: 'bau.treppe', groesse: { stufen: geschoss + 1, breite: 2 } }, lage: { bezug: 'erdgeschoss', relation: 'innen', anker: 'nordwest', ausrichtung: 'norden' } });
+  // Teile in Bauteilen (Einbau-Architektur, Paket P6): Trennwand im Erdgeschoss mit Tür, Haustür und Fenster als Kinder der Außenwand
+  if (mit.trennwand) {
+    teile.push({ id: 'trennwand', name: 'Trennwand', art: 'mauer', wichtigkeit: 'soll', form: { baustein: 'bau.wand', groesse: { laenge: breite - 2, hoehe: geschoss, dicke: 1 } }, lage: { bezug: 'erdgeschoss', relation: 'innen', anker: 'nordwest', versatz: { sued: 2 } } });
+    teile.push({ id: 'innentuer', name: 'Innentür', art: 'tor', wichtigkeit: 'soll', form: { baustein: 'bau.tuer', groesse: { fluegel: 1 } }, lage: { bezug: 'trennwand', relation: 'wand' } });
+  }
+  if (mit.tuerInWand) teile.push({ id: 'haustuer', name: 'Haustür', art: 'tor', wichtigkeit: 'soll', form: { baustein: 'bau.tuer', groesse: { fluegel: 1 } }, lage: { bezug: 'erdgeschoss', relation: 'wand-sued' } });
+  if (mit.fensterTeil) teile.push({ id: 'fenster', name: 'Fenster', art: 'tor', wichtigkeit: 'kann', form: { baustein: 'bau.fenster', groesse: { breite: 2, hoehe: 1, rahmen: 0 } }, lage: { bezug: 'erdgeschoss', relation: 'wand-nord', versatz: { hoch: 1 } } });
   const rand = 30; // großzügiger Bauplatz, damit nicht der Platz die Antwort bestimmt
   return { schema: 1, version: 1, projekt: { name: `Wohnhaus ${breite}×${tiefe}`, bauplatz: { breite: breite + rand, hoehe: 2 * (geschoss + 2) + breite, tiefe: tiefe + rand }, massstab: 1 }, teile };
 }

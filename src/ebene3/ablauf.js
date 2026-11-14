@@ -68,7 +68,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     let e = entwurf;
     const als = (wer, a) => { e = fachleute.aendere(e, wer, a).entwurf; };
     const entfernt = new Set();
-    for (const t of [...e.teile].filter((x) => menge.has(x.abschnitt))) { als(fachleute.besitzer(t), { art: 'entferne-teil', id: t.id }); entfernt.add(t.id); }
+    const tiefe = (t) => { let n = 0; for (let k = t; k.traeger !== undefined && n <= e.teile.length; n++) k = e.teile.find((x) => x.ref === k.traeger) ?? { }; return n; };
+    for (const t of [...e.teile].filter((x) => menge.has(x.abschnitt)).sort((p, q) => tiefe(q) - tiefe(p))) { als(fachleute.besitzer(t), { art: 'entferne-teil', id: t.id }); entfernt.add(t.id); } // tiefste Kinder zuerst
     for (const z of [...e.zonen].filter((x) => menge.has(x.abschnitt))) als('grobdesigner', { art: 'entferne-zone', id: z.id });
     for (const s of [...e.sperrzonen].filter((x) => [...entfernt].some((t) => x.id === `SZ-${t}`))) als('techniker', { art: 'entferne-sperrzone', id: s.id });
     for (const p of [...e.pruefungen].filter((x) => menge.has(x.abschnitt) || menge.has(x.mit))) als('konstrukteur', { art: 'entferne-pruefung', id: p.id });
@@ -137,7 +138,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     let e = neuerEntwurf({ name: vorgabe.name, bauplatz: vorgabe.bauplatz, nullpunkt: vorgabe.nullpunkt });
     e = K.gliedere(e, vorgabe.abschnitte.map((a) => ({
       id: a.id, name: a.name, huelle: a.huelle, nach: a.nach, schnittstellen: a.schnittstellen,
-      vorgabe: { zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, verbindungen: a.verbindungen, stimmung: a.stimmung },
+      vorgabe: { zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung },
     })));
     // Einspruch des Technikers: Bedarf mit „braucht“ gegen die Reihenfolge (auf einer Arbeitskopie mit dem ganzen Bedarf)
     for (let runde = 0; runde <= e.abschnitte.length; runde++) {
@@ -190,6 +191,8 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
         e = A.setzeFormwuensche(e, v.formen.map((f, i) => ({ id: `${id}-F${i + 1}`, abschnitt: id, ...f })));
         e = A.setzeFormen(e, id).entwurf;
       }
+      // 3b. Architekt: Teile in Bauteilen (Treppe im Haus, Tür in der Wand …): Träger vor Kindern, Lage relativ zum Träger
+      if (v.kinder?.length) e = A.setzeKinder(e, id, v.kinder).entwurf;
       // 4. Konstrukteur: Verbindungen
       for (const [i, vb] of (v.verbindungen ?? []).entries()) {
         const r = K.verlege(e, { abschnitt: id, von: vb.von, nach: vb.nach, art: vb.art, name: `${id}-V${i + 1}` });
@@ -257,7 +260,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
 
   const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v === null || typeof v !== 'object' ? v : Object.fromEntries(Object.keys(v).sort().filter((x) => v[x] !== undefined).map((x) => [x, v[x]]))));
   const inhalt = (a) => ({ name: a.name, huelle: a.huelle, nach: [...(a.nach ?? [])].sort(), schnittstellen: a.schnittstellen ?? [], vorgabe: a.vorgabe ?? {} });
-  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, verbindungen: a.verbindungen, stimmung: a.stimmung });
+  const vorgabeVon = (a) => ({ zonen: a.zonen, bedarf: a.bedarf, formen: a.formen, kinder: a.kinder, verbindungen: a.verbindungen, stimmung: a.stimmung });
   const abschnittAus = (a) => ({ id: a.id, name: a.name, huelle: a.huelle, nach: a.nach ?? [], schnittstellen: a.schnittstellen ?? [], vorgabe: vorgabeVon(a) });
 
   /**

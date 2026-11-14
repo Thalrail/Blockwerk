@@ -381,3 +381,9 @@ Diese Regeln hat die Engine umgesetzt, aber Bedrock dokumentiert sie nicht einde
 
 ## Hebel an der Antriebsschiene (Jonah, 24.10.2026)
 Schiene bei 96,-60,-4. Der Hebel versorgt sie, wenn er irgendwo an einem dieser Blöcke sitzt: 96,-60,-4; 97,-60,-4; 96,-60,-5; 95,-60,-4; 96,-60,-3; 97,-59,-4; 96,-59,-5; 95,-59,-4; 96,-59,-3; 96,-58,-4. Seit dem Update im Code (antrieb.hebel). Gemeint: „auf“ = Oberseite, „irgendwo an“ = jede Seite (oben, unten, seitlich), solange Platz ist.
+
+## Einbau: Treppe, Trennwand, Tür und Fenster als Teile im Haus (13.11.2026, `ungeprüft`)
+Alle Annahmen stammen aus der Simulation (Ebene 1), nichts davon ist im Spiel bestätigt. Testwelt (Kreativ), Haus nach dem Bauplan der Haus-Sonde (Wohnhaus 9 × 7, Geschosshöhe 3) mit Treppe, Trennwand mit Innentür, Haustür und Fenster als eigene Teile:
+1. **Treppe im Haus:** Kommst du vom Erdgeschoss die Treppe hinauf, ohne mit dem Kopf an die Decke zu stoßen und ohne zu springen? Der Durchbruch in der Decke muss über der ganzen Treppe offen sein (die Simulation verlangt **3 freie Blöcke** über jedem Stufenblock: 2 zum Stehen, 1 für den Schritt nach oben; reichen im Spiel 2?).
+2. **Trennwand mit Innentür:** Hält die Wand zwischen den Räumen, und geht man durch die Tür (Ausrichtung, Scharnier, schließt sie)?
+3. **Haustür und Fenster in der Außenwand:** Sitzen beide in der äußersten Wandschicht, ist das Haus ringsum dicht (nichts spawnt innen bei Licht), schauen Tür und Scheiben nach außen?

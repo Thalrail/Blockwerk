@@ -22,6 +22,10 @@ export function erzeugeVokabular({ regelwerk, ebene0, ebene2 }) {
     schema: S('schema'),
     teilarten: [...S('teilarten')],
     relationen: { ...S('relationen') },
+    kindrelationen: { ...S('kindrelationen') }, // Lage in einem Bauteil (Zone des Trägers): relation → Zonenname
+    anker: { ...S('anker') },
+    ausrichtungen: { ...S('ausrichtungen') },
+    versatz: { ...S('versatz') },
     wichtigkeiten: [...S('wichtigkeiten')],
     verbindungsarten: [...S('verbindungsarten')],
     proportionen: { ...S('proportionen') },

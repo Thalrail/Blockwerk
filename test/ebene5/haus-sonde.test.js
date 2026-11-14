@@ -61,10 +61,9 @@ test('Haus-Sonde: Tür und Fenster gehören zum Raum und die Planung läuft durc
     assert.ok(ids.some((i) => /_door$/.test(i)), `${name}: Tür im Plan`);
     assert.ok(ids.some((i) => /pane/.test(i)), `${name}: Fensterscheiben im Plan`);
   }
+  // die Treppe im Haus (`innen`) ist seit Paket P6 ein Teil im Haus: siehe haus-sonde-einbau.test.js
   const r = await laufe(hausSpezifikation(VARIANTEN.klein, { tuer: true, fenster: true, treppe: true }), e, e5);
-  assert.equal(r.status, 'rueckfragen');
-  assert.equal(r.rueckfragenBau.length, 1, JSON.stringify(r.rueckfragenBau));
-  assert.match(r.rueckfragenBau[0], /Treppe: „innen“ lässt sich .* nicht übersetzen/, 'Treppe: innen fehlt');
+  assert.equal(r.status, 'fertig', JSON.stringify(r.rueckfragenBau));
 });
 
 test('Haus-Sonde (Befund): ein Bauelement als eigenes Teil steht frühestens 8 Blöcke von der Wand entfernt (Hüllenrand), nie bündig', async () => {

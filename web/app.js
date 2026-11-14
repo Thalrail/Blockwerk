@@ -63,7 +63,7 @@ const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige 
 let startNr = 0; // zählt jeden Start einer Fassung: eine Stiländerung, die in der Zwischenzeit von einer anderen Fassung (z. B. aus dem Raum) überholt wurde, wird verworfen
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null, vonRaum = false) {
   startNr++;
-  wartendeFassung = null; // eine neue Fassung ersetzt jede noch wartende Veröffentlichung
+  wartendeFassung = null; teileAusstehend = null; // eine neue Fassung ersetzt jede noch wartende Veröffentlichung
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
   const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null);
@@ -213,7 +213,7 @@ function umbauPanel() {
 }
 function umbauEntscheiden(ja) {
   const u = z.umbau; if (!u) return;
-  if (!ja) { z.umbau = null; z.auswahl = null; wartendeFassung = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  if (!ja) { z.umbau = null; z.auswahl = null; wartendeFassung = null; teileAusstehend = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
   // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
   // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
   const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
@@ -530,7 +530,8 @@ async function teileAnwenden(neu, { bestaetigt = false, hinweise = [], titel = n
     if (v.rueckfragen.length) { t.meldung = `Das lässt sich so nicht übernehmen: ${v.rueckfragen.map((q) => q.frage).join(' ')}`; return; }
     if ((v.folgen.length || hinweise.length || titel) && !bestaetigt) { t.bestaetigung = { spec: neu, folgen: v.folgen, hinweise, titel, basis: ausgang, nr }; return; }
   } catch (f) { t.meldung = String(f.message ?? f); return; } finally { teileBeschaeftigt = false; render(); }
-  await stilAnwenden(neu); // der Entwurf entfällt erst, wenn genau diese Fassung gilt (veroeffentlicheWartende); bei Rückfragen des Baus, Ablehnung oder „bei der alten Fassung bleiben“ bleibt er erhalten
+  // der Entwurf entfällt erst, wenn genau diese Fassung gilt (veroeffentlicheWartende) und das Formular seitdem nicht geändert wurde; bei Rückfragen des Baus, Ablehnung oder „bei der alten Fassung bleiben“ bleibt er erhalten
+  if (await stilAnwenden(neu)) teileAusstehend = { abdruck: wartendeFassung?.freigabe?.abdruck ?? null, rev: t.rev };
 }
 async function teileAktion(name) {
   const t = z.teile, info = t.info; if (!info) return;
@@ -611,6 +612,7 @@ function stilWahlPanel() {
   return h;
 }
 /** Neue Spezifikation übernehmen: Prüfer (bearbeitet → neue Version), Freigabe durch dich, dann der gewohnte Bau mit Umbauhinweisen. Nichts wird geraten oder still angewandt. */
+let teileAusstehend = null; // die gestartete Fassung einer Teile-Änderung: Abdruck und Formular-Revision
 let stilBeschaeftigt = false, wartendeFassung = null; // nur eine Stiländerung zugleich; die neue Fassung geht erst in den Raum, wenn sie hier wirklich gilt
 /** @returns {Promise<boolean>} true, wenn die neue Fassung angenommen und gestartet wurde (sie gilt, sobald der Bau und eine nötige Bestätigung der Umbauhinweise durch sind) */
 async function stilAnwenden(neu) {
@@ -635,7 +637,11 @@ async function stilAnwenden(neu) {
 }
 function veroeffentlicheWartende() {
   const w = wartendeFassung; wartendeFassung = null;
-  if (w && z.spec && w.freigabe?.abdruck === z.spec.freigabe?.abdruck) { z.teile.neu = null; z.teile.bestaetigung = null; z.teile.felder = null; } // die Fassung gilt: Entwürfe der Teile-Formulare entfallen
+  const a = teileAusstehend;
+  if (a && w && w.freigabe?.abdruck === a.abdruck && z.spec?.freigabe?.abdruck === a.abdruck) { // die Fassung der Teile-Änderung gilt: ihr Entwurf entfällt, aber nur, wenn das Formular seitdem nicht geändert wurde
+    if (z.teile.rev === a.rev) { z.teile.neu = null; z.teile.bestaetigung = null; z.teile.felder = null; }
+    teileAusstehend = null;
+  }
   if (w && z.spec && w.freigabe?.abdruck === z.spec.freigabe?.abdruck && live.istVerbunden()) live.veroeffentliche(w);
 }
 async function stilAktion(name, d) {

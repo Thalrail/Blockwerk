@@ -23,9 +23,9 @@ function abstand(a, b) {
 }
 
 /**
- * @param {{regelwerk: object, vokabular: ReturnType<typeof import('./vokabular.js').erzeugeVokabular>}} quellen
+ * @param {{regelwerk: object, vokabular: ReturnType<typeof import('./vokabular.js').erzeugeVokabular>, paletten: {pruefe: Function}}} quellen  `paletten`: die Palettenprüfung des Designers (Ebene 3), damit Prüfer und Planung dieselben Regeln haben
  */
-export function erzeugePruefer({ regelwerk, vokabular: V }) {
+export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
   const vorschlaege = regelwerk.parameter('leser.pruefer', 'vorschlaege');
   const hoechstAbstand = regelwerk.parameter('leser.pruefer', 'hoechstAbstand');
 
@@ -55,6 +55,18 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
       frage(pfad, regel, `${was} „${String(wert)}“ kennt Blockwerk nicht (erlaubt: ${erlaubt.length > 14 ? `${erlaubt.slice(0, 14).join(', ')} …` : erlaubt.join(', ')}). Was ist gemeint?`, wahl(vor));
     };
 
+    /** Materialwahl von Hand (Entscheidung 14.11.2026): jede Rolle gegen dieselben Regeln wie in der Planung (Register, kein Arbeitsblock, Form, drehbar, Licht). */
+    const pruefePalette = (palette, pfad, wer) => {
+      if (!istObjekt(palette)) { frage(pfad, 'leser.schema', `Die Materialwahl von ${wer} muss eine Zuordnung von Rollen zu Blöcken sein.`, [{ id: 'entfernen', text: 'Materialwahl weglassen' }]); return; }
+      for (const rolle of Object.keys(palette)) {
+        try { paletten.pruefe({ [rolle]: palette[rolle] }); } catch (f) {
+          // ein Rollenname aus einer Datei kann Punkte oder Klammern enthalten: dann ließe sich der Pfad nicht eindeutig lesen, und „weglassen“ könnte ein anderes Feld treffen; die Option gibt es nur für einfache Namen
+          const einfach = /^[a-z][a-z0-9_]{0,39}$/.test(rolle);
+          frage(`${pfad}.${String(rolle).slice(0, 60)}`, 'leser.schema', `${wer}: ${String(f.message).replace(/^Palette: /, '').slice(0, 300)}.`, einfach ? [{ id: 'entfernen', text: `Die Wahl für „${rolle}“ weglassen` }] : []);
+        }
+      }
+    };
+
     if (!istObjekt(spec)) { frage('', 'leser.schema', 'Die Spezifikation ist kein JSON-Objekt.'); return { rueckfragen, hinweise }; }
     for (const k of Object.keys(spec)) if (!OBER_FELDER.includes(k)) frage(k, 'leser.schema', `Das Feld „${k}“ kennt das Schema nicht (erlaubt: ${OBER_FELDER.join(', ')}).`, [{ id: 'entfernen', text: 'Feld weglassen' }]);
     if (spec.schema !== V.schema) frage('schema', 'leser.schema', `Die Schema-Version ist ${JSON.stringify(spec.schema)}, Blockwerk versteht Schema ${V.schema}.`, wahl([V.schema]));
@@ -65,6 +77,14 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
     if (!istObjekt(p)) frage('projekt', 'leser.schema', 'Das Projekt fehlt (Name, Bauplatzgröße).');
     else {
       if (typeof p.name !== 'string' || !p.name.trim()) frage('projekt.name', 'leser.schema', 'Das Projekt braucht einen Namen.');
+      if (p.stil !== undefined) {
+        if (!istObjekt(p.stil)) frage('projekt.stil', 'leser.schema', 'Der Stil des Projekts muss ein Objekt sein.', [{ id: 'entfernen', text: 'Stil des Projekts weglassen' }]);
+        else {
+          for (const k of Object.keys(p.stil)) if (!['stimmung', 'palette'].includes(k)) frage(`projekt.stil.${k}`, 'leser.schema', `Das Feld „${k}“ kennt der Stil des Projekts nicht (erlaubt: stimmung, palette).`, [{ id: 'entfernen', text: 'Feld weglassen' }]);
+          if (p.stil.stimmung !== undefined && !V.stimmungen.includes(p.stil.stimmung)) unbekannt('projekt.stil.stimmung', 'leser.schema', 'Die Stimmung des Projekts', p.stil.stimmung, V.stimmungen);
+          if (p.stil.palette !== undefined) pruefePalette(p.stil.palette, 'projekt.stil.palette', 'Das Projekt');
+        }
+      }
       if (p.id !== undefined && !(typeof p.id === 'string' && PROJEKT_ID.test(p.id))) frage('projekt.id', 'leser.schema', `Die Projektkennung ${JSON.stringify(p.id)} hat nicht die Form p-<32 Hexzeichen>. Blockwerk vergibt sie selbst.`, [{ id: 'entfernen', text: 'Kennung weglassen (Blockwerk vergibt eine neue)' }]);
       const b = p.bauplatz;
       if (!istObjekt(b)) frage('projekt.bauplatz', 'leser.schema', 'Der Bauplatz fehlt (breite, hoehe, tiefe in Blöcken).');
@@ -217,6 +237,10 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
         else {
           if (st.stimmung !== undefined && !V.stimmungen.includes(st.stimmung)) unbekannt(`${pf}.stil.stimmung`, 'leser.schema', `Die Stimmung von ${wer}`, st.stimmung, V.stimmungen);
           if (st.farben !== undefined && !(Array.isArray(st.farben) && st.farben.length <= V.farben.maximum && st.farben.every((c) => typeof c === 'string' && c))) frage(`${pf}.stil.farben`, 'leser.schema', `Die Farben von ${wer} müssen eine Liste von höchstens ${V.farben.maximum} Namen sein.`);
+          if (st.palette !== undefined) {
+            if (typeof t.lage?.relation === 'string' && Object.hasOwn(V.kindrelationen, t.lage.relation)) frage(`${pf}.stil.palette`, 'leser.schema', `${wer} ist ein Teil in einem anderen Bauteil und hat keinen eigenen Abschnitt; die Materialwahl gilt dort nicht. Sie gehört an das Bauteil, in dem es sitzt (oder ans Projekt).`, [{ id: 'entfernen', text: 'Materialwahl hier weglassen' }]);
+            else pruefePalette(st.palette, `${pf}.stil.palette`, wer);
+          }
           if (st.bemerkung !== undefined && typeof st.bemerkung !== 'string') frage(`${pf}.stil.bemerkung`, 'leser.schema', `Die Bemerkung zum Stil von ${wer} muss Text sein.`);
         }
       }

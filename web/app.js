@@ -6,6 +6,7 @@ import * as Umbau from '../src/ebene5/umbau.js';
 import * as Projekt from '../src/ebene5/projektid.js';
 import * as PF from '../src/ebene5/planfassung.js';
 import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
+import * as Stil from '../src/ebene5/stil.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -27,7 +28,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -58,7 +59,10 @@ worker.onerror = (e) => { z.status = null; if (z.bearbeitung && z.vorher) { bear
 
 const zufall = () => crypto.getRandomValues(new Uint8Array(16)); // der einzige Zufall der Projektkennung: die Logik in src/ bekommt ihn hereingereicht
 
+let startNr = 0; // zählt jeden Start einer Fassung: eine Stiländerung, die in der Zwischenzeit von einer anderen Fassung (z. B. aus dem Raum) überholt wurde, wird verworfen
 function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = [], entscheidung = null, empfangeneAenderungen = null, vonRaum = false) {
+  startNr++;
+  wartendeFassung = null; // eine neue Fassung ersetzt jede noch wartende Veröffentlichung
   // Neue Fassung desselben Projekts: die alte (mit ihrem Fortschritt) bleibt gültig, bis Jonah die Umbauhinweise bestätigt hat
   // Läuft noch eine Berechnung (z.daten ist leer), bleibt die zuletzt bestätigte Fassung aus dem früheren Aufruf die Grundlage.
   const basis = z.daten && z.spec ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null);
@@ -183,7 +187,7 @@ function nachDemBauen() {
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(z.bleibe); z.bleibe = null;
-  speichern(); sichereAenderungen();
+  speichern(); sichereAenderungen(); veroeffentlicheWartende();
   toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
 }
 
@@ -208,7 +212,7 @@ function umbauPanel() {
 }
 function umbauEntscheiden(ja) {
   const u = z.umbau; if (!u) return;
-  if (!ja) { z.umbau = null; z.auswahl = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  if (!ja) { z.umbau = null; z.auswahl = null; wartendeFassung = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
   // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
   // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
   const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
@@ -220,7 +224,7 @@ function umbauEntscheiden(ja) {
   let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
   f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
   z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f; z.planfassung = u.neu.planfassung ?? PF.leer();
-  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen();
+  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen(); veroeffentlicheWartende();
   const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(u.bleibe);
@@ -434,6 +438,94 @@ function zellePanel() {
   if (z.blockwahl) h += blockwahlPanel();
   return h + fuss;
 }
+// ---------- Stil und Materialien (U4) ----------
+const ROLLEN_TEXT = { wand: 'Wand', akzent: 'Akzent', boden: 'Boden', licht: 'Licht', glas: 'Glas' };
+const FORMEN_TEXT = { voll: 'Block', treppe: 'Treppe', tuer: 'Tür', scheibe: 'Scheibe' };
+async function stilLaden() {
+  if (z.stil.info) return;
+  try { z.stil.info = (await anfrage({ typ: 'stilInfo' })).info; } catch (f) { toast(String(f.message ?? f)); return; }
+  render();
+}
+const stilEbene = () => { const e = Stil.ebenen(z.spec, z.stil.info.kindrelationen); return e.some((x) => x.id === z.stil.ebene) ? z.stil.ebene : 'projekt'; };
+/** Reiter „Stil“: Stimmung und Materialwahl je Projekt oder Teil. Es wird die Spezifikation geändert; danach läuft der gewohnte Weg (Prüfung, neue Version, Bauplan, Umbauhinweise). */
+function stilPanel() {
+  const s = z.stil, info = s.info;
+  if (!info) return '<p class="klein">Wird geladen …</p>';
+  if (z.umbau) return '<h3>Stimmung und Materialien</h3><p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
+  const ebene = stilEbene(), stil = Stil.stilVon(z.spec, ebene), liste = Stil.ebenen(z.spec, info.kindrelationen);
+  let h = `<h3>Stimmung und Materialien</h3><p class="klein">Die Stimmung ist ein vorbereiteter Satz von Materialien. Darüber kannst du einzelne Blöcke wählen. Eine Änderung ist eine neue Fassung der Spezifikation und läuft über die Umbauhinweise.</p>
+    <label class="klein zustand">Gilt für <select id="st-ebene">${liste.map((x) => `<option value="${esc(x.id)}" ${x.id === ebene ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
+    <label class="klein zustand">Stimmung <select id="st-stimmung"><option value="">(keine eigene)</option>${info.stimmungen.map((n) => `<option value="${esc(n)}" ${stil.stimmung === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+    <table class="tabelle"><tr><td class="klein">Rolle</td><td class="klein">Gewählter Block (sonst gilt die Stimmung)</td></tr>`;
+  for (const rolle of info.rollen) {
+    h += `<tr><td>${esc(ROLLEN_TEXT[rolle] ?? rolle)}</td><td>${info.rollenFormen[rolle].map((form) => {
+      const w = Stil.wahlFuer(z.spec, ebene, rolle, form);
+      const text = w ? kurzId(w.id) + zustandText(w.zustand) : 'Stimmung';
+      return `<button class="treffer ${w ? 'haupt' : ''}" data-a="st-rolle" data-rolle="${esc(rolle)}" data-form="${esc(form)}" title="${esc(ROLLEN_TEXT[rolle] ?? rolle)}, ${esc(FORMEN_TEXT[form] ?? form)}">${info.rollenFormen[rolle].length > 1 ? `${esc(FORMEN_TEXT[form] ?? form)}: ` : ''}${esc(text)}</button>`;
+    }).join(' ')}</td></tr>`;
+  }
+  h += '</table>';
+  if (ebene === 'projekt') h += '<p class="klein">Die Wahl für das Projekt gilt für alle Teile ohne eigene Stimmung; ein Teil mit eigener Stimmung folgt dieser.</p>';
+  if (s.picker) h += stilWahlPanel();
+  return h;
+}
+function stilTrefferListe(p) {
+  return p.treffer.length ? p.treffer.map((t) => `<button class="treffer" data-a="st-waehle" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('') + (p.mehr ? '<span class="klein">Es gibt mehr Treffer, bitte genauer suchen.</span>' : '') : (p.suche ? '<span class="klein">Kein passender Block gefunden.</span>' : '<span class="klein">Tippe einen Teil des Namens, z. B. stone_bricks. Angeboten werden nur Blöcke, die für diese Rolle erlaubt sind.</span>');
+}
+function stilWahlPanel() {
+  const p = z.stil.picker, g = p.gewaehlt;
+  let h = `<div class="blockwahl"><strong>${esc(ROLLEN_TEXT[p.rolle] ?? p.rolle)}, ${esc(FORMEN_TEXT[p.form] ?? p.form)}</strong><input id="st-suche" type="text" autocomplete="off" placeholder="Block suchen, z. B. stone_bricks" value="${esc(p.suche)}"><div id="st-treffer" class="trefferliste">${stilTrefferListe(p)}</div>`;
+  if (g) {
+    h += `<h4>${esc(g.info.name)}</h4>`;
+    h += g.info.zustaende.map((za, i) => `<label class="klein zustand">${esc(kurzId(za.name))}${za.pflicht ? ' (nötig)' : ''} <select id="st-z-${i}" data-i="${i}">${za.pflicht ? '' : '<option value="-1">(Standard)</option>'}${za.werte.map((v, j) => `<option value="${j}" ${g.zustand[za.name] !== undefined && g.zustand[za.name] === v ? 'selected' : ''}>${esc(String(v))}</option>`).join('')}</select></label>`).join('');
+  }
+  h += `<div class="knoepfe">${g ? '<button class="haupt" data-a="st-setzen">Übernehmen</button>' : ''}${Stil.wahlFuer(z.spec, stilEbene(), p.rolle, p.form) ? '<button data-a="st-weg">Wahl wegnehmen (Stimmung gilt)</button>' : ''}<button data-a="st-abbrechen">Abbrechen</button></div></div>`;
+  return h;
+}
+/** Neue Spezifikation übernehmen: Prüfer (bearbeitet → neue Version), Freigabe durch dich, dann der gewohnte Bau mit Umbauhinweisen. Nichts wird geraten oder still angewandt. */
+let stilBeschaeftigt = false, wartendeFassung = null; // nur eine Stiländerung zugleich; die neue Fassung geht erst in den Raum, wenn sie hier wirklich gilt
+async function stilAnwenden(neu) {
+  if (stilBeschaeftigt) { toast('Die vorige Änderung wird noch geprüft.'); render(); return; }
+  if (z.status || z.umbau || !z.daten) { toast('Jetzt gerade nicht: Der Plan wird berechnet oder die Umbauhinweise warten.'); render(); return; }
+  const von = z.name.trim();
+  if (!von) { toast('Bitte oben deinen Spielernamen eintragen (er steht bei der Freigabe der neuen Fassung).'); render(); return; }
+  stilBeschaeftigt = true;
+  const ausgang = z.spec, nr = startNr;
+  try {
+    const p = await anfrage({ typ: 'pruefe', spezifikation: neu, bearbeitet: true, vorher: ausgang, messungen: z.messungen });
+    if (z.spec !== ausgang || startNr !== nr) return; // inzwischen gilt oder rechnet eine andere Fassung (z. B. aus dem Raum): nichts davon veralten lassen
+    if (!p.freigebbar) { toast(`Das lässt sich so nicht übernehmen: ${p.rueckfragen.map((q) => q.frage).join(' ')}`); return; }
+    if (p.spezifikation.version === ausgang.version) { toast('Das ist schon so gewählt.'); return; }
+    const f = await anfrage({ typ: 'freigebe', spezifikation: p.spezifikation, von, messungen: z.messungen });
+    if (z.spec !== ausgang || startNr !== nr) return;
+    z.stil.picker = null;
+    startProjekt(f.spezifikation, null, z.messungen);
+    wartendeFassung = f.spezifikation; // wird veröffentlicht, sobald sie gilt (kein Umbauhinweis nötig oder bestätigt)
+  } catch (f) { toast(String(f.message ?? f)); } finally { stilBeschaeftigt = false; render(); } // render: das Auswahlfeld zeigt wieder den wirklichen Stand
+}
+function veroeffentlicheWartende() {
+  const w = wartendeFassung; wartendeFassung = null;
+  if (w && z.spec && w.freigabe?.abdruck === z.spec.freigabe?.abdruck && live.istVerbunden()) live.veroeffentliche(w);
+}
+async function stilAktion(name, d) {
+  const s = z.stil, info = s.info; if (!info) return;
+  if (name === 'st-abbrechen') { s.picker = null; render(); return; }
+  if (name === 'st-rolle') { s.picker = { rolle: d.rolle, form: d.form, suche: '', treffer: [], mehr: false, gewaehlt: null }; render(); document.getElementById('st-suche')?.focus(); return; }
+  const p = s.picker; if (!p) return;
+  if (name === 'st-waehle') {
+    const nr = (p.infoNr = (p.infoNr ?? 0) + 1);
+    const binfo = (await anfrage({ typ: 'blockInfo', id: d.id })).info, zustand = {};
+    if (s.picker !== p || p.infoNr !== nr) return; // ein späterer Klick oder ein anderer Dialog gilt
+    for (const za of binfo.zustaende) if (za.pflicht) zustand[za.name] = za.vorschlag;
+    p.gewaehlt = { info: binfo, zustand }; render(); return;
+  }
+  const ebene = stilEbene();
+  if (name === 'st-weg') { await stilAnwenden(Stil.setzeMaterial(z.spec, ebene, p.rolle, p.form, null, info)); return; }
+  if (name === 'st-setzen') {
+    const g = p.gewaehlt; if (!g) { toast('Bitte zuerst einen Block aus der Liste wählen.'); return; }
+    await stilAnwenden(Stil.setzeMaterial(z.spec, ebene, p.rolle, p.form, { id: g.info.id, ...(Object.keys(g.zustand).length ? { zustand: g.zustand } : {}) }, info));
+  }
+}
 function trefferListe(w) {
   return w.treffer.length ? w.treffer.map((t) => `<button class="treffer" data-a="bk-waehle" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('') + (w.mehr ? '<span class="klein">Es gibt mehr Treffer, bitte genauer suchen (z. B. oak_stairs).</span>' : '') : (w.suche ? '<span class="klein">Kein Block gefunden.</span>' : '<span class="klein">Tippe einen Teil des Namens, z. B. glass, oak_stairs, lantern.</span>');
 }
@@ -450,7 +542,7 @@ function blockwahlPanel() {
 }
 function rechteSpalte() {
   const a = abschnitt(), s = schicht(), r = z.reiter;
-  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
+  const reiter = [['material', 'Material'], ['schicht', 'Diese Schicht'], ['zelle', 'Zelle'], ['stil', 'Stil'], ['bericht', 'Baubericht'], ['status', 'Status'], ['spec', 'Spezifikation']];
   let inhalt = '';
   if (r === 'material') {
     const m = z.daten.material;
@@ -463,6 +555,7 @@ function rechteSpalte() {
       ${(s.aussparungen ?? []).length ? `<h3>Aussparungen</h3><p class="klein">${s.aussparungen.length} rot gestrichelte Zellen bleiben leer: ${[...new Set(s.aussparungen.map((q) => `${q.kind} in ${q.traeger}`))].map(esc).join(', ')}. Dort wird kein Block gesetzt (Durchbruch, Kopffreiheit).</p>` : ''}
       ${a.wesen.filter((w) => w.y === s.y).length ? `<h3>Wesen</h3>${a.wesen.filter((w) => w.y === s.y).map((w) => `<p class="klein">${esc(w.id.replace('minecraft:', ''))}${w.baby ? ' (Baby)' : ''} bei x ${w.x}, z ${w.z}</p>`).join('')}` : ''}`;
   } else if (r === 'zelle') inhalt = zellePanel();
+  else if (r === 'stil') inhalt = stilPanel();
   else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {
     const st = z.daten.baustatus;
@@ -675,7 +768,8 @@ async function aktion(name, el) {
     else if (name === 'pip') await pip();
     else if (name === 'abschnitt') { z.a = Number(d.i); z.s = Math.min(z.s, abschnitt().schichten.length - 1); const n = abschnitt().schichten.findIndex((s) => !fertig(abschnitt(), s)); z.s = n >= 0 ? n : 0; render(); }
     else if (name === 'schicht') { z.a = Number(d.i); z.s = Number(d.j); render(); }
-    else if (name === 'reiter') { z.reiter = d.k; render(); }
+    else if (name === 'reiter') { z.reiter = d.k; render(); if (d.k === 'stil') await stilLaden(); }
+    else if (name.startsWith('st-')) await stilAktion(name, d);
     else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }
     else if (name === 'einpassen') { a3d?.einpassen(); }
     else if (name === 'bisAktuelle') { z.sicht.maxY = schicht().y; render(); }
@@ -711,6 +805,11 @@ document.addEventListener('input', (ev) => {
   const id = ev.target.id;
   if (id === 'name') { z.name = ev.target.value; speicher.schreib('blockwerk.name', z.name); if (z.seite === 'eingabe') render(); }
   else if (Eingabe.eingabeGeaendert(id, ev.target.value, z.e)) { speicher.schreib('blockwerk.entwurf', Eingabe.zuSpeichern(z.e)); if (id === 'e-text') { const b = document.querySelector('[data-a="e-pruefen"]'); if (b) b.disabled = !ev.target.value.trim(); } }
+  else if (id === 'st-suche') { // wie die Blocksuche: nur die Liste neu schreiben
+    const p = z.stil.picker; if (!p) return;
+    p.suche = ev.target.value; const nr = (p.suchNr = (p.suchNr ?? 0) + 1);
+    anfrage({ typ: 'materialSuche', text: p.suche, rolle: p.rolle, form: p.form }).then((r) => { if (z.stil.picker !== p || p.suchNr !== nr) return; p.treffer = r.treffer; p.mehr = r.mehr; const ziel = document.getElementById('st-treffer'); if (ziel) ziel.innerHTML = stilTrefferListe(p); }).catch((f) => toast(String(f.message ?? f)));
+  }
   else if (id === 'bk-suche') { // nur die Trefferliste neu schreiben, damit das Eingabefeld seinen Fokus behält
     const w = z.blockwahl; if (!w) return;
     w.suche = ev.target.value; const nr = (w.suchNr = (w.suchNr ?? 0) + 1);
@@ -723,9 +822,15 @@ document.addEventListener('input', (ev) => {
     aktualisiere3d(false);
   }
 });
-document.addEventListener('change', (ev) => {
+document.addEventListener('change', async (ev) => {
   const id = ev.target.id;
-  if (id.startsWith('bk-z-')) { // Zustandswert gewählt (der Wert ist der Index in der Liste der erlaubten Werte, so bleiben Zahlen und Wahrheitswerte echt)
+  if (id.startsWith('st-z-')) { // Zustandswert der Materialwahl (Index in der Liste der erlaubten Werte)
+    const g = z.stil.picker?.gewaehlt; const za = g?.info.zustaende[Number(ev.target.dataset.i)]; if (!za) return;
+    const j = Number(ev.target.value); if (j < 0) delete g.zustand[za.name]; else g.zustand[za.name] = za.werte[j];
+  }
+  else if (id === 'st-ebene') { z.stil.ebene = ev.target.value; z.stil.picker = null; render(); }
+  else if (id === 'st-stimmung') { try { await stilAnwenden(Stil.setzeStimmung(z.spec, stilEbene(), ev.target.value || null, z.stil.info.stimmungen)); } catch (f) { toast(String(f.message ?? f)); } }
+  else if (id.startsWith('bk-z-')) { // Zustandswert gewählt (der Wert ist der Index in der Liste der erlaubten Werte, so bleiben Zahlen und Wahrheitswerte echt)
     const g = z.blockwahl?.gewaehlt; const za = g?.info.zustaende[Number(ev.target.dataset.i)]; if (!za) return;
     const j = Number(ev.target.value); if (j < 0) delete g.zustand[za.name]; else g.zustand[za.name] = za.werte[j];
   }

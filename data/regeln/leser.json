@@ -5,7 +5,7 @@
     {
       "id": "leser.schema",
       "titel": "Das Schema der Bauspezifikation",
-      "regel": "Die Bauspezifikation ist die einzige Verbindung vom Leser in die Planung. Sie beschreibt nur, WAS gebaut wird: Schema-Version und Versionsnummer der Spezifikation, Projekt (Name, Bauplatzgröße, Nullpunkt, Maßstab), Teile mit Art, Form aus Ebene 2 mit Größe und Proportionen, Lage als Beziehung zu einem anderen Teil oder zum Bauplatz, Funktionen als Bedarf, Stil, Wichtigkeit (muss, soll, kann) und Verbindungen. Keine Koordinaten, keine Blöcke, keine Schaltungen. Das Vokabular steht in dieser Regel als Daten; Prüfer, Briefing-Prompt und die Planung (Ebene 3) lesen dasselbe.",
+      "regel": "Die Bauspezifikation ist die einzige Verbindung vom Leser in die Planung. Sie beschreibt nur, WAS gebaut wird: Schema-Version und Versionsnummer der Spezifikation, Projekt (Name, Bauplatzgröße, Nullpunkt, Maßstab), Teile mit Art, Form aus Ebene 2 mit Größe und Proportionen, Lage als Beziehung zu einem anderen Teil oder zum Bauplatz, Funktionen als Bedarf, Stil, Wichtigkeit (muss, soll, kann) und Verbindungen. Keine Koordinaten, keine Blöcke, keine Schaltungen. Einzige Ausnahme (Entscheidung 14.11.2026): die von Hand gesetzte Materialwahl `stil.palette` (Rolle auf Registerblock), die nur das Aussehen beschreibt; der Leser füllt sie nie. Das Vokabular steht in dieser Regel als Daten; Prüfer, Briefing-Prompt und die Planung (Ebene 3) lesen dasselbe.",
       "parameter": {
         "schema": 1,
         "teilarten": [

@@ -185,7 +185,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         pruefeDarf(e, fachmann, ziel, feldBesitz.paletten);
         pruefePalette(aenderung.palette);
         e.paletten ??= {};
-        e.paletten[aenderung.abschnitt] = { ...(e.paletten[aenderung.abschnitt] ?? {}), ...aenderung.palette };
+        e.paletten[aenderung.abschnitt] = aenderung.ersetze === true ? { ...aenderung.palette } : { ...(e.paletten[aenderung.abschnitt] ?? {}), ...aenderung.palette };
         beschreibung = `Abschnittspalette für ${Object.keys(aenderung.palette).join(', ')} gesetzt`;
         break;
       }

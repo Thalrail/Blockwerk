@@ -79,6 +79,7 @@ export function erzeugeBriefing({ vokabular: V }) {
     z.push(`Wichtigkeit: ${V.wichtigkeiten.join(', ')}`);
     z.push(`Verbindungsarten („verbindungen[].art“): ${V.verbindungsarten.join(', ')}`);
     z.push(`Stimmungen („stil.stimmung“): ${V.stimmungen.join(', ')}`);
+    z.push('Die Felder „stil.palette“ und „projekt.stil“ (Materialwahl) setzt nur Jonah von Hand; du füllst und nennst sie nie.');
     z.push(`Proportionen („form.proportionen“): ${Object.entries(V.proportionen).map(([k, g]) => `${k} (${g.min}–${g.max})`).join(', ')}`);
     z.push(`Bauplatz: breite ${V.bauplatz.breite.min}–${V.bauplatz.breite.max}, hoehe ${V.bauplatz.hoehe.min}–${V.bauplatz.hoehe.max}, tiefe ${V.bauplatz.tiefe.min}–${V.bauplatz.tiefe.max}`);
     z.push('');

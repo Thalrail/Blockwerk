@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U3 umgesetzt (14.11.2026); U4 bis U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U4 umgesetzt (14.11.2026); U5 bis U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -57,7 +57,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U3 um
 - Persistenz lokal: Planfassung je `projektId` im Browser; Link und Datei tragen sie schon (Limit 200.000 Zeichen bleibt, wird angezeigt).
 - Tests: Node-Tests für `bearbeiten.js`, Browserprüfung (Block setzen, Haken fällt, Hinweise erscheinen, Rückgängig).
 
-### U4 Materialien bearbeiten (Priorität 2, Spezifikationsweg)
+### U4 Materialien bearbeiten (Priorität 2, Spezifikationsweg) – umgesetzt 14.11.2026 (Option B: Stimmung und Rollenblöcke), siehe `docs/referenz/stand-ebene5.md`
 - Formular für Stimmung und Palette je Gesamtprojekt, Abschnitt und Teil (Rollen Wand, Akzent, Boden, Licht, Glas → Block aus dem Register). Es schreibt dieselbe Spezifikation (Felder `stil`), keine Sonderlogik.
 - Der bestehende Weg übernimmt: `pruefe` mit `bearbeitet` → neue Version → Freigabe → Bauplan → Umbauhinweise.
 - Tests: Spezifikationsvergleich (`vergleiche`), Palette unvollständig → Rückfrage statt stilles Material (bleibt Regel).

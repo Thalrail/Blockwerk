@@ -7,6 +7,7 @@ const ID = (x) => x;
 const komma = (x) => String(x).replace('.', ',');
 const mitte = (a, b) => a + Math.floor(b / 2);
 const huelleAus = (x0, y0, z0, w, d, h) => ({ von: { x: x0, y: y0, z: z0 }, bis: { x: x0 + w - 1, y: y0 + h - 1, z: z0 + d - 1 } });
+import { mischePaletten } from './designer.js';
 const ueberschneiden = (a, b) => ['x', 'y', 'z'].every((k) => a.von[k] <= b.bis[k] && b.von[k] <= a.bis[k]);
 const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v === null || typeof v !== 'object' ? v : Object.fromEntries(Object.keys(v).sort().filter((x) => v[x] !== undefined).map((x) => [x, v[x]]))));
 
@@ -229,7 +230,17 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     // ---- 5. Vorgabe ----
     const stimmungen = new Map();
     for (const t of teile) if (t.stil?.stimmung) stimmungen.set(t.stil.stimmung, (stimmungen.get(t.stil.stimmung) ?? 0) + 1);
-    const gesamt = [...stimmungen.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0];
+    // Die ausdrückliche Stimmung des Projekts (projekt.stil) geht vor der häufigsten Stimmung der Teile; die Materialwahl des Projekts überschreibt je Rolle und Form
+    const gesamt = spec.projekt.stil?.stimmung ?? [...stimmungen.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0];
+    const gesamtPalette = spec.projekt.stil?.palette;
+    // Material eines Abschnitts. Nur die Stimmung: wie bisher. Mit Materialwahl wird die Vorgabe in sich vollständig (Stimmung und Überschreibung), damit eine Änderung am Projekt den Abschnitt
+    // erkennbar mitverändert: eigene Stimmung → deren Palette plus eigene Materialwahl; sonst Stimmung des Projekts, Materialwahl des Projekts, darüber die eigene.
+    const materialVon = (t) => {
+      const eigene = t.stil?.palette;
+      if (!eigene) return t.stil?.stimmung ? { stimmung: t.stil.stimmung } : {};
+      const stimmung = t.stil.stimmung ?? gesamt;
+      return { ...(stimmung ? { stimmung } : {}), palette: mischePaletten(t.stil.stimmung ? {} : (gesamtPalette ?? {}), eigene) };
+    };
     const abschnitte = teile.filter((t) => !istKind(t)).map((t) => {
       const x = info.get(t.id), hu = huellen.get(t.id);
       let zonen = [{ funktion: 'optik', anteil: 100 }];
@@ -248,11 +259,11 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
         formen: [{ baustein: x.bs, parameter: x.groesse, zone: 'optik', anker: 'mitte', ref: t.id, ...(Object.keys(soll).length ? { soll } : {}) }],
         ...(kinder.get(t.id).length ? { kinder: kinder.get(t.id) } : {}),
         ...(verb.get(t.id).length ? { verbindungen: verb.get(t.id) } : {}),
-        ...(t.stil?.stimmung ? { stimmung: t.stil.stimmung } : {}),
+        ...materialVon(t),
       };
     });
     return {
-      vorgabe: { name: spec.projekt.name, bauplatz: { ...spec.projekt.bauplatz }, nullpunkt: np, ...(gesamt ? { stimmung: gesamt } : {}), abschnitte },
+      vorgabe: { name: spec.projekt.name, bauplatz: { ...spec.projekt.bauplatz }, nullpunkt: np, ...(gesamt ? { stimmung: gesamt } : {}), ...(gesamtPalette ? { palette: structuredClone(gesamtPalette) } : {}), abschnitte },
       rueckfragen, hinweise,
     };
   }

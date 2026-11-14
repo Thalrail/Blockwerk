@@ -10,6 +10,28 @@ export class GestaltungsFehler extends Error {
   constructor(nachricht) { super(`Gestaltung: ${nachricht}`); this.name = 'GestaltungsFehler'; }
 }
 
+/** Ein Rollenwert als Zuordnung Form → Block: Text oder {id, zustand} ist die Form „voll“, sonst steht die Zuordnung schon da. */
+export const formKarte = (wert) => {
+  if (typeof wert === 'string' || (wert && typeof wert === 'object' && 'id' in wert)) return { voll: wert };
+  return wert && typeof wert === 'object' && !Array.isArray(wert) ? { ...wert } : {};
+};
+
+/**
+ * Mischt eine Überschreibung (Rolle → Block, je Rolle auch je Form) über eine Palette (zum Beispiel die einer Stimmung). Je Rolle und Form gewinnt die Überschreibung,
+ * alle anderen Formen der Rolle bleiben (die Akzent-Treppe einer Stimmung bleibt, wenn nur der Vollblock überschrieben wird). Rein; die Eingaben bleiben unverändert;
+ * Rollen und Formen erscheinen in fester Reihenfolge. Eine Rolle nur mit der Form „voll“ wird wieder zum einfachen Wert.
+ * @param {object} basis @param {object} ueberschreibung @returns {object}
+ */
+export function mischePaletten(basis = {}, ueberschreibung = {}) {
+  const eintraege = []; // Object.fromEntries am Ende: ein Rollenname wie __proto__ wird so nie zum Prototyp-Setter
+  for (const rolle of [...new Set([...Object.keys(basis), ...Object.keys(ueberschreibung)])].sort()) {
+    const karte = { ...formKarte(basis[rolle]), ...formKarte(ueberschreibung[rolle]) };
+    const formen = Object.keys(karte).sort();
+    eintraege.push([rolle, formen.length === 1 && formen[0] === 'voll' ? structuredClone(karte.voll) : Object.fromEntries(formen.map((f) => [f, structuredClone(karte[f])]))]);
+  }
+  return Object.fromEntries(eintraege);
+}
+
 /**
  * Prüfung einer Palette gegen Blockregister und Regeln; wirft RechtFehler('ungueltig'). Wird von `fachleute.aendere` bei jeder Palette aufgerufen.
  * @param {{regelwerk: object, ebene0: object}} quellen
@@ -58,7 +80,7 @@ export function erzeugePaletten({ regelwerk, ebene0 }) {
     return rollen.every((r) => r in palette);
   }
 
-  return { pruefe, vollstaendig, stimmung: (name) => stimmungen[name] ?? null, stimmungen: () => Object.keys(stimmungen), rollen };
+  return { pruefe, vollstaendig, stimmung: (name) => stimmungen[name] ?? null, stimmungen: () => Object.keys(stimmungen), rollen, formen: { ...formen } };
 }
 
 /**
@@ -73,9 +95,15 @@ export function erzeugeDesigner({ fachleute, paletten }) {
   };
 
   /** Gesamtpalette für alle Abschnitte (Vorlauf). */
-  const setzePalette = (entwurf, stimmung) => aendere(entwurf, { art: 'setze-palette', palette: structuredClone(hole(stimmung)) });
+  /** Die Palette aus Stimmung (falls genannt) und Überschreibung (falls genannt); ohne beides gibt es nichts zu setzen. */
+  const palette = (stimmung, ueberschreibung) => {
+    if (stimmung === undefined && ueberschreibung === undefined) throw new GestaltungsFehler('weder Stimmung noch Materialwahl genannt');
+    const basis = stimmung === undefined ? {} : structuredClone(hole(stimmung));
+    return ueberschreibung === undefined ? basis : mischePaletten(basis, ueberschreibung);
+  };
+  const setzePalette = (entwurf, stimmung, ueberschreibung) => aendere(entwurf, { art: 'setze-palette', palette: palette(stimmung, ueberschreibung), ersetze: true });
   /** Abschnittspalette: geht vor der Gesamtpalette, gilt nur für diesen Abschnitt. */
-  const setzeAbschnittspalette = (entwurf, abschnitt, stimmung) => aendere(entwurf, { art: 'setze-abschnittspalette', abschnitt, palette: structuredClone(hole(stimmung)) });
+  const setzeAbschnittspalette = (entwurf, abschnitt, stimmung, ueberschreibung) => aendere(entwurf, { art: 'setze-abschnittspalette', abschnitt, palette: palette(stimmung, ueberschreibung), ersetze: true });
 
   return { setzePalette, setzeAbschnittspalette, stimmungen: paletten.stimmungen, GestaltungsFehler };
 }

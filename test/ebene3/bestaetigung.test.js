@@ -83,8 +83,8 @@ test('Bestätigung: eine neue Prüfung bestätigt wieder; Verstöße im Prüfber
   const mitMeldung = (ort) => erzeugeBestaetigung({ regelwerk: e.ebene1.regelwerk, ebene0: e.ebene0, materialisierung: { materialisiere: e.ebene3.materialisiere, pruefeEntwurf: () => [{ schwere: 'verstoss', regel: 'pruefer.test', ort, meldung: 'künstlich' }] } });
   const nah = mitMeldung(innen).bestaetige(r.entwurf);
   assert.deepEqual([nah.bestaetigt, nah.abgelehnt.map((a) => [a.ref, a.meldungen.length])], [[], [[ref, 1]]]);
-  assert.deepEqual(nah.entwurf.bestaetigungen, [], 'ohne Bestätigung: der Plan zeigt die Anlage nicht als funktionsfähig');
-  assert.notEqual(status(e5.bauplan(nah.entwurf))[ref], 'bestaetigt');
+  assert.deepEqual(nah.entwurf.bestaetigungen.map((b) => [b.teil, b.ergebnis, b.abdruck]), [[ref, 'abgelehnt', null]], 'die Ablehnung wird gespeichert');
+  assert.equal(status(e5.bauplan(nah.entwurf))[ref], 'nicht-bestaetigt', 'war bestätigt, wurde abgelehnt: nicht bestätigt (nicht „ungeprüft“)');
   assert.match(nah.entwurf.bericht.at(-1).satz, /nicht bestätigt: .* \(1 Verstöße\)/);
   const fern = mitMeldung({ x: innen.x + 500, y: innen.y, z: innen.z + 500 }).bestaetige(r.entwurf);
   assert.deepEqual(fern.bestaetigt, [ref]);
@@ -133,4 +133,29 @@ test('Bestätigung: der Prüfbereich ist Hülle plus Umkreis (vereinigt mit der 
   };
   assert.notEqual(abdruck(0), abdruck(1), 'nur der Zustand (Richtung) unterscheidet sich');
   assert.equal(abdruck(0), abdruck(0));
+});
+
+test('Bestätigung: auch Inventarinhalt und Wesen im Prüfbereich gehören zum Abdruck (Bewegung innerhalb derselben Zelle, Hinzufügen, Entfernen)', async () => {
+  const { e, e5 } = await umgebung();
+  const r = await laufe(markt(), e, e5);
+  const B = e.ebene3.bestaetigung;
+  const mat = e.ebene3.materialisiere(r.entwurf);
+  const tech = r.entwurf.teile.find((t) => t.art === 'technik');
+  assert.ok(tech);
+  const abd = (blocks = [], wesen = []) => B.abdruecke(r.entwurf, { ...mat, welt: { alleBloecke: () => [...mat.welt.alleBloecke(), ...blocks], wesen: () => [...mat.welt.wesen(), ...wesen] } })[0].abdruck;
+  const basis = abd();
+  // Inhalt: nur die Anzahl ändern
+  const kastenHoch = B.abdruecke(r.entwurf, mat)[0].kasten;
+  const truheDrin = (anzahl) => ({ x: kastenHoch.von.x + 1, y: kastenHoch.von.y, z: kastenHoch.von.z + 1, id: 'minecraft:chest', zustand: {}, inhalt: [{ slot: 0, gegenstand: 'minecraft:dirt', anzahl }] });
+  assert.notEqual(abd([truheDrin(1)]), basis, 'ein Block mit Inhalt im Prüfbereich');
+  assert.notEqual(abd([truheDrin(1)]), abd([truheDrin(2)]), 'nur der Inhalt ändert sich');
+  assert.equal(abd([truheDrin(2)]), abd([truheDrin(2)]));
+  // Wesen: Hinzufügen, Bewegen innerhalb derselben Blockzelle, anderes Merkmal
+  const dorfi = (x, extra = {}) => ({ id: 'minecraft:villager_v2', x, y: kastenHoch.von.y + 0.5, z: kastenHoch.von.z + 0.5, yaw: 0, baby: false, nr: 7, ...extra });
+  const mitte = kastenHoch.von.x + 3;
+  assert.notEqual(abd([], [dorfi(mitte + 0.2)]), basis, 'ein Wesen kommt hinzu');
+  assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.8)]), 'Bewegung innerhalb derselben Blockzelle');
+  assert.notEqual(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { baby: true })]), 'anderes Merkmal');
+  assert.equal(abd([], [dorfi(mitte + 0.2)]), abd([], [dorfi(mitte + 0.2, { nr: 99 })]), 'die laufende Nummer zählt nicht');
+  assert.equal(abd([], [dorfi(kastenHoch.bis.x + 50)]), basis, 'ein Wesen weit weg zählt nicht');
 });

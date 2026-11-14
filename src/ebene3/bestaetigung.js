@@ -60,7 +60,9 @@ export function erzeugeBestaetigung({ regelwerk, materialisierung }) {
       for (const b of blockImKasten(chunks, kasten)) {
         h = fnv(`;${b.x},${b.y},${b.z},${b.id},${JSON.stringify(sortiert(b.zustand ?? {}))}${b.inhalt?.length ? JSON.stringify(sortiert(b.inhalt)) : ''}`, h);
       }
-      for (const w of wesen.filter((x) => imKasten({ x: Math.floor(x.x), y: Math.floor(x.y), z: Math.floor(x.z) }, kasten)).sort((p, q) => p.x - q.x || p.y - q.y || p.z - q.z || (p.id < q.id ? -1 : 1))) h = fnv(`#${w.id},${Math.floor(w.x)},${Math.floor(w.y)},${Math.floor(w.z)},${w.baby ? 1 : 0}`, h);
+      // Wesen im Prüfbereich: alle Daten außer der laufenden Nummer (`nr`, `sitztIn` hängen von der Einfügereihenfolge ab), mit exakter Position; die abgerundete Zelle dient nur der Zuordnung
+      const dort = wesen.filter((x) => imKasten({ x: Math.floor(x.x), y: Math.floor(x.y), z: Math.floor(x.z) }, kasten)).map(({ nr, sitztIn, ...rest }) => JSON.stringify(sortiert(rest))).sort();
+      for (const w of dort) h = fnv(`#${w}`, h);
       return { id: t.id, ref: refVon(t), name: t.name ?? t.baustein, abschnitt: t.abschnitt, baustein: t.baustein, kasten, abdruck: hex8(h) };
     });
   }
@@ -74,7 +76,7 @@ export function erzeugeBestaetigung({ regelwerk, materialisierung }) {
     const liste = entwurf.bestaetigungen ?? [];
     return abdruecke(entwurf, mat).map((x) => {
       const b = liste.find((y) => y.teil === x.ref);
-      return { ref: x.ref, id: x.id, name: x.name, abschnitt: x.abschnitt, status: !b ? 'ungeprueft' : b.abdruck === x.abdruck && b.baustein === x.baustein ? 'bestaetigt' : 'nicht-bestaetigt' };
+      return { ref: x.ref, id: x.id, name: x.name, abschnitt: x.abschnitt, status: !b ? 'ungeprueft' : b.ergebnis !== 'abgelehnt' && b.abdruck === x.abdruck && b.baustein === x.baustein ? 'bestaetigt' : 'nicht-bestaetigt' };
     });
   }
 
@@ -92,8 +94,8 @@ export function erzeugeBestaetigung({ regelwerk, materialisierung }) {
     const neu = [];
     for (const x of abdruecke(e, mat)) {
       const hier = meldungen.filter((m) => imKasten(m.ort, x.kasten));
-      if (hier.length) { abgelehnt.push({ ref: x.ref, meldungen: hier }); continue; }
-      neu.push({ teil: x.ref, baustein: x.baustein, abdruck: x.abdruck, umkreis, von: 'ebene1' });
+      if (hier.length) { abgelehnt.push({ ref: x.ref, meldungen: hier }); neu.push({ teil: x.ref, baustein: x.baustein, abdruck: null, ergebnis: 'abgelehnt', umkreis, von: 'ebene1' }); continue; }
+      neu.push({ teil: x.ref, baustein: x.baustein, abdruck: x.abdruck, ergebnis: 'bestaetigt', umkreis, von: 'ebene1' });
       bestaetigt.push(x.ref);
     }
     e.bestaetigungen = neu;

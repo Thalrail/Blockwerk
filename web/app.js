@@ -213,7 +213,7 @@ function rechnet() {
 function abschnittsliste() {
   return plan().abschnitte.map((a, i) => {
     const p = fortschritt.prozent(z.fortschritt, plan(), a.id);
-    return `<div class="abschnitt ${i === z.a ? 'aktiv' : ''}"><div class="titel" data-a="abschnitt" data-i="${i}"><span>${i + 1}. ${esc(a.name)}${(a.technik ?? []).some((t) => t.status === 'nicht-bestaetigt') ? ' <span title="Technik nicht bestätigt: im Prüfbereich wurde etwas geändert, neu prüfen (Reiter Status)">⚠</span>' : ''}</span><span class="anteil">${p.fertigeSchichten}/${p.schichten}</span></div>
+    return `<div class="abschnitt ${i === z.a ? 'aktiv' : ''}"><div class="titel" data-a="abschnitt" data-i="${i}"><span>${i + 1}. ${esc(a.name)}${(a.technik ?? []).some((t) => t.status !== 'bestaetigt') ? ' <span title="Technik nicht bestätigt oder noch nicht geprüft (Reiter Status)">⚠</span>' : ''}</span><span class="anteil">${p.fertigeSchichten}/${p.schichten}</span></div>
       <div class="balkenzeile"><i style="width:${Math.round(p.anteil * 100)}%"></i></div>
       ${i === z.a ? `<div class="schichten">${a.schichten.map((s, j) => `<div class="schicht ${fertig(a, s) ? 'fertig' : ''} ${j === z.s ? 'aktiv' : ''}" data-a="schicht" data-i="${i}" data-j="${j}" title="${s.n} Blöcke">${s.y}</div>`).join('')}</div>` : ''}</div>`;
   }).join('');

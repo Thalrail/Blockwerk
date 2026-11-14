@@ -86,7 +86,8 @@ export function erzeugeLive(k) {
         if (x.spezifikation.version > (lokal.version ?? 0)) live.vorschlag = { von: 'dem Raum', spezifikation: x.spezifikation, aenderungen: x.aenderungen ?? null };
         else if (x.spezifikation.version < (lokal.version ?? 0) && lokal.freigabe) sende(live.klient.planVeroeffentlichen(lokal)); // wir haben die neuere Fassung: sie in den Raum stellen
       } else if (!x.spezifikation && lokal?.freigabe) sende(live.klient.planVeroeffentlichen(lokal));
-      if (lokal && x.aenderungen && x.spezifikation?.freigabe?.abdruck === lokal.freigabe?.abdruck && idVon(x.spezifikation) === idVon(lokal)) k.setzePlanfassung(x.aenderungen, true); // nur zur selben Fassung: sonst bleiben sie beim Vorschlag // im Raum gilt der Stand des Raums (ohne Projekt bekommt startProjekt ihn schon)
+      // nur zur selben Fassung (sonst bleiben sie beim Vorschlag); ein Raum ohne Plan wird gerade von uns angelegt: unsere Änderungen gehören hinein, sonst würde die erste Änderung eines anderen sie still ersetzen
+      if (lokal && x.aenderungen && (x.spezifikation ? (x.spezifikation.freigabe?.abdruck === lokal.freigabe?.abdruck && idVon(x.spezifikation) === idVon(lokal)) : !!lokal.freigabe)) k.setzePlanfassung(x.aenderungen, true); // im Raum gilt der Stand des Raums (ohne Projekt bekommt startProjekt ihn schon)
     } else if (x.art === 'aenderungen-angenommen') {
       k.setzePlanfassung(x.aenderungen, false);
     } else if (x.art === 'aenderungen') {

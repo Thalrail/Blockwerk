@@ -111,5 +111,5 @@ Auswirkung A: Schemaänderung in Ebene 4 (optionales Feld, Version der Spezifika
 - **Spezifikationsweg ändert die Teil-Kennung:** bleibt die `ref` erhalten, bleiben Änderungen gebunden; Umbenennen einer `ref` in der Spezifikation verwaist sie. U5 zeigt das vorab.
 - **Rechenzeit:** Plan wird bei jeder Änderung neu gebaut (Zitadelle mehrere Sekunden); U3 nutzt den Worker mit Auftragsnummer, Teilneuberechnung nur auf Freigabe von Jonah (Roadmap Punkt 6).
 
-## Offene Integrationsprüfung vor dem Abschluss von U7
-Der **Zwei-Browser-Tab-Test** zu U6 (Konfliktanzeige, Zulassung im Raum, abgelehnte Gruppe, Widerruf, Dienst ohne Formatangabe; Ablauf in `docs/referenz/stand-ebene5.md`, „Offene Integrationsprüfung“) wird nach dem Merge von U6 durchgeführt, **bevor U7 abgeschlossen wird**. U7 darf begonnen werden, gilt aber erst nach diesem Test als fertig.
+## Integrationsprüfung vor dem Abschluss von U7 (durchgeführt 14.11.2026)
+Der **Zwei-Browser-Tab-Test** zu U6 (Konfliktanzeige, Zulassung im Raum, abgelehnte Gruppe, Widerruf, Dienst ohne Formatangabe; Ablauf in `docs/referenz/stand-ebene5.md`, „Offene Integrationsprüfung“) wurde nach dem Merge von U6 durchgeführt (alle fünf Prüfpunkte bestanden, zwei echte Fehler gefunden und behoben; Ergebnis in `docs/referenz/stand-ebene5.md`). U7 darf beginnen.

@@ -30,13 +30,25 @@ test('Übersetzung: ein Teil innen im Haus bekommt keinen eigenen Abschnitt, son
   assert.deepEqual(standard.einbau, { zone: 'innenraum', anker: 'mitte', versatz: { x: 0, y: 0, z: 0 }, drehung: 0 });
 });
 
-test('Übersetzung: Wandzonen: die Ausrichtung folgt der Wandseite (das Kind schaut nach außen), eine ausdrückliche Ausrichtung gilt', () => {
+test('Übersetzung: Wandzonen: die Ausrichtung folgt der Wandseite (das Kind schaut nach außen), eine zusätzliche Ausrichtung wird abgelehnt', () => {
   const tuer = (relation, extra = {}) => kind('tuer', 'bau.tuer', { fluegel: 1 }, { bezug: 'haus', relation, ...extra });
   for (const [seite, drehung] of [['nord', 0], ['ost', 1], ['sued', 2], ['west', 3]]) {
     const k = kinderVon(uebersetze([haus, tuer(`wand-${seite}`)]).vorgabe, 'haus')[0];
     assert.deepEqual([k.einbau.zone, k.einbau.drehung], [`wand-${seite}`, drehung], seite);
   }
-  assert.equal(kinderVon(uebersetze([haus, tuer('wand-sued', { ausrichtung: 'norden' })]).vorgabe, 'haus')[0].einbau.drehung, 0);
+  // Option A (Jonah, 14.11.2026): die Wandseite legt die Ausrichtung fest; eine widersprüchliche Angabe wird vom Prüfer abgelehnt, die Übersetzung folgt in jedem Fall der Wand
+  assert.equal(kinderVon(uebersetze([haus, tuer('wand-sued', { ausrichtung: 'norden' })]).vorgabe, 'haus')[0].einbau.drehung, 2, 'Wandseite gewinnt auch dann, wenn jemand die Prüfung umgeht');
+  const q = L.pruefe(spec([haus, tuer('wand-sued', { ausrichtung: 'norden' })])).rueckfragen.filter((x) => x.pfad === 'teile[1].lage.ausrichtung');
+  assert.equal(q.length, 1);
+  for (const teil of ['in der Südwand', 'die Seite der Wand legt die Ausrichtung fest (nach außen)', '„norden“ widerspricht dem; bitte weglassen']) assert.ok(q[0].frage.includes(teil), teil);
+  assert.ok(q[0].optionen.some((o) => o.id === 'entfernen'));
+  // auch die gleiche Richtung wie die Wand ist eine überflüssige, zweite Angabe: abgelehnt (eindeutig statt stillschweigend gleich)
+  assert.equal(L.pruefe(spec([haus, tuer('wand-sued', { ausrichtung: 'sueden' })])).rueckfragen.filter((x) => /ausrichtung/.test(x.pfad)).length, 1);
+  // ohne Ausrichtung, und bei den Relationen ohne Seite (innen, wand) bleibt die Ausrichtung erlaubt
+  assert.deepEqual(L.pruefe(spec([haus, tuer('wand-sued')])).rueckfragen.filter((x) => /lage/.test(x.pfad)), []);
+  assert.deepEqual(L.pruefe(spec([haus, tuer('innen', { ausrichtung: 'westen' })])).rueckfragen.filter((x) => /lage/.test(x.pfad)), []);
+  // alle vier Seiten
+  for (const s of ['nord', 'ost', 'sued', 'west']) assert.equal(L.pruefe(spec([haus, tuer(`wand-${s}`, { ausrichtung: 'osten' })])).rueckfragen.filter((x) => /ausrichtung/.test(x.pfad)).length, 1, s);
 });
 
 test('Übersetzung: Kette Haus → Trennwand → Tür: Träger vor Kind, beide im Abschnitt des Hauses', () => {

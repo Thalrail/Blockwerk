@@ -1,6 +1,8 @@
 // Ebene 4 – Prüfer der Spezifikation: streng gegen das Schema. Alles Unklare wird eine Rückfrage an Jonah (mit Pfad und Optionen), nichts wird geraten.
 // Fester Algorithmus: gleiche Spezifikation = gleiche Rückfragen in gleicher Reihenfolge. Regeln als Daten: data/regeln/leser.json.
 
+import { PROJEKT_ID } from './spezifikation.js';
+
 const ID_MUSTER = /^[a-z0-9][a-z0-9-]*$/;
 const TEIL_FELDER = ['id', 'name', 'art', 'form', 'lage', 'funktionen', 'stil', 'wichtigkeit', 'verbindungen'];
 const OBER_FELDER = ['schema', 'version', 'projekt', 'teile', 'offeneFragen', 'freigabe'];
@@ -63,6 +65,7 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
     if (!istObjekt(p)) frage('projekt', 'leser.schema', 'Das Projekt fehlt (Name, Bauplatzgröße).');
     else {
       if (typeof p.name !== 'string' || !p.name.trim()) frage('projekt.name', 'leser.schema', 'Das Projekt braucht einen Namen.');
+      if (p.id !== undefined && !(typeof p.id === 'string' && PROJEKT_ID.test(p.id))) frage('projekt.id', 'leser.schema', `Die Projektkennung ${JSON.stringify(p.id)} hat nicht die Form p-<32 Hexzeichen>. Blockwerk vergibt sie selbst.`, [{ id: 'entfernen', text: 'Kennung weglassen (Blockwerk vergibt eine neue)' }]);
       const b = p.bauplatz;
       if (!istObjekt(b)) frage('projekt.bauplatz', 'leser.schema', 'Der Bauplatz fehlt (breite, hoehe, tiefe in Blöcken).');
       else {
@@ -162,6 +165,7 @@ export function erzeugePruefer({ regelwerk, vokabular: V }) {
         } else for (const k of ['anker', 'versatz', 'ausrichtung']) {
           if (l[k] !== undefined) frage(`${pf}.lage.${k}`, 'leser.schema', `„${k}“ gilt nur für Teile in einem anderen Bauteil (${Object.keys(V.kindrelationen).join(', ')}), nicht für „${String(l.relation)}“.`, [{ id: 'entfernen', text: `${k} weglassen` }]);
         }
+        if (inBauteil && l.ausrichtung !== undefined && /^wand-/.test(l.relation)) frage(`${pf}.lage.ausrichtung`, 'leser.schema', `${wer} liegt „${V.relationen[l.relation].replace('{bezug}', 'dem Bauteil')}“: die Seite der Wand legt die Ausrichtung fest (nach außen). Die zusätzliche Ausrichtung „${String(l.ausrichtung)}“ widerspricht dem; bitte weglassen.`, [{ id: 'entfernen', text: 'ausrichtung weglassen' }]);
         if (l.anker !== undefined && inBauteil && !(typeof l.anker === 'string' && Object.hasOwn(V.anker, l.anker))) unbekannt(`${pf}.lage.anker`, 'leser.schema', `Der Anker von ${wer}`, l.anker, Object.keys(V.anker));
         if (l.ausrichtung !== undefined && inBauteil && !(typeof l.ausrichtung === 'string' && Object.hasOwn(V.ausrichtungen, l.ausrichtung))) unbekannt(`${pf}.lage.ausrichtung`, 'leser.schema', `Die Ausrichtung von ${wer}`, l.ausrichtung, Object.keys(V.ausrichtungen));
         if (l.versatz !== undefined && inBauteil) {

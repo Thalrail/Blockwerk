@@ -8,6 +8,9 @@ export class SpezifikationFehler extends Error {
 
 export const kopie = (spec) => structuredClone(spec);
 
+/** Form der Projektkennung (`projekt.id`): p- und 32 Hexzeichen (128 Bit, von der Oberfläche vergeben; die Logik hier kennt keinen Zufall). */
+export const PROJEKT_ID = /^p-[0-9a-f]{32}$/;
+
 /** Liest die Antwort aus dem Claude-Chat: mit oder ohne ```json-Zaun, davor und danach darf Text stehen. */
 export function liesJson(text) {
   if (typeof text !== 'string' || !text.trim()) throw new SpezifikationFehler('der Text ist leer');
@@ -38,6 +41,8 @@ export const zuJson = (spec) => JSON.stringify(sortiert(spec), null, 2);
 export function abdruck(spec) {
   const { freigabe, ...inhalt } = spec;
   void freigabe;
+  // die Projektkennung ist Herkunft, nicht Inhalt: sie ändert weder Freigabe noch Plan (Jonah, 14.11.2026)
+  if (inhalt.projekt && typeof inhalt.projekt === 'object' && 'id' in inhalt.projekt) { const { id, ...rest } = inhalt.projekt; void id; inhalt.projekt = rest; }
   const text = JSON.stringify(sortiert(inhalt));
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {

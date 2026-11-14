@@ -5,6 +5,7 @@
 // Nur Web-Standards (CompressionStream, btoa/atob), keine Pakete. Link: <Adresse>#p=<deflate + base64url>.
 
 import * as PF from './planfassung.js';
+import { PROJEKT_ID } from '../ebene4/spezifikation.js';
 
 export const TYP = 'blockwerk-projekt';
 export const VERSION = 1;
@@ -58,6 +59,8 @@ function pruefe(d) {
   if (!d || d.typ !== TYP) throw new TeilenFehler('das ist kein Blockwerk-Projekt');
   if (d.version !== VERSION) throw new TeilenFehler(`Version ${String(d.version)} wird nicht verstanden (erwartet ${VERSION})`);
   if (!d.spezifikation || typeof d.spezifikation !== 'object') throw new TeilenFehler('die Spezifikation fehlt');
+  const kennung = d.spezifikation.projekt?.id;
+  if (kennung !== undefined && !(typeof kennung === 'string' && PROJEKT_ID.test(kennung))) throw new TeilenFehler('die Projektkennung ist ungültig (erwartet p- und 32 Hexzeichen)');
   if (d.fortschritt !== undefined && (typeof d.fortschritt !== 'object' || d.fortschritt === null)) throw new TeilenFehler('der Fortschritt ist ungültig');
   if (d.aenderungen !== undefined) {
     try { d = { ...d, aenderungen: PF.pruefeForm(d.aenderungen) }; } catch (f) {

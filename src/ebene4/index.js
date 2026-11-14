@@ -10,7 +10,7 @@ import { erzeugeMessung } from './messung.js';
 import { erzeugeAbgleich } from './abgleich.js';
 import { erzeugeBau } from './bau.js';
 
-export { SpezifikationFehler, liesJson, zuJson, abdruck, kopie } from './spezifikation.js';
+export { SpezifikationFehler, liesJson, zuJson, abdruck, kopie, PROJEKT_ID } from './spezifikation.js';
 export { FreigabeFehler } from './version.js';
 export { BildFehler } from './bild.js';
 export { BauFehler } from './bau.js';

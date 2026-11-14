@@ -128,3 +128,6 @@ Empfohlene erste Schritte: **P1 und P2 zusammen als kleinster Anfang** (kein Ein
 - Leistung: Der Zusammenbau-Cache (`teilSpeicher`) schlüsselt heute nach Baustein, Parametern, Lage, Palette; er muss Einbau und Änderungen einschließen. Nicht gemessen.
 - Die Link-Begrenzung (200.000 Zeichen) gilt auch für `aenderungen` (Entscheidung 5 des Bearbeitungsmodells: dokumentierte Einschränkung).
 - Das Modell ist nicht an einem zweiten Referenzbau (Burgturm, Wendeltreppe) erprobt; die Haus-Sonde ist der erste Test, nicht der letzte.
+
+- **Bekannte Grenze (Jonah, 14.11.2026, nach dem Codex-Review der PR):** Neue Fassungen werden in `web/app.js` über den Projektnamen (plus geänderten Abdruck) als Fassung desselben Projekts erkannt. Eine Umbenennung verliert den Fortschritt, zwei verschiedene Projekte mit gleichem Namen könnten verwechselt werden; die Umbauhinweise verlangen vor dem Übernehmen eine Bestätigung, „bei der alten Fassung bleiben“ ist möglich. Bewusst nicht behoben: eine stabile `projektId` (Spezifikation, Link, Datei, Live-Raum) wäre eine Schemaänderung und ein eigenes Paket.
+- **Offen (Entscheidung steht aus):** Bei `wand-nord|ost|sued|west` überschreibt eine ausdrückliche `ausrichtung` die Außenrichtung (`uebersetzung.js`, festgeschrieben im Test `uebersetzung-einbau.test.js`); der Vertrag sagt „nach außen“. Zu klären, ob die Wandseite immer gewinnt.

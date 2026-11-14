@@ -225,7 +225,7 @@ export function erzeugeKlient({ name, fortschritt = F.leer() }) {
           z.aenderungen = PF.setzeZellen(alt, m.zellen, m.version);
           meldungen.push({ art: 'aenderungen-angenommen', version: m.version, anzahl: m.angenommen.length, aenderungen: z.aenderungen });
         }
-        if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, abgleich: luecke, aenderungen: z.aenderungen });
+        if (m.konflikte.length) meldungen.push({ art: 'aenderung-konflikt', konflikte: m.konflikte, version: m.version, abgleich: luecke, aenderungen: z.aenderungen, gruppe: m.gruppeAbgelehnt === true });
         if (luecke) senden.push({ typ: 'hallo', name: z.name });
       } else if (m.typ === 'aenderungen') {
         const alt = z.aenderungen;

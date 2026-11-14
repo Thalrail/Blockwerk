@@ -41,7 +41,7 @@ let anfrageNr = 0;
 function anfrage(nachricht, uebertragen = []) {
   return new Promise((ok, nein) => { const nr = ++anfrageNr; offeneAnfragen.set(nr, { ok, nein }); worker.postMessage({ ...nachricht, anfrage: nr }, uebertragen); });
 }
-const meldeKonflikte = (liste) => { z.loesen.konflikte.push(...liste.map((k) => ({ roh: k, ansicht: Loesen.konfliktAnsicht(k) }))); z.reiter = 'aenderungen'; render(); };
+const meldeKonflikte = (liste, gruppe = false) => { z.loesen.konflikte.push(...liste.map((k) => ({ roh: k, gruppe, ansicht: Loesen.konfliktAnsicht(k, { gruppe }) }))); z.reiter = 'aenderungen'; render(); };
 worker.onmessage = ({ data }) => {
   if (data.anfrage !== undefined) {
     const a = offeneAnfragen.get(data.anfrage); offeneAnfragen.delete(data.anfrage);
@@ -257,7 +257,7 @@ function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); li
 // ---------- Live mit Freunden ----------
 const live = Live.erzeugeLive({
   z, render: () => render(), toast: (t) => toast(t), name: () => z.name, projekt: () => z.spec, fortschritt: () => z.fortschritt,
-  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt), meldeKonflikte: (liste) => meldeKonflikte(liste),
+  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt), meldeKonflikte: (liste, gruppe) => meldeKonflikte(liste, gruppe),
   plan: () => z.daten?.plan ?? null, merke: (k, v) => speicher.schreib(k, v), gespeicherterDienst: () => speicher.lies('blockwerk.dienst', ''),
 });
 
@@ -369,7 +369,7 @@ async function zelleKlick(ev) {
   if (z.loesen.verankern) { // Zielzelle für „neu verankern“ (U6): kein Wechsel der Auswahl, eine Gruppe aus löschen und setzen
     const v = z.loesen.verankern;
     if (!auswahl.waehlbar) { toast(auswahl.hinweis ?? 'Diese Zelle gehört zu keinem Teil. Bitte eine andere wählen.'); return; }
-    try { z.loesen.verankern = null; loesenAnwenden(Loesen.opsVerankern(z.planfassung, v.k, { teil: auswahl.teil, zelle: auswahl.zelle }), true); } catch (f) { toast(String(f.message ?? f)); z.loesen.verankern = v; }
+    try { z.loesen.verankern = null; loesenAnwenden(Loesen.opsVerankern(z.planfassung, v.k, { teil: auswahl.teil, zelle: auswahl.zelle }, v.quelle), true); } catch (f) { toast(String(f.message ?? f)); z.loesen.verankern = v; }
     render(); return;
   }
   z.auswahl = auswahl; z.blockwahl = null; z.reiter = 'zelle';
@@ -463,7 +463,7 @@ function aenderungenPanel() {
   if (z.umbau) return h + '<p class="fehler">Erst die Umbauhinweise oben bestätigen oder verwerfen, dann lässt sich weiter ändern.</p>';
   if (lo.verankern) h += `<div class="blockwahl"><strong>Neu verankern</strong><p class="klein">Klicke im Schichtplan die Zielzelle an. ${esc(lo.verankern.text)}</p><div class="knoepfe"><button data-a="lo-abbrechen">Abbrechen</button></div></div>`;
   if (lo.konflikte.length) {
-    h += '<h4>Konflikte mit anderen Spielern</h4>' + lo.konflikte.map((k, i) => `<div class="eintrag"><b>${esc(k.ansicht.satz)}</b><div class="klein">Deine Fassung: ${esc(k.ansicht.deine)} · Fassung von ${esc(k.ansicht.von ?? 'jemand anders')}: ${esc(k.ansicht.ihre)}</div><div class="knoepfe"><button data-a="lo-konflikt-meine" data-i="${i}">Meine übernehmen</button><button data-a="lo-konflikt-ihre" data-i="${i}">Ihre behalten</button></div></div>`).join('');
+    h += '<h4>Konflikte mit anderen Spielern</h4>' + lo.konflikte.map((k, i) => `<div class="eintrag"><b>${esc(k.ansicht.satz)}</b><div class="klein">Deine Fassung: ${esc(k.ansicht.deine)} · Fassung von ${esc(k.ansicht.von ?? 'jemand anders')}: ${esc(k.ansicht.ihre)}</div><div class="knoepfe">${k.gruppe ? `<button data-a="lo-konflikt-ihre" data-i="${i}">Verstanden</button>` : `<button data-a="lo-konflikt-meine" data-i="${i}">Meine übernehmen</button><button data-a="lo-konflikt-ihre" data-i="${i}">Ihre behalten</button>`}</div></div>`).join('');
   }
   h += `<h4>Warten auf deine Entscheidung (${p.offen.length})</h4>${p.offen.length ? p.offen.map(eintragHtml).join('') : '<p class="klein">Nichts wartet.</p>'}`;
   if (p.zugelassen.length) h += `<h4>Zugelassen (${p.zugelassen.length})</h4><p class="klein">Der Bau geht ohne diese Änderungen weiter; sie bleiben gespeichert.</p>${p.zugelassen.map(eintragHtml).join('')}`;
@@ -493,7 +493,7 @@ async function loesenAktion(name, d) {
     if (name === 'lo-abbrechen') { lo.verankern = null; render(); return; }
     if (name === 'lo-verwerfen') { loesenAnwenden([Loesen.opVerwerfen(z.planfassung, d.k)]); return; }
     if (name === 'lo-zulassen' || name === 'lo-zulassung-zurueck') { loesenAnwenden([Loesen.opZulassen(z.planfassung, d.k, name === 'lo-zulassen')]); return; }
-    if (name === 'lo-verankern') { const e = z.planfassung.eintraege[d.k]; if (!e) throw new Error('Diese Änderung gibt es nicht mehr.'); lo.verankern = { k: d.k, text: `Die Änderung ${Loesen.inhaltText(e)} an Zelle ${e.zelle.x}, ${e.zelle.y}, ${e.zelle.z} von „${e.teil}“ zieht dorthin um.` }; z.reiter = 'aenderungen'; render(); return; }
+    if (name === 'lo-verankern') { const e = z.planfassung.eintraege[d.k]; if (!e) throw new Error('Diese Änderung gibt es nicht mehr.'); lo.verankern = { k: d.k, quelle: structuredClone(e), text: `Die Änderung ${Loesen.inhaltText(e)} an Zelle ${e.zelle.x}, ${e.zelle.y}, ${e.zelle.z} von „${e.teil}“ zieht dorthin um.` }; z.reiter = 'aenderungen'; render(); return; }
     if (name === 'lo-technik') {
       const erzeugung = z.daten.erzeugung;
       const r = await anfrage({ typ: 'technikPruefen', erzeugung });
@@ -502,6 +502,7 @@ async function loesenAktion(name, d) {
     }
     if (name === 'lo-konflikt-meine' || name === 'lo-konflikt-ihre') {
       const i = Number(d.i), k = lo.konflikte[i]; if (!k) return;
+      if (k.gruppe && name === 'lo-konflikt-meine') return; // eine abgelehnte Gruppe (Verschieben) wird nicht Zelle für Zelle übernommen: neu ansehen und neu entscheiden
       const wahl = name === 'lo-konflikt-meine' ? 'meine' : 'ihre';
       if (!live.loeseKonflikt(k.roh, wahl)) { toast('Der Raum ist gerade nicht erreichbar. Der Konflikt bleibt offen.'); return; }
       lo.konflikte.splice(i, 1); toast(wahl === 'meine' ? 'Deine Fassung wurde an den Raum gesendet (mit dem Stand des anderen als Erwartung).' : 'Die Fassung des anderen bleibt.'); render(); return;

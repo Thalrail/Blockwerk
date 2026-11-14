@@ -105,11 +105,12 @@ export function wende(pf, operationen, von, { gruppe = false } = {}) {
     angenommen.push({ teil: op.teil, zelle: op.zelle, neu: op.neu === null ? null : { ...op.neu, von } });
     geaendert = true;
   }
+  const abgelehnt = gruppe && konflikte.length > 0; // eine Gruppe gilt ganz oder gar nicht: der Stand vor der Nachricht bleibt
+  if (abgelehnt) { for (const k of Object.keys(eintraege)) delete eintraege[k]; Object.assign(eintraege, pf.eintraege); geaendert = false; angenommen.length = 0; }
+  // Grenzen gelten nur für einen Stand, der wirklich übernommen wird (eine abgelehnte Gruppe meldet ihren Konflikt, nicht einen Größenfehler ihres verworfenen Zwischenstands)
   if (Object.keys(eintraege).length > PF_GRENZEN.eintraege) throw new PlanfassungFehler('zu-gross', `Eine Planfassung hat höchstens ${PF_GRENZEN.eintraege} Änderungen`);
   if (geaendert && JSON.stringify(eintraege).length > PF_GRENZEN.groesse) throw new PlanfassungFehler('zu-gross', `Die Änderungen sind zusammen größer als ${PF_GRENZEN.groesse} Zeichen`);
   // Endstand jeder berührten Zelle (angenommen oder Konflikt): das ist, was der Raum nach der Nachricht hält; der Absender übernimmt genau das
-  const abgelehnt = gruppe && konflikte.length > 0; // eine Gruppe gilt ganz oder gar nicht: der Stand vor der Nachricht bleibt
-  if (abgelehnt) { for (const k of Object.keys(eintraege)) delete eintraege[k]; Object.assign(eintraege, pf.eintraege); geaendert = false; angenommen.length = 0; }
   const endstand = (k) => (eintraege[k] ? { op: eintraege[k].op, ...(eintraege[k].block ? { block: eintraege[k].block } : {}), ...(eintraege[k].zugelassen ? { zugelassen: true } : {}), von: eintraege[k].von } : null);
   for (const x of konflikte) x.aktuell = endstand(schluessel(x.teil, x.zelle));
   const zellen = [...beruehrt].sort((p, q) => (p[0] < q[0] ? -1 : 1)).map(([k, c]) => ({ teil: c.teil, zelle: c.zelle, aktuell: endstand(k) }));

@@ -76,8 +76,9 @@ export function opZulassen(pf, schluessel, zugelassen = true) {
  * neuen setzen. Ist die Zielzelle schon belegt, wird nichts verdrängt (erst ausdrücklich verwerfen). Eine Zulassung gilt für den neuen Ort nicht mehr (er wird neu bewertet).
  * @returns {{teil: string, zelle: object, erwartet: object|null, neu: object|null}[]}
  */
-export function opsVerankern(pf, schluessel, ziel) {
-  const e = eintragVon(pf, schluessel);
+export function opsVerankern(pf, schluessel, ziel, quelle = null) {
+  // `quelle`: der Eintrag so, wie die Benutzerin ihn beim Start von „Neu verankern“ sah. Die Erwartung kommt von ihm, nicht vom jüngsten Stand: hat jemand den Eintrag inzwischen geändert, lehnt die Gruppe ab, statt etwas anderes zu verschieben.
+  const e = quelle ?? eintragVon(pf, schluessel);
   if (typeof ziel?.teil !== 'string' || !ziel.zelle) throw new LoesenFehler('Das Ziel braucht Teil und Zelle.');
   const neuerSchluessel = PF.schluessel(ziel.teil, ziel.zelle);
   if (neuerSchluessel === schluessel) throw new LoesenFehler('Das ist dieselbe Zelle. Bitte eine andere wählen.');
@@ -102,11 +103,11 @@ export function anwendenOps(pf, ops, von, { gruppe = false } = {}) {
  * Ein Mehrspieler-Konflikt (Antwort `aenderung-konflikt` des Raums) für die Anzeige: deine Fassung gegen die des anderen Spielers.
  * @param {{teil: string, zelle: object, aktuell: object|null, vorschlag: object|null}} k
  */
-export function konfliktAnsicht(k) {
+export function konfliktAnsicht(k, { gruppe = false } = {}) {
   return {
-    teil: k.teil, zelle: { ...k.zelle }, ort: ort(k),
+    teil: k.teil, zelle: { ...k.zelle }, ort: ort(k), gruppe,
     deine: inhaltText(k.vorschlag), ihre: inhaltText(k.aktuell), von: k.aktuell?.von ?? null,
-    satz: `${ort(k)}: Du wolltest „${inhaltText(k.vorschlag)}“, ${k.aktuell?.von ?? 'jemand anders'} hat inzwischen „${inhaltText(k.aktuell)}“ gesetzt.`,
+    satz: `${gruppe ? 'Das Verschieben wurde ganz abgelehnt, nichts wurde geändert. ' : ''}${ort(k)}: Du wolltest „${inhaltText(k.vorschlag)}“, ${k.aktuell?.von ?? 'jemand anders'} hat inzwischen „${inhaltText(k.aktuell)}“ gesetzt.${gruppe ? ' Bitte „Neu verankern“ noch einmal wählen.' : ''}`,
   };
 }
 

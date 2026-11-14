@@ -95,7 +95,7 @@ export function erzeugeLive(k) {
     } else if (x.art === 'aenderung-konflikt') {
       const von = x.konflikte.map((q) => q.aktuell?.von).filter(Boolean)[0];
       k.toast(`${von ? `${von} hat` : 'Jemand hat'} diese Zelle inzwischen anders geändert. Deine Änderung wurde nicht übernommen, nichts wurde überschrieben. Du entscheidest im Reiter „Änderungen“.`);
-      k.meldeKonflikte(x.konflikte);
+      k.meldeKonflikte(x.konflikte, x.gruppe === true);
     } else if (x.art === 'haken') {
       k.setzeFortschritt(x.fortschritt);
       const fertig = Object.entries(x.eintraege).filter(([, e]) => e.wert);

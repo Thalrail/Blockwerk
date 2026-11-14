@@ -266,3 +266,74 @@ test('Konflikt lösen: „Meine übernehmen“ überschreibt bewusst, auch wenn 
   assert.equal('zugelassen' in d.raum.aenderungen.eintraege['t|1,0,0'], false);
   assert.deepEqual(anna.k.zustand.aenderungen.eintraege, d.raum.aenderungen.eintraege);
 });
+
+test('Review: eine abgelehnte Gruppe meldet ihren Konflikt, auch wenn ihr verworfener Zwischenstand die Grenzen sprengen würde', () => {
+  // eine Planfassung genau an der Grenze der Einträge
+  let pf = PF.leer();
+  const alle = Array.from({ length: PF.PF_GRENZEN.eintraege }, (_, i) => op('t', i, 0, 0, { op: 'leere' }));
+  for (let i = 0; i < alle.length; i += 200) pf = PF.wende(pf, alle.slice(i, i + 200), 'A').planfassung;
+  assert.equal(Object.keys(pf.eintraege).length, PF.PF_GRENZEN.eintraege);
+  const gruppe = [op('t', 5000, 0, 0, { op: 'leere' }), op('t', 0, 0, 0, null, { op: 'setze', block: { id: 'minecraft:stone' } })]; // die erste würde über die Grenze führen, die zweite hat eine falsche Erwartung
+  const r = PF.wende(pf, gruppe, 'B', { gruppe: true });
+  assert.deepEqual([r.gruppeAbgelehnt, r.geaendert, r.planfassung === pf, r.konflikte.length], [true, false, true, 1], 'Konflikt statt Größenfehler');
+  // ohne Konflikt gilt die Grenze weiterhin
+  assert.throws(() => PF.wende(pf, [op('t', 5000, 0, 0, { op: 'leere' })], 'B', { gruppe: true }), (f) => f.grund === 'zu-gross');
+});
+
+test('Review: Neu verankern geht von dem Eintrag aus, den die Benutzerin beim Start sah; ändert jemand ihn oder besetzt das Ziel inzwischen, lehnt die Gruppe ganz ab', async () => {
+  const e = await engine();
+  const ziel = zielZelle(e);
+  const pf = verwaist();
+  const quelle = structuredClone(pf.eintraege['erdgeschoss|99,1,0']);
+  // 1) jemand ändert den Eintrag nach dem Start: die Operationen (mit der Erwartung des Starts) werden abgelehnt, auch obwohl der jüngste Stand eine eigene Erwartung ergäbe
+  const jemand = PF.wende(pf, [op('erdgeschoss', 99, 1, 0, { op: 'leere' }, GLAS)], 'Anna').planfassung;
+  const ops = L.opsVerankern(jemand, 'erdgeschoss|99,1,0', { teil: ziel.teil, zelle: ziel.zelle }, quelle);
+  const r1 = L.anwendenOps(jemand, ops, 'Jonah', { gruppe: true });
+  assert.deepEqual([r1.geaendert, r1.konflikte.length, r1.planfassung === jemand], [false, 1, true], 'ohne Schnappschuss würde die Änderung von Anna verschoben');
+  const ohneSchnapp = L.opsVerankern(jemand, 'erdgeschoss|99,1,0', { teil: ziel.teil, zelle: ziel.zelle });
+  assert.equal(L.anwendenOps(jemand, ohneSchnapp, 'Jonah', { gruppe: true }).geaendert, true, 'zur Gegenprobe: mit dem jüngsten Stand würde es durchgehen');
+  // 2) das Ziel wird nach dem Erzeugen der Operationen besetzt: die Gruppe lehnt ab, der alte Eintrag bleibt
+  const ops2 = L.opsVerankern(pf, 'erdgeschoss|99,1,0', { teil: ziel.teil, zelle: ziel.zelle }, quelle);
+  const besetzt = PF.wende(pf, [op(ziel.teil, ziel.zelle.x, ziel.zelle.y, ziel.zelle.z, { op: 'leere' })], 'Anna').planfassung;
+  const r2 = L.anwendenOps(besetzt, ops2, 'Jonah', { gruppe: true });
+  assert.deepEqual([r2.geaendert, r2.konflikte.length, r2.planfassung === besetzt], [false, 1, true]);
+  assert.ok('erdgeschoss|99,1,0' in r2.planfassung.eintraege, 'der alte Eintrag bleibt');
+  // 3) der Eintrag ist inzwischen ganz weg: ebenfalls ein Konflikt, nichts wird am Ziel gesetzt
+  const weg = PF.wende(pf, [L.opVerwerfen(pf, 'erdgeschoss|99,1,0')], 'Anna').planfassung;
+  const r3 = L.anwendenOps(weg, ops2, 'Jonah', { gruppe: true });
+  assert.deepEqual([r3.geaendert, r3.konflikte.length, Object.keys(r3.planfassung.eintraege)], [false, 1, ['gibtsnicht|1,1,1']]);
+  // ohne Schnappschuss und ohne Eintrag: klare Meldung
+  assert.throws(() => L.opsVerankern(weg, 'erdgeschoss|99,1,0', { teil: ziel.teil, zelle: ziel.zelle }), /nicht mehr/);
+});
+
+test('Review: der Konflikt einer abgelehnten Gruppe wird als Ganzes angezeigt („Verschieben abgelehnt“) und nicht als einzelne Zelle zum Übernehmen angeboten', () => {
+  class Dienst {
+    constructor() { this.raum = LV.neuerRaum(); this.v = new Map(); this.n = 0; }
+    verbinde() { const c = { id: `v${++this.n}`, post: [] }; this.v.set(c.id, c); return c; }
+    empfange(c, text) { const r = LV.verarbeite(this.raum, LV.liesNachricht(text), c.id); this.raum = r.raum; for (const z of LV.zustellungen(r.raum, r.senden, c.id)) this.v.get(z.an)?.post.push(JSON.parse(JSON.stringify(z.nachricht))); }
+  }
+  const d = new Dienst();
+  const sp = (name) => {
+    const k = LV.erzeugeKlient({ name, fortschritt: F.leer() }), c = d.verbinde();
+    const s = { k, c, meld: [], sende(ms) { for (const m of ms) d.empfange(c, JSON.stringify(m)); }, pump() { while (c.post.length) { const r = k.beiNachricht(c.post.shift()); s.meld.push(...r.meldungen); s.sende(r.senden); } } };
+    s.sende(k.verbunden());
+    return s;
+  };
+  const anna = sp('Anna'), ben = sp('Ben');
+  anna.pump(); ben.pump();
+  anna.sende(anna.k.aendereOperation(op('t', 1, 0, 0, { op: 'leere' })));
+  anna.pump(); ben.pump();
+  ben.meld.length = 0;
+  ben.sende(ben.k.aendereGruppe([op('t', 1, 0, 0, null, GLAS), op('t', 5, 0, 0, { op: 'leere' })])); // falsche Erwartung am alten Eintrag
+  ben.pump();
+  const m = ben.meld.find((x) => x.art === 'aenderung-konflikt');
+  assert.equal(m.gruppe, true);
+  const a = L.konfliktAnsicht(m.konflikte[0], { gruppe: m.gruppe });
+  assert.equal(a.gruppe, true);
+  assert.match(a.satz, /^Das Verschieben wurde ganz abgelehnt, nichts wurde geändert\. .*Bitte „Neu verankern“ noch einmal wählen\.$/);
+  // ein einzelner Konflikt bleibt unverändert
+  ben.sende(ben.k.aendereOperation(op('t', 7, 0, 0, GLAS, { op: 'leere' })));
+  ben.pump();
+  assert.equal(ben.meld.filter((x) => x.art === 'aenderung-konflikt').at(-1).gruppe, false);
+  assert.equal(L.konfliktAnsicht(m.konflikte[0]).gruppe, false);
+});

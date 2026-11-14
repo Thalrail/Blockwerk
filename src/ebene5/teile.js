@@ -234,8 +234,9 @@ export function wendeFelder(spec, id, felder, info) {
     if (ziel !== jetzt) neu = setzeParameter(neu, id, p.name, ziel, info);
   }
   if (felder.rel) {
-    const gesetzt = setzeLage(neu, id, lageAusFeldern(felder, info), info);
-    if (JSON.stringify(teilVon(gesetzt, id).lage) !== JSON.stringify(t0.lage)) neu = gesetzt;
+    // verglichen wird mit der Lage, die die unveränderten Felder ergäben (gleiche Normalisierung): ein Teil, dessen Lage nur anders geschrieben ist (z. B. Abstand 0), bleibt unangetastet
+    const gesetzt = setzeLage(neu, id, lageAusFeldern(felder, info), info), ausgangsLage = teilVon(setzeLage(spec, id, lageAusFeldern(felderVon(spec, id), info), info), id).lage;
+    if (JSON.stringify(teilVon(gesetzt, id).lage) !== JSON.stringify(ausgangsLage)) neu = gesetzt;
   }
   return neu;
 }

@@ -230,3 +230,12 @@ test('Formularfelder: Anfangswerte aus dem Teil, Anwendung nur der Unterschiede,
   assert.deepEqual(n.spec.teile.at(-1), { id: 'gartenhaus', name: 'Gartenhaus', art: 'halle', form: { baustein: 'bau.raum', groesse: { breite: 3, tiefe: 3 } }, lage: { bezug: 'erdgeschoss', relation: 'neben-osten', abstand: 1 }, wichtigkeit: 'kann' });
   assert.deepEqual(e.ebene4.pruefe(n.spec).rueckfragen, []);
 });
+
+test('Felder: eine anders geschriebene, aber gleiche Lage (Abstand 0, andere Schlüsselreihenfolge) wird nicht angetastet, wenn die Felder unverändert bleiben', async () => {
+  const e = await engine(), i = info(e);
+  const s = haus();
+  s.teile[2].lage = { abstand: 0, relation: 'ueber', bezug: 'obergeschoss' };
+  assert.equal(JSON.stringify(T.wendeFelder(s, 'dach', T.felderVon(s, 'dach'), i)), JSON.stringify(s), 'byte-gleich, keine neue Fassung wegen einer Schreibweise');
+  const g = T.wendeFelder(s, 'dach', { ...T.felderVon(s, 'dach'), abstand: '2' }, i);
+  assert.deepEqual(g.teile[2].lage, { bezug: 'obergeschoss', relation: 'ueber', abstand: 2 });
+});

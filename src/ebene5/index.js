@@ -15,6 +15,7 @@ export * as fortschritt from './fortschritt.js';
 export * as teilen from './teilen.js';
 export * as projektid from './projektid.js';
 export { bauePlan } from './bauen.js';
+export { erzeugeEntwurfsspeicher } from './entwurfsspeicher.js';
 export { erzeugeAtlas, WEISS } from './atlas.js';
 export { benoetigteBloecke, erzeugeIndex, loeseAuf } from './texturen.js';
 export * as eingabe from './eingabe.js';

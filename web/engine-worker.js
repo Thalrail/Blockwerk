@@ -1,6 +1,6 @@
 // Blockwerk – Engine im Hintergrund (Modul-Worker): lädt die Daten per fetch und rechnet Spezifikation → Plan → Bauplan,
 // damit die Seite während der mehrsekündigen Berechnung bedienbar bleibt. Die Oberfläche bekommt nur fertige, einfache Daten.
-import { ladeEngine, erzeugeEbene5, bauePlan } from '../src/ebene5/index.js';
+import { ladeEngine, erzeugeEbene5, bauePlan, erzeugeEntwurfsspeicher } from '../src/ebene5/index.js';
 import { berichtAlsText } from '../src/ebene3/index.js';
 import { eingabe as eingabeModul } from '../src/ebene5/index.js';
 import { liesJson, abdruck } from '../src/ebene4/index.js';
@@ -55,13 +55,16 @@ async function eingabe(data) {
   return null;
 }
 
-async function baue(spezifikation, messungen = [], lauf, aenderungen = null) {
+const merker = erzeugeEntwurfsspeicher(); // Entwurf des fertig gebauten Plans des neuesten Auftrags (eigene Erzeugungsnummer, unabhängig von `lauf`)
+
+async function baue(spezifikation, messungen = [], lauf, aenderungen = null, erzeugung) {
   const e = await engine();
   self.postMessage({ typ: 'status', text: 'Spezifikation wird geprüft …', lauf });
   const r = bauePlan(e, spezifikation, messungen, aenderungen); // manuelle Änderungen (Planfassung) fließen in den wirksamen Plan ein
   if (r.status === 'rueckfragen') return { typ: 'rueckfragen', rueckfragen: r.rueckfragen };
   self.postMessage({ typ: 'status', text: 'Bauplan wird angelegt …', lauf });
   const plan = e.e5.bauplan(r.entwurf);
+  merker.setze(erzeugung, { entwurf: r.entwurf, mat: null }); // nie ein überholter Auftrag // für die Zellenwahl (Klick auf eine Zelle): derselbe Entwurf wie der angezeigte Plan
   return {
     typ: 'fertig', status: r.status, plan, material: e.e5.material(plan),
     bericht: berichtAlsText(r.entwurf), zusammenfassung: e.ebene4.zusammenfassung(spezifikation),
@@ -69,9 +72,19 @@ async function baue(spezifikation, messungen = [], lauf, aenderungen = null) {
   };
 }
 
+/** Zellenwahl (U2): welchem Teil gehört die angeklickte Weltzelle, und wie heißt sie im Rahmen des Teils? Rechnet Ebene 3 am zuletzt gebauten Entwurf. */
+async function waehleZelle(zelle) {
+  const e = await engine();
+  const letzter = merker.hole();
+  if (!letzter) throw new Error('Es gibt noch keinen Bauplan, in dem sich eine Zelle wählen ließe.');
+  letzter.mat ??= e.ebene3.materialisiere(letzter.entwurf);
+  return e.ebene3.zellenwahl.waehle(letzter.entwurf, zelle, { mat: letzter.mat });
+}
+
 self.onmessage = async ({ data }) => {
   try {
-    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf, data.aenderungen)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
+    if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf, data.aenderungen, merker.beginne())), lauf: data.lauf }); // beginne(): ab jetzt gilt nur noch der Plan dieses Auftrags // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
+    else if (data.typ === 'waehleZelle') self.postMessage({ typ: 'zelle', ...(await waehleZelle(data.zelle)), anfrage: data.anfrage, lauf: data.lauf });
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
     self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });

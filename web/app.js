@@ -2,6 +2,7 @@
 // die Engine läuft im Worker (engine-worker.js), die Mengen- und Fortschrittslogik kommt aus src/ebene5.
 import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
+const Teilen = teilen;
 import * as Umbau from '../src/ebene5/umbau.js';
 import * as Projekt from '../src/ebene5/projektid.js';
 import * as PF from '../src/ebene5/planfassung.js';
@@ -9,6 +10,8 @@ import * as Bearbeiten from '../src/ebene5/bearbeiten.js';
 import * as Stil from '../src/ebene5/stil.js';
 import * as Teile from '../src/ebene5/teile.js';
 import * as Loesen from '../src/ebene5/loesen.js';
+import * as Grenzen from '../src/ebene5/grenzen.js';
+import * as Verlauf from '../src/ebene5/verlauf.js';
 import { RICHTUNGEN } from '../src/ebene5/bauplan.js';
 import { baueNetz } from '../src/ebene5/netz.js';
 import { erzeugeAnsicht3d } from './ansicht3d.js';
@@ -30,7 +33,7 @@ const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
   sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
-  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null, rev: 0 }, loesen: { verankern: null, technik: null, konflikte: [], erzeugung: null }, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
+  seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null, rev: 0 }, loesen: { verankern: null, technik: null, konflikte: [], erzeugung: null }, verlauf: [], uebergaenge: [], naechsterText: '', linkLaenge: null, grenzenVorher: null, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
 // ---------- Engine im Hintergrund ----------
@@ -102,7 +105,14 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   }
   const gleichesProjekt = basis && u.art === 'fortsetzung' && (basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck || !Bearbeiten.gleicheEintraege(basis.planfassung ?? PF.leer(), pf));
   z.vorher = gleichesProjekt ? basis : null;
-  z.bearbeitung = false; z.auswahl = null; z.blockwahl = null; z.planfassung = pf;
+  z.bearbeitung = false; z.auswahl = null; z.blockwahl = null; z.planfassung = pf; z.linkLaenge = null;
+  z.uebergaenge = [];
+  if (gleichesProjekt) {
+    if (basis.spec.version !== spezifikation.version) z.uebergaenge.push({ art: 'spezifikation', von: basis.spec.version ?? 1, nach: spezifikation.version ?? 1, text: z.naechsterText });
+    const t = Verlauf.aenderungenText(basis.planfassung, pf); if (t || (basis.planfassung?.version ?? 0) !== pf.version) z.uebergaenge.push({ art: 'aenderungen', von: basis.planfassung?.version ?? 0, nach: pf.version, text: t });
+  }
+  z.naechsterText = '';
+  z.verlauf = Verlauf.liesListe(speicher.lies(`blockwerk.verlauf.${Projekt.idVon(spezifikation) ?? 'ohne'}`, []));
   z.umbau = null;
   z.seite = null; z.messungen = messungen;
   z.spec = spezifikation; z.empfangen = empfangenerFortschritt; z.daten = null; z.fehler = null; z.rueckfragen = null;
@@ -134,7 +144,9 @@ function baueMitAenderungen(pf, { vomRaum = false } = {}) {
   if (!z.spec) return;
   const basis = z.daten ? { spec: z.spec, daten: z.daten, fortschritt: z.fortschritt, planfassung: z.planfassung } : (z.vorher ?? null); // läuft schon eine Berechnung, bleibt der zuletzt gezeigte Plan die Grundlage
   z.bleibe = z.daten ? { id: abschnitt().id, y: schicht().y } : z.bleibe; // nach dem Neubau an derselben Schicht bleiben (nicht zur nächsten ungebauten springen)
-  z.vorher = basis; z.umbau = null; z.planfassung = pf; z.bearbeitung = !!basis;
+  z.vorher = basis; z.umbau = null; z.bearbeitung = !!basis; z.linkLaenge = null;
+  if (basis) z.uebergaenge = [{ art: 'aenderungen', von: z.planfassung.version, nach: pf.version, text: Verlauf.aenderungenText(z.planfassung, pf) }];
+  z.planfassung = pf;
   z.auswahl = null; z.blockwahl = null; z.daten = null; z.fehler = null; z.rueckfragen = null;
   z.status = 'Bauplan wird mit den Änderungen neu berechnet …';
   render();
@@ -155,7 +167,7 @@ function behaltePosition(b) {
 }
 /** Die Änderung ließ sich nicht bauen (Rückfrage oder Fehler der Planung): nichts wird still angewandt, der bisherige Plan und die bisherigen Änderungen gelten weiter. */
 function bearbeitungVerwerfen(grund) {
-  const v = z.vorher; z.vorher = null; z.bearbeitung = false;
+  const v = z.vorher; z.vorher = null; z.bearbeitung = false; z.uebergaenge = []; // ein verworfener Versuch ist kein Übergang
   z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; z.planfassung = v.planfassung ?? PF.leer();
   z.fehler = null; z.rueckfragen = null; z.auswahl = null; z.blockwahl = null; z.bleibe = null;
   toast(`Die Änderung wurde nicht übernommen, der bisherige Plan gilt weiter: ${String(grund).slice(0, 300)}`);
@@ -194,8 +206,8 @@ function nachDemBauen() {
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(z.bleibe); z.bleibe = null;
-  speichern(); sichereAenderungen(); veroeffentlicheWartende();
-  toast(`Bauplan bereit: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
+  speichern(); sichereAenderungen(); veroeffentlicheWartende(); verlaufBuchen(); grenzenWarnen();
+  toast(`Bauplan bereit (Auftrag ${z.lauf ?? 0}): ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
 }
 
 /** Altbestand ohne Projektkennung: nicht raten, sondern fragen, ob die ankommende Spezifikation zum geöffneten Projekt gehört. */
@@ -219,7 +231,7 @@ function umbauPanel() {
 }
 function umbauEntscheiden(ja) {
   const u = z.umbau; if (!u) return;
-  if (!ja) { z.umbau = null; z.auswahl = null; wartendeFassung = null; teileAusstehend = null; toast('Die alte Fassung bleibt gültig.'); render(); return; }
+  if (!ja) { z.umbau = null; z.auswahl = null; wartendeFassung = null; teileAusstehend = null; z.uebergaenge = []; toast('Die alte Fassung bleibt gültig.'); render(); return; }
   // Während das Fenster offen war, kann sich der Fortschritt der alten Fassung geändert haben (eigenes Abhaken, Live): die Hinweise werden neu berechnet,
   // und ändern sie sich, muss die aktualisierte Liste noch einmal bestätigt werden.
   const h = Umbau.hinweise(z.daten.plan, u.neu.daten.plan, z.fortschritt);
@@ -231,7 +243,7 @@ function umbauEntscheiden(ja) {
   let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
   f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
   z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f; z.planfassung = u.neu.planfassung ?? PF.leer();
-  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen(); veroeffentlicheWartende();
+  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen(); veroeffentlicheWartende(); verlaufBuchen(); grenzenWarnen();
   const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(u.bleibe);
@@ -402,7 +414,7 @@ function hinweisUnterMaus(ev) {
 function kopf() {
   const kompakt = z.modus === 'kompakt';
   return `<header class="kopf">
-    <h1>Blockwerk</h1><strong>${z.daten ? esc(plan().projekt.name) : ''}</strong>
+    <h1>Blockwerk</h1><strong>${z.daten ? esc(plan().projekt.name) : ''}</strong>${z.daten && z.spec ? ` <span class="klein" title="Version der Spezifikation und Fassung der Einzelblockänderungen (Planfassung); der Verlauf steht im Baubericht">Spezifikation v${esc(z.spec.version ?? 1)} · Änderungen F${esc(z.planfassung.version)}</span>` : ''}
     <span class="abstand"></span>
     <label>Spieler <input id="name" type="text" maxlength="24" placeholder="Name" value="${esc(z.name)}"></label>
     ${z.daten ? `<button data-a="modus" title="Taste M">${kompakt ? 'Vollansicht' : 'Kompaktmodus'}</button>
@@ -420,7 +432,7 @@ function startseite() {
     <p class="klein">Einen Link von einem Freund öffnest du einfach im Browser; er enthält die Spezifikation und seinen Fortschritt.</p></section>`;
 }
 function rechnet() {
-  return `<div class="rechnet"><div>${esc(z.status ?? 'Bauplan wird berechnet …')}</div><div class="balken"><i></i></div><p class="klein">Der Plan wird deterministisch aus der Spezifikation geplant und geprüft.</p></div>`;
+  return `<div class="rechnet"><div>${esc(z.status ?? 'Bauplan wird berechnet …')} <span class="klein">(Auftrag ${esc(z.lauf ?? 0)})</span></div><div class="balken"><i></i></div><p class="klein">Der Plan wird deterministisch aus der Spezifikation geplant und geprüft.</p></div>`;
 }
 function abschnittsliste() {
   return plan().abschnitte.map((a, i) => {
@@ -434,6 +446,12 @@ function tabelle(liste, mitStack = true) {
   return `<table class="tabelle">${liste.map((m) => `<tr><td><span class="farbe ${m.ersatz ? 'ersatz' : ''}" style="${Tex.feldStil(m)}" title="${Tex.feldTitel(m)}"></span>${esc(m.name)}</td><td class="zahl">${m.anzahl}</td>${mitStack ? `<td class="klein">${esc(m.text)}</td>` : ''}</tr>`).join('')}</table>`;
 }
 const kurzId = (id) => String(id).replace(/^minecraft:/, '');
+/** Grenzen von Änderungen, Spezifikation, Fortschritt, Raum und Link: wie voll, mit Hinweis ab 70 %. Die Länge des Links wird auf Knopfdruck berechnet (das Kodieren ist asynchron). */
+function grenzenHtml() {
+  const a = Grenzen.grenzenAnsicht({ spezifikation: z.spec, planfassung: z.planfassung, fortschritt: z.fortschritt, spieler: live.spielerAnzahl(), linkLaenge: z.linkLaenge });
+  return `<h3>Grenzen</h3><table class="tabelle">${a.eintraege.map((e) => `<tr><td>${esc(e.name)}</td><td class="zahl"><span class="plakette ${e.stufe === 'ok' ? 'simuliert' : 'entworfen'}">${e.prozent} %</span></td></tr>${e.stufe === 'ok' ? '' : `<tr><td colspan="2" class="klein">${esc(e.text)}</td></tr>`}`).join('')}</table>
+    <div class="knoepfe"><button data-a="grenzen-link">Link-Größe prüfen</button></div><p class="klein">Link: ab ${Teilen.EMPFOHLEN_MAX} Zeichen kürzen manche Chats ab, über ${Teilen.CODE_MAX.toLocaleString('de-DE')} geht er nicht mehr; Datei und Raum haben eigene Grenzen (oben).</p>`;
+}
 const zustandText = (zu) => { const k = Object.keys(zu ?? {}).sort(); return k.length ? ` [${k.map((n) => `${kurzId(n)}=${zu[n]}`).join(', ')}]` : ''; };
 const STATUS_TEXT = { angewandt: 'wirkt im Plan', ueberholt: 'überholt (ein Einbauteil hat die Zelle schon ausgespart)', verwaist: 'verwaist', konflikt: 'Konflikt', ungueltig: 'ungültig' };
 /** Seitenleiste „Zelle“: gewählte Zelle, ihr Block, das Teil, der Stand der Änderung und die möglichen Aktionen (Block ändern, entfernen, zurücknehmen). */
@@ -711,11 +729,26 @@ async function stilAnwenden(neu) {
     if (p.spezifikation.version === ausgang.version) { toast('Das ist schon so gewählt.'); return false; }
     const f = await anfrage({ typ: 'freigebe', spezifikation: p.spezifikation, von, messungen: z.messungen });
     if (z.spec !== ausgang || startNr !== nr) return false;
+    z.naechsterText = Verlauf.vergleichText(p.vergleich);
     z.stil.picker = null;
     startProjekt(f.spezifikation, null, z.messungen);
     wartendeFassung = f.spezifikation; // wird veröffentlicht, sobald sie gilt (kein Umbauhinweis nötig oder bestätigt)
     return true;
   } catch (f) { toast(String(f.message ?? f)); return false; } finally { stilBeschaeftigt = false; render(); } // render: das Auswahlfeld zeigt wieder den wirklichen Stand
+}
+/** Bucht die gesammelten Übergänge (Fassung X → Fassung Y) erst jetzt: die neue Fassung gilt wirklich, ein verworfener oder abgelehnter Versuch taucht nicht im Verlauf auf. */
+function verlaufBuchen() {
+  if (!z.uebergaenge.length) return;
+  let l = z.verlauf;
+  for (const u of z.uebergaenge) { try { l = Verlauf.anhaengen(l, { ...u, wer: z.name }); } catch { /* unbrauchbar: nicht buchen */ } }
+  z.uebergaenge = []; z.verlauf = l;
+  speicher.schreib(`blockwerk.verlauf.${Projekt.idVon(z.spec) ?? 'ohne'}`, l);
+}
+/** Warnt einmal, wenn eine Grenze (Änderungen, Spezifikation, Haken, Raum) neu ins Warnen oder Volle kommt. */
+function grenzenWarnen() {
+  const jetzt = Grenzen.grenzenAnsicht({ spezifikation: z.spec, planfassung: z.planfassung, fortschritt: z.fortschritt, spieler: live.spielerAnzahl() });
+  const w = Grenzen.neueWarnungen(z.grenzenVorher, jetzt); z.grenzenVorher = jetzt;
+  if (w.length) toast(w[0]);
 }
 function veroeffentlicheWartende() {
   const w = wartendeFassung; wartendeFassung = null;
@@ -777,12 +810,13 @@ function rechteSpalte() {
   else if (r === 'stil') inhalt = stilPanel();
   else if (r === 'teile') inhalt = teilePanel();
   else if (r === 'aenderungen') inhalt = aenderungenPanel();
-  else if (r === 'bericht') inhalt = `<pre class="text">${esc(z.daten.bericht)}</pre>`;
+  else if (r === 'bericht') inhalt = `<h3>Fassungsverlauf</h3><pre class="text">${esc(Verlauf.berichtZeilen(z.verlauf, { spezifikation: z.spec?.version ?? 1, aenderungen: z.planfassung.version }).join('\n'))}</pre><h3>Baubericht der Planung</h3><pre class="text">${esc(z.daten.bericht)}</pre>`;
   else if (r === 'status') {
     const st = z.daten.baustatus;
     inhalt = `<p class="klein">${st.anzahlRegeln} Regeln: ${st.regeln.simuliert} simuliert, ${st.regeln.entworfen} entworfen, ${st.regeln.geprueft} im Spiel geprüft. ${st.regeln.ungeprueft} enthalten Annahmen, die du noch im Spiel testen kannst (siehe docs/spieltests.md).</p>
       <table class="tabelle">${st.bausteine.map((b) => `<tr><td>${esc(b.titel)}</td><td class="zahl"><span class="plakette ${esc(b.status)}">${esc(b.status)}</span></td></tr>`).join('')}</table>
       ${plan().technik?.length ? `<h3>Technikanlagen</h3><table class="tabelle">${plan().technik.map((t) => `<tr><td>${esc(t.name)} <span class="klein">(${esc(t.abschnitt)})</span></td><td class="zahl"><span class="plakette ${t.status === 'bestaetigt' ? 'simuliert' : 'entworfen'}">${t.status === 'bestaetigt' ? 'bestätigt' : t.status === 'nicht-bestaetigt' ? 'nicht bestätigt' : 'noch nicht geprüft'}</span></td></tr>`).join('')}</table><p class="klein">Eine Anlage gilt erst als funktionsfähig, wenn Ebene 1 sie geprüft hat und sich seitdem in ihrer Umgebung (Prüfbereich) nichts verändert hat. „Nicht bestätigt“: im Prüfbereich wurde etwas geändert, die Anlage muss neu geprüft werden.</p>` : ''}
+      ${grenzenHtml()}
       ${z.daten.anfragen.length ? `<h3>Noch offen</h3>${z.daten.anfragen.map((q) => `<p class="klein">Schaltungsanfrage ${esc(q.id)}: für „${esc(q.art)}“ gibt es noch kein Modul.</p>`).join('')}` : ''}`;
   } else inhalt = `<pre class="text">${esc(z.daten.zusammenfassung)}</pre>`;
   return `<div class="reiter">${reiter.map(([k, t]) => `<button class="${r === k ? 'an' : ''}" data-a="reiter" data-k="${k}">${t}</button>`).join('')}</div>${inhalt}`;
@@ -993,6 +1027,10 @@ async function aktion(name, el) {
     else if (name.startsWith('st-')) await stilAktion(name, d);
     else if (name.startsWith('tl-') || name.startsWith('tn-')) await teileAktion(name);
     else if (name.startsWith('lo-')) await loesenAktion(name, d);
+    else if (name === 'grenzen-link') {
+      try { z.linkLaenge = (await teilen.kodiere({ spezifikation: z.spec, fortschritt: z.fortschritt, aenderungen: z.planfassung })).code.length; } catch (f) { z.linkLaenge = Teilen.CODE_MAX + 1; toast(String(f.message ?? f)); }
+      render();
+    }
     else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }
     else if (name === 'einpassen') { a3d?.einpassen(); }
     else if (name === 'bisAktuelle') { z.sicht.maxY = schicht().y; render(); }

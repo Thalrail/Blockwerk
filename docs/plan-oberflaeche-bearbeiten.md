@@ -68,6 +68,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U6 um
 - Tests: Spezifikation → Plan für Größenänderung mit vorhandenen Änderungen (Verwaisung wird vorab gezeigt).
 
 ### U6 Verwaistes und Konflikte verstehen und lösen (Priorität 3) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene5.md`
+(Stand 15.11.2026: auch U7 ist umgesetzt, siehe `docs/referenz/stand-ebene5.md`, Abschnitt U7.)
 - **Panel „Änderungen“:** Liste nach Status; je Eintrag Teil, Zelle, Block, Grund in einem Satz („Der Block ist in der neuen Fassung weggefallen“, „Das Teil gibt es nicht mehr“).
 - **Verwaist:** drei Knöpfe wie in den Optionen: *verwerfen*, *neu verankern* (Zielzelle in der Schicht anklicken), *zulassen und weiterbauen*. Verankern in der Planfassung wird eine **Gruppe**: beide Operationen gelten ganz oder gar nicht (Lücke 5; kleine Erweiterung von `wende`, mit Tests).
 - **Mehrspieler-Konflikt:** `aenderung-konflikt` zeigt „Deine Fassung / Fassung von Anna“ und lässt wählen; es wird nie still überschrieben (bleibt wie in P10).

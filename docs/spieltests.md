@@ -423,3 +423,5 @@ Nur die Anzeige und die Planfassung ändern sich; im Spiel prüfst du, ob der Pl
 5. **Zwei Spieler:** Beide ändern dieselbe Zelle fast gleichzeitig. Der Zweite sieht im Reiter „Änderungen“ „Deine Fassung / Fassung von …“ und entscheidet; nichts wird still überschrieben.
 
 (Zusatz zu „Änderungen auflösen“) **Zwei Fenster:** Der Zwei-Browser-Tab-Test ist am 14.11.2026 durchgeführt (Ergebnis in `docs/referenz/stand-ebene5.md` unter „Integrationsprüfung zu U6“); im Spiel selbst bleibt nur die Frage, ob der Plan nach einer Entscheidung stimmt.
+
+(U7, `simuliert`) **Verlauf und Grenzen:** Ändere eine Zelle im Bauplan und wechsle danach die Stimmung im Reiter „Stil“. Im Kopf steht „Spezifikation vN · Änderungen FM“, im Reiter „Baubericht“ steht oben der Fassungsverlauf mit beiden Übergängen. Im Reiter „Status“ zeigt „Grenzen“ die Füllstände; „Link-Größe prüfen“ nennt die Link-Länge. Status `geprüft` setzt nur Jonah.

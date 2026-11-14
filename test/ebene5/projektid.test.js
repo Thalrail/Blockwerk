@@ -194,3 +194,31 @@ test('Eine vorhandene, aber ungültige Kennung ist ein Fehler und wird nie still
   const leer = JSON.parse(JSON.stringify(s)); leer.projekt.id = undefined;
   assert.equal(P.bezug(null, leer).art, 'neu');
 });
+
+test('Ungültige Kennung auch beim geöffneten Projekt ein Fehler; alter Fortschrittsschlüssel nur bei Fortsetzung, nie für ein eigenständiges Projekt', async () => {
+  const s = await beispiel();
+  for (const falsch of ['murks', '', 7, null, ID_A.toUpperCase()]) {
+    const t = JSON.parse(JSON.stringify(s)); t.projekt.id = falsch;
+    assert.throws(() => P.bezug(t, P.mitId(s, ID_A)), /Projektkennung/, JSON.stringify(falsch));
+    assert.throws(() => P.uebernehme(t, P.mitId(s, ID_A), { entscheidung: 'fortsetzung', bytes: bytes(1) }), /Projektkennung/);
+    assert.throws(() => P.uebernehme(t, s, { entscheidung: 'neu', bytes: bytes(1) }), /Projektkennung/);
+  }
+  const frei = (spec, abd) => ({ ...spec, freigabe: { von: 'x', version: spec.version, abdruck: abd } });
+  const alt = frei(s, 'aaaaaaaa');                              // geöffnet, ohne Kennung
+  const mitKennung = frei(P.mitId({ ...s, version: 2 }, ID_B), 'bbbbbbbb'); // ankommend, mit Kennung
+  const ohneKennung = frei({ ...s, version: 2 }, 'cccccccc');   // ankommend, ohne Kennung
+  const rueck = (v, a, opt) => P.alterFortschrittsAbdruck(P.uebernehme(v, a, opt), v);
+  // kennungsloses geöffnetes Projekt + ankommend mit Kennung: „eigenständig“ erbt nichts, „Fortsetzung“ nimmt die Haken des geöffneten Projekts mit
+  assert.equal(rueck(alt, mitKennung, { entscheidung: 'neu' }), null);
+  assert.equal(rueck(alt, mitKennung, { entscheidung: 'fortsetzung' }), 'aaaaaaaa');
+  // beide ohne Kennung: Fortsetzung bekommt eine neue Kennung, die Haken der ankommenden Fassung (alter Schlüssel) gelten; eigenständig ebenso nur ihre eigenen
+  assert.equal(rueck(alt, ohneKennung, { entscheidung: 'fortsetzung', bytes: bytes(3) }), 'cccccccc');
+  assert.equal(rueck(alt, ohneKennung, { entscheidung: 'neu', bytes: bytes(3) }), 'cccccccc');
+  // nichts offen: ein Altbestand nimmt seinen eigenen alten Schlüssel mit
+  assert.equal(rueck(null, ohneKennung, { bytes: bytes(3) }), 'cccccccc');
+  // geöffnetes Projekt mit Kennung, gleiche Kennung oder andere: kein alter Schlüssel
+  assert.equal(rueck(frei(P.mitId(s, ID_A), 'dddddddd'), frei(P.mitId({ ...s, version: 2 }, ID_A), 'eeeeeeee')), null);
+  assert.equal(rueck(frei(P.mitId(s, ID_A), 'dddddddd'), mitKennung), null);
+  // Spezifikation ohne Projekt: sauberer Fehler statt Absturz
+  assert.throws(() => P.uebernehme(null, { teile: [] }, { bytes: bytes(1) }), /kein Projekt/);
+});

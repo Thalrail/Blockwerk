@@ -89,7 +89,7 @@ Bleibt eigener Strang (`docs/spieltests.md`). Zu jedem Paket kommt eine Testanle
 ## 6. Entscheidungen (entschieden von Jonah am 14.11.2026: Wand-Ausrichtung Option A, projektId Option A; die Tabellen bleiben als Begründung stehen)
 
 ### Wand-Ausrichtung (`wand-nord|ost|sued|west` mit `ausrichtung`)
-Heute überschreibt eine ausdrückliche `ausrichtung` die Außenrichtung, ein Test schreibt das fest; die Architektur sagt „nach außen“.
+Vor U0 überschrieb eine ausdrückliche `ausrichtung` die Außenrichtung, ein Test schreibt das fest; die Architektur sagt „nach außen“.
 | Option | Wirkung | Bewertung |
 |---|---|---|
 | A: Wandseite gewinnt immer, `ausrichtung` bei `wand-…` wird vom Prüfer abgelehnt (Rückfrage „weglassen?“) | eindeutig, deterministisch; eine Tür sitzt immer so, wie die Wand es sagt; Einzeltest-Anpassung | **Empfehlung.** Kleinste Änderung, passt zu „nur WAS“ |
@@ -97,13 +97,13 @@ Heute überschreibt eine ausdrückliche `ausrichtung` die Außenrichtung, ein Te
 | C: Neues Feld `oeffnung: innen|aussen` für Türen und Fenster | erlaubt nach innen öffnende Türen ohne Widerspruch | später, wenn ein Bedarf entsteht (eigenes Paket, Datenformat) |
 
 ### projektId
-Heute: Fassungen werden über Projektname plus geänderten Abdruck erkannt; Fortschritt wird nach Spezifikationsabdruck gespeichert.
+Vor U0: Fassungen werden über Projektname plus geänderten Abdruck erkannt; Fortschritt wird nach Spezifikationsabdruck gespeichert.
 | Option | Wirkung | Bewertung |
 |---|---|---|
 | A: Stabile `projekt.id` (zufällig, von der Oberfläche beim ersten Freigeben erzeugt), mitgeführt in Spezifikation, Link, Datei, Raum; alte Pläne ohne Id → einmalige Bestätigung „dieselbe Fassungsreihe wie …?“ | Umbenennen verliert nichts, gleiche Namen vermischen sich nicht, Änderungen und Haken haben einen festen Schlüssel | **Empfehlung**, vor U3 (die Planfassung braucht den Schlüssel) |
 | B: Name bleibt, Oberfläche fragt vor jeder „neuen Fassung“ | kein Schema, aber ständige Rückfragen, kein fester Schlüssel für Änderungen | Zwischenlösung |
 | C: Abdruck der ersten Fassung als Kennung | keine Zufallszahl nötig, aber bricht bei Importen derselben Spezifikation | nicht empfohlen |
-Auswirkung A: Schemaänderung in Ebene 4 (optionales Feld, Version der Spezifikation bleibt kompatibel), Übersetzung und Plan unverändert (die Id darf den Plan nicht beeinflussen, Test), Zufall nur in Ebene 5. Die Beantwortung ist eine Schemaentscheidung und braucht deine Zustimmung.
+Auswirkung A: Schemaänderung in Ebene 4 (optionales Feld, Version der Spezifikation bleibt kompatibel), Übersetzung und Plan unverändert (die Id darf den Plan nicht beeinflussen, Test), Zufall nur in Ebene 5. Jonah entschied sich am 14.11.2026 für Option A.
 
 ## 7. Risiken
 - **Verankern im Mehrspielerraum** (Lücke 5): ohne Gruppenoperation droht Teilverlust; deshalb in U6 vor der Oberfläche.

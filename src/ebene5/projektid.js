@@ -43,6 +43,7 @@ export const eigenstaendigeKopie = (spec, bytes) => mitId(spec, neueId(bytes));
  * - `unklar`: bei mindestens einer Seite fehlt die Kennung (Altbestand): der Benutzer entscheidet (`nameGleich`, `inhaltGleich` helfen dabei).
  */
 export function bezug(vorhanden, ankommend) {
+  if (vorhanden) pruefeKennung(vorhanden);
   pruefeKennung(ankommend);
   if (!vorhanden) return { art: 'neu' };
   const a = idVon(vorhanden), b = idVon(ankommend);
@@ -59,8 +60,7 @@ export function bezug(vorhanden, ankommend) {
  * @returns {{spec: object, art: string, kennung: string, vergeben: boolean}}  `vergeben`: die Kennung wurde neu erzeugt (Altbestand übernommen)
  */
 export function uebernehme(vorhanden, ankommend, { entscheidung, bytes } = {}) {
-  pruefeKennung(ankommend);
-  const b = bezug(vorhanden, ankommend);
+  const b = bezug(vorhanden, ankommend); // prüft beide Kennungen
   if (b.art === 'unklar' && !['fortsetzung', 'neu'].includes(entscheidung)) throw new ProjektIdFehler('es ist unklar, ob das eine Fortsetzung oder ein eigenständiges Projekt ist; der Benutzer muss entscheiden');
   const eigene = idVon(ankommend);
   if (b.art === 'unklar' && entscheidung === 'fortsetzung') {
@@ -73,4 +73,16 @@ export function uebernehme(vorhanden, ankommend, { entscheidung, bytes } = {}) {
   if (eigene) return { spec: kopie(ankommend), art: 'neu', kennung: eigene, vergeben: false }; // unklar, `neu` gewählt, aber die Kennung ist schon da und gehört der ankommenden Seite
   const neu = neueId(bytes);
   return { spec: mitId(ankommend, neu), art: b.art === 'unklar' ? 'neu' : b.art, kennung: neu, vergeben: true };
+}
+
+/**
+ * Abdruck der Fassung, deren Fortschritt unter dem alten Schlüssel (ohne Kennung) liegt und mitgenommen werden darf, sonst null.
+ * Nur bei tatsächlicher Fortsetzung oder bei der Fassung, die selbst keine Kennung hatte: ein eigenständiges Projekt erbt nie fremde Haken.
+ * @param {{spec: object, art: string, vergeben: boolean}} ergebnis  Rückgabe von `uebernehme`
+ * @param {object|null} vorhanden  das bisher geöffnete Projekt
+ */
+export function alterFortschrittsAbdruck(ergebnis, vorhanden) {
+  if (ergebnis.vergeben) return ergebnis.spec.freigabe?.abdruck ?? null;
+  if (ergebnis.art === 'fortsetzung' && vorhanden && !idVon(vorhanden)) return vorhanden.freigabe?.abdruck ?? null;
+  return null;
 }

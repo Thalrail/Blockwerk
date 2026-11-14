@@ -61,16 +61,17 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   // Zugehörigkeit über die Projektkennung (nicht über den Namen): gleiche Kennung = neue Fassung desselben Projekts, andere Kennung = eigenständiges Projekt;
   // Altbestand ohne Kennung wird nicht geraten, sondern gefragt (identischer Inhalt ist eindeutig und braucht keine Frage)
   let b;
-  try { b = Projekt.bezug(basis?.spec ?? null, spezifikation); } catch (f) { z.fehler = String(f.message ?? f); z.status = null; render(); return; } // ungültige Kennung: sichtbarer Fehler, nichts wird ersetzt
+  try { b = Projekt.bezug(basis?.spec ?? null, spezifikation); } catch (f) { z.idFrage = null; z.fehler = String(f.message ?? f); z.status = null; render(); return; } // ungültige Kennung: sichtbarer Fehler, nichts wird ersetzt
   if (b.art === 'unklar' && !entscheidung && !b.inhaltGleich) {
     z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich };
     render();
     return;
   }
   z.idFrage = null;
-  const u = Projekt.uebernehme(basis?.spec ?? null, spezifikation, { entscheidung: b.art === 'unklar' ? (entscheidung ?? 'fortsetzung') : undefined, bytes: zufall() });
+  let u;
+  try { u = Projekt.uebernehme(basis?.spec ?? null, spezifikation, { entscheidung: b.art === 'unklar' ? (entscheidung ?? 'fortsetzung') : undefined, bytes: zufall() }); } catch (f) { z.idFrage = null; z.fehler = String(f.message ?? f); z.status = null; render(); return; }
   // Altbestand: der Fortschritt unter dem alten Schlüssel (ohne Kennung) geht mit, sei es von der ankommenden Fassung (Kennung neu vergeben) oder vom geöffneten Projekt (hatte keine)
-  const altAbdruck = u.vergeben ? spezifikation.freigabe?.abdruck : (basis && !Projekt.idVon(basis.spec) ? basis.spec.freigabe?.abdruck : null);
+  const altAbdruck = Projekt.alterFortschrittsAbdruck(u, basis?.spec ?? null);
   z.altSchluessel = altAbdruck ? `blockwerk.fortschritt.${altAbdruck}` : null;
   spezifikation = u.spec;
   const gleichesProjekt = basis && u.art === 'fortsetzung' && basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck;

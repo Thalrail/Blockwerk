@@ -166,16 +166,25 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
     const reihe = teileInReihenfolge(eff);
     const roh = new Map(reihe.map((teil) => [teil.id, baueTeil(eff, teil, optionen)]));
     const einbau = hatKinder ? einbauVon(eff, roh) : null;
-    const besitz = new Map();
     for (const teil of reihe) {
       let t = roh.get(teil.id);
       const weg = einbau?.schnitt.get(teil.id);
       if (weg) t = ohneZellen(t, weg);
       welt.fuegeBauteilEin(t.bauteil);
       teile.set(teil.id, { schluessel: t.schluessel, arbeitsbloecke: t.arbeitsbloecke, start: t.start, huelle: t.huelle });
-      for (const k of t.schluessel) if (!besitz.has(k)) besitz.set(k, teil.id);
     }
-    return { welt, teile, besitz, einbau };
+    // Besitzkarte erst beim ersten Zugriff aufbauen (Entwürfe ohne Kinder, z. B. die Zitadelle, brauchen sie bei Hunderten von Prüfläufen nicht)
+    let besitz = null;
+    return {
+      welt, teile, einbau,
+      get besitz() {
+        if (!besitz) {
+          besitz = new Map();
+          for (const teil of reihe) for (const k of teile.get(teil.id).schluessel) if (!besitz.has(k)) besitz.set(k, teil.id);
+        }
+        return besitz;
+      },
+    };
   }
 
   /** Teil, in dessen Blöcken (oder Hülle) die Zelle liegt; sonst null. */

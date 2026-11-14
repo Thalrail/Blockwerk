@@ -64,15 +64,17 @@ export function erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naeht
       }
       // Freihaltungen: in einer Freihaltezelle steht kein Block irgendeines Teils (auch nicht des Kindes selbst)
       const verletzt = new Map(); // "kind|blockierer" → Zellen
-      for (const [c, kindIds] of mat.einbau.freihaltung) {
-        for (const t of entwurf.teile) { // jedes Teil, das die Zelle belegt (nicht nur das erste), wird einzeln gemeldet
-          if (!mat.teile.get(t.id).schluessel.has(c)) continue;
-          for (const kindId of kindIds) {
-            const paar = `${kindId}|${t.id}`;
-            if (!verletzt.has(paar)) verletzt.set(paar, new Set());
-            verletzt.get(paar).add(c);
-          }
+      const melde = (c, t) => { // jedes Teil, das die Zelle belegt (nicht nur das erste), wird einzeln gemeldet
+        for (const kindId of mat.einbau.freihaltung.get(c)) {
+          const paar = `${kindId}|${t.id}`;
+          if (!verletzt.has(paar)) verletzt.set(paar, new Set());
+          verletzt.get(paar).add(c);
         }
+      };
+      for (const t of entwurf.teile) { // je Teil über die kleinere der beiden Mengen laufen: Kosten ~ min(Freihaltezellen, Blöcke des Teils)
+        const bloecke = mat.teile.get(t.id).schluessel, frei = mat.einbau.freihaltung;
+        if (frei.size <= bloecke.size) { for (const c of frei.keys()) if (bloecke.has(c)) melde(c, t); }
+        else for (const c of bloecke) if (frei.has(c)) melde(c, t);
       }
       for (const [paar, zellen] of [...verletzt].sort((p, q) => (p[0] < q[0] ? -1 : 1))) {
         const [kindId, blockId] = paar.split('|');

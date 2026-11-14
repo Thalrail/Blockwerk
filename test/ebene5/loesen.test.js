@@ -233,3 +233,36 @@ test('Technik: nur bestätigte Anlagen gelten als funktionsfähig; „neu prüfe
   const danach = L.technikAnsicht(plan2, L.technikPruefen(e.ebene3.bestaetigung, geaendert))[0];
   assert.deepEqual([danach.status, danach.funktioniert], ['bestaetigt', true]);
 });
+
+test('Konflikt lösen: „Meine übernehmen“ überschreibt bewusst, auch wenn der andere eine Zulassung gesetzt hat (die Erwartung enthält sie); „Ihre behalten“ sendet nichts', () => {
+  class Dienst {
+    constructor() { this.raum = LV.neuerRaum(); this.v = new Map(); this.n = 0; }
+    verbinde() { const c = { id: `v${++this.n}`, post: [] }; this.v.set(c.id, c); return c; }
+    empfange(c, text) { const r = LV.verarbeite(this.raum, LV.liesNachricht(text), c.id); this.raum = r.raum; for (const z of LV.zustellungen(r.raum, r.senden, c.id)) this.v.get(z.an)?.post.push(JSON.parse(JSON.stringify(z.nachricht))); }
+  }
+  const d = new Dienst();
+  const sp = (name) => {
+    const k = LV.erzeugeKlient({ name, fortschritt: F.leer() }), c = d.verbinde();
+    const s = { k, c, meld: [], sende(ms) { for (const m of ms) d.empfange(c, JSON.stringify(m)); }, pump() { while (c.post.length) { const r = k.beiNachricht(c.post.shift()); s.meld.push(...r.meldungen); s.sende(r.senden); } } };
+    s.sende(k.verbunden());
+    return s;
+  };
+  const anna = sp('Anna'), ben = sp('Ben');
+  anna.pump(); ben.pump();
+  anna.sende(anna.k.aendereOperation(op('t', 1, 0, 0, { op: 'leere' })));
+  anna.sende(anna.k.aendereOperation(op('t', 1, 0, 0, { op: 'leere', zugelassen: true }, { op: 'leere' })));
+  anna.pump();
+  // Ben kannte die Zelle noch nicht und will sie setzen: Konflikt mit Annas zugelassenem Eintrag
+  ben.meld.length = 0;
+  ben.sende(ben.k.aendereOperation(op('t', 1, 0, 0, GLAS)));
+  ben.pump();
+  const konflikt = ben.meld.find((m) => m.art === 'aenderung-konflikt').konflikte[0];
+  assert.equal(konflikt.aktuell.zugelassen, true);
+  assert.equal(L.konfliktAnsicht(konflikt).von, 'Anna');
+  assert.deepEqual(ben.k.konfliktLoesen(konflikt, 'ihre'), [], 'ihre behalten: nichts wird gesendet');
+  ben.sende(ben.k.konfliktLoesen(konflikt, 'meine'));
+  ben.pump(); anna.pump();
+  assert.deepEqual(d.raum.aenderungen.eintraege['t|1,0,0'].block, GLAS.block, 'jetzt gilt Bens Fassung');
+  assert.equal('zugelassen' in d.raum.aenderungen.eintraege['t|1,0,0'], false);
+  assert.deepEqual(anna.k.zustand.aenderungen.eintraege, d.raum.aenderungen.eintraege);
+});

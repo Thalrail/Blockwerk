@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U5 umgesetzt (14.11.2026); U6 und U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U6 umgesetzt (14.11.2026); U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -67,7 +67,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U5 um
 - Schutz: ein Träger mit Kindern wird nicht stumm entfernt (Regel besteht), die Oberfläche zeigt die Meldung und die Folge für gebundene Änderungen („Änderung C3 wird verwaist“) **vor** dem Übernehmen.
 - Tests: Spezifikation → Plan für Größenänderung mit vorhandenen Änderungen (Verwaisung wird vorab gezeigt).
 
-### U6 Verwaistes und Konflikte verstehen und lösen (Priorität 3)
+### U6 Verwaistes und Konflikte verstehen und lösen (Priorität 3) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene5.md`
 - **Panel „Änderungen“:** Liste nach Status; je Eintrag Teil, Zelle, Block, Grund in einem Satz („Der Block ist in der neuen Fassung weggefallen“, „Das Teil gibt es nicht mehr“).
 - **Verwaist:** drei Knöpfe wie in den Optionen: *verwerfen*, *neu verankern* (Zielzelle in der Schicht anklicken), *zulassen und weiterbauen*. Verankern in der Planfassung wird eine **Gruppe**: beide Operationen gelten ganz oder gar nicht (Lücke 5; kleine Erweiterung von `wende`, mit Tests).
 - **Mehrspieler-Konflikt:** `aenderung-konflikt` zeigt „Deine Fassung / Fassung von Anna“ und lässt wählen; es wird nie still überschrieben (bleibt wie in P10).

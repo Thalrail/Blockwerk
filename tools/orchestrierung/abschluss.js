@@ -11,7 +11,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { git, gitStatus, mitHaertung, haerteUmgebung, konfigUmgebung, haerteEinstellungen, haertePfad } from './git.js';
 import { pruefeGitKonfiguration, aktiveHooks } from './git-abdruck.js';
-import { AUSSER, brauche, speichere, laufDir, leseZeilen, freigabeStatus, fremdeAenderungen, baumVon, vor, integritaetPruefen, integritaetGitNeu, integritaetVerletzt } from './lauf.js';
+import { AUSSCHLUSS, brauche, speichere, laufDir, leseZeilen, freigabeStatus, fremdeAenderungen, baumVon, vor, integritaetPruefen, integritaetGitNeu, integritaetVerletzt } from './lauf.js';
 import { vergleicheMitPlatte, pruefeGeheimnisse } from './schnappschuss.js';
 
 export const GITHUB_REPO = 'Thalrail/Blockwerk';
@@ -20,11 +20,19 @@ export const BASIS_ZWEIG = 'main';
 export const ZWEIG_PRAEFIX = 'claude/';
 export const TRAILER = 'Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>';
 const KURZNAME = /^[a-z0-9][a-z0-9-]{2,40}$/;
-const SICHERHEITSDATEIEN = [/^\.claude\//, /^\.github\//, /^tools\/orchestrierung\//, /^\.gitignore$/];
+// ohne Rücksicht auf Groß-/Kleinschreibung: unter Windows und macOS meint `.Claude/` dieselbe Datei wie `.claude/`
+export const SICHERHEITSDATEIEN = [/^\.claude\//i, /^\.github\//i, /^tools\/orchestrierung\//i, /^\.gitignore$/i];
+/** Pfadteile, die unter Windows denselben Ort wie ein anderer Name meinen können (8.3-Kurzname `ORCHES~1`, Punkt oder Leerzeichen am Ende, `:` für Datenströme): nie veröffentlichen, die Schutzliste wäre damit umgehbar. */
+export const unsichererPfad = (p) => p.split('/').some((k) => /~\d/.test(k) || /[. ]$/.test(k) || k.includes(':'));
+/** Unsichtbare, Format- und Steuerzeichen (Nullbreite Zeichen, Richtungszeichen …): manche Dateisysteme ignorieren sie beim Vergleich, der Pfad würde dann einen geschützten Namen treffen. */
+const UNSICHTBAR = /[\p{Cf}\p{Cc}\p{Co}\p{Cn}]/u;
+/** Vergleichsform für die Schutzliste: Unicode-Kompatibilitätsform (z. B. ganzbreiter Punkt → `.`), ohne unsichtbare Zeichen. Groß-/Kleinschreibung erledigen die Regexe (`i`). */
+const vergleichsform = (p) => p.normalize('NFKC').replace(/\p{Cf}/gu, '').replace(/\\/g, '/'); // Windows: `\` trennt wie `/`
+export const geschuetzterPfad = (p) => UNSICHTBAR.test(p) || unsichererPfad(p) || SICHERHEITSDATEIEN.some((r) => r.test(p) || r.test(vergleichsform(p)));
 const SCHRITTE = ['branch', 'commit', 'push', 'pr'];
 
-const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });
-const kurz = (buf) => String(buf ?? '').trim().slice(0, 400);
+export const abgelehnt = (grund, extra = {}) => ({ status: 'abgelehnt', grund, ...extra });
+export const kurz = (buf) => String(buf ?? '').trim().slice(0, 400);
 
 function nachrichtVon(a, f, titel) {
   const t = f.tests; const rv = f.review;
@@ -84,8 +92,9 @@ function pruefeVoraussetzungen(w, a, { kurzname, titel, einschraenkungen, basis 
   const konfig = pruefeGitKonfiguration(w);
   if (konfig.length) return { fehler: abgelehnt('git-konfiguration', { probleme: konfig, hinweis: 'Die wirksame Git-Konfiguration enthält Einträge, die Programme starten oder das Push-Ziel ändern könnten' }) };
   const erlaubteRemotes = (umgebung.erlaubteRemotes ?? ERLAUBTE_REMOTES).map((x) => x.toLowerCase());
-  const remotes = [git(w, ['remote', 'get-url', 'origin']).trim(), git(w, ['remote', 'get-url', '--push', 'origin']).trim()];
-  const remote = remotes[0];
+  // alle URLs (Fetch und Push): ein Push geht an jede eingetragene URL, nicht nur an die erste
+  const urlListe = (args) => git(w, args).split('\n').map((x) => x.trim()).filter(Boolean);
+  const remotes = [...urlListe(['remote', 'get-url', '--all', 'origin']), ...urlListe(['remote', 'get-url', '--all', '--push', 'origin'])];
   const fremdesZiel = remotes.find((x) => !erlaubteRemotes.includes(x.toLowerCase()));
   if (fremdesZiel) return { fehler: abgelehnt('remote-nicht-erlaubt', { remote: fremdesZiel }) };
   if (!git(w, ['config', 'user.name']).trim() || !git(w, ['config', 'user.email']).trim()) return { fehler: abgelehnt('git-identitaet', { hinweis: 'user.name und user.email fehlen' }) };
@@ -97,10 +106,10 @@ function pruefeVoraussetzungen(w, a, { kurzname, titel, einschraenkungen, basis 
 
   const dateien = [...a.uebernommen.dateien].map(vor).sort();
   if (!dateien.length) return { fehler: abgelehnt('keine-dateien') };
-  const gesperrt = dateien.filter((p) => SICHERHEITSDATEIEN.some((r) => r.test(p)));
+  const gesperrt = dateien.filter(geschuetzterPfad);
   if (gesperrt.length) return { fehler: abgelehnt('sicherheitsdateien', { dateien: gesperrt, hinweis: 'Solche Änderungen committet nie ein automatischer Abschluss' }) };
 
-  const abweichung = vergleicheMitPlatte(w, a.basis, { ausgeschlossen: a.ausgeschlossen, ausser: AUSSER });
+  const abweichung = vergleicheMitPlatte(w, a.basis, { ausgeschlossen: a.ausgeschlossen, ...AUSSCHLUSS });
   if (abweichung.fehler.length) return { fehler: abgelehnt('arbeitsbaum-weicht-ab', { fehler: abweichung.fehler.slice(0, 6), hinweis: 'Der Hauptbaum ist nicht mehr der geprüfte Codezustand' }) };
   const schmutzig = fremdeAenderungen(w);
   const unerwartet = schmutzig.filter((p) => !dateien.includes(p));
@@ -136,7 +145,7 @@ export function stagingStimmt(gestaged, erwartet) {
 
 /** Umgebung für `gh`: wie bei Git nur die Positivliste, dazu die Anmeldeverfahren von gh (Token-Variablen, Konfigurationsort); Git-Einstellungen gelten auch für die Git-Aufrufe, die gh selbst startet. */
 export const GH_UMGEBUNG_ZUSATZ = Object.freeze(['GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN', 'GH_HOST', 'GH_CONFIG_DIR', 'XDG_CONFIG_HOME']);
-const ghUmgebung = (extra = {}) => ({ ...haerteUmgebung(process.env, GH_UMGEBUNG_ZUSATZ), ...konfigUmgebung(haerteEinstellungen(haertePfad())), GIT_TERMINAL_PROMPT: '0', GH_PROMPT_DISABLED: '1', ...extra });
+export const ghUmgebung = (extra = {}) => ({ ...haerteUmgebung(process.env, GH_UMGEBUNG_ZUSATZ), ...konfigUmgebung(haerteEinstellungen(haertePfad())), GIT_TERMINAL_PROMPT: '0', GH_PROMPT_DISABLED: '1', GH_HOST: 'github.com', ...extra });
 
 function blockiert(w, a, f, schritt, grund) {
   speichere(w, a);

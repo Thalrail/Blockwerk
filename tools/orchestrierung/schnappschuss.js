@@ -78,14 +78,14 @@ export function schnappschuss(repo, { id = 'x', eltern = null, ...optionen } = {
 }
 
 /** Bytegenauer Vergleich: jede Datei im Commit-Baum stimmt mit der Platte überein, und es gibt keine unerklärte Datei auf der Platte. */
-export function vergleicheMitPlatte(repo, commit, { ausgeschlossen = [], ausser = [] } = {}) {
+export function vergleicheMitPlatte(repo, commit, { ausgeschlossen = [], ausser = [], ausserDateien = [] } = {}) {
   const fehler = [];
   const baum = new Map();
   for (const e of git(repo, ['ls-tree', '-r', '-z', '--full-tree', commit]).split('\0').filter(Boolean)) {
     const [meta, p] = e.split('\t'); const [modus, art, sha] = meta.split(' ');
     if (art === 'blob') baum.set(p, { modus, sha });
   }
-  const platte = baumHash(repo, { ausser }).dateien;
+  const platte = baumHash(repo, { ausser, ausserDateien }).dateien;
   for (const [p, { sha }] of baum) {
     const abs = path.join(repo, p);
     if (!fs.existsSync(abs)) { fehler.push(`${p}: im Snapshot, nicht auf der Platte`); continue; }

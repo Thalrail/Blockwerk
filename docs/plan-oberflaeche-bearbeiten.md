@@ -45,7 +45,7 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 umgesetzt
 - Schicht-Abdruck umfasst die geänderten Blöcke bereits (Abdruck über Ort, Block, Richtung, Inhalt): Haken gebauter Schichten fallen von selbst.
 - Tests: `test/ebene5/bauplan-einbau` erweitern (Status je Fall, Haus mit Glas, verwaiste Änderung, mehrere Teile).
 
-### U2 Zelle wählen: Welt → (Teil, Rahmenzelle)
+### U2 Zelle wählen: Welt → (Teil, Rahmenzelle) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene3-und-4.md`
 - Reine Funktion (Ebene 3 oder 5 lesend): gegeben Abschnitt, Höhe y, Welt-x, Welt-z → Besitzer-Teil und Rahmenzelle, auch für leere Zellen im Innenraum und in Aussparungen (Besitzkarte plus Hülle). Gegenprobe für alle vier Drehungen, mehrere Teile, Kinder.
 - Tests: Hin- und Rückweg mit `zellenInWelt`, Rotation, Randfälle (Zelle außerhalb jedes Teils → Fehlermeldung, keine Änderung).
 

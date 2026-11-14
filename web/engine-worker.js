@@ -55,6 +55,8 @@ async function eingabe(data) {
   return null;
 }
 
+let letzter = null, neuesterLauf = null; // `letzter`: Entwurf des zuletzt fertig gebauten Plans des neuesten Auftrags
+
 async function baue(spezifikation, messungen = [], lauf, aenderungen = null) {
   const e = await engine();
   self.postMessage({ typ: 'status', text: 'Spezifikation wird geprüft …', lauf });
@@ -62,6 +64,7 @@ async function baue(spezifikation, messungen = [], lauf, aenderungen = null) {
   if (r.status === 'rueckfragen') return { typ: 'rueckfragen', rueckfragen: r.rueckfragen };
   self.postMessage({ typ: 'status', text: 'Bauplan wird angelegt …', lauf });
   const plan = e.e5.bauplan(r.entwurf);
+  if (lauf === neuesterLauf) letzter = { lauf, entwurf: r.entwurf, mat: null }; // nie ein überholter Auftrag // für die Zellenwahl (Klick auf eine Zelle): derselbe Entwurf wie der angezeigte Plan
   return {
     typ: 'fertig', status: r.status, plan, material: e.e5.material(plan),
     bericht: berichtAlsText(r.entwurf), zusammenfassung: e.ebene4.zusammenfassung(spezifikation),
@@ -69,9 +72,19 @@ async function baue(spezifikation, messungen = [], lauf, aenderungen = null) {
   };
 }
 
+/** Zellenwahl (U2): welchem Teil gehört die angeklickte Weltzelle, und wie heißt sie im Rahmen des Teils? Rechnet Ebene 3 am zuletzt gebauten Entwurf. */
+async function waehleZelle(zelle) {
+  const e = await engine();
+  if (!letzter) throw new Error('Es gibt noch keinen Bauplan, in dem sich eine Zelle wählen ließe.');
+  letzter.mat ??= e.ebene3.materialisiere(letzter.entwurf);
+  return e.ebene3.zellenwahl.waehle(letzter.entwurf, zelle, { mat: letzter.mat });
+}
+
 self.onmessage = async ({ data }) => {
   try {
+    if (data.typ === 'baue') { neuesterLauf = data.lauf; letzter = null; } // ab jetzt gilt nur noch der Plan dieses Auftrags
     if (data.typ === 'baue') self.postMessage({ ...(await baue(data.spezifikation, data.messungen, data.lauf, data.aenderungen)), lauf: data.lauf }); // `lauf` zeigt der Seite, zu welchem Auftrag die Antwort gehört
+    else if (data.typ === 'waehleZelle') self.postMessage({ typ: 'zelle', ...(await waehleZelle(data.zelle)), anfrage: data.anfrage, lauf: data.lauf });
     else { const antwort = await eingabe(data); if (antwort) self.postMessage({ ...antwort, anfrage: data.anfrage }); }
   } catch (f) {
     self.postMessage({ typ: 'fehler', text: String(f?.message ?? f), anfrage: data?.anfrage, lauf: data?.lauf });

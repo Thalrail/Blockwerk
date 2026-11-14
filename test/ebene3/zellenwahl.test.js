@@ -38,6 +38,8 @@ test('Rahmenzelle ↔ Weltzelle: für alle Zellen der Hülle, alle Drehungen, ni
       const w = Z.waehle(e, welt, { mat });
       assert.equal(w.gewaehlt.teil, 'haus', JSON.stringify(lage));
       assert.deepEqual(w.gewaehlt.zelle, rahmen, `Drehung ${lage.drehung}: Welt ${k(welt)}`);
+      assert.equal(w.gewaehlt.drehung, lage.drehung, 'die Drehung des Teils ist Teil der Auskunft (U3: Richtungszustände zurückdrehen)');
+      assert.equal(w.kandidaten[0].drehung, lage.drehung);
       const hatBlock = mat.teile.get(w.gewaehlt.id).schluessel.has(k(welt));
       assert.equal(w.gewaehlt.besitzt, hatBlock);
       assert.equal(w.gewaehlt.grund, hatBlock ? 'block' : 'huelle');

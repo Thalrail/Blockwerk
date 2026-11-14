@@ -387,3 +387,12 @@ Alle Annahmen stammen aus der Simulation (Ebene 1), nichts davon ist im Spiel be
 1. **Treppe im Haus:** Kommst du vom Erdgeschoss die Treppe hinauf, ohne mit dem Kopf an die Decke zu stoßen und ohne zu springen? Der Durchbruch in der Decke muss über der ganzen Treppe offen sein (die Simulation verlangt **3 freie Blöcke** über jedem Stufenblock: 2 zum Stehen, 1 für den Schritt nach oben; reichen im Spiel 2?).
 2. **Trennwand mit Innentür:** Hält die Wand zwischen den Räumen, und geht man durch die Tür (Ausrichtung, Scharnier, schließt sie)?
 3. **Haustür und Fenster in der Außenwand:** Sitzen beide in der äußersten Wandschicht, ist das Haus ringsum dicht (nichts spawnt innen bei Licht), schauen Tür und Scheiben nach außen?
+
+## Zellen bearbeiten: Einzelblöcke in der Oberfläche (14.11.2026, `ungeprüft`)
+Die Oberfläche rechnet nichts selbst; getestet wird, ob das, was der Bauplan nach einer Änderung zeigt, im Spiel genauso aussieht. Testwelt (Kreativ), Wohnhaus aus der Haus-Sonde (Beispiel in `tools/haus-sonde.js`), Bauplan in Blockwerk.
+1. **Block setzen:** Im Schichtplan eine Wandzelle anklicken (gelber Rahmen), „Block ändern …“, z. B. `glass` suchen, „Übernehmen“. Die Zelle zeigt das Glas, die Schicht ist offen. Im Spiel den Bauplan an dieser Stelle bauen: Steht das Glas genau dort (Koordinate im Maßband des Plans)?
+2. **Block entfernen:** Eine Wandzelle anklicken, „Block entfernen“, im Spiel bauen: Ist die Zelle leer?
+3. **Richtung (wichtig):** Eine Zelle anklicken, `oak_stairs` mit `weirdo_direction` 0, dann 1, 2, 3 setzen und im Spiel nachbauen. Blockwerk zeigt den Pfeil im Plan; stimmt er mit der Blickrichtung der Treppe im Spiel überein? Dasselbe mit einem `furnace` (`cardinal_direction`) und mit einem Teil, das gedreht steht (Treppe im Haus mit `ausrichtung` Osten oder Süden). Meldet bitte, welche Zahl welcher Himmelsrichtung entspricht, falls die Pfeile abweichen.
+4. **Zurücknehmen:** Eine geänderte Zelle anklicken, „Änderung zurücknehmen“: Der alte Block steht wieder da.
+5. **Umbauhinweise:** Eine Schicht abhaken, danach in dieser Schicht einen Block ändern: Blockwerk nennt den Block unter „Umbauhinweise“; erst nach „bestätigt“ gilt die neue Fassung, die Schicht ist wieder offen. „Bei der alten Fassung bleiben“ lässt Plan und Änderungen, wie sie waren.
+6. **Live (zwei Fenster oder mit einem Freund):** Im Raum eine Zelle ändern: Die andere Seite sieht dieselbe Änderung und baut den Plan neu.

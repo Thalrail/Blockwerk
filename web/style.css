@@ -122,3 +122,10 @@ body.pip { display: block; } body.pip #fuss, body.pip #toast { display: none; }
 .umbau details { margin: 4px 0; } .umbau summary { cursor: pointer; }
 .umbau ul { margin: 6px 0 6px 18px; padding: 0; }
 .umbau .knoepfe { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+
+/* Zelle bearbeiten (U3) */
+.blockwahl { margin-top: 8px; padding: 8px; border: 1px solid var(--linie); border-radius: 8px; }
+.blockwahl input[type=text] { width: 100%; box-sizing: border-box; }
+.trefferliste { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; max-height: 9em; overflow: auto; }
+.trefferliste .treffer { padding: 2px 8px; font-size: 12px; }
+.zustand { display: block; margin: 4px 0; } .zustand select { margin-left: 6px; }

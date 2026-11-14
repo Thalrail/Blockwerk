@@ -109,7 +109,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
    * `maximum`-mal wieder (art „neustart“); sonst bleibt die Rückfrage an Jonah offen (art „wartet“).
    */
   function pruefeUndLoese(entwurf, handler, aktuell) {
-    const r = einwaende.laufe(entwurf, handler);
+    const r = einwaende.laufe(entwurf, handler, { ohneAenderungen: aktuell !== null }); // manuelle Änderungen prüft erst die Abschlussprüfung (aktuell === null)
     let e = r.entwurf;
     for (const rf of r.rueckfragen) {
       const ew = e.einwaende.find((x) => x.id === rf.einwand);
@@ -280,7 +280,7 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
     const hinzu = [...neu.keys()].filter((id) => !alt.has(id)).sort();
     const geaendert = [...neu.keys()].filter((id) => alt.has(id) && norm(inhalt(alt.get(id))) !== norm(inhalt(neu.get(id)))).sort((x, y) => alt.get(x).reihenfolge - alt.get(y).reihenfolge);
     // 0. Projektangaben und Gesamtpalette der neuen Fassung (die Welt wird beim Prüfen aus Entwurf und Palette gebaut, es muss nichts neu gebaut werden)
-    e = kopie(e);
+    e = mitAenderungen(kopie(e), optionen);
     e.projekt = { ...e.projekt, name: vorgabe.name ?? e.projekt.name, bauplatz: { ...(vorgabe.bauplatz ?? e.projekt.bauplatz) }, nullpunkt: { ...(vorgabe.nullpunkt ?? e.projekt.nullpunkt) } };
     if (vorgabe.stimmung) e = D.setzePalette(e, vorgabe.stimmung);
     else if (Object.keys(e.palette).length) e = fachleute.aendere(e, 'designer', { art: 'setze-palette', palette: {}, ersetze: true }).entwurf;
@@ -305,7 +305,13 @@ export function erzeugeAblauf({ regelwerk, fachleute, konstrukteur: K, techniker
   function starte(vorgabe, optionen = {}) {
     const v = vorlauf(vorgabe);
     if (v.art === 'wartet') return ergebnis(v.entwurf, 'wartet');
-    return fortsetzen(v.entwurf, optionen);
+    return fortsetzen(mitAenderungen(v.entwurf, optionen), optionen);
+  }
+
+  /** Setzt die manuellen Änderungen aus einer Planfassung (`optionen.aenderungen`, Ebene 5) in den Entwurf; ohne Angabe bleibt der Entwurf unverändert. */
+  function mitAenderungen(e, optionen) {
+    if (optionen.aenderungen === undefined || optionen.aenderungen === null) return e;
+    try { return aenderungen.ausPlanfassung(e, optionen.aenderungen); } catch (f) { throw new AblaufFehler(`Die Änderungen der Planfassung sind ungültig: ${f.message}`); }
   }
 
   /**

@@ -14,6 +14,7 @@ export { erzeugeMaterial, umrechnen, umrechnungsText, KISTE } from './material.j
 export * as fortschritt from './fortschritt.js';
 export * as teilen from './teilen.js';
 export * as projektid from './projektid.js';
+export { bauePlan } from './bauen.js';
 export { erzeugeAtlas, WEISS } from './atlas.js';
 export { benoetigteBloecke, erzeugeIndex, loeseAuf } from './texturen.js';
 export * as eingabe from './eingabe.js';

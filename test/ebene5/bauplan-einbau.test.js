@@ -160,7 +160,6 @@ test('Bauplan: Aussparungen in einer Höhe ohne Blöcke gehen nicht verloren (au
   });
   e.ebene2.bausteine.set(frei.id, frei);
   try {
-    let en = e.ebene3.neuerEntwurf ? null : null; void en;
     const { neuerEntwurf } = await import('../../src/ebene3/index.js');
     let x = neuerEntwurf({ name: 'Probe' });
     const a = (wer, aenderung) => { x = e.ebene3.aendere(x, wer, aenderung).entwurf; };

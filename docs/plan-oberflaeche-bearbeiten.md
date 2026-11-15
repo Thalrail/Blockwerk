@@ -1,6 +1,6 @@
 # Plan: Oberfläche für manuelles Bearbeiten und Konfliktlösung
 
-Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U6 umgesetzt (14.11.2026); U7 noch nicht.** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
+Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U7 umgesetzt (U0 bis U6 am 14.11.2026, U7 am 15.11.2026).** Diese Datei wird nicht automatisch geladen. Grundlage: gelesener Code der Pakete P1 bis P11 (`src/ebene3/aenderungen.js`, `bestaetigung.js`, `src/ebene5/planfassung.js`, `umbau.js`, `live.js`, `bauplan.js`, `web/app.js`, `web/engine-worker.js`).
 
 ## 1. Ausgangslage: was es gibt und was fehlt
 
@@ -68,13 +68,14 @@ Stand 14.11.2026, Plan im Auftrag von Jonah (nach PR #51). **Stand: U0 bis U6 um
 - Tests: Spezifikation → Plan für Größenänderung mit vorhandenen Änderungen (Verwaisung wird vorab gezeigt).
 
 ### U6 Verwaistes und Konflikte verstehen und lösen (Priorität 3) – umgesetzt 14.11.2026, siehe `docs/referenz/stand-ebene5.md`
+(Stand 15.11.2026: auch U7 ist umgesetzt, siehe `docs/referenz/stand-ebene5.md`, Abschnitt U7.)
 - **Panel „Änderungen“:** Liste nach Status; je Eintrag Teil, Zelle, Block, Grund in einem Satz („Der Block ist in der neuen Fassung weggefallen“, „Das Teil gibt es nicht mehr“).
 - **Verwaist:** drei Knöpfe wie in den Optionen: *verwerfen*, *neu verankern* (Zielzelle in der Schicht anklicken), *zulassen und weiterbauen*. Verankern in der Planfassung wird eine **Gruppe**: beide Operationen gelten ganz oder gar nicht (Lücke 5; kleine Erweiterung von `wende`, mit Tests).
 - **Mehrspieler-Konflikt:** `aenderung-konflikt` zeigt „Deine Fassung / Fassung von Anna“ und lässt wählen; es wird nie still überschrieben (bleibt wie in P10).
 - **Technik:** Liste der Anlagen mit Status; bei „nicht bestätigt“ die Zellen, die sich im Prüfbereich geändert haben (Vergleich der Abdrücke je Zelle statt nur ein Gesamthash), Knopf *neu prüfen* (Ebene 1) → bestätigt oder Fehlerliste mit Koordinate. Ein nicht bestätigtes System wird nie als funktionsfähig angezeigt.
 - Tests: je Zustand ein Fall im Panel-Modell (reines Datenmodell in `src/ebene5/`, kein DOM), Browserprüfung der Knöpfe.
 
-### U7 Verbindung und Härtung (Priorität 4, abschließend)
+### U7 Verbindung und Härtung (Priorität 4, abschließend) – umgesetzt 15.11.2026
 - Ein gemeinsamer Ablauf „Änderung → neuer Plan → Hinweise → Bestätigung → Haken öffnen“ für beide Wege, Statusmeldungen mit Auftragsnummer (besteht).
 - Versionierung sichtbar: Planfassungsversion und Spezifikationsversion im Kopf; „Fassung X → Fassung Y“ im Baubericht.
 - Link- und Raumgrenzen (200.000 Zeichen, Dienstlimits) in der Oberfläche anzeigen; dauerhafte Projektspeicherung bleibt ein eigenes späteres Paket (Dienst).
@@ -112,4 +113,4 @@ Auswirkung A: Schemaänderung in Ebene 4 (optionales Feld, Version der Spezifika
 - **Rechenzeit:** Plan wird bei jeder Änderung neu gebaut (Zitadelle mehrere Sekunden); U3 nutzt den Worker mit Auftragsnummer, Teilneuberechnung nur auf Freigabe von Jonah (Roadmap Punkt 6).
 
 ## Integrationsprüfung vor dem Abschluss von U7 (durchgeführt 14.11.2026)
-Der **Zwei-Browser-Tab-Test** zu U6 (Konfliktanzeige, Zulassung im Raum, abgelehnte Gruppe, Widerruf, Dienst ohne Formatangabe; Ablauf in `docs/referenz/stand-ebene5.md`, „Offene Integrationsprüfung“) wurde nach dem Merge von U6 durchgeführt (alle fünf Prüfpunkte bestanden, zwei echte Fehler gefunden und behoben; Ergebnis in `docs/referenz/stand-ebene5.md`). U7 darf beginnen.
+Der **Zwei-Browser-Tab-Test** zu U6 (Konfliktanzeige, Zulassung im Raum, abgelehnte Gruppe, Widerruf, Dienst ohne Formatangabe; Ablauf in `docs/referenz/stand-ebene5.md`, „Offene Integrationsprüfung“) wurde nach dem Merge von U6 durchgeführt (alle fünf Prüfpunkte bestanden, zwei echte Fehler gefunden und behoben; Ergebnis in `docs/referenz/stand-ebene5.md`). U7 durfte danach beginnen und ist umgesetzt.

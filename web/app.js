@@ -603,7 +603,7 @@ function teilePanel() {
   h += `<p class="klein">${rez !== null ? esc(Teile.rezeptZeile(info, rez)) : `Baustein: ${esc(baustein?.titel ?? t0.form?.baustein ?? '?')} (${esc(t0.form?.baustein ?? '')})`}${ausgewaehlt.kind ? `, liegt in „${esc(teile.find((x) => x.id === ausgewaehlt.traeger)?.name ?? ausgewaehlt.traeger)}“` : ''}. Die Kennung „${esc(t.id)}“ bleibt (Einzelblockänderungen sind an sie gebunden).</p>
     <label class="klein zustand">Name <input id="tl-name" type="text" maxlength="60" value="${feld(f, 'name')}"></label>
     <label class="klein zustand">Wichtigkeit <select id="tl-wicht">${optionen(info.wichtigkeiten, f.wicht)}</select></label>
-    <h4>Größe</h4>${rezUnbekannt ? '<p class="fehler">Unbekanntes Rezept – bitte Teil entfernen oder Rezept ändern</p>' : rez !== null ? rezeptFelderHtml('tl-', f, info, rez) + `<p class="klein">${esc(rezF.pflicht)}</p>` : paramFelderHtml('tl-', f, baustein) + '<p class="klein">Leer lassen = Standard des Bausteins.</p>'}
+    <h4>Größe</h4>${rezUnbekannt ? '<p class="fehler">Unbekanntes Rezept – bitte das Teil entfernen und neu anlegen</p>' : rez !== null ? rezeptFelderHtml('tl-', f, info, rez) + `<p class="klein">${esc(rezF.pflicht)}</p>` : paramFelderHtml('tl-', f, baustein) + '<p class="klein">Leer lassen = Standard des Bausteins.</p>'}
     <h4>Lage</h4>${lageFelderHtml('tl-', f, info, t.id, teile)}
     <div class="knoepfe"><button class="haupt" data-a="tl-anwenden">Prüfen und übernehmen</button><button data-a="tl-neu">Neues Teil …</button><button data-a="tl-entfernen">Teil entfernen …</button></div>`;
   return h;
@@ -654,6 +654,7 @@ async function teileAktion(name) {
     if (name === 'tl-neu') {
       t.rev++;
       const teile = Teile.teilListe(z.spec, info.kindrelationen), b = info.bausteine[0];
+      t.artManuell = false;
       t.neu = { name: '', baustein: b.id, art: info.teilarten[0], wicht: 'soll', rel: 'neben-osten', bezug: (teile.find((x) => !x.kind) ?? teile[0])?.id ?? 'projekt', abstand: '', anker: '', ausr: '' }; t.meldung = ''; render(); return;
     }
     if (name === 'tl-anwenden') {
@@ -1077,7 +1078,7 @@ function merkeTeileFeld(ev) {
   const id = ev.target?.id ?? '';
   if (id.startsWith('tl-') || id.startsWith('tn-')) z.teile.rev++; // jede Eingabe macht eine laufende Vorschau überholt
   if (id.startsWith('tl-') && id !== 'tl-teil' && z.teile.felder) z.teile.felder = { ...z.teile.felder, [id.slice(3)]: ev.target.value };
-  else if (id.startsWith('tn-') && z.teile.neu) z.teile.neu = { ...z.teile.neu, [id.slice(3)]: ev.target.value };
+  else if (id.startsWith('tn-') && z.teile.neu) { if (id === 'tn-art') z.teile.artManuell = true; z.teile.neu = { ...z.teile.neu, [id.slice(3)]: ev.target.value }; }
 }
 document.addEventListener('input', (ev) => {
   merkeTeileFeld(ev);
@@ -1106,7 +1107,7 @@ document.addEventListener('change', async (ev) => {
   merkeTeileFeld(ev);
   if (id === 'tl-teil') { z.teile.rev++; z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
   if (id === 'tl-rel' || id === 'tl-bezug') { const f = liesFelder('tl-'); delete f.teil; z.teile.felder = f; render(); return; }
-  if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') { for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; const r = Teile.rezeptAusAuswahl(z.teile.neu.baustein); if (r && z.teile.info.teilarten.includes(r)) z.teile.neu.art = r; } render(); return; }
+  if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') { for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; const r = Teile.rezeptAusAuswahl(z.teile.neu.baustein); if (r && !z.teile.artManuell && z.teile.info.teilarten.includes(r)) z.teile.neu.art = r; } render(); return; }
   if (id.startsWith('st-z-')) { // Zustandswert der Materialwahl (Index in der Liste der erlaubten Werte)
     const g = z.stil.picker?.gewaehlt; const za = g?.info.zustaende[Number(ev.target.dataset.i)]; if (!za) return;
     const j = Number(ev.target.value); if (j < 0) delete g.zustand[za.name]; else g.zustand[za.name] = za.werte[j];

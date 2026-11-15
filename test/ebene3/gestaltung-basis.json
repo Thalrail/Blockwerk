@@ -1,0 +1,432 @@
+{
+ "turm": {
+  "maße": {
+   "von": {
+    "x": 23,
+    "y": 0,
+    "z": 23
+   },
+   "bis": {
+    "x": 35,
+    "y": 33,
+    "z": 35
+   },
+   "breite": 13,
+   "tiefe": 13,
+   "hoehe": 34,
+   "anzahlBloecke": 1224
+  },
+  "materialien": {
+   "anzahlVerschieden": 1,
+   "haeufigkeit": [
+    {
+     "id": "minecraft:birch_planks",
+     "anzahl": 1224
+    }
+   ]
+  },
+  "silhouette": {
+   "schichten": [
+    {
+     "y": 0,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 1,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 2,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 3,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 4,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 5,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 6,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 7,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 8,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 9,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 10,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 11,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 12,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 13,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 14,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 15,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 16,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 17,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 18,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 19,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 20,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 21,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 22,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 23,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 24,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 25,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 26,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 27,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 28,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 29,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 30,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 31,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 32,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    },
+    {
+     "y": 33,
+     "breite": 13,
+     "tiefe": 13,
+     "bloecke": 36
+    }
+   ],
+   "verschiedeneQuerschnitte": 1,
+   "groessteAenderung": 0,
+   "gleichDarunter": 1
+  },
+  "glatteFlaeche": {
+   "max": {
+    "groesse": 170,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "jeRichtung": {
+    "nord": {
+     "groesse": 170,
+     "id": "minecraft:birch_planks"
+    },
+    "sued": {
+     "groesse": 170,
+     "id": "minecraft:birch_planks"
+    },
+    "west": {
+     "groesse": 170,
+     "id": "minecraft:birch_planks"
+    },
+    "ost": {
+     "groesse": 170,
+     "id": "minecraft:birch_planks"
+    }
+   }
+  },
+  "oeffnungen": {
+   "fassadenzellen": 1224,
+   "oeffnungszellen": 0,
+   "anteil": 0
+  },
+  "abschluss": {
+   "raumzellen": 3434,
+   "hatBoden": false,
+   "hatDach": false
+  }
+ },
+ "wohnhaus": {
+  "maße": {
+   "von": {
+    "x": 15,
+    "y": 0,
+    "z": 15
+   },
+   "bis": {
+    "x": 23,
+    "y": 13,
+    "z": 21
+   },
+   "breite": 9,
+   "tiefe": 7,
+   "hoehe": 14,
+   "anzahlBloecke": 452
+  },
+  "materialien": {
+   "anzahlVerschieden": 2,
+   "haeufigkeit": [
+    {
+     "id": "minecraft:birch_planks",
+     "anzahl": 389
+    },
+    {
+     "id": "minecraft:spruce_planks",
+     "anzahl": 63
+    }
+   ]
+  },
+  "silhouette": {
+   "schichten": [
+    {
+     "y": 0,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 63
+    },
+    {
+     "y": 1,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 2,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 3,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 4,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 63
+    },
+    {
+     "y": 5,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 6,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 7,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 8,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 63
+    },
+    {
+     "y": 9,
+     "breite": 9,
+     "tiefe": 7,
+     "bloecke": 28
+    },
+    {
+     "y": 10,
+     "breite": 7,
+     "tiefe": 7,
+     "bloecke": 24
+    },
+    {
+     "y": 11,
+     "breite": 5,
+     "tiefe": 7,
+     "bloecke": 20
+    },
+    {
+     "y": 12,
+     "breite": 3,
+     "tiefe": 7,
+     "bloecke": 16
+    },
+    {
+     "y": 13,
+     "breite": 1,
+     "tiefe": 7,
+     "bloecke": 7
+    }
+   ],
+   "verschiedeneQuerschnitte": 5,
+   "groessteAenderung": 2,
+   "gleichDarunter": 0.692
+  },
+  "glatteFlaeche": {
+   "max": {
+    "groesse": 97,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "jeRichtung": {
+    "nord": {
+     "groesse": 97,
+     "id": "minecraft:birch_planks"
+    },
+    "sued": {
+     "groesse": 97,
+     "id": "minecraft:birch_planks"
+    },
+    "west": {
+     "groesse": 63,
+     "id": "minecraft:birch_planks"
+    },
+    "ost": {
+     "groesse": 63,
+     "id": "minecraft:birch_planks"
+    }
+   }
+  },
+  "oeffnungen": {
+   "fassadenzellen": 347,
+   "oeffnungszellen": 0,
+   "anteil": 0
+  },
+  "abschluss": {
+   "raumzellen": 290,
+   "hatBoden": true,
+   "hatDach": true
+  }
+ }
+}

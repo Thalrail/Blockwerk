@@ -33,6 +33,7 @@ export { erzeugeArchitekt, FormFehler } from './architekt.js';
 export { erzeugeDesigner, erzeugePaletten, GestaltungsFehler } from './designer.js';
 export { erzeugeAblauf, AblaufFehler } from './ablauf.js';
 export { erzeugeUebersetzung } from './uebersetzung.js';
+export { messeGestaltung, bloeckeAusEntwurf, OEFFNUNGS_TEILE } from './gestaltung.js';
 
 /**
  * @param {{ebene0: object, ebene1: object, ebene2: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen

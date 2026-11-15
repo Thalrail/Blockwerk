@@ -49,4 +49,4 @@ Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwo
 - Wand-Ausrichtung und Projektkennung (Jonah, 14.11.2026): Wandseite legt die Ausrichtung fest (Prüfer lehnt zweite Angabe ab); stabile `projekt.id` (nicht im Abdruck), Fortsetzung oder Kopie (Volltext).
 - Materialwahl in der Spezifikation (Jonah, 14.11.2026): optional `projekt.stil` und `teile[].stil.palette` (Rolle → Registerblock) von Hand; gilt als WAS, der Leser nennt sie nie; Designer-Regeln unverändert (Volltext).
 - Zulassung im Planfassungsformat (Jonah, 14.11.2026): `zugelassen: true` = verwaiste Änderung bewusst akzeptiert (nichts bestätigt), widerrufbar, für alle gleich; ältere Versionen lehnen es sichtbar ab (Volltext).
-- Roadmap v2 (Jonah, 15.11.2026): D1/T1/R1, Rezepte als Daten (`docs/roadmap-v2.md`).
+- Roadmap v2 (Jonah, 15.11.2026): D1/T1/R1, Rezeptfeld D2 (`docs/roadmap-v2.md`).

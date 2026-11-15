@@ -14,6 +14,9 @@ export function erzeugeVokabular({ regelwerk, ebene0, ebene2 }) {
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([id, b]) => ({ id, titel: b.titel.replace(/\s*\(.*$/, ''), parameter: b.parameter.map((p) => ({ ...p })) }));
 
+  // Bausteinrezepte (Regeln rezepte.<name>, nur Daten): erlaubte Namen und Mindestmaße; die Rezeptschritte kennt nur Ebene 3
+  const rezepte = Object.fromEntries(regelwerk.alle().filter((r) => r.id.startsWith('rezepte.')).map((r) => [r.id.slice('rezepte.'.length), { titel: r.titel, mindest: { ...r.parameter.mindest } }]));
+
   const funktionen = {};
   for (const [art, regel] of Object.entries(S('funktionen'))) funktionen[art] = { ...regel, modul: arten[art] ?? null };
   const ohneModul = S('funktionenOhneModul');
@@ -34,6 +37,7 @@ export function erzeugeVokabular({ regelwerk, ebene0, ebene2 }) {
     farben: { ...S('farben') },
     stimmungen,
     bausteine,
+    rezepte,
     baustein: (id) => bausteine.find((b) => b.id === id) ?? null,
     funktionen,
     funktionenOhneModul: [...ohneModul],

@@ -1,0 +1,212 @@
+{
+ "13x13x34": {
+  "rohr": {
+   "aussenmass": [
+    13,
+    13,
+    34
+   ],
+   "bloecke": 1224,
+   "materialien": {
+    "anzahlVerschieden": 1,
+    "haeufigkeit": [
+     {
+      "id": "minecraft:birch_planks",
+      "anzahl": 1224
+     }
+    ]
+   },
+   "verschiedeneQuerschnitte": 1,
+   "gleichDarunter": 1,
+   "groessteAenderung": 0,
+   "glatteFlaecheMax": {
+    "groesse": 170,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "oeffnungen": {
+    "fassadenzellen": 1224,
+    "oeffnungszellen": 0,
+    "anteil": 0
+   },
+   "hatDach": false,
+   "hatBoden": false
+  },
+  "rezept": {
+   "aussenmass": [
+    13,
+    13,
+    34
+   ],
+   "bloecke": 1421,
+   "materialien": {
+    "anzahlVerschieden": 2,
+    "haeufigkeit": [
+     {
+      "id": "minecraft:birch_planks",
+      "anzahl": 1113
+     },
+     {
+      "id": "minecraft:spruce_planks",
+      "anzahl": 308
+     }
+    ]
+   },
+   "verschiedeneQuerschnitte": 6,
+   "gleichDarunter": 0.758,
+   "groessteAenderung": 4,
+   "glatteFlaecheMax": {
+    "groesse": 120,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "oeffnungen": {
+    "fassadenzellen": 1405,
+    "oeffnungszellen": 0,
+    "anteil": 0
+   },
+   "hatDach": true,
+   "hatBoden": false
+  }
+ },
+ "21x17x45": {
+  "rohr": {
+   "aussenmass": [
+    21,
+    17,
+    45
+   ],
+   "bloecke": 2340,
+   "materialien": {
+    "anzahlVerschieden": 1,
+    "haeufigkeit": [
+     {
+      "id": "minecraft:birch_planks",
+      "anzahl": 2340
+     }
+    ]
+   },
+   "verschiedeneQuerschnitte": 1,
+   "gleichDarunter": 1,
+   "groessteAenderung": 0,
+   "glatteFlaecheMax": {
+    "groesse": 315,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "oeffnungen": {
+    "fassadenzellen": 2340,
+    "oeffnungszellen": 0,
+    "anteil": 0
+   },
+   "hatDach": false,
+   "hatBoden": false
+  },
+  "rezept": {
+   "aussenmass": [
+    21,
+    17,
+    45
+   ],
+   "bloecke": 3065,
+   "materialien": {
+    "anzahlVerschieden": 2,
+    "haeufigkeit": [
+     {
+      "id": "minecraft:birch_planks",
+      "anzahl": 2381
+     },
+     {
+      "id": "minecraft:spruce_planks",
+      "anzahl": 684
+     }
+    ]
+   },
+   "verschiedeneQuerschnitte": 8,
+   "gleichDarunter": 0.75,
+   "groessteAenderung": 4,
+   "glatteFlaecheMax": {
+    "groesse": 186,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "oeffnungen": {
+    "fassadenzellen": 2985,
+    "oeffnungszellen": 0,
+    "anteil": 0
+   },
+   "hatDach": true,
+   "hatBoden": false
+  }
+ },
+ "9x9x20": {
+  "rohr": {
+   "aussenmass": [
+    9,
+    9,
+    20
+   ],
+   "bloecke": 480,
+   "materialien": {
+    "anzahlVerschieden": 1,
+    "haeufigkeit": [
+     {
+      "id": "minecraft:birch_planks",
+      "anzahl": 480
+     }
+    ]
+   },
+   "verschiedeneQuerschnitte": 1,
+   "gleichDarunter": 1,
+   "groessteAenderung": 0,
+   "glatteFlaecheMax": {
+    "groesse": 100,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "oeffnungen": {
+    "fassadenzellen": 480,
+    "oeffnungszellen": 0,
+    "anteil": 0
+   },
+   "hatDach": false,
+   "hatBoden": false
+  },
+  "rezept": {
+   "aussenmass": [
+    9,
+    9,
+    20
+   ],
+   "bloecke": 469,
+   "materialien": {
+    "anzahlVerschieden": 2,
+    "haeufigkeit": [
+     {
+      "id": "minecraft:birch_planks",
+      "anzahl": 353
+     },
+     {
+      "id": "minecraft:spruce_planks",
+      "anzahl": 116
+     }
+    ]
+   },
+   "verschiedeneQuerschnitte": 4,
+   "gleichDarunter": 0.632,
+   "groessteAenderung": 4,
+   "glatteFlaecheMax": {
+    "groesse": 39,
+    "richtung": "nord",
+    "id": "minecraft:birch_planks"
+   },
+   "oeffnungen": {
+    "fassadenzellen": 469,
+    "oeffnungszellen": 0,
+    "anteil": 0
+   },
+   "hatDach": true,
+   "hatBoden": false
+  }
+ }
+}

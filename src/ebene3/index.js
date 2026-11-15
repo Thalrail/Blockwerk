@@ -11,6 +11,7 @@ import { erzeugeArchitekt } from './architekt.js';
 import { erzeugeDesigner, erzeugePaletten } from './designer.js';
 import { erzeugeAblauf } from './ablauf.js';
 import { erzeugeUebersetzung } from './uebersetzung.js';
+import { erzeugeRezepte } from './rezepte.js';
 import { erzeugeLagen } from './lagen.js';
 import { erzeugeAenderungen } from './aenderungen.js';
 import { erzeugeZellenwahl } from './zellenwahl.js';
@@ -33,6 +34,7 @@ export { erzeugeArchitekt, FormFehler } from './architekt.js';
 export { erzeugeDesigner, erzeugePaletten, GestaltungsFehler } from './designer.js';
 export { erzeugeAblauf, AblaufFehler } from './ablauf.js';
 export { erzeugeUebersetzung } from './uebersetzung.js';
+export { erzeugeRezepte, RezeptFehler } from './rezepte.js';
 export { messeGestaltung, bloeckeAusEntwurf, OEFFNUNGS_TEILE } from './gestaltung.js';
 
 /**
@@ -48,7 +50,8 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
   const architekt = erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierung });
   const designer = erzeugeDesigner({ fachleute, paletten });
   const einwaende = erzeugeEinwaende({ regelwerk, fachleute, materialisierung, naehte: konstrukteur.naehte, zusaetze: (e) => [...techniker.einwaende(e), ...architekt.einwaende(e)] });
-  const uebersetzung = erzeugeUebersetzung({ regelwerk, ebene2, techniker });
+  const rezepte = erzeugeRezepte({ regelwerk, ebene2 });
+  const uebersetzung = erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte });
   const lagen = erzeugeLagen({ ebene0, ebene2 });
   const aenderungen = erzeugeAenderungen({ ebene0, ebene2 });
   const bestaetigung = erzeugeBestaetigung({ regelwerk, ebene0, materialisierung });
@@ -64,6 +67,7 @@ export function erzeugeEbene3({ ebene0, ebene1, ebene2, regelwerk }) {
     paletten,
     ablauf,
     uebersetzung,
+    rezepte,
     lagen,
     aenderungen,
     bestaetigung,

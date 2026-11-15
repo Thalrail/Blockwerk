@@ -29,6 +29,9 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
    */
   const paletteVon = (entwurf, abschnitt, { testmaterial = false } = {}) => ({ ...(testmaterial ? TESTPALETTE : {}), ...entwurf.palette, ...(entwurf.paletten?.[abschnitt] ?? {}) });
 
+  /** Rollentausch eines Teils (z. B. Sockel eines Rezepts: Wand → Akzent): die Rolle bekommt den Block der anderen Rolle; ohne `rollen` bleibt die Palette unverändert. */
+  const mitRollen = (palette, tausch) => (tausch ? { ...palette, ...Object.fromEntries(Object.entries(tausch).filter(([, nach]) => palette[nach] !== undefined).map(([von, nach]) => [von, palette[nach]])) } : palette);
+
   /** Rollen, die für den Abschnitt keinen Block haben (leer = vollständig belegt). */
   const fehlendeRollen = (entwurf, abschnitt) => {
     const p = paletteVon(entwurf, abschnitt);
@@ -48,7 +51,7 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
 
   /** Baut ein Teil: Paket, gedrehte und verschobene Blöcke, Blockschlüssel, Hülle, Startpunkt für die Lorenprüfung. */
   function baueTeil(entwurf, teil, optionen) {
-    const schluesselTeil = JSON.stringify([teil.baustein, teil.parameter, teil.lage, paletteVon(entwurf, teil.abschnitt, optionen)]);
+    const schluesselTeil = JSON.stringify([teil.baustein, teil.parameter, teil.lage, paletteVon(entwurf, teil.abschnitt, optionen), teil.rollen]);
     const gemerkt = teilSpeicher.get(schluesselTeil);
     if (gemerkt) { teilSpeicher.delete(schluesselTeil); teilSpeicher.set(schluesselTeil, gemerkt); return gemerkt; } // zuletzt benutzt nach hinten
     const t = baueTeilNeu(entwurf, teil, optionen);
@@ -60,7 +63,7 @@ export function erzeugeMaterialisierung({ regelwerk, ebene0, ebene1, ebene2 }) {
   function baueTeilNeu(entwurf, teil, optionen) {
     const paket = ebene2.baue(teil.baustein, teil.parameter);
     const w = ebene0.neueWelt();
-    try { ebene2.platziere(w, paket, paletteVon(entwurf, teil.abschnitt, optionen)); } catch (f) {
+    try { ebene2.platziere(w, paket, mitRollen(paletteVon(entwurf, teil.abschnitt, optionen), teil.rollen)); } catch (f) {
       // fehlt dem Bauplan ein Block (Rolle oder Form), sagt die Meldung, bei welchem Teil; mit Testmaterial kann das nicht passieren
       if (!optionen.testmaterial && /^Palette kennt/.test(f.message)) throw new PaletteFehler(`Teil ${teil.id} (${teil.baustein}, Abschnitt ${teil.abschnitt}): ${f.message}`, [{ abschnitt: teil.abschnitt, rollen: [] }]);
       throw f;

@@ -4,7 +4,7 @@
 import { PROJEKT_ID } from './spezifikation.js';
 
 const ID_MUSTER = /^[a-z0-9][a-z0-9-]*$/;
-const TEIL_FELDER = ['id', 'name', 'art', 'form', 'lage', 'funktionen', 'stil', 'wichtigkeit', 'verbindungen'];
+const TEIL_FELDER = ['id', 'name', 'art', 'form', 'rezept', 'lage', 'funktionen', 'stil', 'wichtigkeit', 'verbindungen'];
 const OBER_FELDER = ['schema', 'version', 'projekt', 'teile', 'offeneFragen', 'freigabe'];
 
 const istObjekt = (w) => w !== null && typeof w === 'object' && !Array.isArray(w);
@@ -64,6 +64,26 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
           const einfach = /^[a-z][a-z0-9_]{0,39}$/.test(rolle);
           frage(`${pfad}.${String(rolle).slice(0, 60)}`, 'leser.schema', `${wer}: ${String(f.message).replace(/^Palette: /, '').slice(0, 300)}.`, einfach ? [{ id: 'entfernen', text: `Die Wahl für „${rolle}“ weglassen` }] : []);
         }
+      }
+    };
+
+    /** Rezept (Bauart-Wahl, D2): nur der Name und die Außenmaße; Baustein und Proportionen wären zweimal dieselbe Angabe, Funktionen und Lage in einem Bauteil kommen später. */
+    const pruefeRezept = (t, pf, wer) => {
+      const entfernen = (text) => [{ id: 'entfernen', text }];
+      if (typeof t.rezept !== 'string' || !Object.hasOwn(V.rezepte, t.rezept)) { unbekannt(`${pf}.rezept`, 'leser.schema', `Das Rezept von ${wer}`, t.rezept, Object.keys(V.rezepte)); return; }
+      const f = t.form, m = V.rezepte[t.rezept].mindest;
+      if (!istObjekt(f)) { frage(`${pf}.form`, 'leser.schema', `${wer} braucht mit dem Rezept „${t.rezept}“ die Außenmaße (form.groesse: breite, tiefe, hoehe).`); return; }
+      if (f.baustein !== undefined) frage(`${pf}.form.baustein`, 'leser.schema', `${wer}: das Rezept „${t.rezept}“ und der Baustein „${String(f.baustein)}“ nennen dasselbe doppelt; nur eines gilt.`, entfernen('Den Baustein weglassen (das Rezept gilt)'));
+      if (f.proportionen !== undefined) frage(`${pf}.form.proportionen`, 'leser.schema', `${wer}: mit einem Rezept bestimmt das Rezept die Proportionen; die Angabe gilt nicht.`, entfernen('Die Proportionen weglassen'));
+      if (t.funktionen !== undefined && !(Array.isArray(t.funktionen) && !t.funktionen.length)) frage(`${pf}.funktionen`, 'leser.schema', `${wer}: Funktionen (Bedarf) zusammen mit einem Rezept kommen später; sie gehören an ein eigenes Teil.`, entfernen('Die Funktionen weglassen'));
+      if (typeof t.lage?.relation === 'string' && Object.hasOwn(V.kindrelationen, t.lage.relation)) frage(`${pf}.rezept`, 'leser.schema', `${wer}: ein Rezept gilt für ein eigenes Teil, nicht für ein Teil in einem anderen Bauteil.`, entfernen('Das Rezept weglassen'));
+      const g = f.groesse;
+      if (!istObjekt(g)) { frage(`${pf}.form.groesse`, 'leser.schema', `${wer} braucht mit dem Rezept „${t.rezept}“ die Außenmaße als Zuordnung breite, tiefe, hoehe → Zahl.`); return; }
+      for (const k of Object.keys(g)) if (!['breite', 'tiefe', 'hoehe'].includes(k)) frage(`${pf}.form.groesse.${k}`, 'leser.schema', `Bei einem Rezept gibt es nur die Außenmaße breite, tiefe, hoehe, nicht „${k}“.`, entfernen('Eintrag weglassen'));
+      const hoeheMin = Math.max(m.hoehe, Math.ceil((m.hoeheZuBreite ?? 0) * Math.max(Number(g.breite) || 0, Number(g.tiefe) || 0)));
+      for (const k of ['breite', 'tiefe', 'hoehe']) {
+        const min = k === 'hoehe' ? hoeheMin : m[k];
+        if (!ganz(g[k]) || g[k] < min) frage(`${pf}.form.groesse.${k}`, 'leser.schema', `${wer}: ${k} = ${JSON.stringify(g[k])} ist beim Rezept „${t.rezept}“ nicht möglich (ganze Zahl ab ${min} Blöcken; Mindestmaß ${m.breite} × ${m.tiefe} × ${m.hoehe}${m.hoeheZuBreite ? `, die Höhe mindestens ${m.hoeheZuBreite} × die größere Breite` : ''}).`);
       }
     };
 
@@ -137,7 +157,8 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
 
       // Form
       const f = t.form;
-      if (!istObjekt(f)) frage(`${pf}.form`, 'leser.schema', `${wer} braucht eine Form (baustein, groesse).`);
+      if (t.rezept !== undefined) pruefeRezept(t, pf, wer);
+      else if (!istObjekt(f)) frage(`${pf}.form`, 'leser.schema', `${wer} braucht eine Form (baustein, groesse).`);
       else {
         const bs = typeof f.baustein === 'string' ? V.baustein(f.baustein) : null;
         if (!bs) {

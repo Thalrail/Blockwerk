@@ -12,9 +12,9 @@ const ueberschneiden = (a, b) => ['x', 'y', 'z'].every((k) => a.von[k] <= b.bis[
 const norm = (w) => JSON.stringify(w ?? null, (k, v) => (Array.isArray(v) || v === null || typeof v !== 'object' ? v : Object.fromEntries(Object.keys(v).sort().filter((x) => v[x] !== undefined).map((x) => [x, v[x]]))));
 
 /**
- * @param {{regelwerk: object, ebene2: object, techniker: object}} quellen
+ * @param {{regelwerk: object, ebene2: object, techniker: object, rezepte: object}} quellen
  */
-export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
+export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
   const P = (name) => regelwerk.parameter('plan.uebersetzung', name);
   const rand = P('rand'), luecke = P('luecke'), toleranz = P('toleranz'), erlaubtProjekt = P('relationenProjekt'), erlaubtTeil = P('relationenTeil'), strahlen = P('strahlen');
   const alleRelationen = Object.keys(regelwerk.parameter('leser.schema', 'relationen'));
@@ -43,6 +43,17 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
     const info = new Map();
     teile.forEach((t, i) => {
       const pf = `teile[${i}]`;
+      // Rezept (D2): statt EINER Form eine Folge gestapelter Formen aus den Rezeptdaten; die Spezifikation nennt nur den Namen und die Außenmaße
+      if (t.rezept !== undefined) {
+        if (istKind(t)) { frage(`${pf}.rezept`, `${t.name}: ein Rezept gilt für ein eigenes Teil, nicht für ein Teil in einem anderen Bauteil (${t.lage.relation}).`, [{ id: 'entfernen', text: 'Das Rezept weglassen' }]); return; }
+        if ((t.funktionen ?? []).length) { frage(`${pf}.funktionen`, `${t.name}: Funktionen (Bedarf) zusammen mit einem Rezept kommen später; sie gehören an ein eigenes Teil.`, [{ id: 'entfernen', text: 'Die Funktion weglassen' }]); return; }
+        if (t.form?.baustein !== undefined) { frage(`${pf}.form.baustein`, `${t.name}: das Rezept „${t.rezept}“ und der Baustein „${String(t.form.baustein)}“ nennen dasselbe doppelt; nur eines gilt.`, [{ id: 'entfernen', text: 'Den Baustein weglassen (das Rezept gilt)' }]); return; }
+        let r;
+        try { r = rezepte.wendeRezeptAn(t.rezept, t.form?.groesse ?? {}, t.id); } catch (f) { frage(`${pf}.form.groesse`, `${t.name}: ${f.message}`); return; }
+        const form = { w: r.huelle.breite, d: r.huelle.tiefe, h: r.huelle.hoehe };
+        info.set(t.id, { t, i, bs: null, rezept: r, groesse: { ...r.huelle }, form, bedarf: [], mind: null, wt: 0, W: form.w + 2 * rand, D: form.d + 2 * rand, H: form.h, hoeheParam: null });
+        return;
+      }
       const bs = t.form?.baustein, defn = ebene2.bausteine.get(bs);
       if (!defn) { frage(`${pf}.form.baustein`, `${t.name}: den Baustein „${String(bs)}“ gibt es nicht.`); return; }
       const groesse = { ...(t.form?.groesse ?? {}) };
@@ -172,6 +183,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       let wurzel = l.bezug;
       while (istKind(byId.get(wurzel).t)) wurzel = byId.get(wurzel).t.lage.bezug;
       const zone = kindrelationen[l.relation];
+      if (traeger.rezept) { frage(`${pf}.relation`, `${t.name}: ${traeger.t.name} wird aus einem Rezept gebaut und bietet noch keine Zonen für Teile darin. Wohin soll ${t.name}?`); continue; }
       const zonen = (ebene2.baue(traeger.bs, traeger.groesse).einbauzonen ?? []).map((z) => z.id);
       if (!zonen.includes(zone)) { frage(`${pf}.relation`, `${t.name}: ${traeger.t.name} (${traeger.bs}) bietet keine Zone „${zone}“ (${zonen.length ? `vorhanden: ${zonen.join(', ')}` : 'es bietet überhaupt keine Zonen'}). Wohin soll ${t.name}?`); continue; }
       const drehung = l.relation.startsWith('wand-') ? WANDSEITE[l.relation.slice(5)] : l.ausrichtung !== undefined ? ausrichtungen[l.ausrichtung] : 0; // die Wandseite legt die Ausrichtung fest (Jonah, 14.11.2026); der Prüfer der Spezifikation lehnt eine zusätzliche Ausrichtung ab
@@ -252,11 +264,13 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker }) {
       if (rund.includes(x.bs)) soll.symmetrie = ['x', 'z'];
       const ratio = t.form.proportionen?.hoehe_zu_breite;
       if (ratio !== undefined && x.hoeheParam && x.groesse.breite !== undefined) soll.verhaeltnis = { hoehe_zu_breite: ratio, toleranz: Math.max(0.5, toleranz * x.groesse.breite * ratio) };
-      hinweise.push({ pfad: `teile[${x.i}]`, text: `${t.name}: Abschnitt „${t.id}“ von (${hu.von.x}, ${hu.von.y}, ${hu.von.z}) bis (${hu.bis.x}, ${hu.bis.y}, ${hu.bis.z}), ${x.W} × ${x.D} × ${x.H} Blöcke.` });
+      hinweise.push({ pfad: `teile[${x.i}]`, text: `${t.name}: Abschnitt „${t.id}“ von (${hu.von.x}, ${hu.von.y}, ${hu.von.z}) bis (${hu.bis.x}, ${hu.bis.y}, ${hu.bis.z}), ${x.W} × ${x.D} × ${x.H} Blöcke.${x.rezept ? ` Rezept „${x.rezept.rezept}“ mit ${x.rezept.teile.length} Gliedern.` : ''}` });
       return {
         id: t.id, name: t.name, huelle: hu, nach: [...nach.get(t.id)].sort(),
         zonen, ...(x.bedarf.length ? { bedarf: x.bedarf } : {}),
-        formen: [{ baustein: x.bs, parameter: x.groesse, zone: 'optik', anker: 'mitte', ref: t.id, ...(Object.keys(soll).length ? { soll } : {}) }],
+        formen: x.rezept
+          ? x.rezept.teile.map((g) => ({ baustein: g.baustein, parameter: g.parameter, zone: 'optik', anker: 'mitte', versatz: g.versatz, ref: g.ref, ...(rund.includes(g.baustein) ? { soll: { symmetrie: ['x', 'z'] } } : {}), ...(g.rollen ? { rollen: g.rollen } : {}) }))
+          : [{ baustein: x.bs, parameter: x.groesse, zone: 'optik', anker: 'mitte', ref: t.id, ...(Object.keys(soll).length ? { soll } : {}) }],
         ...(kinder.get(t.id).length ? { kinder: kinder.get(t.id) } : {}),
         ...(verb.get(t.id).length ? { verbindungen: verb.get(t.id) } : {}),
         ...materialVon(t),

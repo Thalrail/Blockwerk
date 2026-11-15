@@ -118,3 +118,6 @@ Keine automatische Freigabe bei: Urteil `reject`; Befund nicht eingestuft; Befun
 - Die Prüfer Haiku/Quellen/Rechnen waren im echten Lauf nicht nötig und sind dort noch nicht durchlaufen worden (nur ihre Definitionen sind geprüft).
 - Ob der Wächter die Hauptsitzung nie sperrt, ist durch Tests belegt (ohne `agent_id` immer frei).
 - Graphify und OmniRoute sind nicht aktiv; vier offene Entscheidungen für Jonah in `docs/orchestrierung-erweiterungen.md`.
+
+## Fehlalarm des Geheimnis-Scanners (15.11.2026)
+Der Scanner (`tools/orchestrierung/schnappschuss.js`, Muster `-----BEGIN … PRIVATE KEY-----`) meldete beim Start eines Laufs die Testdatei `test/orchestrierung/veroeffentlichen.orchestrierung.js`, weil sie absichtlich einen Fake-Schlüssel (Inhalt `abc`) als Text enthielt; der Start brach mit „Geheimnis-Verdacht“ ab. Behoben (von Jonah freigegeben) nur in dieser Testdatei: Die Kennung wird erst zur Laufzeit aus getrennten Zeichenfolgen zusammengesetzt (`FAKE_SCHLUESSEL`). Scanner und Muster blieben unverändert; der Test prüft weiter, dass der zusammengesetzte Fake-Schlüssel erkannt und mit dem Grund `geheimnis` abgelehnt wird. Alle versionierten Dateien wurden danach erneut gescannt: keine Treffer.

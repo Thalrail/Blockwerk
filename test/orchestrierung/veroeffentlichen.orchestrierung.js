@@ -13,6 +13,9 @@ import { geschuetzterPfad } from '../../tools/orchestrierung/abschluss.js';
 import { neuerName, WURZEL, w } from './hilfe.js';
 
 const GUT = { review_mode: 'single', failover_occurred: false, provider: 'codex', verdict: 'approve', session_id: 's-gut', models: [{ provider: 'codex' }] };
+// Fake-Schlüssel (Inhalt `abc`, kein echter Schlüssel): Die Kennung wird erst zur Laufzeit zusammengesetzt, damit der Geheimnis-Scanner diese Testdatei nicht selbst meldet
+// (Fehlalarm, behoben 15.11.2026). Der Test prüft weiter, dass der zusammengesetzte Text mit der vollständigen Kennung erkannt und blockiert wird.
+const FAKE_SCHLUESSEL = ['-----BEGIN ', 'PRIVATE KEY-----', '\nabc\n'].join('');
 const TITEL = 'Karte: Aufrufer auf Funktionsebene';
 const EINSCHR = 'Namensfunde ohne Scope; unklare Treffer sind gekennzeichnet.';
 const PASS = (name = 'test', workflow = 'Tests') => ({ name, workflow, bucket: 'pass', state: 'SUCCESS', link: `https://example.test/run/${name}` });
@@ -140,9 +143,9 @@ test('Vorprüfung lehnt ab: main, unsauberer Baum, aktiver Lauf, fehlende oder s
   for (const pfad of ['.claude/settings.json', '.github/workflows/x.yml', 'tools/orchestrierung/lauf.js', '.gitignore', '.Claude/Settings.json', '.GITHUB/workflows/x.yml', 'Tools/Orchestrierung/lauf.js', '.GitIgnore', 'TOOLS~1/ORCHES~1/lauf.js', 'src/PROGRA~1/x.js']) {
     const f = vorbereitet({ aendere: (r) => { w(r, 'src/a.js', 'x\n'); w(r, pfad, pfad.toLowerCase() === '.gitignore' ?'.claude/worktrees/\n.claude/orchestrierung/\nextra\n' : 'x\n'); } }); nachweise(f.repo); const x = abl(f, 'sicherheitsdateien'); assert.deepEqual(x.r.dateien.map((d) => d.toLowerCase()), [pfad.toLowerCase()]);
   }
-  { const f = vorbereitet({ aendere: (r) => w(r, 'data/schluessel.pem', '-----BEGIN PRIVATE KEY-----\nabc\n') }); abl(f, 'geheimnis'); }
+  { const f = vorbereitet({ aendere: (r) => w(r, 'data/schluessel.pem', FAKE_SCHLUESSEL) }); abl(f, 'geheimnis'); }
   // Geheimnis, das ein Commit einführt und ein späterer wieder entfernt: die Historie würde mitgepusht
-  { const f = vorbereitet(); w(f.repo, 'data/schluessel.pem', '-----BEGIN PRIVATE KEY-----\nabc\n'); git(f.repo, ['add', '-A']); git(f.repo, ['commit', '-q', '-m', 'Schlüssel']);
+  { const f = vorbereitet(); w(f.repo, 'data/schluessel.pem', FAKE_SCHLUESSEL); git(f.repo, ['add', '-A']); git(f.repo, ['commit', '-q', '-m', 'Schlüssel']);
     fs.rmSync(path.join(f.repo, 'data/schluessel.pem')); git(f.repo, ['add', '-A']); git(f.repo, ['commit', '-q', '-m', 'Schlüssel entfernt']);
     assert.ok(!git(f.repo, ['diff', '--name-only', 'origin/main...HEAD']).includes('schluessel'), 'im Netto-Diff nicht mehr sichtbar');
     const x = abl(f, 'geheimnis'); assert.equal(x.r.datei, 'data/schluessel.pem'); }

@@ -45,6 +45,7 @@ export function pruefeForm(e) {
   for (const t of e.teile) {
     if (typeof t.id !== 'string' || ids.has(t.id)) fehler(`Teil-ID doppelt oder fehlend: ${String(t.id)}`);
     ids.add(t.id);
+    if (t.rollen !== undefined && !(t.rollen !== null && typeof t.rollen === 'object' && !Array.isArray(t.rollen) && Object.entries(t.rollen).every(([von, nach]) => typeof nach === 'string' && von))) fehler(`Teil ${t.id}: rollen ungültig (Rolle → Rolle)`);
     if (typeof t.baustein !== 'string' || !pos(t.lage) || !ganz(t.lage.drehung) || t.lage.drehung < 0 || t.lage.drehung > 3) fehler(`Teil ${t.id}: baustein oder lage ungültig`);
   }
   pruefeTraegerwald(e, fehler);

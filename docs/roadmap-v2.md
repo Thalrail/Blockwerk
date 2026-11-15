@@ -17,10 +17,10 @@ Ein Turm (`form.zylinder` 13 × 13 × 34, Stimmung „hell-nordisch“) besteht 
 ## Phase 1: Absichern und Sichtbares
 | Paket | Inhalt | Test |
 |---|---|---|
-| **D1** Gestaltungsprüfer | Metriken auf den Blockdaten (Ebene 3): Anzahl Materialien, Öffnungsanteil, längste glatte Fläche, Silhouettenvariation, Höhenprofil; Basiswerte für Turm und Haus festhalten, nur messen, nichts ändern | automatisch, deterministisch |
+| **D1** Gestaltungsprüfer | Metriken auf den Blockdaten (Ebene 3): Anzahl Materialien, Öffnungsanteil, längste glatte Fläche, Silhouettenvariation, Höhenprofil; Basiswerte für Turm und Haus festhalten, nur messen, nichts ändern | automatisch, deterministisch. **Erledigt** (gemergt, PR #62, 15.11.2026) |
 | T1 Tauri-Machbarkeitstest | Hülle in `desktop/`, vorhandene Seite unverändert, Installer per GitHub Actions; Entscheidung erst nach Installation auf Jonahs PC | Handtest durch Jonah |
 | R1 Freiflug-Kamera | Zweiter Kameramodus, Pointer Lock, WASD, Schalter Orbit/Freiflug; rein berechnete Kamera in `kamera.js` | Kameratests, Handtest |
-| D2 Bausteinrezepte (nach D1) | Rezeptsystem (siehe unten), erstes Rezept Turm | Metriken von D1, Regressionstest bestehender Bauwerke |
+| D2 Bausteinrezepte (nach D1) | Rezeptsystem (siehe unten), erstes Rezept Turm | Metriken von D1, Regressionstest bestehender Bauwerke. **Umgesetzt** (15.11.2026, Status `entworfen`, Spieltest offen): Kern D2.1, Nachweis D2.2, Doku `docs/architektur-rezepte.md` |
 | G0 Weltimport: Untersuchung | Format, Zugang, Machbarkeit in reinem JS (siehe unten), Ergebnis als Bericht und Prototyp-Spike | Bericht |
 
 ## Phase 2: Fundament

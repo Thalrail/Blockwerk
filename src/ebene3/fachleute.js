@@ -24,6 +24,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
   const praefixe = P('plan.besitz', 'bausteinPraefix');
   const funktionen = P('plan.zonenplan', 'funktionen');
   const anker = P('plan.formen', 'anker');
+  const rollenNamen = P('plan.palette', 'rollen');
 
   /** Rang (0 = höchster). Fixierung durch Jonah steht darüber (−1); der Bauleiter hat keinen Rang (Infinity: er ändert nichts selbst). */
   function rang(f) {
@@ -173,6 +174,8 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (!e.abschnitte.some((a) => a.id === w.abschnitt)) throw new RechtFehler('ungueltig', `Abschnitt ${String(w.abschnitt)} existiert nicht`);
         if (!funktionen.includes(w.zone)) throw new RechtFehler('ungueltig', `Formwunsch: Zone „${String(w.zone)}“ unbekannt (${funktionen.join(', ')})`);
         if (!anker.includes(w.anker ?? 'mitte')) throw new RechtFehler('ungueltig', `Formwunsch: Anker „${String(w.anker)}“ unbekannt (${anker.join(', ')})`);
+        if (w.versatz !== undefined && !(w.versatz !== null && typeof w.versatz === 'object' && ['x', 'y', 'z'].every((k) => w.versatz[k] === undefined || Number.isSafeInteger(w.versatz[k])))) throw new RechtFehler('ungueltig', 'Formwunsch: versatz braucht ganze Zahlen x, y, z');
+        if (w.rollen !== undefined && !(w.rollen !== null && typeof w.rollen === 'object' && !Array.isArray(w.rollen) && Object.entries(w.rollen).every(([von, nach]) => rollenNamen.includes(von) && rollenNamen.includes(nach)))) throw new RechtFehler('ungueltig', `Formwunsch: rollen ordnet nur Rollen (${rollenNamen.join(', ')}) einander zu`);
         pruefeDarf(e, fachmann, ziel, feldBesitz.formwuensche);
         e.formwuensche ??= [];
         ersetzeOderFuegeEin(e.formwuensche, { anker: 'mitte', parameter: {}, ...w });

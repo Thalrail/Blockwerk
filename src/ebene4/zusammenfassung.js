@@ -21,7 +21,7 @@ export function erzeugeZusammenfassung({ vokabular: V }) {
     const pr = Object.entries(t.form?.proportionen ?? {}).map(([k, w]) => `${k.replaceAll('_', ' ')} ${zahl(w)}`).join(', ');
     const bezug = t.lage?.bezug === 'projekt' ? 'dem Bauplatz' : `„${namen.get(t.lage?.bezug) ?? t.lage?.bezug}“`;
     const lage = (V.relationen[t.lage?.relation] ?? '').replace('{bezug}', bezug) + (t.lage?.abstand ? `, ${t.lage.abstand} Blöcke Abstand` : '');
-    const z = [`${i + 1}. ${t.name} (${ART[t.art] ?? t.art}, ${WICHTIG[t.wichtigkeit] ?? t.wichtigkeit}): ${b ? b.titel : t.form?.baustein}${masse ? `, ${masse} Blöcke` : ''}${pr ? `; Proportionen: ${pr}` : ''}. Lage: ${lage}.`];
+    const z = [`${i + 1}. ${t.name} (${ART[t.art] ?? t.art}, ${WICHTIG[t.wichtigkeit] ?? t.wichtigkeit}): ${t.rezept !== undefined ? `Rezept „${t.rezept}“ (Außenmaße)` : b ? b.titel : t.form?.baustein}${masse ? `, ${masse} Blöcke` : ''}${pr ? `; Proportionen: ${pr}` : ''}. Lage: ${lage}.`];
     for (const f of t.funktionen ?? []) {
       if (f.art === 'handelsnischen') z.push(`   Bedarf: ${f.menge} Handelsnischen${f.beruf !== undefined ? ` (Beruf Nr. ${f.beruf})` : ''}${f.bauart === 'lorenbahn' ? ', Bauart Lorenbahn (Zufuhr per Lore, Rückführung per Wasserkanal)' : ''}.`);
       else if (f.art === 'lager') z.push(`   Bedarf: Lager für ${f.sorten?.length ?? 0} Gegenstandssorten.`);

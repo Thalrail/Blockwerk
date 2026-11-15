@@ -90,6 +90,11 @@ export function erzeugeBriefing({ vokabular: V }) {
     z.push('Formen („form.baustein“ mit „form.groesse“; alle Parameter sind optional, sonst gilt der Standard):');
     z.push(...zeilen.bausteine());
     z.push('');
+    if (Object.keys(V.rezepte).length) {
+      z.push('Bauart („rezept“, optional; statt „form.baustein“): Blockwerk gliedert das Teil selbst (Sockel, Schaft, Krone, Dach …). Dann nennst du nur den Namen und in „form.groesse“ die AUSSENMASSE des fertigen Bauwerks (breite, tiefe, hoehe), keinen Baustein, keine Proportionen, keine Funktionen, nie die einzelnen Glieder:');
+      z.push(...Object.entries(V.rezepte).map(([name, r]) => `- ${name} (${r.titel.split(':')[0]}): mindestens ${r.mindest.breite} × ${r.mindest.tiefe} × ${r.mindest.hoehe} Blöcke (Breite × Tiefe × Höhe)${r.mindest.hoeheZuBreite ? `, Höhe mindestens ${r.mindest.hoeheZuBreite} × die größere Breite` : ''}`));
+      z.push('');
+    }
     z.push('Funktionen („funktionen[].art“):');
     z.push(...zeilen.funktionen());
     z.push('');

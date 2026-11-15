@@ -70,6 +70,15 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     return null;
   }
 
+  /** Feste Lage (Formwunsch mit `versatz`, z. B. aus einem Rezept): mittig im Anker der Zone, dazu der Versatz in Blöcken; frei oder gar nicht (keine Suche, sonst stapelt es nicht zuverlässig). */
+  function feste(zone, m, w, belegt) {
+    const s = startAn(zone, m, w.anker), v = w.versatz;
+    const von = { x: s.x + (v.x ?? 0), y: s.y + (v.y ?? 0), z: s.z + (v.z ?? 0) };
+    const bis = { x: von.x + m.breite - 1, y: von.y + m.hoehe - 1, z: von.z + m.tiefe - 1 };
+    const drin = von.x >= zone.von.x && von.y >= zone.von.y && von.z >= zone.von.z && bis.x <= zone.bis.x && bis.y <= zone.bis.y && bis.z <= zone.bis.z;
+    return drin && !belegt.some((b) => ueberschneiden({ von, bis }, b)) ? von : null;
+  }
+
   const gesetzt = (e, w) => e.teile.some((t) => t.wunsch === w.id);
 
   /**
@@ -85,7 +94,7 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     for (const w of offen) {
       const h = huelleVon(w), m = maß(h);
       const zone = entwurf.zonen.find((z) => z.abschnitt === abschnitt && z.funktion === w.zone) ?? null;
-      const p = zone ? suche(zone, m, w.anker, belegt) : null;
+      const p = zone ? (w.versatz ? feste(zone, m, w, belegt) : suche(zone, m, w.anker, belegt)) : null;
       if (!p) { fehler.push({ wunsch: w, grund: zone ? 'kein-platz' : 'keine-zone', mindest: m, zone }); continue; }
       belegt.push({ von: { ...p }, bis: { x: p.x + m.breite - 1, y: p.y + m.hoehe - 1, z: p.z + m.tiefe - 1 } });
       platzierungen.push({ wunsch: w, lage: { x: p.x - h.von.x, y: p.y - h.von.y, z: p.z - h.von.z, drehung: 0 } });
@@ -103,7 +112,7 @@ export function erzeugeArchitekt({ regelwerk, fachleute, ebene2, materialisierun
     let e = entwurf;
     const ids = [];
     for (const { wunsch, lage } of p.platzierungen) {
-      e = aendere(e, { art: 'setze-teil', teil: { abschnitt, baustein: wunsch.baustein, parameter: wunsch.parameter, lage, wunsch: wunsch.id, zone: wunsch.zone, ...(wunsch.ref !== undefined ? { ref: wunsch.ref } : {}) } });
+      e = aendere(e, { art: 'setze-teil', teil: { abschnitt, baustein: wunsch.baustein, parameter: wunsch.parameter, lage, wunsch: wunsch.id, zone: wunsch.zone, ...(wunsch.ref !== undefined ? { ref: wunsch.ref } : {}), ...(wunsch.rollen ? { rollen: wunsch.rollen } : {}) } });
       ids.push(e.teile.at(-1).id);
     }
     return { entwurf: e, teile: ids, offen: p.fehler.map((f) => f.wunsch.id) };

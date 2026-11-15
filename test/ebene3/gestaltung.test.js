@@ -157,6 +157,7 @@ test('Architekt: Formen setzen und messen', () => {
   assert.match(fehler(RechtFehler, () => A.setzeFormwuensche(plan(), [wunsch('X', 'mitte', { zone: 'keller' })])), /Zone „keller“ unbekannt/);
   assert.match(fehler(RechtFehler, () => A.setzeFormwuensche(plan(), [wunsch('X', 'oben')])), /Anker „oben“ unbekannt/);
   assert.match(fehler(FormFehler, () => A.setzeFormwuensche(plan(), [wunsch('X', 'mitte', { parameter: { breite: 0 } })])), /außerhalb/);
+  assert.match(fehler(RechtFehler, () => A.setzeFormwuensche(plan(), [wunsch('X', 'mitte', { rollen: [] })])), /rollen/i); // ein Array ist keine Zuordnung (wie in pruefeForm)
   assert.match(fehler(RechtFehler, () => e3.aendere(plan(), 'techniker', { art: 'setze-formwunsch', formwunsch: wunsch('X', 'mitte') })), /gehört dem architekt/);
   assert.match(fehler(FormFehler, () => A.setzeFormen(plan(), 'zz')), /gibt es nicht/);
 

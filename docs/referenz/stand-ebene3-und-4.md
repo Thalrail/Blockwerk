@@ -132,3 +132,9 @@ Aus `docs/stand.md` ausgelagert am 31.10.2026 (Token-Optimierung), Abschnitte un
 - „Außen“ = per Flutfüllung von außen erreichbare Luft; ein oben offener Turm zählt innen als außen. Raumzelle = Luft, die waagerecht in allen vier Richtungen auf einen Block trifft (ein Hof zählt mit). Definitionen im Kopf der Datei.
 - Basiswerte (Golden `test/ebene3/gestaltung-basis.json`, neu erzeugen nur mit `BLOCKWERK_BASIS_NEU=1`): Turm 13×13×34 = 34 Schichten à 36, ein Material, `hatDach` false; Wohnhaus klein 9×7×14, 2 Materialien, 0 Öffnungen (Standardhaus ohne Tür/Fenster).
 - Tests: `test/ebene3/gestaltungspruefer.test.js` (10 Tests; der Name `gestaltung.test.js` gehört dem Designer-Test).
+
+## Bausteinrezepte D2 (15.11.2026, `entworfen`, Spieltest offen)
+- Optionales Feld `teile[].rezept` (erstes Rezept `turm`: Sockel, Schaft, Krone, Dach mit Überstand), Daten in `data/regeln/rezepte.json`, Auswertung `src/ebene3/rezepte.js`; Glieder mit stabiler `ref` `<teil>.<glied>`. Ohne das Feld ist die Planung byte-identisch (Tests `rezepte-rueckwaerts`, `rezepte-regression`).
+- Qualitätsnachweis (D2.2): `rezepte-vergleich.test.js` (Rohr gegen Rezept mit D1-Metriken, Golden `rezepte-vergleich.json`), `rezepte-groessenreihe.test.js` (Außenmaß, Symmetrie, Zusammenhang 26er, Prüfer), `test/ebene5/rezepte-aenderungen.test.js` (Einzelblockänderung am Glied bleibt, Verwaistes wird gemeldet).
+- Offen: Ebene 5 / Bearbeitungsoberfläche (`src/ebene5/teile.js`) kennt Rezeptteile noch nicht (Baustein `null`); dünne runde Wände (Wand 1) sind nur diagonal verbunden, auch beim bisherigen Rohr; der Test prüft deshalb die 26er-Nachbarschaft (das Dach liegt nur an Kanten auf). Der Briefing-Prompt hat für alle den Abschnitt „Bauart (rezept)“.
+- Details: `docs/architektur-rezepte.md`.

@@ -39,23 +39,25 @@ export function fangeMaus(canvas, doc, beiErgebnis) {
 }
 
 /**
- * Verwaltet die Lock-Versuche eines Canvas: höchstens einer läuft; jeder bekommt eine fortlaufende ID, ein Ergebnis nach invalidiere() wirkt nicht mehr.
- * starte(beiErgebnis) → true, wenn ein Versuch begann; false bei laufendem Versuch oder schon gefangener Maus.
+ * Verwaltet die Lock-Versuche eines Canvas: höchstens eine Browser-Anforderung steht aus; jeder Versuch bekommt eine fortlaufende ID.
+ * invalidiere() entwertet nur das Ergebnis (Generation); die Anforderung gilt bis zu ihrem wirklichen Abschluss als offen (laeuft()).
+ * Eine veraltete Anforderung, die danach doch den Lock erwirbt, gibt ihn sofort wieder frei (exitPointerLock).
+ * starte(beiErgebnis) → true, wenn ein Versuch begann; false bei ausstehender (auch veralteter) Anforderung oder schon gefangener Maus.
  * Ein Fehler bei bereits gefangener Maus wird als Erfolg gemeldet (kein Fehlerhinweis trotz aktivem Lock).
  */
 export function erzeugeVersuche(canvas, doc) {
-  let aktuell = 0, laeuft = false;
+  let aktuell = 0, ausstehend = false;
   const gefangen = () => doc.pointerLockElement === canvas;
   return {
-    laeuft: () => laeuft,
-    invalidiere() { aktuell++; laeuft = false; },
+    laeuft: () => ausstehend,
+    invalidiere() { aktuell++; },
     starte(beiErgebnis) {
-      if (laeuft || gefangen()) return false;
+      if (ausstehend || gefangen()) return false;
       const id = ++aktuell;
-      laeuft = true;
+      ausstehend = true;
       fangeMaus(canvas, doc, (erg) => {
-        if (id !== aktuell) return;
-        laeuft = false;
+        ausstehend = false;
+        if (id !== aktuell) { if (gefangen()) doc.exitPointerLock?.(); return; } // veraltet: ein verspäteter Lock ist unerwünscht
         beiErgebnis(erg.status === 'fehler' && gefangen() ? { status: 'angefordert' } : erg);
       });
       return true;

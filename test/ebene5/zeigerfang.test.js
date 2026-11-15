@@ -108,16 +108,68 @@ test('Versuche: nach Erfolg und nach Fehler ist ein neuer Versuch wieder möglic
   assert.equal(doc.aufrufe, 3);
 });
 
-test('Versuche: verspätetes Ergebnis nach invalidiere() wirkt nicht, ein neuerer Versuch schon', async () => {
+test('Versuche: nach invalidiere() bleibt die Anforderung offen; erst nach ihrem Abschluss startet ein neuer Versuch', async () => {
   const { doc, canvas, offen } = steuerbar(); const v = erzeugeVersuche(canvas, doc); const erg = [];
   v.starte((e) => erg.push(['alt', e.status]));
   v.invalidiere();
-  assert.equal(v.laeuft(), false);
-  assert.equal(v.starte((e) => erg.push(['neu', e.status])), true);
-  offen[0].nein(dom('NotAllowedError')); await tick(); // spät: wirkt weder auf das Ergebnis noch auf laeuft()
-  assert.deepEqual(erg, []); assert.equal(v.laeuft(), true);
+  assert.equal(v.laeuft(), true);
+  assert.equal(v.starte((e) => erg.push(['neu', e.status])), false); // 3: auch veraltete Anforderung blockiert
+  assert.equal(doc.aufrufe, 1);
+  offen[0].nein(dom('NotAllowedError')); await tick(); // 7 + 2: Ergebnis wirkungslos, kein Freigeben, danach frei
+  assert.deepEqual(erg, []); assert.equal(v.laeuft(), false);
+  assert.equal(v.starte((e) => erg.push(['neu', e.status])), true); // 4: neuer Versuch funktioniert wieder
   offen[1].ok(); await tick();
   assert.deepEqual(erg, [['neu', 'angefordert']]);
+});
+
+function mitFreigabe() {
+  const s = steuerbar(); s.freigaben = 0;
+  s.doc.exitPointerLock = () => { s.freigaben++; s.doc.pointerLockElement = null; };
+  return s;
+}
+
+test('Versuche: veraltete Anforderung erfolgreich → Lock wird genau einmal freigegeben; bis dahin bleibt sie offen', async () => {
+  const s = mitFreigabe(); const v = erzeugeVersuche(s.canvas, s.doc); const erg = [];
+  v.starte((e) => erg.push(e));
+  v.invalidiere();
+  assert.equal(v.laeuft(), true);
+  s.doc.pointerLockElement = s.canvas; s.offen[0].ok(); await tick(); // der Browser vergibt den Lock verspätet
+  assert.equal(s.freigaben, 1); assert.deepEqual(erg, []); assert.equal(v.laeuft(), false);
+});
+
+test('Versuche: veraltete Anforderung abgelehnt → kein exitPointerLock, danach frei', async () => {
+  const s = mitFreigabe(); const v = erzeugeVersuche(s.canvas, s.doc);
+  v.starte(() => {}); v.invalidiere();
+  s.offen[0].nein(dom('NotAllowedError')); await tick();
+  assert.equal(s.freigaben, 0); assert.equal(v.laeuft(), false);
+});
+
+test('Versuche: gefangene Maus verhindert den Start; ein gültiger neuer Lock wird nicht freigegeben', async () => {
+  const s = mitFreigabe(); const v = erzeugeVersuche(s.canvas, s.doc); const erg = [];
+  v.starte(() => {}); v.invalidiere();
+  s.offen[0].nein(dom('NotAllowedError')); await tick();
+  assert.equal(v.starte((e) => erg.push(e)), true);
+  s.doc.pointerLockElement = s.canvas; s.offen[1].ok(); await tick(); // aktuelle Generation: nie freigeben
+  assert.equal(s.freigaben, 0); assert.deepEqual(erg, [{ status: 'angefordert' }]);
+  assert.equal(v.starte(() => {}), false); // gefangen
+  assert.equal(s.doc.aufrufe, 2);
+});
+
+test('Versuche: schnelle wiederholte Aufrufe starten genau eine Browser-Anforderung', () => {
+  const s = mitFreigabe(); const v = erzeugeVersuche(s.canvas, s.doc);
+  const r = [1, 2, 3, 4].map(() => v.starte(() => {}));
+  assert.deepEqual(r, [true, false, false, false]); assert.equal(s.doc.aufrufe, 1);
+});
+
+test('Versuche: ohne Promise (Ereignisweg) bleibt eine veraltete Anforderung bis zum Ereignis offen und gibt einen Lock frei', async () => {
+  const doc = fakeDoc(); let freigaben = 0, aufrufe = 0; const canvas = { requestPointerLock: () => { aufrufe++; } };
+  doc.exitPointerLock = () => { freigaben++; doc.pointerLockElement = null; };
+  const v = erzeugeVersuche(canvas, doc); const erg = [];
+  v.starte((e) => erg.push(e)); v.invalidiere();
+  assert.equal(v.laeuft(), true); assert.equal(v.starte(() => {}), false);
+  doc.pointerLockElement = canvas; doc.ausloesen('pointerlockchange'); await tick();
+  assert.equal(freigaben, 1); assert.deepEqual(erg, []); assert.equal(v.laeuft(), false);
+  assert.equal(v.starte(() => {}), true); assert.equal(aufrufe, 2);
 });
 
 test('Versuche: Fehler bei bereits gefangener Maus erzeugt keinen Fehler; bei gefangener Maus startet kein Versuch', async () => {

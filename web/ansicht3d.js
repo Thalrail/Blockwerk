@@ -153,8 +153,9 @@ export function erzeugeAnsicht3d(rueck = {}) {
     [document, 'pointerlockchange', beiZeigerwechsel], // pointerlockerror beachtet fangeMaus (mit Fehlername)
   ];
   // Dauerhaft (auch im Orbit-Modus, wo die Listener oben fehlen): meldet jede Freigabe des Locks, damit die Oberfläche ein zurückgestelltes render() nachholt
-  document.addEventListener('pointerlockchange', () => { if (!gefangen()) rueck.beiFrei?.(); });
   let gebunden = false;
+  // Sicherheitsnetz: wird die Maus außerhalb des Freiflugs oder bei gelösten Listenern (ruhe(): Modus bleibt 'freiflug') gefangen, sofort freigeben
+  document.addEventListener('pointerlockchange', () => { if (gefangen() && (z.modus !== 'freiflug' || !gebunden)) document.exitPointerLock(); else if (!gefangen()) rueck.beiFrei?.(); });
   function binde() { if (!gebunden) { gebunden = true; for (const [o, n, f] of globale) o.addEventListener(n, f); } }
   function loese() { if (gebunden) { gebunden = false; for (const [o, n, f] of globale) o.removeEventListener(n, f); } }
   const gibMausFrei = () => { if (gefangen()) document.exitPointerLock(); };
@@ -186,12 +187,12 @@ export function erzeugeAnsicht3d(rueck = {}) {
   // Die Versuchsverwaltung lässt nie zwei Versuche zugleich laufen und verwirft Ergebnisse nach setzeModus()/ruhe().
   let lock = null;
   function fordereLock(pointerId) {
-    versuche.starte((erg) => {
+    return versuche.starte((erg) => {
       if (erg.status === 'angefordert') { lock = 'angefordert'; return; } // der Hinweis kommt mit pointerlockchange
       lock = 'fehler';
       console.warn(`Maus fangen fehlgeschlagen (${erg.art}) ${erg.name}: ${erg.nachricht}`);
       if (z.modus === 'freiflug') hinweis(hinweisFuerFehler(erg));
-      if (zieh && pointerId != null) fangeZeiger(pointerId); // Ersatzmodus (Ziehen)
+      if (pointerId != null && zieh?.pointerId === pointerId) fangeZeiger(pointerId); // Ersatzmodus (Ziehen), nur für den Zeiger dieses Versuchs
     });
   }
   // Ohne Pointer Capture (Freiflug vor dem Lock) kommt das Loslassen außerhalb des Canvas nicht an: ein Fenster-Handler beendet das Ziehen immer.
@@ -207,13 +208,14 @@ export function erzeugeAnsicht3d(rueck = {}) {
     window.addEventListener('pointerup', fensterLos); window.addEventListener('pointercancel', fensterLos);
   }
   canvas.addEventListener('pointerdown', (e) => {
-    zieh = { x: e.clientX, y: e.clientY, schieben: z.modus === 'orbit' && (e.shiftKey || e.button === 2) };
+    zieh = { pointerId: e.pointerId, x: e.clientX, y: e.clientY, schieben: z.modus === 'orbit' && (e.shiftKey || e.button === 2) };
     canvas.style.cursor = 'grabbing';
     setzeFensterLos();
     if (z.modus === 'freiflug' && e.button === 0 && !gefangen()) {
       document.activeElement?.blur?.();
       if (!versuche.laeuft()) lock = null;
-      fordereLock(e.pointerId); // zuerst und synchron im Benutzerereignis; Pointer Capture käme dem Lock in die Quere
+      // zuerst und synchron im Benutzerereignis; Pointer Capture käme dem Lock in die Quere. Läuft noch ein alter Versuch: gleich der Ersatzmodus mit Capture
+      if (!fordereLock(e.pointerId)) fangeZeiger(e.pointerId);
     } else fangeZeiger(e.pointerId);
   });
   canvas.addEventListener('click', (e) => {

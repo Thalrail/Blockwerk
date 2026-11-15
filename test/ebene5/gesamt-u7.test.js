@@ -118,8 +118,7 @@ test('Mehrspieler: nach Änderung, Konflikt, Zulassung und Neu verankern (Gruppe
   const w1 = wand(0), w2 = wand(1), w3 = wand(2);
   // Anna ändert eine Zelle; Ben und Cem sehen sie
   anna.sende(anna.k.aendereOperation(op(w1.teil, w1.zelle.x, w1.zelle.y, w1.zelle.z, { op: 'setze', block: { id: 'minecraft:glass' } })));
-  alle();
-  // Ben ändert dieselbe Zelle mit altem Stand (er hat Annas Änderung noch nicht gesehen: erwartet null) → Konflikt, nichts überschrieben
+  // Ben ändert dieselbe Zelle, bevor Annas Änderung bei ihm angekommen ist (er hat sie noch nicht gesehen: erwartet null) → Konflikt, nichts überschrieben
   ben.meld.length = 0;
   ben.sende(ben.k.aendereOperation(op(w1.teil, w1.zelle.x, w1.zelle.y, w1.zelle.z, { op: 'setze', block: { id: 'minecraft:stone' } })));
   alle();

@@ -78,7 +78,7 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   let b;
   try { b = Projekt.bezug(basis?.spec ?? null, spezifikation); } catch (f) { z.idFrage = null; z.fehler = String(f.message ?? f); z.status = null; render(); return; } // ungültige Kennung: sichtbarer Fehler, nichts wird ersetzt
   if (b.art === 'unklar' && !entscheidung && !b.inhaltGleich) {
-    z.idFrage = { spezifikation, empfangen: empfangenerFortschritt, aenderungen: empfangeneAenderungen, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich, neueOhneKennung: !Projekt.idVon(spezifikation) };
+    z.idFrage = { vonRaum, spezifikation, empfangen: empfangenerFortschritt, aenderungen: empfangeneAenderungen, messungen, name: basis.spec.projekt?.name, neuerName: spezifikation.projekt?.name, nameGleich: b.nameGleich, neueOhneKennung: !Projekt.idVon(spezifikation) };
     render();
     return;
   }
@@ -1002,7 +1002,7 @@ async function aktion(name, el) {
     else if (name === 'eingabe-offen') { z.seite = 'eingabe'; z.status = null; render(); await Eingabe.aktion('e-neu-pruefen', null, kontextEingabe()); }
     else if (name === 'eingabe-zu') { z.seite = null; render(); }
     else if (name === 'beispiel') startProjekt(await datenLaden('data/beispiele/zitadelle-klein.json'));
-    else if (name === 'id-fortsetzen' || name === 'id-neu') { const q = z.idFrage; if (q) startProjekt(q.spezifikation, q.empfangen, q.messungen, name === 'id-neu' ? 'neu' : 'fortsetzung', q.aenderungen ?? null); }
+    else if (name === 'id-fortsetzen' || name === 'id-neu') { const q = z.idFrage; if (q) startProjekt(q.spezifikation, q.empfangen, q.messungen, name === 'id-neu' ? 'neu' : 'fortsetzung', q.aenderungen ?? null, q.vonRaum === true); }
     else if (name === 'id-abbrechen') { z.idFrage = null; render(); }
     else if (name === 'kopie') { startProjekt(Projekt.eigenstaendigeKopie(z.spec, zufall())); toast('Eigenständige Kopie angelegt: neue Projektkennung, eigener Fortschritt, nie mit dem Original gemischt.'); }
     else if (name.startsWith('bk-')) await blockAktion(name, d);

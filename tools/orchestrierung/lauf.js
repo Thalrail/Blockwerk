@@ -14,6 +14,7 @@ import { planen, anwenden, wiederherstellen, offeneJournale, KonfliktFehler } fr
 import { reviewPaket, standardReviewVerzeichnis } from './review-paket.js';
 import { pruefeReviewErgebnis } from './review-pruefung.js';
 import { pruefeTore, bewerteTore } from './tore.js';
+import { sichereRunde } from './sicherung.js';
 
 export class LaufFehler extends Error { constructor(m) { super(m); this.name = 'LaufFehler'; } }
 
@@ -141,11 +142,13 @@ export function rundeEnde(w, { worktree }) {
   const geaendert = aenderungen(w, a.s0, s.commit);
   const { findings } = pruefeTore(w, a.s0, s.commit, { dateien: a.dateien.length ? a.dateien : null, ausgeschlossen: s.ausgeschlossen });
   const unveraendert = s.tree === git(w, ['rev-parse', `${a.basis}^{tree}`]).trim();
-  const runde = { nr, commit: s.commit, tree: s.tree, worktree: pfad, geaendert, ausgeschlossen: s.ausgeschlossen, tore: findings, zeit: jetzt(), unveraendert };
+  // dauerhafte Sicherung (Pack ohne Git-Referenz): scheitert sie, gibt es keine Runde (der Zwischenstand soll nie nur lose im Objektspeicher liegen)
+  const sicherung = sichereRunde(w, { verzeichnis: path.join(laufDir(w, a.id), 'sicherung'), nr, commit: s.commit, ohne: a.head });
+  const runde = { nr, commit: s.commit, tree: s.tree, worktree: pfad, geaendert, ausgeschlossen: s.ausgeschlossen, tore: findings, zeit: jetzt(), unveraendert, sicherung };
   schreibeJson(path.join(laufDir(w, a.id), `runde-${nr}.json`), runde);
-  a.runde = nr; a.basis = s.commit; a.ausgeschlossen = s.ausgeschlossen; a.runden.push({ nr, commit: s.commit, geaendert: geaendert.length, stopp: findings.filter((x) => x.stufe === 'stopp').length, fragen: findings.filter((x) => x.stufe === 'frage').length });
+  a.runde = nr; a.basis = s.commit; a.ausgeschlossen = s.ausgeschlossen; a.runden.push({ nr, commit: s.commit, sicherung: sicherung.pack, geaendert: geaendert.length, stopp: findings.filter((x) => x.stufe === 'stopp').length, fragen: findings.filter((x) => x.stufe === 'frage').length });
   speichere(w, a);
-  return { runde: nr, commit: s.commit, geaendert, ausgeschlossen: s.ausgeschlossen, tore: findings, bewertung: bewerteTore(findings), unveraendert: runde.unveraendert };
+  return { runde: nr, commit: s.commit, sicherung, geaendert, ausgeschlossen: s.ausgeschlossen, tore: findings, bewertung: bewerteTore(findings), unveraendert: runde.unveraendert };
 }
 
 /** Tore für die gesamte bisherige Arbeit (S0 → aktuelle Basis). */
@@ -489,19 +492,35 @@ function uebernehmenIntern(w, { erlaubt = [], vorSchritt, freigabePruefen = true
 }
 
 /** Beendet den Lauf: entfernt seine Worktrees (nur unter .claude/worktrees) und archiviert den Zustand. */
-export function beenden(w, { verwerfen = false } = {}) {
+/** Fehlercodes, die unter Windows entstehen, wenn ein Prozess das Verzeichnis noch festhält (Arbeitsordner einer Shell, laufender Agent, Virenscanner). */
+const GESPERRT = new Set(['EPERM', 'EBUSY', 'ENOTEMPTY', 'EACCES']);
+const entferneVerzeichnis = (p) => fs.rmSync(p, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+
+/**
+ * Beendet den Lauf. Ist ein Worktree-Verzeichnis gesperrt (der eigene Prozess steht darin, ein Agent läuft noch, Windows hält es fest), wird der Lauf NICHT als beendet
+ * markiert: Ergebnis `{status: 'teilweise', verbleibend: [{pfad, grund}], hinweis}`. Es werden keine Prozesse beendet; nach dem Lösen der Sperre genügt ein erneuter Aufruf
+ * (er setzt fort, schon entfernte Worktrees werden übersprungen). Andere Fehler bleiben Fehler. `entferne` ist für Tests austauschbar.
+ */
+export function beenden(w, { verwerfen = false, entferne = entferneVerzeichnis } = {}) {
   const a = lies(w);
   if (!a) throw new LaufFehler('Es gibt keinen Lauf');
   if (a.status === 'aktiv' && a.basis !== a.s0 && !a.uebernommen && !verwerfen) throw new LaufFehler('Der Lauf enthält nicht übernommene Arbeit. Zuerst übernehmen, oder mit verwerfen ausdrücklich verwerfen');
-  const entfernt = [];
+  const entfernt = [], verbleibend = [];
   const erlaubtWurzel = vor(path.join(w, '.claude', 'worktrees'));
+  const hier = vor(path.resolve(process.cwd()));
   for (const x of worktrees(w, a.id)) {
     const p = vor(path.resolve(x.pfad));
     if (!p.startsWith(`${erlaubtWurzel}/`)) continue;
-    if (gitStatus(w, ['worktree', 'remove', '--force', p]).status === 0) entfernt.push(p);
-    else if (fs.existsSync(p)) { fs.rmSync(p, { recursive: true, force: true }); entfernt.push(p); }
+    if (hier === p || hier.startsWith(`${p}/`)) { verbleibend.push({ pfad: p, grund: 'Der Arbeitsordner dieses Prozesses liegt im Worktree (zuerst in das Hauptverzeichnis wechseln)' }); continue; }
+    if (gitStatus(w, ['worktree', 'remove', '--force', p]).status === 0) { entfernt.push(p); continue; }
+    if (!fs.existsSync(p)) continue;
+    try { entferne(p); entfernt.push(p); } catch (f) {
+      if (!GESPERRT.has(f?.code)) throw f;
+      verbleibend.push({ pfad: p, grund: `${f.code}: ein Prozess hält das Verzeichnis fest (Shell mit Arbeitsordner darin oder noch laufender Agent)` });
+    }
   }
   gitStatus(w, ['worktree', 'prune']);
+  if (verbleibend.length) return { id: a.id, status: 'teilweise', entfernteWorktrees: entfernt, verbleibend, hinweis: 'Der Lauf ist noch nicht beendet. Prozesse in diesen Verzeichnissen beenden (Shell, Agenten), dann ende erneut aufrufen; nichts wurde gewaltsam gelöscht.' };
   a.status = 'beendet'; a.ende = jetzt();
   schreibeJson(path.join(laufDir(w, a.id), 'lauf.json'), a);
   fs.rmSync(aktivPfad(w), { force: true });

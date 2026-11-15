@@ -138,7 +138,7 @@ export function erzeugeLive(k) {
     /** Eine fertige Änderung (bearbeiten.js) an den Raum. Lokal ändert sich erst etwas, wenn der Raum sie annimmt. @returns {boolean} gesendet */
     /** Versteht der Raum Zulassungen (Planfassungsformat 2)? Ein älterer Dienst nicht: ihm gesendete Zulassungen gingen dort still verloren. */
     /** Anzahl der Spieler im Raum (für die Anzeige der Grenzen); null ohne Raum. */
-    spielerAnzahl: () => (live.klient ? live.spieler.length : null),
+    spielerAnzahl: () => (live.klient && live.status === 'verbunden' ? live.spieler.length : null),
     raumKenntZulassung: () => (live.klient?.zustand.raumFormat ?? 1) >= 2,
     sendeOperationen(ops, { gruppe = false } = {}) { if (!live.klient || live.ws?.readyState !== 1) return false; sende(gruppe ? live.klient.aendereGruppe(ops) : live.klient.aendereOperationen(ops)); return true; },
     /** Ein Konflikt wurde entschieden: „meine“ überschreibt bewusst den Eintrag des anderen (mit dessen Stand als Erwartung), „ihre“ behält ihn (nichts wird gesendet). */

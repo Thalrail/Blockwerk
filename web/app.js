@@ -106,9 +106,10 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   const gleichesProjekt = basis && u.art === 'fortsetzung' && (basis.spec.freigabe?.abdruck !== spezifikation.freigabe?.abdruck || !Bearbeiten.gleicheEintraege(basis.planfassung ?? PF.leer(), pf));
   z.vorher = gleichesProjekt ? basis : null;
   z.bearbeitung = false; z.auswahl = null; z.blockwahl = null; z.planfassung = pf; z.linkLaenge = null;
+  if (!gleichesProjekt) z.grenzenVorher = null; // andere Grundlage: Warnungen neu bewerten
   z.uebergaenge = [];
   if (gleichesProjekt) {
-    if (basis.spec.version !== spezifikation.version) z.uebergaenge.push({ art: 'spezifikation', von: basis.spec.version ?? 1, nach: spezifikation.version ?? 1, text: z.naechsterText });
+    if (basis.spec.version !== spezifikation.version) z.uebergaenge.push({ art: 'spezifikation', von: basis.spec.version ?? 1, nach: spezifikation.version ?? 1, text: z.naechsterText, wer: vonRaum ? '' : z.name });
     const t = Verlauf.aenderungenText(basis.planfassung, pf); if (t || (basis.planfassung?.version ?? 0) !== pf.version) z.uebergaenge.push({ art: 'aenderungen', von: basis.planfassung?.version ?? 0, nach: pf.version, text: t });
   }
   z.naechsterText = '';
@@ -206,8 +207,8 @@ function nachDemBauen() {
   const n = fortschritt.naechsteSchicht(f, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(z.bleibe); z.bleibe = null;
-  speichern(); sichereAenderungen(); veroeffentlicheWartende(); verlaufBuchen(); grenzenWarnen();
-  toast(`Bauplan bereit (Auftrag ${z.lauf ?? 0}): ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}`);
+  speichern(); sichereAenderungen(); veroeffentlicheWartende(); verlaufBuchen(); const grenzen = grenzenWarnen();
+  toast(`Bauplan bereit (Auftrag ${z.lauf ?? 0}): ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${hinweis}${grenzen}`);
 }
 
 /** Altbestand ohne Projektkennung: nicht raten, sondern fragen, ob die ankommende Spezifikation zum geöffneten Projekt gehört. */
@@ -243,12 +244,12 @@ function umbauEntscheiden(ja) {
   let f = fortschritt.zusammenfuehren(u.neu.fortschritt, z.fortschritt);
   f = Umbau.offeneSchichten(f, u.neu.daten.plan, h, z.name || 'Blockwerk');
   z.spec = u.neu.spec; z.daten = u.neu.daten; z.fortschritt = f; z.planfassung = u.neu.planfassung ?? PF.leer();
-  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen(); veroeffentlicheWartende(); verlaufBuchen(); grenzenWarnen();
+  speicher.schreib('blockwerk.projekt', z.spec); sichereAenderungen(); veroeffentlicheWartende(); verlaufBuchen(); const grenzen = grenzenWarnen();
   const n = fortschritt.naechsteSchicht(z.fortschritt, z.daten.plan);
   z.a = n?.abschnitt ?? 0; z.s = n?.index ?? 0;
   behaltePosition(u.bleibe);
   speichern();
-  toast(`Neue Fassung übernommen: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${u.hinweis ?? ''}`);
+  toast(`Neue Fassung übernommen: ${z.daten.plan.bloecke} Blöcke in ${z.daten.plan.abschnitte.length} Abschnitten.${u.hinweis ?? ''}${grenzen}`);
   render();
 }
 
@@ -279,7 +280,7 @@ function speichern() { speicher.schreib(speicherSchluessel(), z.fortschritt); li
 // ---------- Live mit Freunden ----------
 const live = Live.erzeugeLive({
   z, render: () => render(), toast: (t) => toast(t), name: () => z.name, projekt: () => z.spec, fortschritt: () => z.fortschritt,
-  setzeFortschritt: (f) => { z.fortschritt = f; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt), meldeKonflikte: (liste, gruppe) => meldeKonflikte(liste, gruppe),
+  setzeFortschritt: (f) => { z.fortschritt = f; z.linkLaenge = null; if (z.spec) speicher.schreib(speicherSchluessel(), f); }, startProjekt: (...a) => startProjekt(...a), setzePlanfassung: (pf, beimBeitritt) => raumAenderung(pf, beimBeitritt), meldeKonflikte: (liste, gruppe) => meldeKonflikte(liste, gruppe),
   plan: () => z.daten?.plan ?? null, merke: (k, v) => speicher.schreib(k, v), gespeicherterDienst: () => speicher.lies('blockwerk.dienst', ''),
 });
 
@@ -301,7 +302,7 @@ function toast(text) {
 function haken(werte) {
   if (!z.name.trim()) { toast('Bitte oben deinen Spielernamen eintragen (damit Freunde sehen, wer abgehakt hat).'); document.getElementById('name')?.focus(); return; }
   z.fortschritt = fortschritt.haken(z.fortschritt, werte.keys, werte.wert, z.name.trim());
-  speichern();
+  z.linkLaenge = null; speichern();
 }
 function schichtUmschalten() {
   const k = key();
@@ -748,7 +749,7 @@ function verlaufBuchen() {
 function grenzenWarnen() {
   const jetzt = Grenzen.grenzenAnsicht({ spezifikation: z.spec, planfassung: z.planfassung, fortschritt: z.fortschritt, spieler: live.spielerAnzahl() });
   const w = Grenzen.neueWarnungen(z.grenzenVorher, jetzt); z.grenzenVorher = jetzt;
-  if (w.length) toast(w.join(' | ')); // alle neuen Warnungen, sonst wären die übrigen nie mehr zu sehen
+  return w.length ? ` Achtung: ${w.join(' | ')}` : ''; // Text für den Erfolgs-Toast (ein eigener Toast würde sofort überschrieben)
 }
 function veroeffentlicheWartende() {
   const w = wartendeFassung; wartendeFassung = null;

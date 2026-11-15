@@ -885,6 +885,7 @@ function kompaktansicht() {
 }
 
 function render() {
+  if (a3d?.gefangen?.()) { z.renderOffen = true; return; } // ein Canvas mit Pointer Lock darf nicht aus dem DOM: nachholen, sobald der Lock frei ist
   const aktiv = document.activeElement?.id === 'name';
   let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.idFrage ? idFragePanel() : '') + (z.umbau && z.daten ? umbauPanel() : '');
   if (z.status) html += rechnet();
@@ -920,6 +921,7 @@ function sichtParameter() {
 function aktualisiere3d(einhaengen) {
   a3d ??= erzeugeAnsicht3d({
     beiModus: (m) => { z.flug = m === 'freiflug'; render(); }, // Taste O in der Ansicht
+    beiFrei: () => { if (z.renderOffen) { z.renderOffen = false; render(); } }, // auch nach Taste O (exitPointerLock ist asynchron)
     beiHinweis: (text) => { z.flugHinweis = text; const e = document.getElementById('s3-flug-info'); if (e) e.textContent = text; },
   });
   if (Tex.T.atlas && a3d.verfuegbar && a3d.atlasVon !== Tex.T.atlas) { a3d.setzeAtlas(Tex.T.canvas); a3d.atlasVon = Tex.T.atlas; }

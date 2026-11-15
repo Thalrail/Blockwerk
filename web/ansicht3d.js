@@ -2,6 +2,7 @@
 // Maus: Ziehen = drehen, Umschalt-Ziehen oder rechte Taste = verschieben, Rad = zoomen, Doppelklick = einpassen.
 import * as K from '../src/ebene5/kamera.js'; // Zeile 3 bleibt: test/tools/karte.test.js prüft sie
 import * as F from '../src/ebene5/freiflug.js';
+import { erzeugeVersuche, hinweisFuerFehler } from './zeigerfang.js';
 // Freiflug (setzeModus('freiflug')): Klick fängt die Maus (Pointer Lock), Maus = umsehen, W/A/S/D = bewegen, Leertaste = hoch, Umschalt = runter,
 // Rad = Tempo, O = zurück zu Orbit, Esc gibt die Maus frei. Ohne Pointer Lock: Ziehen zum Umsehen, die Tasten gehen trotzdem.
 
@@ -10,7 +11,6 @@ const TASTEN = { KeyW: 'vor', KeyS: 'zurueck', KeyA: 'links', KeyD: 'rechts', Sp
 const leereTasten = () => ({ vor: false, zurueck: false, links: false, rechts: false, hoch: false, runter: false });
 const HINWEIS_FREI = 'Klick ins Bild, um die Maus zu fangen';
 const HINWEIS_GEFANGEN = 'Maus gefangen: Esc gibt sie frei.';
-const HINWEIS_FEHLER = 'Die Maus ließ sich nicht fangen: im Bild ziehen zum Umsehen, die Tasten gehen trotzdem.';
 
 const VERTEX = `#version 300 es
 in vec3 p; in vec3 c; in vec2 t; uniform mat4 m; out vec3 f; out vec2 uv;
@@ -29,7 +29,7 @@ function programm(gl) {
 }
 
 /**
- * @param {{beiModus?: (modus: string) => void, beiHinweis?: (text: string) => void}} [rueck] Rückmeldungen an die Oberfläche (Modus per Taste O gewechselt; Hinweistext zur Maus)
+ * @param {{beiModus?: (modus: string) => void, beiHinweis?: (text: string) => void, beiFrei?: () => void}} [rueck] Rückmeldungen an die Oberfläche (Modus per Taste O gewechselt; Hinweistext zur Maus; Pointer Lock freigegeben)
  * @returns {{canvas: HTMLCanvasElement, verfuegbar: boolean, setzeNetz: Function, einpassen: Function, groesse: Function, zeichne: Function, setzeModus: Function, ruhe: Function}}
  */
 export function erzeugeAnsicht3d(rueck = {}) {
@@ -108,6 +108,7 @@ export function erzeugeAnsicht3d(rueck = {}) {
   const tempo = () => z.tempo ?? F.standardTempo(z.huelle);
   const gedrueckt = () => Object.values(z.tasten).some(Boolean);
   const gefangen = () => document.pointerLockElement === canvas;
+  const versuche = erzeugeVersuche(canvas, document);
   const hinweis = (text) => rueck.beiHinweis?.(text);
   function stoppeSchleife() { if (z.schleife) cancelAnimationFrame(z.schleife); z.schleife = 0; }
   function loescheTasten() { z.tasten = leereTasten(); stoppeSchleife(); }
@@ -146,12 +147,13 @@ export function erzeugeAnsicht3d(rueck = {}) {
     loescheTasten(); // Esc: die Maus ist frei, der Modus bleibt
     if (z.modus === 'freiflug') hinweis(HINWEIS_FREI);
   }
-  const beiZeigerfehler = () => { if (z.modus === 'freiflug') hinweis(HINWEIS_FEHLER); };
   const globale = [
     [window, 'keydown', beiTasteUnten], [window, 'keyup', beiTasteOben], [window, 'blur', loescheTasten],
     [document, 'visibilitychange', () => { if (document.hidden) loescheTasten(); }],
-    [document, 'pointerlockchange', beiZeigerwechsel], [document, 'pointerlockerror', beiZeigerfehler],
+    [document, 'pointerlockchange', beiZeigerwechsel], // pointerlockerror beachtet fangeMaus (mit Fehlername)
   ];
+  // Dauerhaft (auch im Orbit-Modus, wo die Listener oben fehlen): meldet jede Freigabe des Locks, damit die Oberfläche ein zurückgestelltes render() nachholt
+  document.addEventListener('pointerlockchange', () => { if (!gefangen()) rueck.beiFrei?.(); });
   let gebunden = false;
   function binde() { if (!gebunden) { gebunden = true; for (const [o, n, f] of globale) o.addEventListener(n, f); } }
   function loese() { if (gebunden) { gebunden = false; for (const [o, n, f] of globale) o.removeEventListener(n, f); } }
@@ -161,7 +163,7 @@ export function erzeugeAnsicht3d(rueck = {}) {
   function setzeModus(modus) {
     if (modus !== 'orbit' && modus !== 'freiflug') return;
     if (modus === z.modus) { if (modus === 'freiflug') { binde(); hinweis(gefangen() ? HINWEIS_GEFANGEN : HINWEIS_FREI); } return; }
-    loescheTasten(); gibMausFrei();
+    loescheTasten(); versuche.invalidiere(); lock = null; gibMausFrei(); entferneFensterLos(); zieh = null;
     if (modus === 'freiflug') {
       z.flug = F.ausKamera(z.kamera); z.modus = modus;
       document.activeElement?.blur?.(); // Leertaste soll nicht die zuletzt angeklickte Schaltfläche auslösen
@@ -174,20 +176,48 @@ export function erzeugeAnsicht3d(rueck = {}) {
     plane();
   }
   /** Beim Verlassen der 3D-Ansicht (anderer Reiter, Kompaktmodus): Tasten leeren, Schleife stoppen, Maus freigeben, Listener entfernen; der Modus bleibt. */
-  function ruhe() { loescheTasten(); gibMausFrei(); loese(); if (z.modus === 'freiflug') hinweis(HINWEIS_FREI); } // ohne Listener käme der Zeigerwechsel nicht mehr an
+  function ruhe() { loescheTasten(); versuche.invalidiere(); gibMausFrei(); loese(); entferneFensterLos(); los(); if (z.modus === 'freiflug') hinweis(HINWEIS_FREI); } // ohne Listener käme der Zeigerwechsel nicht mehr an
 
   // Maus
   let zieh = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  const fangeZeiger = (id) => { try { canvas.setPointerCapture(id); } catch { /* Zeiger schon losgelassen: der Ersatzmodus geht auch ohne */ } };
+  // Lock-Versuch: null = noch keiner, 'angefordert', 'fehler'. Der Klick versucht es nur, wenn pointerdown nichts ergab und nichts gemeldet wurde.
+  // Die Versuchsverwaltung lässt nie zwei Versuche zugleich laufen und verwirft Ergebnisse nach setzeModus()/ruhe().
+  let lock = null;
+  function fordereLock(pointerId) {
+    versuche.starte((erg) => {
+      if (erg.status === 'angefordert') { lock = 'angefordert'; return; } // der Hinweis kommt mit pointerlockchange
+      lock = 'fehler';
+      console.warn(`Maus fangen fehlgeschlagen (${erg.art}) ${erg.name}: ${erg.nachricht}`);
+      if (z.modus === 'freiflug') hinweis(hinweisFuerFehler(erg));
+      if (zieh && pointerId != null) fangeZeiger(pointerId); // Ersatzmodus (Ziehen)
+    });
+  }
+  // Ohne Pointer Capture (Freiflug vor dem Lock) kommt das Loslassen außerhalb des Canvas nicht an: ein Fenster-Handler beendet das Ziehen immer.
+  function los() { zieh = null; canvas.style.cursor = z.modus === 'freiflug' ? 'crosshair' : 'grab'; }
+  let fensterLos = null;
+  function entferneFensterLos() {
+    if (!fensterLos) return;
+    window.removeEventListener('pointerup', fensterLos); window.removeEventListener('pointercancel', fensterLos); fensterLos = null;
+  }
+  function setzeFensterLos() {
+    entferneFensterLos(); // keine Doppelregistrierung bei schnellen Wiederholungen
+    fensterLos = () => { entferneFensterLos(); los(); };
+    window.addEventListener('pointerup', fensterLos); window.addEventListener('pointercancel', fensterLos);
+  }
   canvas.addEventListener('pointerdown', (e) => {
-    canvas.setPointerCapture(e.pointerId);
     zieh = { x: e.clientX, y: e.clientY, schieben: z.modus === 'orbit' && (e.shiftKey || e.button === 2) };
     canvas.style.cursor = 'grabbing';
-    if (z.modus === 'freiflug' && !gefangen()) {
+    setzeFensterLos();
+    if (z.modus === 'freiflug' && e.button === 0 && !gefangen()) {
       document.activeElement?.blur?.();
-      if (!canvas.requestPointerLock) hinweis(HINWEIS_FEHLER);
-      else { try { const p = canvas.requestPointerLock(); p?.catch?.(() => hinweis(HINWEIS_FEHLER)); } catch { hinweis(HINWEIS_FEHLER); } }
-    }
+      if (!versuche.laeuft()) lock = null;
+      fordereLock(e.pointerId); // zuerst und synchron im Benutzerereignis; Pointer Capture käme dem Lock in die Quere
+    } else fangeZeiger(e.pointerId);
+  });
+  canvas.addEventListener('click', (e) => {
+    if (z.modus === 'freiflug' && e.button === 0 && !gefangen() && lock !== 'fehler') fordereLock(null); // zweite Chance
   });
   canvas.addEventListener('pointermove', (e) => {
     if (z.modus === 'freiflug') {
@@ -205,8 +235,7 @@ export function erzeugeAnsicht3d(rueck = {}) {
     z.kamera = zieh.schieben ? K.verschieben(z.kamera, dx / h, dy / h) : K.drehen(z.kamera, -dx * 0.008, dy * 0.008);
     plane();
   });
-  const los = () => { zieh = null; canvas.style.cursor = z.modus === 'freiflug' ? 'crosshair' : 'grab'; };
-  canvas.addEventListener('pointerup', los); canvas.addEventListener('pointercancel', los);
+  canvas.addEventListener('pointerup', () => { entferneFensterLos(); los(); }); canvas.addEventListener('pointercancel', () => { entferneFensterLos(); los(); });
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (z.modus === 'freiflug') { z.tempo = F.tempoAnpassen(tempo(), Math.exp(-e.deltaY * 0.0015)); hinweis(`Tempo: ${Math.round(z.tempo)} Blöcke je Sekunde`); return; }
@@ -215,5 +244,5 @@ export function erzeugeAnsicht3d(rueck = {}) {
   canvas.addEventListener('dblclick', () => { if (z.modus === 'orbit') einpassen(); });
   canvas.style.cursor = 'grab';
 
-  return { canvas, verfuegbar: true, setzeNetz, setzeAtlas, einpassen, groesse, zeichne: plane, setzeModus, ruhe };
+  return { canvas, verfuegbar: true, setzeNetz, setzeAtlas, einpassen, groesse, zeichne: plane, setzeModus, ruhe, gefangen };
 }

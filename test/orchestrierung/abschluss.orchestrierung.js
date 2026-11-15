@@ -655,3 +655,21 @@ test('Abschluss: gh läuft mit gesäuberter Umgebung (keine GIT_*-, Proxy-, Askp
     for (const [k, v] of Object.entries(alt)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; }
   }
 });
+
+test('Abschluss nach Worktree-Nutzung: ein gesperrter Worktree und ein teilweise gescheitertes ende verhindern den Abschluss nicht; danach lässt sich der Lauf beenden', () => {
+  const f = fluss({ befunde: [{ id: 'F1', schwere: 'minor', kurz: 'k' }], uebernehmen: false });
+  lauf.befundMelden(f.repo, { id: 'F1', einstufung: 'hinweis', beleg: 'reiner Stilhinweis, kein Verhalten betroffen' });
+  assert.equal(lauf.uebernehmen(f.repo).status, 'uebernommen');
+  git(f.repo, ['worktree', 'lock', f.wt]); // der Worktree des Entwicklers ist „festgehalten“
+  const eperm = () => { throw Object.assign(new Error('EPERM: simuliert'), { code: 'EPERM' }); };
+  const teil = lauf.beenden(f.repo, { entferne: eperm });
+  assert.equal(teil.status, 'teilweise');
+  assert.equal(lauf.status(f.repo).aktiv, true, 'der Lauf ist noch aktiv, der Abschluss bleibt möglich');
+  const g = ghUmgebung(f.bare);
+  const r = abschliessen(f.repo, ABSCHLUSS, g.umgebung);
+  assert.equal(r.status, 'fertig', JSON.stringify(r));
+  assert.equal(git(f.repo, ['rev-parse', '--abbrev-ref', 'HEAD']).trim(), r.branch);
+  git(f.repo, ['worktree', 'unlock', f.wt]);
+  assert.equal(lauf.beenden(f.repo).uebernommen, true);
+  assert.equal(lauf.status(f.repo).aktiv, false);
+});

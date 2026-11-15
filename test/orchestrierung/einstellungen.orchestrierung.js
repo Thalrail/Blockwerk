@@ -135,7 +135,9 @@ test('Skills in Agenten: Entwickler, Dokumentationsprüfer und Quellenprüfer la
 test('Graphify und OmniRoute bleiben aus, Ponytail ist kein Plugin: keine zusätzlichen Hooks, Server, Abhängigkeiten oder Dateien', () => {
   const e = einst();
   assert.deepEqual(Object.keys(e.hooks).sort(), ['PreToolUse', 'WorktreeCreate', 'WorktreeRemove'], 'nur die drei Orchestrierungs-Hooks');
-  assert.equal(e.hooks.PreToolUse.length, 1);
+  // zwei PreToolUse-Einträge: der Wächter für Agenten (git-wache.js) und seit dem 15.11.2026 der Referenzschutz (ref-wache.js, nur Bash und PowerShell); sonst nichts
+  assert.equal(e.hooks.PreToolUse.length, 2);
+  assert.deepEqual(e.hooks.PreToolUse.flatMap((x) => x.hooks.map((h) => /hooks\/([a-z-]+\.js)/.exec(h.command)[1])).sort(), ['git-wache.js', 'ref-wache.js']);
   assert.equal(e.mcpServers, undefined);
   assert.equal(e.enabledPlugins, undefined);
   assert.equal(e.statusLine, undefined);

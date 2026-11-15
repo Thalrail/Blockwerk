@@ -103,21 +103,43 @@ export function zustand(repo, { ausser = [], ausserDateien = [] } = {}) {
   const gitDir = git(repo, ['rev-parse', '--absolute-git-dir']).trim();
   const zweig = gitStatus(repo, ['symbolic-ref', '-q', 'HEAD']);
   const baum = baumHash(repo, { ausser, ausserDateien });
+  const refsRoh = git(repo, ['for-each-ref', '--format=%(refname) %(objectname)']); // der Hash darüber entscheidet; die Liste dient nur der Meldung
   return {
     head: git(repo, ['rev-parse', 'HEAD']).trim(),
     zweig: zweig.status === 0 ? zweig.stdout.toString().trim() : '(losgelöst)',
     stash: git(repo, ['for-each-ref', '--format=%(objectname)', 'refs/stash']).trim(),
-    refs: sha256(git(repo, ['for-each-ref', '--format=%(refname) %(objectname)'])),
+    refs: sha256(refsRoh),
+    refsListe: refsRoh.split(/\r?\n/).filter(Boolean),
     index: sha256(fs.readFileSync(path.join(gitDir, 'index'))),
     baum: baum.hash,
     dateien: Object.fromEntries(baum.dateien),
   };
 }
 
+/**
+ * Nur für die Meldung (die Entscheidung trifft allein der Hash `refs`): welche Referenzen sind neu (`refs:+name`), weg (`refs:-name`) oder verschoben (`refs:~name`)?
+ * Höchstens 8 Namen, danach eine Zählung; fehlt eine der Listen (ältere Abdrücke), gibt es nichts zu ergänzen.
+ */
+export function refsUnterschiede(vorher, nachher, grenze = 8) {
+  if (!Array.isArray(vorher) || !Array.isArray(nachher)) return [];
+  const karte = (liste) => new Map(liste.map((z) => { const i = z.lastIndexOf(' '); return [z.slice(0, i), z.slice(i + 1)]; }));
+  const a = karte(vorher), b = karte(nachher), treffer = [];
+  for (const [n, o] of b) { if (!a.has(n)) treffer.push([n, '+']); else if (a.get(n) !== o) treffer.push([n, '~']); }
+  for (const n of a.keys()) if (!b.has(n)) treffer.push([n, '-']);
+  treffer.sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+  const l = treffer.slice(0, grenze).map(([n, z]) => `refs:${z}${n}`);
+  if (treffer.length > grenze) l.push(`refs:… und ${treffer.length - grenze} weitere`);
+  return l;
+}
+
 /** Unterschiede zweier Abdrücke als Liste (leer = identisch). `dateien` wird dateiweise verglichen. */
 export function zustandsUnterschiede(a, b) {
   const l = [];
-  for (const k of ['head', 'zweig', 'stash', 'refs', 'index']) if (a[k] !== b[k]) l.push(k);
+  for (const k of ['head', 'zweig', 'stash', 'refs', 'index']) {
+    if (a[k] === b[k]) continue;
+    l.push(k);
+    if (k === 'refs') l.push(...refsUnterschiede(a.refsListe, b.refsListe));
+  }
   const alle = new Set([...Object.keys(a.dateien ?? {}), ...Object.keys(b.dateien ?? {})]);
   for (const p of [...alle].sort()) if (a.dateien?.[p] !== b.dateien?.[p]) l.push(`datei:${p}`);
   return l;

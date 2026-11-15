@@ -22,6 +22,7 @@ Ein Turm (`form.zylinder` 13 × 13 × 34, Stimmung „hell-nordisch“) besteht 
 | R1 Freiflug-Kamera | Zweiter Kameramodus, Pointer Lock, WASD, Schalter Orbit/Freiflug; rein berechnete Kamera in `kamera.js` | Kameratests, Handtest |
 | D2 Bausteinrezepte (nach D1) | Rezeptsystem (siehe unten), erstes Rezept Turm | Metriken von D1, Regressionstest bestehender Bauwerke. **Umgesetzt** (15.11.2026, Status `entworfen`, Spieltest offen): Kern D2.1, Nachweis D2.2, Doku `docs/architektur-rezepte.md` |
 | Paket 1a Turm-Aufbau (nach D2) | Messgröße `messeAufbau` (Teil 1) und Turm-Rezept baubar: Dach-Anbindung erledigt (Kegelwand 2, höheres Dach, Auflage 1), 0 Hilfspunkte in acht Größen | `rezepte-aufbau.test.js`. **Umgesetzt** (Status `entworfen`, Spieltest offen) |
+| Paket 1b Rezeptteile bearbeiten | Teil 1 Logik (`teile.js`), Teil 2 Oberfläche im Reiter „Teile“ (Rezeptzeile, Größenfelder, Neues Teil mit Rezept) | **Oberfläche umgesetzt**, Browser-Smoke-Test bestanden (15.11.2026), Spieltest offen |
 | G0 Weltimport: Untersuchung | Format, Zugang, Machbarkeit in reinem JS (siehe unten), Ergebnis als Bericht und Prototyp-Spike | Bericht |
 
 ## Phase 2: Fundament

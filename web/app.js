@@ -575,6 +575,10 @@ function paramFelderHtml(p, f, baustein) {
   if (!baustein) return '';
   return baustein.parameter.map((q) => `<label class="klein zustand" title="${esc(q.beschreibung ?? '')}">${esc(q.name)} <input id="${p}p-${esc(q.name)}" type="number" step="${q.ganzzahl ? 1 : 'any'}" min="${q.min}" max="${q.max}" placeholder="${q.standard ?? ''}" value="${feld(f, 'p-' + q.name)}" style="width:5em"> <span class="plakette">${esc(GROESSENART[q.groessenart] ?? q.groessenart)}</span> <span class="klein">${q.min}–${q.max}</span></label>`).join('');
 }
+/** Größenfelder eines Rezepts (Breite, Tiefe, Höhe; Pflicht, Texte aus teile.js). */
+function rezeptFelderHtml(p, f, info, name, vorbelegen = false) {
+  return Teile.rezeptFelder(info, name).felder.map((q) => `<label class="klein zustand">${esc(q.anzeige)} <input id="${p}p-${esc(q.name)}" type="number" required step="1" min="${q.min}" max="${q.max}" value="${vorbelegen && f['p-' + q.name] === undefined ? q.vorgabe : feld(f, 'p-' + q.name)}" style="width:5em"> <span class="klein">${esc(q.hinweis)}</span></label>`).join('');
+}
 /** Reiter „Teile“: Teile ändern (Größe, Lage, Name), hinzufügen, entfernen. Es wird die Spezifikation geändert; vorab zeigt eine Vorschau, was mit deinen Einzelblockänderungen geschieht. */
 function teilePanel() {
   const t = z.teile, info = t.info;
@@ -586,30 +590,33 @@ function teilePanel() {
   if (t.meldung) h += `<p class="fehler">${esc(t.meldung)}</p>`;
   if (t.bestaetigung) {
     const b = t.bestaetigung;
-    h += `<div class="blockwahl"><strong>${esc(b.titel ?? 'Das ändert sich')}</strong><ul class="klein">${[...b.hinweise, ...b.folgen.map((x) => x.text)].map((x) => `<li>${esc(x)}</li>`).join('') || '<li>Keine Folgen für deine Einzelblockänderungen.</li>'}</ul>${b.folgen.length ? '<p class="klein">Betroffene Änderungen bleiben gespeichert, wirken aber nicht, bis sie aufgelöst sind (das kommt mit U6).</p>' : ''}<div class="knoepfe"><button class="haupt" data-a="tl-ja">Übernehmen</button><button data-a="tl-nein">Abbrechen</button></div></div>`;
+    h += `<div class="blockwahl"><strong>${esc(b.titel ?? 'Das ändert sich')}</strong><ul class="klein">${[...b.hinweise, ...b.folgen.map((x) => x.text)].map((x) => `<li>${esc(x)}</li>`).join('') || '<li>Keine Folgen für deine Einzelblockänderungen.</li>'}</ul>${b.folgen.length ? '<p class="klein">Betroffene Änderungen bleiben gespeichert, wirken aber nicht, bis sie aufgelöst sind (verwerfen, neu verankern oder zulassen, im Reiter „Änderungen“).</p>' : ''}<div class="knoepfe"><button class="haupt" data-a="tl-ja">Übernehmen</button><button data-a="tl-nein">Abbrechen</button></div></div>`;
     return h;
   }
   if (t.neu) return h + neuesTeilHtml(info, teile);
   const f = t.felder, ausgewaehlt = teile.find((x) => x.id === t.id);
-  h += `<label class="klein zustand">Teil <select id="tl-teil">${teile.map((x) => `<option value="${esc(x.id)}" ${x.id === t.id ? 'selected' : ''}>${x.kind ? '↳ ' : ''}${esc(x.name)}</option>`).join('')}</select></label>`;
+  h += `<label class="klein zustand">Teil <select id="tl-teil">${teile.map((x) => `<option value="${esc(x.id)}" ${x.id === t.id ? 'selected' : ''}>${x.kind ? '↳ ' : ''}${esc(x.name)}${x.rezept !== null ? ' (Rezept)' : ''}</option>`).join('')}</select></label>`;
   if (!ausgewaehlt) return h + '<p class="klein">Es gibt noch kein Teil.</p><div class="knoepfe"><button data-a="tl-neu">Neues Teil …</button></div>';
   const t0 = z.spec.teile.find((x) => x.id === t.id), baustein = info.bausteine.find((b) => b.id === t0.form?.baustein);
-  h += `<p class="klein">Baustein: ${esc(baustein?.titel ?? t0.form?.baustein ?? '?')} (${esc(t0.form?.baustein ?? '')})${ausgewaehlt.kind ? `, liegt in „${esc(teile.find((x) => x.id === ausgewaehlt.traeger)?.name ?? ausgewaehlt.traeger)}“` : ''}. Die Kennung „${esc(t.id)}“ bleibt (Einzelblockänderungen sind an sie gebunden).</p>
+  const rez = ausgewaehlt.rezept, rezUnbekannt = rez !== null && !Teile.rezeptBekannt(info, rez); // unbekanntes Rezept (importiert/veraltet): keine Größenfelder, Teil bleibt entfernbar
+  const rezF = rez !== null && !rezUnbekannt ? Teile.rezeptFelder(info, rez) : null;
+  h += `<p class="klein">${rez !== null ? esc(Teile.rezeptZeile(info, rez)) : `Baustein: ${esc(baustein?.titel ?? t0.form?.baustein ?? '?')} (${esc(t0.form?.baustein ?? '')})`}${ausgewaehlt.kind ? `, liegt in „${esc(teile.find((x) => x.id === ausgewaehlt.traeger)?.name ?? ausgewaehlt.traeger)}“` : ''}. Die Kennung „${esc(t.id)}“ bleibt (Einzelblockänderungen sind an sie gebunden).</p>
     <label class="klein zustand">Name <input id="tl-name" type="text" maxlength="60" value="${feld(f, 'name')}"></label>
     <label class="klein zustand">Wichtigkeit <select id="tl-wicht">${optionen(info.wichtigkeiten, f.wicht)}</select></label>
-    <h4>Größe</h4>${paramFelderHtml('tl-', f, baustein)}<p class="klein">Leer lassen = Standard des Bausteins.</p>
+    <h4>Größe</h4>${rezUnbekannt ? '<p class="fehler">Unbekanntes Rezept – bitte das Teil entfernen und neu anlegen</p>' : rez !== null ? rezeptFelderHtml('tl-', f, info, rez) + `<p class="klein">${esc(rezF.pflicht)}</p>` : paramFelderHtml('tl-', f, baustein) + '<p class="klein">Leer lassen = Standard des Bausteins.</p>'}
     <h4>Lage</h4>${lageFelderHtml('tl-', f, info, t.id, teile)}
     <div class="knoepfe"><button class="haupt" data-a="tl-anwenden">Prüfen und übernehmen</button><button data-a="tl-neu">Neues Teil …</button><button data-a="tl-entfernen">Teil entfernen …</button></div>`;
   return h;
 }
 function neuesTeilHtml(info, teile) {
-  const f = z.teile.neu, baustein = info.bausteine.find((b) => b.id === f.baustein);
+  const f = z.teile.neu, rez = Teile.rezeptAusAuswahl(f.baustein), baustein = info.bausteine.find((b) => b.id === f.baustein);
+  const rezOpt = Object.values(info.rezepte ?? {}).map((r) => `<option value="rezept:${esc(r.id)}" ${f.baustein === `rezept:${r.id}` ? 'selected' : ''}>${esc(r.titel)}</option>`).join('');
   return `<h4>Neues Teil</h4>
     <label class="klein zustand">Name <input id="tn-name" type="text" maxlength="60" value="${feld(f, 'name')}"></label>
-    <label class="klein zustand">Baustein <select id="tn-baustein">${info.bausteine.map((b) => `<option value="${esc(b.id)}" ${b.id === f.baustein ? 'selected' : ''}>${esc(b.titel)}</option>`).join('')}</select></label>
+    <label class="klein zustand">Baustein <select id="tn-baustein">${info.bausteine.map((b) => `<option value="${esc(b.id)}" ${b.id === f.baustein ? 'selected' : ''}>${esc(b.titel)}</option>`).join('')}${rezOpt ? `<optgroup label="Rezepte">${rezOpt}</optgroup>` : ''}</select></label>
     <label class="klein zustand">Art <select id="tn-art">${optionen(info.teilarten, f.art)}</select></label>
     <label class="klein zustand">Wichtigkeit <select id="tn-wicht">${optionen(info.wichtigkeiten, f.wicht)}</select></label>
-    <h4>Größe</h4>${paramFelderHtml('tn-', f, baustein)}<p class="klein">Leer lassen = Standard des Bausteins (passt er nicht auf den Bauplatz, sagt es die Prüfung).</p>
+    <h4>Größe</h4>${rez ? rezeptFelderHtml('tn-', f, info, rez, true) : paramFelderHtml('tn-', f, baustein)}<p class="klein">${rez ? esc(Teile.rezeptFelder(info, rez).hinweis) : 'Leer lassen = Standard des Bausteins (passt er nicht auf den Bauplatz, sagt es die Prüfung).'}</p>
     <h4>Lage</h4>${lageFelderHtml('tn-', f, info, null, teile)}
     <div class="knoepfe"><button class="haupt" data-a="tn-anlegen">Prüfen und hinzufügen</button><button data-a="tn-zu">Abbrechen</button></div>`;
 }
@@ -647,6 +654,7 @@ async function teileAktion(name) {
     if (name === 'tl-neu') {
       t.rev++;
       const teile = Teile.teilListe(z.spec, info.kindrelationen), b = info.bausteine[0];
+      t.artManuell = false;
       t.neu = { name: '', baustein: b.id, art: info.teilarten[0], wicht: 'soll', rel: 'neben-osten', bezug: (teile.find((x) => !x.kind) ?? teile[0])?.id ?? 'projekt', abstand: '', anker: '', ausr: '' }; t.meldung = ''; render(); return;
     }
     if (name === 'tl-anwenden') {
@@ -1070,7 +1078,7 @@ function merkeTeileFeld(ev) {
   const id = ev.target?.id ?? '';
   if (id.startsWith('tl-') || id.startsWith('tn-')) z.teile.rev++; // jede Eingabe macht eine laufende Vorschau überholt
   if (id.startsWith('tl-') && id !== 'tl-teil' && z.teile.felder) z.teile.felder = { ...z.teile.felder, [id.slice(3)]: ev.target.value };
-  else if (id.startsWith('tn-') && z.teile.neu) z.teile.neu = { ...z.teile.neu, [id.slice(3)]: ev.target.value };
+  else if (id.startsWith('tn-') && z.teile.neu) { if (id === 'tn-art') z.teile.artManuell = true; z.teile.neu = { ...z.teile.neu, [id.slice(3)]: ev.target.value }; }
 }
 document.addEventListener('input', (ev) => {
   merkeTeileFeld(ev);
@@ -1099,7 +1107,7 @@ document.addEventListener('change', async (ev) => {
   merkeTeileFeld(ev);
   if (id === 'tl-teil') { z.teile.rev++; z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
   if (id === 'tl-rel' || id === 'tl-bezug') { const f = liesFelder('tl-'); delete f.teil; z.teile.felder = f; render(); return; }
-  if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; render(); return; }
+  if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') { for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; const r = Teile.rezeptAusAuswahl(z.teile.neu.baustein); if (r && !z.teile.artManuell && z.teile.info.teilarten.includes(r)) z.teile.neu.art = r; } render(); return; }
   if (id.startsWith('st-z-')) { // Zustandswert der Materialwahl (Index in der Liste der erlaubten Werte)
     const g = z.stil.picker?.gewaehlt; const za = g?.info.zustaende[Number(ev.target.dataset.i)]; if (!za) return;
     const j = Number(ev.target.value); if (j < 0) delete g.zustand[za.name]; else g.zustand[za.name] = za.werte[j];

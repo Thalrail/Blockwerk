@@ -25,6 +25,69 @@ export function teileInfo(vokabular) {
     relationen: { ...vokabular.relationen }, kindrelationen: Object.keys(vokabular.kindrelationen),
     anker: Object.keys(vokabular.anker), ausrichtungen: Object.keys(vokabular.ausrichtungen), versatzAchsen: [...vokabular.versatz.achsen], versatzMax: vokabular.versatz.maximum,
     teilarten: [...vokabular.teilarten], wichtigkeiten: [...vokabular.wichtigkeiten], abstandMax: vokabular.bauplatz.breite.max,
+    rezepte: rezepteInfo(vokabular),
+  };
+}
+
+// Rezepte (Paket 1b): Mindestmaße aus dem Vokabular (Regeln rezepte.<name>); die Obergrenze je Maß ist die des Bauplatzes im Vokabular (breite/tiefe/hoehe max), weil ein Rezept keine
+// eigenen Bausteinparameter hat; ob das Teil auf den Bauplatz des Projekts passt, prüft der Prüfer der Spezifikation.
+const MASSE = [['breite', 'Breite'], ['tiefe', 'Tiefe'], ['hoehe', 'Höhe']];
+function rezepteInfo(vokabular) {
+  return Object.fromEntries(Object.entries(vokabular.rezepte ?? {}).map(([name, r]) => [name, {
+    id: name, titel: r.titel, mindest: { ...r.mindest },
+    parameter: MASSE.map(([k, anzeige]) => ({
+      name: k, ganzzahl: true, min: r.mindest[k], max: vokabular.bauplatz[k].max,
+      beschreibung: `${anzeige} in Blöcken${k === 'hoehe' && r.mindest.hoeheZuBreite ? ` (mindestens ${r.mindest.hoeheZuBreite} × die größere Breite)` : ''}`,
+    })),
+  }]));
+}
+/** Mindesthöhe eines Rezepts bei gegebener Breite und Tiefe (wie der Prüfer der Spezifikation). */
+const hoeheMindestens = (m, breite, tiefe) => Math.max(m.hoehe, Math.ceil((m.hoeheZuBreite ?? 0) * Math.max(breite, tiefe)));
+const rezeptDaten = (info, name) => {
+  const r = info.rezepte && Object.hasOwn(info.rezepte, name) ? info.rezepte[name] : null;
+  if (!r) throw new TeileFehler(`Das Rezept „${String(name)}“ gibt es nicht.`);
+  return r;
+};
+/** Die drei Außenmaße eines Rezepts als Ganzes prüfen (Pflicht, je Maß Bereich und ganze Zahl, dann die Höhenbeziehung). Wirft TeileFehler, ändert nichts. */
+function pruefeRezeptGroesse(info, name, g) {
+  const r = rezeptDaten(info, name);
+  for (const p of r.parameter) {
+    if (g[p.name] === undefined || g[p.name] === null) throw new TeileFehler('Bei einem Rezept sind Breite, Tiefe und Höhe Pflicht.');
+    pruefeParameterWert(p, g[p.name]);
+  }
+  const min = hoeheMindestens(r.mindest, g.breite, g.tiefe);
+  if (g.hoehe < min) throw new TeileFehler(`Höhe mindestens ${min} Blöcke bei Breite ${g.breite} und Tiefe ${g.tiefe} (Rezept ${r.titel.split(':')[0]}).`);
+}
+/** Außenmaße eines Rezeptteils setzen (Kopie): die genannten Maße ersetzen die vorhandenen, danach wird die Kombination geprüft. */
+function setzeRezeptGroesse(spec, id, werte, info) {
+  const neu = structuredClone(spec), t = teilVon(neu, id);
+  const g = { ...(t.form?.groesse ?? {}) };
+  for (const [k, w] of Object.entries(werte)) {
+    if (!MASSE.some(([m]) => m === k)) throw new TeileFehler(`Bei einem Rezept gibt es nur Breite, Tiefe und Höhe, nicht „${k}“.`);
+    g[k] = w;
+  }
+  pruefeRezeptGroesse(info, t.rezept, g);
+  t.form = { ...(t.form ?? {}), groesse: { breite: g.breite, tiefe: g.tiefe, hoehe: g.hoehe } };
+  return neu;
+}
+
+/** Rezeptname aus dem Wert der Bausteinauswahl („rezept:<name>“), sonst null. */
+export const rezeptAusAuswahl = (wert) => (typeof wert === 'string' && wert.startsWith('rezept:') ? wert.slice('rezept:'.length) : null);
+/** Kennt das Vokabular dieses Rezept? (Importierte oder veraltete Pläne können ein unbekanntes nennen.) */
+export const rezeptBekannt = (info, name) => typeof name === 'string' && Object.hasOwn(info.rezepte ?? {}, name);
+/** Kopfzeile eines Rezeptteils: „Rezept: <Kurztitel> (<name>)“ (Titel bis zum ersten „:“; ein unbekanntes Rezept zeigt nur den Namen). */
+export const rezeptZeile = (info, name) => `Rezept: ${rezeptBekannt(info, name) ? info.rezepte[name].titel.split(':')[0] : name} (${name})`;
+/** Größenfelder und Hinweistexte eines Rezepts für die Oberfläche: Breite, Tiefe, Höhe mit Bereich und Mindestmaß-Hinweis; pflicht gilt für vorhandene Teile, hinweis für „Neues Teil“. */
+export function rezeptFelder(info, name) {
+  const r = rezeptDaten(info, name), anzeige = Object.fromEntries(MASSE);
+  return {
+    felder: r.parameter.map((p) => ({
+      name: p.name, anzeige: anzeige[p.name], min: p.min, max: p.max, // Vorbelegung im Formular „Neues Teil“ (sichtbar, nicht still ergänzt); die Höhe folgt der Höhenbeziehung bei Mindestbreite und -tiefe
+      vorgabe: p.name === 'hoehe' ? hoeheMindestens(r.mindest, r.mindest.breite, r.mindest.tiefe) : p.min,
+      hinweis: `mindestens ${p.min}${p.name === 'hoehe' && r.mindest.hoeheZuBreite ? `, mindestens ${r.mindest.hoeheZuBreite} × die größere Breite` : ''}`,
+    })),
+    pflicht: 'Pflichtfelder: Breite, Tiefe und Höhe.',
+    hinweis: 'Breite, Tiefe und Höhe sind Pflicht; vorbelegt mit dem Mindestmaß.',
   };
 }
 
@@ -33,7 +96,7 @@ const istKind = (t, kindrelationen) => typeof t?.lage?.relation === 'string' && 
 /** Die Teile für die Liste: Kennung, Name, Baustein, Wichtigkeit, Größe als Text, ob es in einem anderen Bauteil liegt (Kindteil) und worin. */
 export function teilListe(spec, kindrelationen = []) {
   return (spec.teile ?? []).map((t) => ({
-    id: t.id, name: t.name ?? t.id, baustein: t.form?.baustein ?? null, art: t.art, wichtigkeit: t.wichtigkeit,
+    id: t.id, name: t.name ?? t.id, baustein: t.form?.baustein ?? null, rezept: typeof t.rezept === 'string' ? t.rezept : null, art: t.art, wichtigkeit: t.wichtigkeit,
     groesse: Object.entries(t.form?.groesse ?? {}).map(([k, w]) => `${k} ${w}`).join(', '), kind: istKind(t, kindrelationen), traeger: istKind(t, kindrelationen) ? t.lage.bezug : null,
   }));
 }
@@ -59,6 +122,7 @@ export function setzeEigenschaft(spec, id, feld, wert, info = null) {
 /** Größe eines Parameters (Kopie); `null` nimmt die Angabe weg, es gilt wieder der Standard des Bausteins. Der Wert wird gegen das Bausteinpaket geprüft. */
 export function setzeParameter(spec, id, name, wert, info) {
   const neu = structuredClone(spec), t = teilVon(neu, id);
+  if (typeof t.rezept === 'string') return setzeRezeptGroesse(spec, id, { [name]: wert }, info); // Rezeptteil: Pflichtmaße, `null` gibt es nicht
   const baustein = info.bausteine.find((b) => b.id === t.form?.baustein);
   const par = baustein?.parameter.find((p) => p.name === name);
   if (!par) throw new TeileFehler(`Den Parameter „${String(name)}“ gibt es bei ${baustein?.titel ?? String(t.form?.baustein)} nicht.`);
@@ -78,6 +142,7 @@ export function setzeLage(spec, id, lage, info) {
   if (!Object.hasOwn(info.relationen, lage.relation)) throw new TeileFehler(`Die Lagebeziehung „${String(lage.relation)}“ gibt es nicht.`);
   if (lage.bezug !== 'projekt' && !neu.teile.some((x) => x.id === lage.bezug)) throw new TeileFehler(`Worauf sich das Teil bezieht („${String(lage.bezug)}“), gibt es nicht.`);
   if (lage.bezug === id) throw new TeileFehler('Ein Teil kann sich nicht auf sich selbst beziehen.');
+  if (typeof t.rezept === 'string' && info.kindrelationen.includes(lage.relation)) throw new TeileFehler('Ein Rezept gilt für ein eigenes Teil, nicht für ein Teil in einem anderen Bauteil.');
   const aus = { bezug: lage.bezug, relation: lage.relation };
   if (info.kindrelationen.includes(lage.relation)) {
     if (lage.anker !== undefined) { if (!info.anker.includes(lage.anker)) throw new TeileFehler(`Den Anker „${String(lage.anker)}“ gibt es nicht.`); aus.anker = lage.anker; }
@@ -113,8 +178,9 @@ export function neueKennung(spec, name) {
 }
 
 /** Neues Teil (Kopie) mit den genannten Größen, sonst den Standardgrößen des Bausteins; die Größe lässt sich danach ändern. @returns {{spec: object, id: string}} */
-export function fuegeTeilHinzu(spec, { name, baustein, art, wichtigkeit = 'soll', lage, groesse = {} }, info) {
+export function fuegeTeilHinzu(spec, { name, baustein, rezept, art, wichtigkeit = 'soll', lage, groesse = {} }, info) {
   if (typeof name !== 'string' || !name.trim() || name.length > 60) throw new TeileFehler('Der Name braucht 1 bis 60 Zeichen.');
+  if (rezept !== undefined) return fuegeRezeptTeilHinzu(spec, { name, baustein, rezept, art, wichtigkeit, lage, groesse }, info);
   if (!info.bausteine.some((b) => b.id === baustein)) throw new TeileFehler(`Den Baustein „${String(baustein)}“ gibt es nicht.`);
   if (!info.teilarten.includes(art)) throw new TeileFehler(`Die Art „${String(art)}“ gibt es nicht (${info.teilarten.join(', ')}).`);
   if (!info.wichtigkeiten.includes(wichtigkeit)) throw new TeileFehler(`Die Wichtigkeit „${String(wichtigkeit)}“ gibt es nicht.`);
@@ -124,6 +190,22 @@ export function fuegeTeilHinzu(spec, { name, baustein, art, wichtigkeit = 'soll'
   const g = {};
   for (const [k, w] of Object.entries(groesse)) { const p = par.find((x) => x.name === k); if (!p) throw new TeileFehler(`Den Parameter „${k}“ gibt es bei ${baustein} nicht.`); g[k] = pruefeParameterWert(p, w); }
   neu.teile = [...(neu.teile ?? []), { id, name: name.trim(), art, form: { baustein, groesse: g }, lage: { bezug: 'projekt', relation: 'mitte' }, wichtigkeit }];
+  return { spec: setzeLage(neu, id, lage, info), id };
+}
+
+/** Neues Teil mit Rezept: Breite, Tiefe und Höhe sind Pflicht (keine stillen Standardwerte), alle werden geprüft; Art: fehlt sie, gilt der Rezeptname, wenn er eine Teilart ist. */
+function fuegeRezeptTeilHinzu(spec, { name, baustein, rezept, art, wichtigkeit, lage, groesse }, info) {
+  if (baustein !== undefined) throw new TeileFehler('Ein Teil hat entweder einen Baustein oder ein Rezept, nicht beides.');
+  rezeptDaten(info, rezept);
+  art ??= info.teilarten.includes(rezept) ? rezept : undefined;
+  if (!info.teilarten.includes(art)) throw new TeileFehler(`Die Art „${String(art)}“ gibt es nicht (${info.teilarten.join(', ')}).`);
+  if (!info.wichtigkeiten.includes(wichtigkeit)) throw new TeileFehler(`Die Wichtigkeit „${String(wichtigkeit)}“ gibt es nicht.`);
+  for (const k of Object.keys(groesse)) if (!MASSE.some(([m]) => m === k)) throw new TeileFehler(`Bei einem Rezept gibt es nur Breite, Tiefe und Höhe, nicht „${k}“.`);
+  const g = { breite: groesse.breite, tiefe: groesse.tiefe, hoehe: groesse.hoehe };
+  pruefeRezeptGroesse(info, rezept, g); // fehlt ein Maß (oder ist es `null`), wirft das den Pflicht-Fehler
+  const id = neueKennung(spec, name);
+  const neu = structuredClone(spec);
+  neu.teile = [...(neu.teile ?? []), { id, name: name.trim(), art, rezept, form: { groesse: g }, lage: { bezug: 'projekt', relation: 'mitte' }, wichtigkeit }];
   return { spec: setzeLage(neu, id, lage, info), id };
 }
 
@@ -228,6 +310,12 @@ export function wendeFelder(spec, id, felder, info) {
   const t0 = teilVon(spec, id);
   if (felder.name !== undefined && felder.name !== t0.name) neu = setzeEigenschaft(neu, id, 'name', felder.name, info);
   if (felder.wicht && felder.wicht !== t0.wichtigkeit) neu = setzeEigenschaft(neu, id, 'wichtigkeit', felder.wicht, info);
+  if (typeof t0.rezept === 'string') {
+    // Rezeptteil: alle genannten Maße gemeinsam anwenden, erst danach die Kombination prüfen (Breite und Höhe in einem Schritt); ein leeres Feld ist hier ein Fehler
+    const werte = {};
+    for (const [k, anzeige] of MASSE) if (Object.hasOwn(felder, `p-${k}`)) { const w = zahlAus(felder[`p-${k}`], anzeige); if (w !== t0.form?.groesse?.[k]) werte[k] = w; }
+    if (Object.keys(werte).length) neu = setzeRezeptGroesse(neu, id, werte, info);
+  }
   const baustein = info.bausteine.find((b) => b.id === t0.form?.baustein);
   for (const p of baustein?.parameter ?? []) {
     if (!Object.hasOwn(felder, `p-${p.name}`)) continue; // ein fehlendes Feld ist keine Angabe; nur ein vorhandenes leeres Feld heißt „Standard“
@@ -244,6 +332,11 @@ export function wendeFelder(spec, id, felder, info) {
 
 /** Neues Teil aus Feldern (name, baustein, art, wicht, Lage, p-<Parameter>). @returns {{spec: object, id: string}} */
 export function neuAusFeldern(spec, felder, info) {
+  if (typeof felder.baustein === 'string' && felder.baustein.startsWith('rezept:')) { // Rezept statt Baustein: Feld `baustein` = `rezept:<name>`, Maße p-breite, p-tiefe, p-hoehe
+    const groesse = {};
+    for (const [k, anzeige] of MASSE) { const w = zahlAus(felder[`p-${k}`], anzeige); if (w !== null) groesse[k] = w; } // leeres Feld fehlt → Pflicht-Fehler in fuegeTeilHinzu
+    return fuegeTeilHinzu(spec, { name: felder.name, rezept: felder.baustein.slice('rezept:'.length), art: felder.art || undefined, wichtigkeit: felder.wicht || 'soll', lage: lageAusFeldern(felder, info), groesse }, info);
+  }
   const baustein = info.bausteine.find((b) => b.id === felder.baustein);
   const groesse = {};
   for (const p of baustein?.parameter ?? []) { const w = zahlAus(felder[`p-${p.name}`], p.name); if (w !== null) groesse[p.name] = w; }

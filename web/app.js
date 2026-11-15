@@ -32,7 +32,7 @@ const speicher = {
 const z = {
   spec: null, daten: null, fortschritt: fortschritt.leer(), name: speicher.lies('blockwerk.name', ''),
   modus: speicher.lies('blockwerk.modus', 'voll'), ansicht: speicher.lies('blockwerk.ansicht', 'plan'),
-  sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
+  sicht: { abschnitte: 'alle', maxY: null, technik: true, verbindungen: true, fortschritt: true, hervorheben: true }, flug: false, flugHinweis: '', netzMeldung: '', netzSignatur: '', a: 0, s: 0, reiter: 'material', status: null, fehler: null, rueckfragen: null, pip: null,
   seite: null, liveOffen: false, einladung: null, messungen: [], planfassung: PF.leer(), stil: { info: null, ebene: 'projekt', picker: null }, teile: { info: null, id: null, felder: null, stand: null, neu: null, meldung: '', bestaetigung: null, rev: 0 }, loesen: { verankern: null, technik: null, konflikte: [], erzeugung: null }, verlauf: [], uebergaenge: [], naechsterText: '', linkLaenge: null, grenzenVorher: null, auswahl: null, blockwahl: null, bearbeitung: false, klickNr: 0, e: Eingabe.neuerZustand(speicher.lies('blockwerk.entwurf')),
 };
 
@@ -846,10 +846,15 @@ function mitte3d() {
       <label><input id="s3-verbindungen" type="checkbox" ${q.verbindungen ? 'checked' : ''}> Gänge und Schienen</label>
       <label><input id="s3-fortschritt" type="checkbox" ${q.fortschritt ? 'checked' : ''}> Baufortschritt einfärben</label>
       <label><input id="s3-hervorheben" type="checkbox" ${q.hervorheben ? 'checked' : ''}> gewählten Abschnitt hervorheben</label>
+      <span class="ansichtwahl">Ansicht:
+        <button data-a="flug" data-k="orbit" aria-pressed="${!z.flug}" class="${z.flug ? '' : 'an'}">Orbit</button><button data-a="flug" data-k="freiflug" aria-pressed="${z.flug}" class="${z.flug ? 'an' : ''}">Freiflug</button></span>
       <button data-a="einpassen">Einpassen</button></div>
     <div class="leinwand drei"></div>
     <div class="hinweis-zeile" id="s3-info">${esc(z.netzMeldung)}</div>
-    <div class="klein"><strong>Vereinfachte Darstellung:</strong> jeder Block als voller Würfel (Treppen, Platten, Zäune usw. nicht in Originalform). Maus: ziehen = drehen, Umschalt-Ziehen = verschieben, Rad = zoomen, Doppelklick = einpassen.</div>`;
+    ${z.flug ? `<div class="hinweis-zeile" id="s3-flug-info">${esc(z.flugHinweis)}</div>` : ''}
+    <div class="klein"><strong>Vereinfachte Darstellung:</strong> jeder Block als voller Würfel (Treppen, Platten, Zäune usw. nicht in Originalform). ${z.flug
+    ? 'Freiflug: Klick ins Bild fängt die Maus, dann Maus = umsehen, W A S D = bewegen, Leertaste = hoch, Umschalt = runter, Mausrad = Tempo, Esc = Maus freigeben, O = zurück zu Orbit.'
+    : 'Maus: ziehen = drehen, Umschalt-Ziehen = verschieben, Rad = zoomen, Doppelklick = einpassen.'}</div>`;
 }
 function mitteSchichtplan() {
   const a = abschnitt(), s = schicht(), p = fortschritt.prozent(z.fortschritt, plan());
@@ -880,6 +885,7 @@ function kompaktansicht() {
 }
 
 function render() {
+  if (a3d?.gefangen?.()) { z.renderOffen = true; return; } // ein Canvas mit Pointer Lock darf nicht aus dem DOM: nachholen, sobald der Lock frei ist
   const aktiv = document.activeElement?.id === 'name';
   let html = kopf() + live.leiste(z.liveOffen, z.einladung) + (z.idFrage ? idFragePanel() : '') + (z.umbau && z.daten ? umbauPanel() : '');
   if (z.status) html += rechnet();
@@ -892,6 +898,7 @@ function render() {
   if (z.seite === 'eingabe') { const f = z.fokus && document.getElementById(z.fokus); if (f) { f.focus(); if (z.fokusPos != null) f.setSelectionRange(z.fokusPos, z.fokusPos); } }
   if (aktiv) { const n = document.getElementById('name'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
   if (z.daten && !z.status && z.modus !== 'kompakt' && z.ansicht === '3d') aktualisiere3d(true);
+  else a3d?.ruhe(); // 3D verlassen: Tasten leeren, Maus freigeben, Listener entfernen
   if (z.daten && !z.status && !(z.modus !== 'kompakt' && z.ansicht === '3d')) {
     const l = $app.querySelector('canvas');
     if (l) { requestAnimationFrame(() => { zeichne(l, abschnitt(), schicht(), z.modus === 'kompakt'); }); l.addEventListener('mousemove', hinweisUnterMaus); if (z.modus !== 'kompakt') { l.addEventListener('click', zelleKlick); l.style.cursor = 'crosshair'; } }
@@ -912,12 +919,17 @@ function sichtParameter() {
 }
 /** Hängt die 3D-Zeichnung in die Seite und baut das Netz neu, wenn sich Sicht, Auswahl oder Fortschritt geändert haben. */
 function aktualisiere3d(einhaengen) {
-  a3d ??= erzeugeAnsicht3d();
+  a3d ??= erzeugeAnsicht3d({
+    beiModus: (m) => { z.flug = m === 'freiflug'; render(); }, // Taste O in der Ansicht
+    beiFrei: () => { if (z.renderOffen) { z.renderOffen = false; render(); } }, // auch nach Taste O (exitPointerLock ist asynchron)
+    beiHinweis: (text) => { z.flugHinweis = text; const e = document.getElementById('s3-flug-info'); if (e) e.textContent = text; },
+  });
   if (Tex.T.atlas && a3d.verfuegbar && a3d.atlasVon !== Tex.T.atlas) { a3d.setzeAtlas(Tex.T.canvas); a3d.atlasVon = Tex.T.atlas; }
   const platz = $app.querySelector('.leinwand.drei');
   if (!platz) return;
   if (!a3d.verfuegbar) { platz.textContent = 'Dein Browser kann kein WebGL2. Bitte Chrome, Edge oder Firefox in einer aktuellen Version benutzen.'; return; }
   if (einhaengen) platz.append(a3d.canvas);
+  a3d.setzeModus(z.flug ? 'freiflug' : 'orbit'); // der Modus gehört z; die Kamera bleibt bei Sicht-Änderungen erhalten
   a3d.groesse(); // erst die Größe, dann einpassen: das Seitenverhältnis muss stimmen
   const signatur = JSON.stringify([!!Tex.T.atlas, z.spec?.freigabe?.abdruck, z.a, z.s, z.sicht, z.fortschritt.uhr, Object.keys(z.fortschritt.eintraege).length]);
   const neuesProjekt = a3d.projekt !== z.daten;
@@ -1044,6 +1056,7 @@ async function aktion(name, el) {
     }
     else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }
     else if (name === 'einpassen') { a3d?.einpassen(); }
+    else if (name === 'flug') { z.flug = d.k === 'freiflug'; if (!z.flug) z.flugHinweis = ''; render(); }
     else if (name === 'bisAktuelle') { z.sicht.maxY = schicht().y; render(); }
     else if (name === 'zurueck') { schrittSchicht(-1); render(); }
     else if (name === 'vor') { schrittSchicht(1); render(); }
@@ -1066,6 +1079,7 @@ async function aktion(name, el) {
 function klick(ev) { const el = ev.target.closest('[data-a]'); if (el) { ev.preventDefault(); aktion(el.dataset.a, el); } }
 function taste(ev) {
   if (!z.daten || ev.target.matches?.('input, textarea')) return;
+  if (z.flug && z.ansicht === '3d' && z.modus !== 'kompakt' && (ev.key === ' ' || document.pointerLockElement)) return; // Freiflug: Leertaste = hoch, bei gefangener Maus nur die Flugtasten
   if (ev.key === 'ArrowRight') { schrittSchicht(1); render(); } else if (ev.key === 'ArrowLeft') { schrittSchicht(-1); render(); }
   else if (ev.key === ' ') { ev.preventDefault(); schichtUmschalten(); render(); } else if (ev.key.toLowerCase() === 'm') aktion('modus');
   else return;

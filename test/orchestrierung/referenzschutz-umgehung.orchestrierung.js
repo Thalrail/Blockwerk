@@ -16,6 +16,8 @@ const GESPERRT = [
   'git tag -i v1', 'git tag --sort=refname v1', 'git tag --format=x v1',
   // mit tatsächlich angegebenem Namen bleibt es gesperrt, auch mit Formatangabe und in eingebetteten Skripten
   'git branch --format="%(refname:short)" neu', 'git tag --format=x v1', "node -e \"require('child_process').execSync('git branch x')\"", 'echo "git tag x"',
+  // eingebettete Aufrufe in Array-Schreibweise (Node, Python)
+  "node -e \"require('child_process').execFileSync('git',['branch','x'])\"", 'node -e \'spawnSync("git",["tag","v1"])\'', "python -c \"subprocess.run(['git', 'branch', 'x'])\"", "execFileSync('git', ['fetch'])",
   // Shell-Escapes im Unterbefehl
   'git br\\anch x', 'git br`anch x', 'git "branch" x', "git 'tag' x",
   // Aufrufe, die den Branch des Hauptrepositorys bewegen
@@ -30,6 +32,7 @@ const ERLAUBT = [
   // Formatangaben mit Klammern und Anführungszeichen sind keine Namen (Fehlalarm im Codex-Review, 15.11.2026)
   'git branch --format="%(refname:short)"', "git tag --format='%(refname:short)'", 'git for-each-ref --format="%(refname)" refs/heads', 'git log --format="%h %s" -3',
   'git branch --sort=-committerdate', 'git tag --sort=-creatordate', 'git branch --list "claude/*" --format="%(refname:short)"',
+  "node -e \"execFileSync('git',['log','--oneline'])\"",
   'git ls-files --others', 'git check-ignore -v x', 'git status --porcelain', 'git worktree list', 'git for-each-ref refs/heads',
 ];
 

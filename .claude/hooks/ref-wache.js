@@ -60,7 +60,8 @@ export function gitAufrufe(roh) {
   }
   for (const m of String(cmd).matchAll(/\bgit(?:\.exe)?\b/gi)) {
     const rest = String(cmd).slice(m.index + m[0].length).split(/[;|&\n]/)[0].slice(0, 400);
-    const a = nachGit(rest.split(/\s+/).map(raender).filter(Boolean), 0); // nur an Leerzeichen trennen: --format="%(refname:short)" bleibt ein Wort
+    const lose = rest.replace(/['"]\s*,\s*\[?\s*['"]/g, ' '); // Array-Schreibweise eingebetteter Aufrufe: execFileSync('git',['branch','x']) → git branch x
+    const a = nachGit(lose.split(/\s+/).map(raender).filter(Boolean), 0); // nur an Leerzeichen trennen: --format="%(refname:short)" bleibt ein Wort
     if (a) l.push(a);
   }
   return [...new Map(l.map((a) => [`${a.sub}\0${a.args.join('\0')}`, a])).values()]; // beide Wege liefern oft denselben Aufruf

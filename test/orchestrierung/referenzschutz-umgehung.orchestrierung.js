@@ -11,6 +11,9 @@ const GESPERRT = [
   'git symbolic-ref -qd refs/remotes/origin/HEAD',
   // eindeutige Kurzformen langer Optionen (git akzeptiert --creat für --create)
   'git switch --creat neu', 'git checkout --orph x', 'git branch --dele x', 'git branch --delet x', 'git tag --delet x', 'git branch --set-upstream-to=origin/main', 'git branch --set-upstream x',
+  // Optionen, die nur die Darstellung ändern, machen aus einem Namen keine Suche: git branch -i neu legt den Branch neu an
+  'git branch -i neu', 'git branch --ignore-case neu', 'git branch --sort=-committerdate neu', 'git branch --color neu', 'git branch --column neu', 'git branch --format=x neu',
+  'git tag -i v1', 'git tag --sort=refname v1', 'git tag --format=x v1',
   // Shell-Escapes im Unterbefehl
   'git br\\anch x', 'git br`anch x', 'git "branch" x', "git 'tag' x",
   // Aufrufe, die den Branch des Hauptrepositorys bewegen

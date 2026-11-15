@@ -64,26 +64,27 @@ export function gitAufrufe(roh) {
   return [...new Map(l.map((a) => [`${a.sub}\0${a.args.join('\0')}`, a])).values()]; // beide Wege liefern oft denselben Aufruf
 }
 
-const hat = (args, menge) => args.some((a) => { const o = a.split('=')[0]; return menge.has(a) || menge.has(o) || (o.startsWith('--') && o.length >= 4 && [...menge].some((m) => m.startsWith('--') && m.startsWith(o))); }); // auch eindeutige Kurzformen langer Optionen (--creat)
+const hat = (args, menge, praefix = false) => args.some((a) => { const o = a.split('=')[0]; return menge.has(a) || menge.has(o) || (praefix && o.startsWith('--') && o.length >= 4 && [...menge].some((m) => m.startsWith('--') && m.startsWith(o))); }); // eindeutige Kurzformen langer Optionen (--creat) zählen nur bei ändernden Optionen (praefix)
 const positional = (args) => args.filter((a) => !a.startsWith('-'));
 /** Kurzoptionen können gebündelt und mit angehängtem Wert vorkommen (-cname, -bname, -fb): enthält eines der Kurz-Bündel (-x…, nicht --lang) einen der Buchstaben? */
 const kurz = (args, buchstaben) => args.some((a) => /^-[^-]/.test(a) && [...a.slice(1)].some((ch) => buchstaben.includes(ch)));
-const ANZEIGE_BRANCH = new Set(['-l', '--list', '-a', '--all', '-r', '--remotes', '-v', '-vv', '--verbose', '--show-current', '--contains', '--no-contains', '--merged', '--no-merged', '--points-at', '--sort', '--format', '--column', '--no-column', '--color', '--no-color', '-i', '--ignore-case']);
+// nur Optionen, die git sicher in den Listenmodus bringen; -i, --sort, --format, --color, --column ändern nur die Darstellung (git branch -i neu legt einen Branch an)
+const ANZEIGE_BRANCH = new Set(['-l', '--list', '-a', '--all', '-r', '--remotes', '-v', '-vv', '--verbose', '--show-current', '--contains', '--no-contains', '--merged', '--no-merged', '--points-at']);
 const AENDERN_BRANCH = new Set(['-d', '-D', '--delete', '-m', '-M', '--move', '-c', '-C', '--copy', '-f', '--force', '-u', '--set-upstream-to', '--unset-upstream', '-t', '--track', '--no-track', '--edit-description', '--create-reflog']);
-const ANZEIGE_TAG = new Set(['-l', '--list', '-n', '--contains', '--no-contains', '--points-at', '--merged', '--no-merged', '-v', '--verify', '--sort', '--format', '--column', '--no-column', '-i', '--ignore-case']);
+const ANZEIGE_TAG = new Set(['-l', '--list', '-n', '--contains', '--no-contains', '--points-at', '--merged', '--no-merged', '-v', '--verify']);
 const AENDERN_TAG = new Set(['-d', '--delete', '-f', '--force', '-a', '--annotate', '-s', '--sign', '-u', '--local-user', '-m', '--message', '-F', '--file']);
 
 /** Gibt den Grund zurück, wenn der Git-Aufruf Referenzen oder die Verwaltungsdaten des Hauptrepositorys schreiben würde, sonst null. */
 export function schreibtReferenzen({ sub, args }) {
   switch (sub) {
-    case 'branch': return hat(args, AENDERN_BRANCH) || kurz(args, 'dDmMcCfutT') || (!hat(args, ANZEIGE_BRANCH) && !kurz(args, 'larvi') && positional(args).length > 0) ? 'ein Branch wird angelegt, umbenannt oder gelöscht' : null;
-    case 'tag': return hat(args, AENDERN_TAG) || kurz(args, 'dfasumF') || (!hat(args, ANZEIGE_TAG) && !kurz(args, 'lnvi') && positional(args).length > 0) ? 'ein Tag wird angelegt oder gelöscht' : null;
+    case 'branch': return hat(args, AENDERN_BRANCH, true) || kurz(args, 'dDmMcCfutT') || (!hat(args, ANZEIGE_BRANCH) && !kurz(args, 'larv') && positional(args).length > 0) ? 'ein Branch wird angelegt, umbenannt oder gelöscht' : null;
+    case 'tag': return hat(args, AENDERN_TAG, true) || kurz(args, 'dfasumF') || (!hat(args, ANZEIGE_TAG) && !kurz(args, 'lnv') && positional(args).length > 0) ? 'ein Tag wird angelegt oder gelöscht' : null;
     case 'update-ref': return 'update-ref ändert Referenzen unmittelbar';
     case 'symbolic-ref': return args.includes('-d') || args.includes('--delete') || kurz(args, 'd') || positional(args).length >= 2 ? 'symbolic-ref ändert eine symbolische Referenz' : null;
     case 'fetch': case 'pull': return `${sub} ändert die Remote-Tracking-Referenzen`;
     case 'remote': return positional(args).length && !['show', 'get-url'].includes(positional(args)[0]) ? 'remote ändert Remotes oder Remote-Tracking-Referenzen' : null;
-    case 'switch': return hat(args, new Set(['-c', '-C', '--create', '--force-create', '--orphan'])) || kurz(args, 'cC') ? 'switch legt einen Branch an' : null;
-    case 'checkout': return hat(args, new Set(['-b', '-B', '--orphan', '--track'])) || kurz(args, 'bBt') ? 'checkout legt einen Branch an' : null;
+    case 'switch': return hat(args, new Set(['-c', '-C', '--create', '--force-create', '--orphan']), true) || kurz(args, 'cC') ? 'switch legt einen Branch an' : null;
+    case 'checkout': return hat(args, new Set(['-b', '-B', '--orphan', '--track']), true) || kurz(args, 'bBt') ? 'checkout legt einen Branch an' : null;
     case 'worktree': return positional(args)[0] === 'add' && !args.includes('--detach') ? 'worktree add legt einen Branch an' : (args.includes('-b') || args.includes('-B') || kurz(args, 'bB') ? 'worktree legt einen Branch an' : null);
     case 'commit': case 'merge': case 'cherry-pick': case 'revert': case 'am': return `${sub} bewegt den Branch (die Referenz) des Hauptrepositorys`;
     case 'replace': case 'notes': return `${sub} schreibt Referenzen`;

@@ -14,6 +14,8 @@ const GESPERRT = [
   // Optionen, die nur die Darstellung ändern, machen aus einem Namen keine Suche: git branch -i neu legt den Branch neu an
   'git branch -i neu', 'git branch --ignore-case neu', 'git branch --sort=-committerdate neu', 'git branch --color neu', 'git branch --column neu', 'git branch --format=x neu',
   'git tag -i v1', 'git tag --sort=refname v1', 'git tag --format=x v1',
+  // mit tatsächlich angegebenem Namen bleibt es gesperrt, auch mit Formatangabe und in eingebetteten Skripten
+  'git branch --format="%(refname:short)" neu', 'git tag --format=x v1', "node -e \"require('child_process').execSync('git branch x')\"", 'echo "git tag x"',
   // Shell-Escapes im Unterbefehl
   'git br\\anch x', 'git br`anch x', 'git "branch" x', "git 'tag' x",
   // Aufrufe, die den Branch des Hauptrepositorys bewegen
@@ -25,6 +27,9 @@ const ERLAUBT = [
   'git \\\n  status', 'git `\n log --oneline -3',
   'git tag -n5 v1', 'git tag -l -n3 "v*"', 'git branch -av main', 'git branch -vv --contains abc', 'git branch --list "claude/*"', 'git branch --no-contains abc', 'git branch --show-current',
   'git symbolic-ref -q refs/remotes/origin/HEAD', 'git symbolic-ref HEAD', 'git show-ref', 'git rev-parse --abbrev-ref HEAD', 'git log --all --oneline', 'git diff --check', 'git diff --stat origin/main',
+  // Formatangaben mit Klammern und Anführungszeichen sind keine Namen (Fehlalarm im Codex-Review, 15.11.2026)
+  'git branch --format="%(refname:short)"', "git tag --format='%(refname:short)'", 'git for-each-ref --format="%(refname)" refs/heads', 'git log --format="%h %s" -3',
+  'git branch --sort=-committerdate', 'git tag --sort=-creatordate', 'git branch --list "claude/*" --format="%(refname:short)"',
   'git ls-files --others', 'git check-ignore -v x', 'git status --porcelain', 'git worktree list', 'git for-each-ref refs/heads',
 ];
 

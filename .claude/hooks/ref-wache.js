@@ -33,6 +33,8 @@ export function saetze(cmd) {
   return s;
 }
 
+/** Entfernt Anführungszeichen, Klammern und Kommas an den Rändern eines Worts (eingebettete Skripte: execSync('git branch x') → x), nie in der Mitte. */
+const raender = (w) => w.replace(/^[\s'"`(),[\]]+|[\s'"`(),[\]]+$/g, '');
 const IST_GIT = /(^|[\\/])git(\.exe)?$/i;
 /** Unterbefehl und Argumente ab dem Wort nach `git` (Optionen mit Wert wie -C <Pfad> werden übersprungen) oder null. */
 const entschaerfe = (w) => w.replace(/[\\`](?=[A-Za-z-])/g, ''); // git br\anch → git branch (Bash), git br`anch (PowerShell); Pfade sind hier nie das Ziel
@@ -58,7 +60,7 @@ export function gitAufrufe(roh) {
   }
   for (const m of String(cmd).matchAll(/\bgit(?:\.exe)?\b/gi)) {
     const rest = String(cmd).slice(m.index + m[0].length).split(/[;|&\n]/)[0].slice(0, 400);
-    const a = nachGit(rest.split(/[\s'"`(),[\]]+/).filter(Boolean), 0);
+    const a = nachGit(rest.split(/\s+/).map(raender).filter(Boolean), 0); // nur an Leerzeichen trennen: --format="%(refname:short)" bleibt ein Wort
     if (a) l.push(a);
   }
   return [...new Map(l.map((a) => [`${a.sub}\0${a.args.join('\0')}`, a])).values()]; // beide Wege liefern oft denselben Aufruf

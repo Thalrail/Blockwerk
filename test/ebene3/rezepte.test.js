@@ -151,13 +151,19 @@ test('Höhenverteilung: ein Restglied mit kleinem Gewicht bekommt trotz Rundung 
     p.glieder.find((g) => g.id === 'schaft-oben').hoehe = { rest: 1 };
   });
   const r = lade().wendeRezeptAn('turm', { breite: 9, tiefe: 9, hoehe: 8 });
-  const hoehen = Object.fromEntries(r.teile.map((t) => [t.glied, t.parameter.hoehe]));
-  assert.equal(hoehen['schaft-unten'] + hoehen['schaft-oben'] >= 2, true);
-  assert.ok(hoehen['schaft-oben'] >= 1 && hoehen['schaft-unten'] >= 1, JSON.stringify(hoehen));
+  const hoehen = Object.fromEntries(r.teile.map((t) => [t.glied, huelle(t).h]));
+  assert.deepEqual([hoehen['schaft-unten'], hoehen['schaft-oben']], [1, 1], JSON.stringify(hoehen)); // keine Schicht geht verloren oder kommt dazu
+  assert.equal(r.teile.reduce((s, g) => s + huelle(g).h, 0), 8);
 });
 test('Prüfer: eine unsinnige Breite (Objekt ohne toString) ergibt eine Rückfrage statt eines Absturzes', () => {
   const s = spec((t) => { t.form.groesse = { breite: { toString: null }, tiefe: 13, hoehe: 34 }; });
   let q;
   assert.doesNotThrow(() => { q = L.pruefe(s).rueckfragen.map((x) => x.pfad); });
   assert.ok(q.some((p) => p.endsWith('form.groesse.breite')), JSON.stringify(q));
+});
+test('Prüfer: ein Baustein ohne toString neben dem Rezept ergibt eine Rückfrage statt eines Absturzes', () => {
+  const s = spec((t) => { t.form.baustein = { toString: null }; });
+  let q;
+  assert.doesNotThrow(() => { q = L.pruefe(s).rueckfragen.map((x) => x.pfad); });
+  assert.ok(q.includes('teile[0].form.baustein'), JSON.stringify(q));
 });

@@ -30,11 +30,18 @@ const GESPERRT = [
   'git checkout -b neu', 'git checkout -B neu', 'git worktree add ../x', 'git worktree add -b x ../x', 'git replace a b', 'git notes add -m x',
   'git status && git branch zwischenstand', 'cd repo; git tag marke', 'git -C /pfad branch neu', 'git.exe fetch --all', `node -e "require('child_process').execSync('git branch x')"`,
   'echo ok | git update-ref refs/x HEAD',
+  // Codex-Befunde (15.11.2026): angehängte und gebündelte Kurzoptionen, Pfade mit Leerzeichen in Anführungszeichen, git.exe mit Pfad, PowerShell-Aufrufoperator
+  'git switch -cbackup', 'git switch -Cbackup', 'git checkout -bbackup', 'git checkout -Bbackup', 'git checkout -fb x', 'git checkout -t origin/x', 'git checkout --track origin/x',
+  'git branch -Dbackup', 'git branch -fbackup HEAD', 'git branch -mneu', 'git tag -ax -m y', 'git worktree add -bnew ../w',
+  'git -C "C:/Users/Jonah/My Project" branch backup', "git -C 'C:/Users/Jonah/My Project' tag x", 'git --git-dir="C:/a b/.git" tag x', 'git --work-tree "C:/a b" fetch',
+  '& git -C \'C:\\My Dir\' fetch', '& "C:\\Program Files\\Git\\bin\\git.exe" branch x', 'C:\\Git\\git.exe branch y', 'cd "C:/a b"; git switch -cneu',
 ];
 const ERLAUBT = [
   'git status', 'git status --short', 'git diff', 'git diff --stat', 'git log --oneline -5', 'git show HEAD', 'git branch', 'git branch --list', 'git branch --list claude/*', 'git branch -a', 'git branch -r',
   'git branch -vv', 'git branch --show-current', 'git branch --contains abc123', 'git tag', 'git tag -l', 'git tag --list v*', 'git remote', 'git remote -v', 'git remote get-url origin',
   'git symbolic-ref HEAD', 'git switch main', 'git checkout -- datei', 'git worktree list', 'git rev-parse HEAD', 'git for-each-ref', 'git cat-file -t abc', 'git ls-files',
+  'git -C "C:/Users/Jonah/My Project" status', 'git -C "C:/a b" log --oneline', 'git --git-dir="C:/a b/.git" branch --list', '& git status', '& "C:\\Program Files\\Git\\bin\\git.exe" log -1',
+  'git branch -av', 'git branch --list -i x', 'git tag -n5', 'git checkout -- datei', 'git checkout -f', 'git tag --sort=-creatordate',
   'node tools/orchestrierung/cli.js status', 'node tools/orchestrierung/cli.js ende --verwerfen', 'npm run test:kurz', 'cat .gitignore', 'ls -la',
 ];
 

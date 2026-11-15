@@ -81,4 +81,7 @@ test('Im Lauf: eine neue Referenz im Hauptrepository sperrt die Übernahme und d
   assert.equal(u.grund, 'integritaet');
   assert.ok(u.verstoss.includes('haupt:refs') && u.verstoss.includes('haupt:refs:+refs/heads/claude/zwischenstand-versehen'), u.verstoss.join());
   assert.match(u.hinweis, /gesperrt/);
+  // der Lauf bleibt gesperrt: auch ein zweiter Versuch (und damit jede weitere Übernahme) wird abgelehnt
+  assert.equal(lauf.uebernehmen(repo, { freigabePruefen: false }).grund, 'gesperrt');
+  assert.ok(lauf.sperrGrund(repo, lauf.lies(repo)), 'die Sperre ist im Laufzustand vermerkt');
 });

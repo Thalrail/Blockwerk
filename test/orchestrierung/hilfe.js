@@ -24,6 +24,8 @@ export function vorlage({ autocrlf = false } = {}) {
   fs.mkdirSync(dir, { recursive: true });
   const g = (...a) => git(dir, a);
   g('init', '-q', '-b', 'main'); g('config', 'user.name', 't'); g('config', 'user.email', 't@t'); g('config', 'core.autocrlf', String(autocrlf)); g('config', 'core.filemode', 'false');
+  // die globale Ignore-Datei des Benutzers (z. B. **/.claude/settings.local.json) darf die Testergebnisse nicht beeinflussen: nur dieses Repository, keine globale Einstellung
+  fs.writeFileSync(path.join(WURZEL, 'leer-ignore'), ''); g('config', 'core.excludesFile', path.join(WURZEL, 'leer-ignore'));
   w(dir, 'package.json', `${JSON.stringify({ name: 'x', type: 'module', engines: { node: '>=22' }, scripts: { test: 'echo' } }, null, 2)}\n`);
   w(dir, '.gitignore', 'ignoriert/\n*.log\n.claude/worktrees/\n.claude/orchestrierung/\n');
   w(dir, '.claude/launch.json', '{"version":"0.0.1"}\n');

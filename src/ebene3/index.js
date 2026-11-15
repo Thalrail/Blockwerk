@@ -36,6 +36,7 @@ export { erzeugeAblauf, AblaufFehler } from './ablauf.js';
 export { erzeugeUebersetzung } from './uebersetzung.js';
 export { erzeugeRezepte, RezeptFehler } from './rezepte.js';
 export { messeGestaltung, bloeckeAusEntwurf, OEFFNUNGS_TEILE } from './gestaltung.js';
+export { messeAufbau } from './aufbau.js';
 
 /**
  * @param {{ebene0: object, ebene1: object, ebene2: object, regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen

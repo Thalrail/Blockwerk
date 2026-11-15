@@ -27,6 +27,8 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
     if (!ID.test(name)) f('der Name darf nur aus Kleinbuchstaben, Ziffern und Bindestrichen bestehen');
     if (!OBJEKT(d?.mindest) || !['breite', 'tiefe', 'hoehe'].every((k) => ganz(d.mindest[k]) && d.mindest[k] >= 1)) f('mindest braucht ganze breite, tiefe, hoehe ab 1');
     if (d.mindest.hoeheZuBreite !== undefined && !(Number.isFinite(d.mindest.hoeheZuBreite) && d.mindest.hoeheZuBreite > 0)) f('mindest.hoeheZuBreite muss eine Zahl über 0 sein');
+    // Nur 0 oder 1: verdickt wird nur die Wand eines Glieds, eine zweiblockbreite Auflage wäre bei dünner Wand des anderen Glieds nicht garantiert.
+    if (d.auflage !== undefined && d.auflage !== 0 && d.auflage !== 1) f('auflage muss 0 oder 1 sein');
     if (!Array.isArray(d.glieder) || !d.glieder.length) f('glieder fehlt');
     const ids = new Set();
     for (const g of d.glieder) {
@@ -129,11 +131,12 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
     if (Math.max(...b) !== B || Math.max(...t) !== T) throw new RezeptFehler(`„${name}“: kein Glied füllt die Außenmaße ${B} × ${T}`);
     const h = hoehen(name, d, b, H);
     // Stufen schließen: wo sich der Einzug zwischen zwei Gliedern ändert, muss die Wand des tragenden (Verjüngung) oder des auskragenden Glieds (Auskragung) mindestens so dick sein wie der Unterschied
+    // plus die Auflage (Rezeptdatum `auflage`, Standard 0): mit 1 liegt das obere Glied auf dem Ring des unteren auf, statt nur an dessen Innenkante zu hängen
     const wand = d.glieder.map((g) => g.wandstaerke);
     for (let i = 1; i < d.glieder.length; i++) {
       const dx = ex[i] - ex[i - 1], dz = ez[i] - ez[i - 1], diff = Math.max(Math.abs(dx), Math.abs(dz));
       const traeger = dx + dz > 0 ? i - 1 : i; // oben schmaler: das untere Glied trägt; oben breiter: das obere kragt aus
-      wand[traeger] = Math.max(wand[traeger], diff);
+      wand[traeger] = Math.max(wand[traeger], diff + (d.auflage ?? 0));
     }
     let y = 0;
     const teile = d.glieder.map((g, i) => {

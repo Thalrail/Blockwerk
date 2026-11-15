@@ -21,6 +21,7 @@ Ein Turm (`form.zylinder` 13 × 13 × 34, Stimmung „hell-nordisch“) besteht 
 | T1 Tauri-Machbarkeitstest | Hülle in `desktop/`, vorhandene Seite unverändert, Installer per GitHub Actions; Entscheidung erst nach Installation auf Jonahs PC | Handtest durch Jonah |
 | R1 Freiflug-Kamera | Zweiter Kameramodus, Pointer Lock, WASD, Schalter Orbit/Freiflug; rein berechnete Kamera in `kamera.js` | Kameratests, Handtest |
 | D2 Bausteinrezepte (nach D1) | Rezeptsystem (siehe unten), erstes Rezept Turm | Metriken von D1, Regressionstest bestehender Bauwerke. **Umgesetzt** (15.11.2026, Status `entworfen`, Spieltest offen): Kern D2.1, Nachweis D2.2, Doku `docs/architektur-rezepte.md` |
+| Paket 1a Turm-Aufbau (nach D2) | Messgröße `messeAufbau` (Teil 1) und Turm-Rezept baubar: Dach-Anbindung erledigt (Kegelwand 2, höheres Dach, Auflage 1), 0 Hilfspunkte in acht Größen | `rezepte-aufbau.test.js`. **Umgesetzt** (Status `entworfen`, Spieltest offen) |
 | G0 Weltimport: Untersuchung | Format, Zugang, Machbarkeit in reinem JS (siehe unten), Ergebnis als Bericht und Prototyp-Spike | Bericht |
 
 ## Phase 2: Fundament

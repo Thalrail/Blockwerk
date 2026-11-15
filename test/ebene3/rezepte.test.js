@@ -26,14 +26,15 @@ test('Rezept turm: Höhen summieren sich zur Gesamthöhe, Glieder stapeln lücke
   }
 });
 
-test('Rezept turm: Stufen schließen (Wand des tragenden oder auskragenden Glieds mindestens so dick wie der Einzugsunterschied)', () => {
+test('Rezept turm: Stufen schließen (Wand des tragenden oder auskragenden Glieds mindestens Einzugsunterschied plus Auflage)', () => {
+  const auflage = R.rezept('turm').auflage ?? 0;
   for (const [B, T, H] of [[13, 13, 34], [45, 45, 60], [21, 9, 40], [32, 32, 32], [9, 9, 16]]) {
     const g = R.wendeRezeptAn('turm', { breite: B, tiefe: T, hoehe: H }).teile;
     for (let i = 1; i < g.length; i++) {
       const a = huelle(g[i - 1]), b = huelle(g[i]);
       const diff = Math.max(Math.abs(a.b - b.b), Math.abs(a.t - b.t)) / 2;
       const traeger = a.b + a.t > b.b + b.t ? g[i - 1] : g[i]; // oben schmaler: unten trägt; oben breiter: oben kragt aus
-      assert.ok(traeger.parameter.wandstaerke >= diff, `${B}×${T}×${H}: Stufe ${g[i].glied} (Wand ${traeger.parameter.wandstaerke} < Einzug ${diff})`);
+      assert.ok(traeger.parameter.wandstaerke >= diff + auflage, `${B}×${T}×${H}: Stufe ${g[i].glied} (Wand ${traeger.parameter.wandstaerke} < Einzug ${diff} + Auflage ${auflage})`);
     }
   }
 });
@@ -75,6 +76,8 @@ const mitRezept = (aendere) => {
 };
 test('Rezeptdaten: gültige laden, kaputte werfen RezeptFehler beim Laden', () => {
   assert.doesNotThrow(mitRezept(() => {}));
+  for (const a of [0, 1]) assert.doesNotThrow(mitRezept((p) => { p.auflage = a; }), `Auflage ${a}`);
+  assert.throws(mitRezept((p) => { p.auflage = 2; }), (f) => f instanceof RezeptFehler && /0 oder 1/.test(f.message));
   const kaputt = {
     'mindest fehlt': (p) => { delete p.mindest; },
     'mindest ohne hoehe': (p) => { delete p.mindest.hoehe; },
@@ -84,6 +87,9 @@ test('Rezeptdaten: gültige laden, kaputte werfen RezeptFehler beim Laden', () =
     'Baustein keine Form': (p) => { p.glieder[0].baustein = 'bau.raum'; },
     'Einzug zu groß': (p) => { p.glieder[1].einzug.anteil = 0.5; },
     'Einzug ohne min': (p) => { delete p.glieder[1].einzug.min; },
+    'Auflage negativ': (p) => { p.auflage = -1; },
+    'Auflage nicht ganz': (p) => { p.auflage = 0.5; },
+    'Auflage 2': (p) => { p.auflage = 2; },
     'Wandstärke negativ': (p) => { p.glieder[1].wandstaerke = -1; },
     'Höhe ohne Art': (p) => { p.glieder[0].hoehe = { min: 1 }; },
     'Höhe mit zwei Arten': (p) => { p.glieder[0].hoehe = { anteil: 0.1, rest: 2 }; },
@@ -149,6 +155,7 @@ test('Höhenverteilung: ein Restglied mit kleinem Gewicht bekommt trotz Rundung 
     p.mindest = { breite: 9, tiefe: 9, hoehe: 8 };
     p.glieder.find((g) => g.id === 'schaft-unten').hoehe = { rest: 9 };
     p.glieder.find((g) => g.id === 'schaft-oben').hoehe = { rest: 1 };
+    p.glieder.find((g) => g.id === 'dach').hoehe = { zuBreite: 0.4, min: 3, maxAnteil: 0.3 }; // niedriges Dach wie früher, damit bei Höhe 8 genau zwei Schichten für den Rest bleiben
   });
   const r = lade().wendeRezeptAn('turm', { breite: 9, tiefe: 9, hoehe: 8 });
   const hoehen = Object.fromEntries(r.teile.map((t) => [t.glied, huelle(t).h]));
@@ -166,4 +173,12 @@ test('Prüfer: ein Baustein ohne toString neben dem Rezept ergibt eine Rückfrag
   let q;
   assert.doesNotThrow(() => { q = L.pruefe(s).rueckfragen.map((x) => x.pfad); });
   assert.ok(q.includes('teile[0].form.baustein'), JSON.stringify(q));
+});
+
+test('Auflage: das tragende Glied wird um die Auflage dicker (Mutationsprobe: ohne Auflage genau um diesen Betrag dünner)', () => {
+  const wand = (auflage) => Object.fromEntries(mitRezept((p) => { p.auflage = auflage; })().wendeRezeptAn('turm', { breite: 45, tiefe: 45, hoehe: 80 }).teile.map((t) => [t.glied, t.parameter.wandstaerke]));
+  const ohne = wand(0), mit = wand(1);
+  assert.equal(mit.sockel, ohne.sockel + 1);
+  assert.equal(mit.dach, ohne.dach + 1);
+  assert.ok(Object.keys(ohne).every((g) => mit[g] >= ohne[g]));
 });

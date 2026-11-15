@@ -142,3 +142,22 @@ test('Leser sieht nur Name und Mindestmaße des Rezepts, nie die Schritte; Schem
   assert.doesNotMatch(prompt, /schaft-unten|schaft-oben|\bglieder\b/);
   assert.match(prompt, /Höhe mindestens 1 × die größere Breite/); // Bedingung des Prüfers steht im Briefing
 });
+
+// Korrekturen nach dem Codex-Review (15.11.2026)
+test('Höhenverteilung: ein Restglied mit kleinem Gewicht bekommt trotz Rundung mindestens eine Schicht, wenn der Platz reicht (9 : 1 bei zwei freien Schichten ergibt 1 : 1)', () => {
+  const lade = mitRezept((p) => {
+    p.mindest = { breite: 9, tiefe: 9, hoehe: 8 };
+    p.glieder.find((g) => g.id === 'schaft-unten').hoehe = { rest: 9 };
+    p.glieder.find((g) => g.id === 'schaft-oben').hoehe = { rest: 1 };
+  });
+  const r = lade().wendeRezeptAn('turm', { breite: 9, tiefe: 9, hoehe: 8 });
+  const hoehen = Object.fromEntries(r.teile.map((t) => [t.glied, t.parameter.hoehe]));
+  assert.equal(hoehen['schaft-unten'] + hoehen['schaft-oben'] >= 2, true);
+  assert.ok(hoehen['schaft-oben'] >= 1 && hoehen['schaft-unten'] >= 1, JSON.stringify(hoehen));
+});
+test('Prüfer: eine unsinnige Breite (Objekt ohne toString) ergibt eine Rückfrage statt eines Absturzes', () => {
+  const s = spec((t) => { t.form.groesse = { breite: { toString: null }, tiefe: 13, hoehe: 34 }; });
+  let q;
+  assert.doesNotThrow(() => { q = L.pruefe(s).rueckfragen.map((x) => x.pfad); });
+  assert.ok(q.some((p) => p.endsWith('form.groesse.breite')), JSON.stringify(q));
+});

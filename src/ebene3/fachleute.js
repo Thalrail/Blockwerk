@@ -175,7 +175,7 @@ export function erzeugeFachleute({ regelwerk, pruefePalette = () => {} }) {
         if (!funktionen.includes(w.zone)) throw new RechtFehler('ungueltig', `Formwunsch: Zone „${String(w.zone)}“ unbekannt (${funktionen.join(', ')})`);
         if (!anker.includes(w.anker ?? 'mitte')) throw new RechtFehler('ungueltig', `Formwunsch: Anker „${String(w.anker)}“ unbekannt (${anker.join(', ')})`);
         if (w.versatz !== undefined && !(w.versatz !== null && typeof w.versatz === 'object' && ['x', 'y', 'z'].every((k) => w.versatz[k] === undefined || Number.isSafeInteger(w.versatz[k])))) throw new RechtFehler('ungueltig', 'Formwunsch: versatz braucht ganze Zahlen x, y, z');
-        if (w.rollen !== undefined && !(w.rollen !== null && typeof w.rollen === 'object' && Object.entries(w.rollen).every(([von, nach]) => rollenNamen.includes(von) && rollenNamen.includes(nach)))) throw new RechtFehler('ungueltig', `Formwunsch: rollen ordnet nur Rollen (${rollenNamen.join(', ')}) einander zu`);
+        if (w.rollen !== undefined && !(w.rollen !== null && typeof w.rollen === 'object' && !Array.isArray(w.rollen) && Object.entries(w.rollen).every(([von, nach]) => rollenNamen.includes(von) && rollenNamen.includes(nach)))) throw new RechtFehler('ungueltig', `Formwunsch: rollen ordnet nur Rollen (${rollenNamen.join(', ')}) einander zu`);
         pruefeDarf(e, fachmann, ziel, feldBesitz.formwuensche);
         e.formwuensche ??= [];
         ersetzeOderFuegeEin(e.formwuensche, { anker: 'mitte', parameter: {}, ...w });

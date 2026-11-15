@@ -80,7 +80,7 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
       const g = f.groesse;
       if (!istObjekt(g)) { frage(`${pf}.form.groesse`, 'leser.schema', `${wer} braucht mit dem Rezept „${t.rezept}“ die Außenmaße als Zuordnung breite, tiefe, hoehe → Zahl.`); return; }
       for (const k of Object.keys(g)) if (!['breite', 'tiefe', 'hoehe'].includes(k)) frage(`${pf}.form.groesse.${k}`, 'leser.schema', `Bei einem Rezept gibt es nur die Außenmaße breite, tiefe, hoehe, nicht „${k}“.`, entfernen('Eintrag weglassen'));
-      const hoeheMin = Math.max(m.hoehe, Math.ceil((m.hoeheZuBreite ?? 0) * Math.max(Number(g.breite) || 0, Number(g.tiefe) || 0)));
+      const hoeheMin = Math.max(m.hoehe, Math.ceil((m.hoeheZuBreite ?? 0) * Math.max(ganz(g.breite) ? g.breite : 0, ganz(g.tiefe) ? g.tiefe : 0)));
       for (const k of ['breite', 'tiefe', 'hoehe']) {
         const min = k === 'hoehe' ? hoeheMin : m[k];
         if (!ganz(g[k]) || g[k] < min) frage(`${pf}.form.groesse.${k}`, 'leser.schema', `${wer}: ${k} = ${JSON.stringify(g[k])} ist beim Rezept „${t.rezept}“ nicht möglich (ganze Zahl ab ${min} Blöcken; Mindestmaß ${m.breite} × ${m.tiefe} × ${m.hoehe}${m.hoeheZuBreite ? `, die Höhe mindestens ${m.hoeheZuBreite} × die größere Breite` : ''}).`);

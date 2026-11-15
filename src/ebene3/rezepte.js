@@ -73,6 +73,13 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
     const teile = rest.map((i) => ({ i, a: Math.floor((uebrig * d.glieder[i].hoehe.rest) / summe), bruch: ((uebrig * d.glieder[i].hoehe.rest) % summe) / summe }));
     let frei = uebrig - teile.reduce((s, t) => s + t.a, 0);
     for (const t of [...teile].sort((p, q) => q.bruch - p.bruch || p.i - q.i)) if (frei > 0) { t.a++; frei--; }
+    // Bekäme ein Restglied keine Schicht, obwohl der Platz für eine je Glied reicht (uebrig >= Anzahl, oben geprüft), geben die Glieder ab, die mehr als eine haben (größte zuerst, bei Gleichstand das untere)
+    for (const t of teile) {
+      while (t.a < 1) {
+        const geber = [...teile].filter((x) => x.a > 1).sort((p, q) => q.a - p.a || p.i - q.i)[0];
+        geber.a--; t.a++;
+      }
+    }
     for (const t of teile) {
       if (t.a < 1) throw new RezeptFehler(`„${name}“ braucht bei der Höhe ${H} mehr Platz: Glied ${d.glieder[t.i].id} bekäme keine Schicht`);
       h[t.i] = t.a;

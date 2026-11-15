@@ -425,3 +425,10 @@ Nur die Anzeige und die Planfassung ändern sich; im Spiel prüfst du, ob der Pl
 (Zusatz zu „Änderungen auflösen“) **Zwei Fenster:** Der Zwei-Browser-Tab-Test ist am 14.11.2026 durchgeführt (Ergebnis in `docs/referenz/stand-ebene5.md` unter „Integrationsprüfung zu U6“); im Spiel selbst bleibt nur die Frage, ob der Plan nach einer Entscheidung stimmt.
 
 (U7, `simuliert`) **Verlauf und Grenzen:** Ändere eine Zelle im Bauplan und wechsle danach die Stimmung im Reiter „Stil“. Im Kopf steht „Spezifikation vN · Änderungen FM“, im Reiter „Baubericht“ steht oben der Fassungsverlauf mit beiden Übergängen. Im Reiter „Status“ zeigt „Grenzen“ die Füllstände; „Link-Größe prüfen“ nennt die Link-Länge. Status `geprüft` setzt nur Jonah.
+
+## Aufbau: Setzen an Flächen und Diagonalen (ungeprüft)
+Hintergrund: Die Messgröße „Aufbau“ (`src/ebene3/aufbau.js`) nimmt konservativ an, dass nur Flächenkontakt zum Setzen genügt. Kreativ-Testwelt, PS5:
+1. **Diagonal:** Setze einen Block frei in die Luft diagonal an die Kante bzw. Ecke eines vorhandenen Blocks (ohne Berührung einer Fläche). Geht das ohne Hilfsblock? Notiere, ob Kante und Ecke gleich wirken.
+2. **Überhang/Brücke:** Setze einen Block seitlich an einen Nachbarn in derselben Schicht, unter dem selbst keine Stütze steht (mehrere Blöcke in Reihe). Geht das auch ohne Block darunter?
+3. **Reichweite und Schleichen:** Kurz prüfen, ob Reichweite oder Schleichen am Rand die Antworten zu 1 und 2 ändern.
+Status bleibt `ungeprüft`, bis Jonah das Ergebnis meldet. Quellen: https://minecraft.wiki/w/Tutorial:Bridging, https://minecraft.wiki/w/Sneaking (Bedrock).

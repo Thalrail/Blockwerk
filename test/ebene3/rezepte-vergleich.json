@@ -38,13 +38,13 @@
     13,
     34
    ],
-   "bloecke": 1421,
+   "bloecke": 1507,
    "materialien": {
     "anzahlVerschieden": 2,
     "haeufigkeit": [
      {
       "id": "minecraft:birch_planks",
-      "anzahl": 1113
+      "anzahl": 1199
      },
      {
       "id": "minecraft:spruce_planks",
@@ -52,16 +52,16 @@
      }
     ]
    },
-   "verschiedeneQuerschnitte": 6,
-   "gleichDarunter": 0.758,
-   "groessteAenderung": 4,
+   "verschiedeneQuerschnitte": 7,
+   "gleichDarunter": 0.697,
+   "groessteAenderung": 2,
    "glatteFlaecheMax": {
-    "groesse": 120,
+    "groesse": 55,
     "richtung": "nord",
     "id": "minecraft:birch_planks"
    },
    "oeffnungen": {
-    "fassadenzellen": 1405,
+    "fassadenzellen": 1486,
     "oeffnungszellen": 0,
     "anteil": 0
    },
@@ -108,13 +108,13 @@
     17,
     45
    ],
-   "bloecke": 3065,
+   "bloecke": 3262,
    "materialien": {
     "anzahlVerschieden": 2,
     "haeufigkeit": [
      {
       "id": "minecraft:birch_planks",
-      "anzahl": 2381
+      "anzahl": 2578
      },
      {
       "id": "minecraft:spruce_planks",
@@ -122,16 +122,16 @@
      }
     ]
    },
-   "verschiedeneQuerschnitte": 8,
-   "gleichDarunter": 0.75,
-   "groessteAenderung": 4,
+   "verschiedeneQuerschnitte": 14,
+   "gleichDarunter": 0.614,
+   "groessteAenderung": 2,
    "glatteFlaecheMax": {
-    "groesse": 186,
+    "groesse": 91,
     "richtung": "nord",
     "id": "minecraft:birch_planks"
    },
    "oeffnungen": {
-    "fassadenzellen": 2985,
+    "fassadenzellen": 3182,
     "oeffnungszellen": 0,
     "anteil": 0
    },
@@ -178,13 +178,13 @@
     9,
     20
    ],
-   "bloecke": 469,
+   "bloecke": 483,
    "materialien": {
     "anzahlVerschieden": 2,
     "haeufigkeit": [
      {
       "id": "minecraft:birch_planks",
-      "anzahl": 353
+      "anzahl": 367
      },
      {
       "id": "minecraft:spruce_planks",
@@ -192,16 +192,16 @@
      }
     ]
    },
-   "verschiedeneQuerschnitte": 4,
-   "gleichDarunter": 0.632,
-   "groessteAenderung": 4,
+   "verschiedeneQuerschnitte": 5,
+   "gleichDarunter": 0.579,
+   "groessteAenderung": 2,
    "glatteFlaecheMax": {
-    "groesse": 39,
+    "groesse": 18,
     "richtung": "nord",
     "id": "minecraft:birch_planks"
    },
    "oeffnungen": {
-    "fassadenzellen": 469,
+    "fassadenzellen": 458,
     "oeffnungszellen": 0,
     "anteil": 0
    },

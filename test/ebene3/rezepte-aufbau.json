@@ -1,0 +1,58 @@
+{
+ "9x9x16": {
+  "bloecke": 387,
+  "rohr": 384,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 81,
+  "dachHoehe": 6
+ },
+ "11x11x24": {
+  "bloecke": 799,
+  "rohr": 672,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 125,
+  "dachHoehe": 9
+ },
+ "13x13x34": {
+  "bloecke": 1507,
+  "rohr": 1224,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 157,
+  "dachHoehe": 10
+ },
+ "17x17x40": {
+  "bloecke": 2507,
+  "rohr": 1920,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 273,
+  "dachHoehe": 14
+ },
+ "21x15x45": {
+  "bloecke": 3021,
+  "rohr": 2160,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 311,
+  "dachHoehe": 17
+ },
+ "21x21x56": {
+  "bloecke": 4647,
+  "rohr": 3136,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 421,
+  "dachHoehe": 17
+ },
+ "31x31x60": {
+  "bloecke": 7635,
+  "rohr": 5040,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 865,
+  "dachHoehe": 22
+ },
+ "45x45x80": {
+  "bloecke": 16732,
+  "rohr": 9920,
+  "hilfspunkte": 0,
+  "ueberhangBloecke": 1769,
+  "dachHoehe": 30
+ }
+}

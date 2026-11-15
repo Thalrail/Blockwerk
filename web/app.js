@@ -110,7 +110,7 @@ function startProjekt(spezifikation, empfangenerFortschritt = null, messungen = 
   z.uebergaenge = [];
   if (gleichesProjekt) {
     if (basis.spec.version !== spezifikation.version) z.uebergaenge.push({ art: 'spezifikation', von: basis.spec.version ?? 1, nach: spezifikation.version ?? 1, text: z.naechsterText, wer: vonRaum ? '' : z.name });
-    const t = Verlauf.aenderungenText(basis.planfassung, pf); if (t || (basis.planfassung?.version ?? 0) !== pf.version) z.uebergaenge.push({ art: 'aenderungen', von: basis.planfassung?.version ?? 0, nach: pf.version, text: t });
+    const t = Verlauf.aenderungenText(basis.planfassung, pf); if (t || (basis.planfassung?.version ?? 0) !== pf.version) z.uebergaenge.push({ art: 'aenderungen', von: basis.planfassung?.version ?? 0, nach: pf.version, text: t, wer: vonRaum ? '' : z.name });
   }
   z.naechsterText = '';
   z.verlauf = Verlauf.liesListe(speicher.lies(`blockwerk.verlauf.${Projekt.idVon(spezifikation) ?? 'ohne'}`, []));
@@ -1029,7 +1029,9 @@ async function aktion(name, el) {
     else if (name.startsWith('tl-') || name.startsWith('tn-')) await teileAktion(name);
     else if (name.startsWith('lo-')) await loesenAktion(name, d);
     else if (name === 'grenzen-link') {
-      try { z.linkLaenge = (await teilen.kodiere({ spezifikation: z.spec, fortschritt: z.fortschritt, aenderungen: z.planfassung })).code.length; } catch (f) { z.linkLaenge = Teilen.CODE_MAX + 1; toast(String(f.message ?? f)); }
+      const [s0, f0, p0] = [z.spec, z.fortschritt, z.planfassung]; // Stand beim Start: ändert er sich während des Kodierens, gilt das Ergebnis nicht
+      let laenge; try { laenge = (await teilen.kodiere({ spezifikation: s0, fortschritt: f0, aenderungen: p0 })).code.length; } catch (f) { laenge = Teilen.CODE_MAX + 1; toast(String(f.message ?? f)); }
+      if (z.spec === s0 && z.fortschritt === f0 && z.planfassung === p0) z.linkLaenge = laenge;
       render();
     }
     else if (name === 'ansicht') { z.ansicht = d.k; speicher.schreib('blockwerk.ansicht', z.ansicht); render(); }

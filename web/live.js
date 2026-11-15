@@ -53,6 +53,7 @@ export function erzeugeLive(k) {
     if (!live.raum || !live.dienst) return;
     if (!k.name().trim()) { live.status = 'aus'; live.meldung = 'Bitte oben deinen Spielernamen eintragen und dann „Verbinden“ wählen.'; k.render(); return; }
     live.status = live.versuch ? 'getrennt' : 'verbindet'; live.meldung = '';
+    live.spieler = []; // keine Spielerzahl der vorigen Verbindung zeigen, bis der Raum seinen Stand schickt
     live.klient = L.erzeugeKlient({ name: k.name().trim(), fortschritt: k.fortschritt() });
     let ws;
     try { ws = new WebSocket(`${live.dienst}/raum/${live.raum}`); } catch (f) { live.status = 'aus'; live.meldung = String(f.message ?? f); k.render(); return; }

@@ -54,3 +54,4 @@ Quellen: [Aternos: Download your world](https://support.aternos.org/hc/en-us/art
 
 ## Produktziel Oberfläche (verbindlich)
 Eine moderne, übersichtliche Benutzeroberfläche ist ein verbindliches Produktziel, kein Nebenprodukt: einheitliches Design-System (U1), klare Gliederung der Bildschirme, Kompaktmodus aus der Entfernung lesbar, Desktop-Hülle (T1, T2). Abnahme durch Jonah am Bildschirm.
+- Freiflugkamera (WASD) für die 3D-Ansicht (15.11.2026): umgesetzt in Ebene 5 (`docs/referenz/stand-ebene5.md`), Browser-Abnahme offen.

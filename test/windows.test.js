@@ -64,7 +64,16 @@ test('Tauri-Konfiguration: eigenständig, ohne Entwicklungsserver, nur NSIS', ()
   assert.deepEqual(konf.bundle.targets, ['nsis']);
   assert.equal(konf.bundle.windows.nsis.installMode, 'currentUser');
   assert.match(konf.identifier, /^[a-z0-9.-]+$/);
-  assert.equal(konf.app.withGlobalTauri, false);
+  assert.equal(konf.app.withGlobalTauri, true, 'die Oberfläche ruft speichere_datei über window.__TAURI__ auf');
+});
+
+test('Windows-Rahmen: nur der eigene Speichern-Befehl, keine Dateisystem-Rechte für die Seite', () => {
+  const rust = readFileSync(join(WURZEL, 'windows/src-tauri/src/main.rs'), 'utf8');
+  assert.match(rust, /generate_handler!\[speichere_datei\]/);
+  assert.match(rust, /blocking_save_file/, 'geschrieben wird nur nach dem Dialog');
+  assert.ok(!existsSync(join(WURZEL, 'windows/src-tauri/capabilities')), 'keine Capability-Dateien: Plugin-Befehle bleiben für die Seite gesperrt');
+  const cargo = readFileSync(join(WURZEL, 'windows/src-tauri/Cargo.toml'), 'utf8');
+  assert.ok(!/tauri-plugin-fs|tauri-plugin-shell/.test(cargo), 'kein fs- oder shell-Plugin');
 });
 
 test('Tauri-Konfiguration: Inhaltsrichtlinie ohne unsichere Skripte, Worker und Live-Dienst erlaubt', () => {

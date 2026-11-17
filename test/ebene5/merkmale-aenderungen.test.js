@@ -1,5 +1,5 @@
 // D3: manuelle Einzelblockänderungen beim Ein- und Ausschalten der Merkmale (Eingang, Fenster): nichts verschwindet still.
-//  - Eine Änderung an einer Wandzelle, die ein neues Fenster oder der Eingang aussparen, bleibt gespeichert und wird sichtbar als „überholt“ (ohne Wirkung) gemeldet; schaltet man das Merkmal ab, wirkt sie wieder.
+//  - Eine Änderung an der Zelle des Türblocks oder im Durchgang dahinter (Freihaltung) ist ein Konflikt: sie bleibt gespeichert, die Planung wartet auf Jonahs Entscheidung; schaltet man das Merkmal ab, wirkt sie wieder.
 //  - Eine Änderung am Eingang selbst (Kind-Kennung `turm.eingang`) wird beim Abschalten des Eingangs „verwaist“ gemeldet: die Planung wartet, Jonah entscheidet (verwerfen, verankern, zulassen).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

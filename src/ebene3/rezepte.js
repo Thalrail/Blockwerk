@@ -95,6 +95,9 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
         for (const [k, v] of Object.entries(fo.parameter)) imBereich(fo.baustein, k, v, `${wo}.parameter`);
         paritaet(fo.breite, `${wo}.breite`, fo.baustein, 'breite');
         if (!Array.isArray(fo.glieder) || !fo.glieder.length || fo.glieder.some((g) => !gliedIds.has(g) || d.glieder.find((x) => x.id === g).baustein !== 'form.zylinder')) f(`${wo}.glieder: Zylinder-Glieder des Rezepts`);
+        // Die Auswertung nimmt das erste Glied als untere, das letzte als obere Grenze: die Liste muss in der Reihenfolge des Rezepts (von unten nach oben) stehen, ohne Doppelte
+        const stelle = fo.glieder.map((g) => d.glieder.findIndex((x) => x.id === g));
+        if (stelle.some((q, i) => i > 0 && q <= stelle[i - 1])) f(`${wo}.glieder: in der Reihenfolge des Rezepts (von unten nach oben), ohne Doppelte`);
         for (const k of ['geschoss', 'schwelle', 'randUnten', 'randOben']) if (!(ganz(fo[k]) && fo[k] >= (k === 'geschoss' ? 1 : 0))) f(`${wo}.${k}: ganze Zahl`);
         if (!Array.isArray(fo.seitenfolge) || !fo.seitenfolge.length) f(`${wo}.seitenfolge fehlt`);
         fo.seitenfolge.forEach((q, i) => seiten(q, `${wo}.seitenfolge[${i}]`));

@@ -201,6 +201,8 @@ test('Rezeptdaten (D3): kaputte Merkmale werfen RezeptFehler beim Laden (nie ein
     'leerer Eintrag in nichtPerHand': (p) => { p.merkmale.eingang.tuer.nichtPerHand.push(''); },
     'Sockelhöhe unter 3': (p) => { p.merkmale.eingang.sockelMindesthoehe = 2; },
     'Glied kein Zylinder': (p) => { p.merkmale.fenster.formen.schlitze.glieder = ['dach']; },
+    'Glieder in falscher Reihenfolge': (p) => { p.merkmale.fenster.formen.schlitze.glieder = ['schaft-oben', 'schaft-unten']; },
+    'Glied doppelt': (p) => { p.merkmale.fenster.formen.schlitze.glieder = ['schaft-unten', 'schaft-unten']; },
     'unbekannte Seite': (p) => { p.merkmale.eingang.seiten = ['oben']; },
   };
   for (const [name, aendere] of Object.entries(kaputt)) assert.throws(mitRezept(aendere), (f) => f instanceof RezeptFehler, name);

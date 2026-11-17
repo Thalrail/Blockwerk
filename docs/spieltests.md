@@ -453,3 +453,9 @@ Hintergrund: `docs/architektur-rezepte.md` (Geschosse und Treppen). Die Begehbar
 6. **Bauanleitung:** Lässt sich der Turm Schicht für Schicht nach dem Plan bauen? Die Treppenstufen brauchen einen Hilfsblock (jede Stufe berührt die vorige nur diagonal); sind es höchstens 3 je Etage und störend?
 7. **Fenster an den Decken:** Sitzen die Fenster auf Brüstungshöhe über dem Boden jeder Etage?
 Status bleibt `ungeprüft`, bis Jonah das Ergebnis meldet. Quellen: https://minecraft.wiki/w/Stairs (Treppen heben ohne Sprung), https://minecraft.wiki/w/Ladder (Leiter: Platzierung, Klettern).
+
+### Ergebnis des Spieltests D4 (Meldung von Jonah nach dem Merge von PR #73)
+Jonah hat D4 direkt in Minecraft Bedrock getestet: **Die getesteten Treppen funktionieren wie in Java; die Begehbarkeit ist für die getestete Konfiguration praktisch bestätigt.** Welche Turmgröße und welche Treppenform genau getestet wurden, ist nicht festgehalten (bei Gelegenheit hier nachtragen).
+- **Punkt 1 (Treppe ohne Sprung):** bestätigt für die getestete Konfiguration. Für alle anderen Größen und Formen gilt der Modellbeweis aus Ebene 1.
+- **Punkte 2 bis 7** (Dorfbewohner und Baby, Treppenecken, Leiter, Austritte auf jeder Etage, Bauanleitung mit Hilfsblöcken, Fenster an den Decken) und **alle ungetesteten Varianten** (andere Treppenformen, Türme anderer Größe, Leiter) bleiben **`ungeprüft`**, bis Jonah sie meldet.
+- Die Regel `bewegung.treppe` (Ebene 1) steht weiter auf `ungeprueft`: bestätigt ist die getestete Konfiguration, nicht die allgemeine Regel. Den Status `geprüft` setzt nur Jonah, wenn die getestete Konfiguration festgehalten ist.

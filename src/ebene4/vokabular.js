@@ -10,7 +10,7 @@ export function erzeugeVokabular({ regelwerk, ebene0, ebene2 }) {
   const stimmungen = Object.keys(regelwerk.parameter('plan.palette', 'stimmungen'));
 
   const bausteine = [...ebene2.bausteine.entries()]
-    .filter(([id]) => id.startsWith('form.') || id.startsWith('bau.'))
+    .filter(([id, b]) => (id.startsWith('form.') || id.startsWith('bau.')) && !b.intern)
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([id, b]) => ({ id, titel: b.titel.replace(/\s*\(.*$/, ''), parameter: b.parameter.filter((p) => !p.intern).map((p) => ({ ...p })) })); // interne Parameter (Planung, z. B. wandzonen, tiefe bei Tür und Fenster) sieht weder der Leser noch die Oberfläche
 

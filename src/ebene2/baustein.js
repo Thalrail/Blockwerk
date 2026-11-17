@@ -142,7 +142,7 @@ export function huelleVon(bloecke) {
 export function definiere(def) {
   const beschreibung = new Map(def.parameter.map((p) => [p.name, p]));
   const baustein = {
-    id: def.id, titel: def.titel, quelle: def.quelle, status: def.status ?? 'simuliert',
+    id: def.id, titel: def.titel, quelle: def.quelle, status: def.status ?? 'simuliert', ...(def.intern === true ? { intern: true } : {}), // intern: nur für die Planung (Ebene 3), nicht im Vokabular des Lesers
     parameter: def.parameter, testszenario: def.testszenario,
     /** Werte prüfen (Bereich, Ganzzahl), Standardwerte ergänzen, bauen. */
     erzeuge(eingabe = {}) {

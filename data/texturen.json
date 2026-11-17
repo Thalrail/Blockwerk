@@ -434,6 +434,10 @@
       "grund": "keine Zuordnung in data/texturen-regeln.json"
     },
     {
+      "id": "minecraft:ladder",
+      "grund": "keine Zuordnung in data/texturen-regeln.json"
+    },
+    {
       "id": "minecraft:straw_bed",
       "grund": "keine Zuordnung in data/texturen-regeln.json"
     },

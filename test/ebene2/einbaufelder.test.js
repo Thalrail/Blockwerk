@@ -19,7 +19,7 @@ test('Einbaufelder: alle bisherigen Bausteine bleiben gültig, ohne Zonen und Au
     const p = b.erzeuge();
     pruefePaket(p);
     if (!['bau.raum', 'bau.wand'].includes(b.id)) assert.ok(!('einbauzonen' in p), b.id);
-    if (!['bau.tuer', 'bau.fenster', 'bau.treppe'].includes(b.id)) assert.ok(!('aussparungen' in p), b.id);
+    if (!['bau.tuer', 'bau.fenster', 'bau.treppe', 'bau.leiter'].includes(b.id)) assert.ok(!('aussparungen' in p), b.id); // bau.leiter: interner Baustein (D4), Leiterblöcke ersetzen Deckenblöcke des Trägers
   }
 });
 

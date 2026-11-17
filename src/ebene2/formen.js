@@ -46,6 +46,50 @@ export function raster({ B, H, T, innen, versatz, dicke, offenUnten, offenOben, 
   return bloecke;
 }
 
+/** Alle Zellen einer Schicht j, die innerhalb der Form liegen (Mittelpunktregel wie raster), im Koordinatensystem von raster. */
+export function schichtZellen({ B, T, innen, versatz }, j) {
+  const ox = Math.floor(B / 2), oz = Math.floor(T / 2), zellen = [];
+  for (let k = 0; k < T; k++) {
+    const z = k - (T - 1) / 2 + versatz;
+    for (let i = 0; i < B; i++) if (innen(i - (B - 1) / 2 + versatz, j, z)) zellen.push({ x: i - ox, z: k - oz });
+  }
+  return zellen;
+}
+
+/**
+ * Decken (D4): Auf den Schichten `erste + k × abstand` (k < anzahl, nur innerhalb der Höhe) füllt die Form ihre ganze Innenfläche mit Blöcken der Rolle „boden“ aus; die Wandzellen der Schicht
+ * bleiben unverändert. So schließt die Decke genau an die Wand an (kein Spalt, keine Überschneidung). Ohne anzahl bleibt alles beim Alten.
+ */
+export function mitDecken(bloecke, form, H, { deckenAnzahl, deckenErste, deckenAbstand }) {
+  if (!deckenAnzahl) return bloecke;
+  const belegt = new Set(bloecke.map((b) => `${b.x},${b.y},${b.z}`));
+  const neu = [...bloecke];
+  for (let k = 0; k < deckenAnzahl; k++) {
+    const j = deckenErste + k * deckenAbstand;
+    if (j >= H) break;
+    for (const c of schichtZellen(form, j)) if (!belegt.has(`${c.x},${j},${c.z}`)) neu.push({ x: c.x, y: j, z: c.z, rolle: 'boden' });
+  }
+  return neu;
+}
+/** Zonen eines Rohrs: Wandzonen je Himmelsrichtung (wandzonen) und der Innenraum als ganzer Querschnitt (innenzone), beides nach den echten Blöcken. */
+function rohrZonen(bloecke, { wandzonen, innenzone, wandstaerke }) {
+  const zonen = [];
+  if (!bloecke.length || !(wandzonen === 1 && wandstaerke > 0) && innenzone !== 1) return zonen;
+  const { von: v, bis: b } = huelleVon(bloecke);
+  const seite = (id, a, c) => ({ id: `wand-${id}`, art: 'wand', seite: id, von: a, bis: c });
+  if (wandzonen === 1 && wandstaerke > 0) zonen.push(
+    seite('nord', { x: v.x, y: v.y, z: v.z }, { x: b.x, y: b.y, z: v.z }), seite('ost', { x: b.x, y: v.y, z: v.z }, { x: b.x, y: b.y, z: b.z }),
+    seite('sued', { x: v.x, y: v.y, z: b.z }, { x: b.x, y: b.y, z: b.z }), seite('west', { x: v.x, y: v.y, z: v.z }, { x: v.x, y: b.y, z: b.z }));
+  if (innenzone === 1) zonen.push({ id: 'innenraum', art: 'innenraum', von: { ...v }, bis: { ...b } });
+  return zonen;
+}
+const DECKEN_PARAMETER = () => [
+  param('innenzone', 'geometrie', { intern: true, min: 0, max: 1, standard: 0, beschreibung: '1 = bietet den Innenraum als Einbauzone für Kinder (Treppe, Leiter); die Blöcke bleiben gleich' }),
+  param('deckenAnzahl', 'geometrie', { intern: true, min: 0, max: 64, standard: 0, beschreibung: 'Zahl der Geschossdecken in diesem Teil (0 = keine)' }),
+  param('deckenErste', 'geometrie', { intern: true, min: 0, max: 511, standard: 0, beschreibung: 'Schicht der ersten Decke in diesem Teil (0 = unterste Schicht)' }),
+  param('deckenAbstand', 'geometrie', { intern: true, min: 1, max: 64, standard: 5, beschreibung: 'Abstand der Decken in Schichten (Geschosshöhe)' }),
+];
+
 /**
  * @param {{regelwerk: import('../ebene1/regelwerk.js').Regelwerk}} quellen
  */
@@ -74,22 +118,16 @@ export function erzeugeFormen({ regelwerk }) {
     parameter: [
       breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 8, beschreibung: 'Höhe in Schichten' }), wand(1),
       param('wandzonen', 'geometrie', { intern: true, min: 0, max: 1, standard: 0, beschreibung: '1 = bietet je Himmelsrichtung eine Wandzone für Kinder (Tür, Fenster); 0 = keine Zonen, die Blöcke sind in beiden Fällen gleich' }),
+      ...DECKEN_PARAMETER(),
     ],
     testszenario: { start: 'leere Welt, Baustein darauf gesetzt', erwartung: 'Prüfer meldet keinen Verstoß; jede Schicht ist gleich, Rohr ist wasserdicht' },
-    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, wandzonen }) => {
+    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, wandzonen, innenzone, deckenAnzahl, deckenErste, deckenAbstand }) => {
       const [a, c] = halbachsen(B, T);
-      const bloecke = raster({ B, H, T, innen: (x, j, z) => rund(x, z, a, c) <= 1, versatz, dicke: wandstaerke, offenUnten: true, offenOben: true, rolle: 'wand' });
+      const innenFn = (x, j, z) => rund(x, z, a, c) <= 1;
+      const bloecke = mitDecken(raster({ B, H, T, innen: innenFn, versatz, dicke: wandstaerke, offenUnten: true, offenOben: true, rolle: 'wand' }), { B, T, innen: innenFn, versatz }, H, { deckenAnzahl, deckenErste, deckenAbstand });
       const anschluesse = wandstaerke > 0 ? [{ art: 'oeffnung', seite: 'unten' }, { art: 'oeffnung', seite: 'oben' }] : [];
-      // D3: je Himmelsrichtung eine Wandzone, nur die äußerste Zellschicht der Seite (Kinder wie Tür und Fenster sitzen mit ihrer Vorderseite dort; ihre Aussparung reicht von dort nach innen durch die Wand)
-      const seite = (id, von, bis) => ({ id: `wand-${id}`, art: 'wand', seite: id, von, bis });
-      let einbauzonen = [];
-      if (wandzonen === 1 && wandstaerke > 0 && bloecke.length) {
-        const h = huelleVon(bloecke), { von: v, bis: b } = h; // die Zonen folgen den echten Blöcken (Referenzrahmen), nicht den Parametern
-        einbauzonen = [
-          seite('nord', { x: v.x, y: v.y, z: v.z }, { x: b.x, y: b.y, z: v.z }), seite('ost', { x: b.x, y: v.y, z: v.z }, { x: b.x, y: b.y, z: b.z }),
-          seite('sued', { x: v.x, y: v.y, z: b.z }, { x: b.x, y: b.y, z: b.z }), seite('west', { x: v.x, y: v.y, z: v.z }, { x: v.x, y: b.y, z: b.z }),
-        ];
-      }
+      // D3/D4: Wandzonen je Himmelsrichtung (äußerste Zellschicht der Seite) und Innenraum, nur auf Wunsch (interne Parameter)
+      const einbauzonen = rohrZonen(bloecke, { wandzonen, innenzone, wandstaerke });
       return { bloecke, anschluesse, ...(einbauzonen.length ? { einbauzonen } : {}) };
     },
   });
@@ -124,13 +162,17 @@ export function erzeugeFormen({ regelwerk }) {
 
   const kegel = definiere({
     id: 'form.kegel', titel: 'Kegel (Spitze oben, unten offen)', quelle: QUELLE,
-    parameter: [breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 9, beschreibung: 'Höhe in Schichten' }), wand(1)],
+    parameter: [breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 9, beschreibung: 'Höhe in Schichten' }), wand(1), ...DECKEN_PARAMETER()],
     testszenario: { start: 'leere Welt, Baustein darauf gesetzt', erwartung: 'Prüfer meldet keinen Verstoß; jede Schicht liegt in der darunter' },
-    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke }) => {
+    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, innenzone, deckenAnzahl, deckenErste, deckenAbstand }) => {
       const [a, c] = halbachsen(B, T);
+      const innenFn = (x, j, z) => { const s = 1 - (j + 0.5) / H; return s > 0 && rund(x, z, a * s, c * s) <= 1; };
+      const bloecke = mitDecken(raster({ B, H, T, innen: innenFn, versatz, dicke: wandstaerke, offenUnten: true, offenOben: false, rolle: 'wand' }), { B, T, innen: innenFn, versatz }, H, { deckenAnzahl, deckenErste, deckenAbstand });
+      const einbauzonen = rohrZonen(bloecke, { innenzone, wandstaerke });
       return {
-        bloecke: raster({ B, H, T, innen: (x, j, z) => { const s = 1 - (j + 0.5) / H; return s > 0 && rund(x, z, a * s, c * s) <= 1; }, versatz, dicke: wandstaerke, offenUnten: true, offenOben: false, rolle: 'wand' }),
+        bloecke,
         anschluesse: [{ art: 'oeffnung', seite: 'unten' }],
+        ...(einbauzonen.length ? { einbauzonen } : {}),
       };
     },
   });

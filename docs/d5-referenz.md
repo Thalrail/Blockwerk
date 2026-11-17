@@ -1,6 +1,6 @@
-# D5.0 – Referenz-Messlatte Zitadelle (Entwurf zur Bestätigung)
+# D5.0 – Referenz-Messlatte Zitadelle
 
-Stand 17.11.2026. Grundlage: `docs/architektur-komposition.md` (Vorschlag), Produktrichtung von Jonah (17.11.2026, `docs/entscheidungen.md`), die 14 Referenzbilder in `docs/zitadelle/bilder/` und `docs/zitadelle/beschreibung.md`. Nur Dokumentation: keine Kompositionsengine, kein Code.
+Stand 17.11.2026. **Modell A ist von Jonah endgültig freigegeben; die Entscheidungen zu D5.0 stehen in Abschnitt 5, die Messung D5.0b in Abschnitt 5a.** Grundlage: `docs/architektur-komposition.md` (Vorschlag), Produktrichtung von Jonah (17.11.2026, `docs/entscheidungen.md`), die 14 Referenzbilder in `docs/zitadelle/bilder/` und `docs/zitadelle/beschreibung.md`. Nur Dokumentation: keine Kompositionsengine, kein Code.
 
 **Grundsatz:** Die Zahlen unten sind **Referenz**, keine Systemgrenzen. Das System rechnet mit Verhältnissen und Parametern; 168 und 240 sind der erste Referenzmaßstab. Menschenmaß (Tür 2, Gang ab 2, Stufe 1) bleibt bei jedem Maßstab fest.
 
@@ -34,13 +34,15 @@ Herkunft jeder Zahl:
 | Eckturm, Höhe | 80; Ebenen 20–36 Durchgang, 36–52 Wohnebene, 52–60 Aussicht, 68–80 Spitze | B (02) |
 | Eckturm, Schaft | Ø 17 bis 20; D5.0 nimmt **19** | A (09: Schaft ≈ 17; 02: Kern ≈ 20), Wert N |
 | Eckturm, Grundriss mit Erkern | ≈ 30 bis 33 | A (02), nur zur Information |
-| Eckturm, Mitte | ≈ 30 von beiden Plateaukanten (±6), also nahe der Gebäudeecke (36/36) | A (14); D5.0 nimmt die Ecke (36/36) als **N**, die Abweichung liegt innerhalb ±6 |
+| Eckturm, Mitte | erster Entwurf: **auf der Gebäudeecke (36/36)** (Entscheidung Jonah). Gestaltungsvariante „Bildversatz“: Mitte ≈ 30 von beiden Plateaukanten (±6), das heißt etwa 6 Blöcke außerhalb der Ecke | A (14) |
 | Portal | Breite 15, Höhe 20, Spitzbogen, Mitte der Südfront (120/204) | B (01); Lage A |
 | Brücke West / Ost | Länge 46, 7 Pfeiler (Höhe 28) | B (01) |
-| Brücke, Breite | 13 (Bild 01) **oder** Brückenboden 5 breit (Bild 02): Widerspruch, siehe 5 | B/B |
+| Hauptbrücke, Breite | **13** (Bild 01) | B, von Jonah festgelegt |
+| Verbindungsgang Eckturm–Hauptgebäude, Breite | **5** (Bild 02, Brückenboden) | B, von Jonah festgelegt |
+| Brückenfeld | 46 als Referenzmaß; mehrere Felder dürfen ohne zusätzliche sichtbare Unterbrechung kombiniert werden | B (01), Regel von Jonah |
 | Handelsviertel | 7 mit Ständen + Eingangshalle (Süd), strahlenförmig in 45°-Schritten um die Rotunde; Laufgang 5 (Hauptviertel) oder 3; je 2 Reihen × 10 Nischen = 20; Innenbreite 23; Deckenhöhe 8 bis 12 | B (06, 12, 13) |
 | Handelsnische | innen 1 × 2 × 3, Dorfbewohner-Stellplatz 1 | B (07) |
-| Terrassen | Nord, Süd, West, Ost; Größe nicht beschriftet | Vorhandensein B (14), Maß **N**: wird in D5.0b aus Bild 14 gemessen |
+| Terrassen | Nord, Süd, West, Ost; Größe nicht beschriftet | Vorhandensein B (14); Anteile in 5a gemessen (A), Einzelmaße **N** |
 | Außen- und Stützmauern | in der Legende von Bild 14 genannt, ohne Maße; Höhe 0 bis 20, Zinnen am Brückenniveau | Vorhandensein B (14, 02), Maße **N** |
 | Innenhöfe, Gärten, Wasserbecken | zwischen den Strahlen, in Bild 14 sichtbar, nicht beschriftet | Vorhandensein A, Maße **N** (D5.0b) |
 
@@ -94,7 +96,7 @@ Koordinaten: x Ost, z Süd, Plateau 0 bis 240, Mitte (120/120). Alle Lagen sind 
 Nicht Teil von Stufe 1: Untergeschoss-Technik, Lorenbahnnetz, Felder, Wohnbereiche, Gelände und Wasserfälle (bleiben Anfragen wie im Prüfbericht).
 
 ## 4. Qualitätskriterien
-Jede Metrik hat eine feste Formel auf den Blockdaten. **Schwellen und Toleranzen sind hier Vorschlag und gelten erst nach Jonahs Bestätigung.** Ist der Nenner einer Quote 0, gilt die Metrik als „nicht anwendbar“, nie als bestanden.
+Jede Metrik hat eine feste Formel auf den Blockdaten. **Q1 bis Q9 sind von Jonah als vorläufige Qualitätsmetriken übernommen; die Schwellen bleiben bis zur visuellen Kalibrierung vorläufig.** Ist der Nenner einer Quote 0, gilt die Metrik als „nicht anwendbar“, nie als bestanden.
 
 | Nr. | Metrik | Formel | Vorgeschlagene Schwelle (Referenz) |
 |---|---|---|---|
@@ -103,19 +105,41 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Schwellen und Toleranzen
 | Q3 | Höhenstaffel | je Baukörperart Verhältnis Höhe / Hauptgebäudebreite gegen Abschnitt 1 | je Verhältnis ±5 % der Referenz; genau 5 Höhenstufen |
 | Q4 | Spiegelordnung | Baukörperpaare, die an der Ost-West-Achse spiegelbildlich gleich liegen (Türme, Brücken, Viertel W/O, NW/NO, SW/SO, Terrassenseiten) / alle erwarteten Paare | 100 % der Paare; Abweichung der Lage höchstens ½ Block. Nord–Süd ist bewusst nicht symmetrisch (Portal Süd, Hauptturm Nord) |
 | Q5 | Radialordnung | Winkel der 8 Strahlen zur Rotunde | 45° mit höchstens ½ Block Lageabweichung am Strahlende |
-| Q6 | Hofanteil | Hof- und Terrassenfläche / Grundfläche des Hauptgebäudes | Referenzwert wird in D5.0b aus Bild 14 gemessen (nicht beschriftet), Toleranz ±20 % relativ |
+| Q6 | Freiflächenanteil | Fläche aus Hof-, Terrassen-, Grün- und Wasserzellen / Grundfläche des Hauptgebäudes (Draufsicht) | Referenz ≈ 17 % (Abschnitt 5a), Toleranz ±20 % relativ, also 13 bis 20 % |
 | Q7 | Materialkonsistenz | Zahl der Materialien je Rolle und Baukörperart; Anteil der Rolle „Wand“ | höchstens die Palette „Glanz“ (Weiß, Gold, Blau + Glas); je Baukörperart höchstens 1 Materialwechsel an der Fuge |
 | Q8 | Menschenmaß | Türen 2 hoch, Gänge ab 2 breit, Stufe 1, an jedem Maßstab | 100 % |
 | Q9 | Gesamtzusammenhang | `messeAufbau` über die ganze Anlage | 0 unverbundene Blöcke, 0 freischwebende, 0 Hilfspunkte |
 
 **Zweites Kriterium: Jonahs visueller Vergleich.** Die Oberfläche zeigt die Ansichten Süd, Ost und Draufsicht aus dem Blickwinkel der Bilder 09, 08 und 14 neben dem Referenzbild. Jonah entscheidet je Ansicht „passt“ oder „nicht“ mit Anmerkung. Geometrisch fehlerfrei (Q1 bis Q9) ist **nicht** gleich „überzeugend“; beide Kriterien müssen erfüllt sein.
 
-## 5. Offene Punkte und Widersprüche (Jonah)
-1. **Brückenbreite:** 13 (Bild 01) gegen Brückenboden 5 (Bild 02, Detail Brückenanschluss). Vorschlag: 13 für die Brücke vor dem Portal, 5 für die Gänge zwischen Eckturm und Gebäude (zwei verschiedene Bauteile).
-2. **Brückenlänge:** 46 (Bild 01) gegen Bild 14, wo die Brücken bis zum Plateaurand reichen (mehr als 100). Vorschlag: 46 je Brückenfeld, bei Bedarf mehrere Felder mit Pfeilern.
-3. **Eckturm-Mitte:** nach Bild 14 etwa 6 Blöcke außerhalb der Gebäudeecke. Vorschlag: auf der Ecke.
-4. **Eckturm-Ebenen:** Bild 02 nennt −14 bis 0, die Hauptbilder −16 bis 0 (Entscheidung 27.10.2026: Hauptmaße gelten).
-5. **Hauptturm-Grundfläche, Terrassen, Mauerhöhen, Innenhöfe:** nicht beschriftet, hier N. D5.0b misst Terrassen und Höfe aus Bild 14 mit der vorhandenen Bildmessung, der Rest bleibt Annahme bis zu deiner Bestätigung.
+## 5. Entscheidungen zu D5.0 (Jonah, 17.11.2026)
+1. Hauptbrücken **13** Blöcke breit.
+2. Verbindungsgänge zwischen Ecktürmen und Hauptgebäude **5** breit.
+3. Brückenfelder **46** als Referenzmaß; mehrere Felder dürfen kombiniert werden, ohne automatisch zusätzliche sichtbare Unterbrechungen zu erzwingen (Regel für Fügung und Gestaltung, keine feste Zahl).
+4. Ecktürme im ersten Entwurf an den Gebäudeecken; der aus Bild 14 abgelesene Versatz bleibt dokumentierte Gestaltungsvariante (Abschnitt 1).
+5. D5.0b: Terrassen- und Hofanteile aus Bild 14 (Abschnitt 5a).
+6. Q1 bis Q9 vorläufig, Schwellen bis zur visuellen Kalibrierung vorläufig.
+Weiter offen (Annahme **N**, kein Widerspruch): Hauptturm-Grundfläche Ø 21, Mauerhöhen, Terrassen- und Hofeinzelmaße. Eckturm-Ebenen: Hauptmaße −16 bis 0 gelten (Entscheidung 27.10.2026).
+
+## 5a. D5.0b – Messung Freiflächen aus Bild 14
+Verfahren: Draufsicht Bild 14 (1273 × 1236 Pixel); Plateau 0 bis 240 auf dem Lineal bei Pixel x 265 bis 1180 und y 68 bis 983 (3,81 Pixel je Block, abgelesen, Rand ±3 Blöcke); je Block ein Pixel in der Blockmitte, Farbklassen nach Farbton, Sättigung und Helligkeit (Grün = Laub und Gras; Blau = Wasser **oder** blaue Dekoration; Fels = graue, ungesättigte Flächen; Rest = Stein, Gold, Wege). Wegwerf-Skript, nicht im Repo. Die Zahlen sind eine **Näherung aus einer gezeichneten Konzeptgrafik**: Blau kann Wasser oder Dekoration sein, Schatten und Perspektive stören.
+
+| Bereich (Blöcke) | Grün | Blau | Fels | Stein/Gold |
+|---|---|---|---|---|
+| Plateau gesamt (57 600) | 10,1 % | 6,1 % | 14,8 % | 69,0 % |
+| Hauptgebäude 36 bis 204 (28 224) | 8,4 % | 8,3 % | 7,8 % | 75,5 % |
+| Rand um das Hauptgebäude (29 376) | 11,7 % | 4,0 % | 21,6 % | 62,7 % |
+| Nordterrasse (90–150 × 0–36) | 10,4 % | 2,8 % | 19,1 % | 67,7 % |
+| Westterrasse (0–36 × 90–150) | 13,8 % | 1,9 % | 19,1 % | 65,3 % |
+| Ostterrasse (204–240 × 90–150) | 17,4 % | 3,1 % | 16,9 % | 62,5 % |
+| Südstreifen vor dem Portal (70–170 × 204–240) | 8,3 % | 9,2 % | 16,9 % | 65,6 % |
+| Beispielviertel NW (50–100 × 50–100) | 8,7 % | 4,6 % | 8,6 % | 78,1 % |
+
+Folgerungen für die Messlatte:
+- **Freiflächenanteil des Hauptgebäudes** (Grün plus Blau) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13 bis 20 %). Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
+- Die Terrassen sind mit 10 bis 17 % Grün **nicht** reine Grünflächen, sondern überwiegend gepflasterte Plätze (Stein/Gold über 62 %). Eine Terrasse ist also ein bebauter Platz mit Begrünung, kein Garten.
+- Der Rand (Plateau ohne Hauptgebäude) ist zu etwa einem Fünftel Fels; Gelände gehört nicht zum Bauplan (Entscheidung 27.10.2026).
+- Kalibrierung: die Verhältnisse sind für die visuelle Abnahme brauchbar, als harte Schwelle zu ungenau; deshalb bleibt Q6 vorläufig.
 
 ## 6. Modellvergleich A, B, C (Entscheidung 1)
 | | **A: Anschlüsse und Fügeregeln als Daten** | **B: Anlagenrezepte** | **C: Baugruppen-Baum** |
@@ -126,4 +150,4 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Schwellen und Toleranzen
 | Zitadelle | Reicht ohne Sonderlogik | Schnell, aber starr und zitadellennah | Überdimensioniert für Stufe 1 |
 | Risiko | Mehr Entwurfsarbeit am Anfang (D5.0 bis D5.2) | Widerspricht „keine Sonderimplementierung“ | Zu früh festgelegt |
 
-Empfehlung bleibt **A**; C kommt später als Ergänzung auf A (Gruppen aus Teilen mit definierten Anschlüssen), B entfällt als eigener Weg.
+**Entscheidung (Jonah, 17.11.2026): Modell A ist endgültig freigegeben und für D5 verbindlich. C bleibt als spätere Erweiterung auf A vorgesehen (Gruppen aus Teilen mit definierten Anschlüssen), B wird nicht verfolgt.** Die 26 Teile in Abschnitt 3 sind eine Referenzkomposition, keine fest einprogrammierte Struktur; Ziel ist eine universelle Kompositionsengine für Burgen, Schlösser, Städte, Festungen und andere Anlagen.

@@ -431,7 +431,14 @@ function startseite() {
   return `<section class="start"><h2>Bauplan öffnen</h2>
     <p>Blockwerk zeigt dir Schicht für Schicht, was du in Minecraft bauen musst – groß genug, um es vom Sofa aus neben der PS5 zu lesen.</p>
     <div class="knoepfe"><button class="haupt" data-a="eingabe-offen">Neue Vorlage (Bilder und Text)</button><button data-a="beispiel">Beispielprojekt laden (Zitadelle, klein)</button><button data-a="oeffnen">Projektdatei öffnen</button></div>
-    <p class="klein">Einen Link von einem Freund öffnest du einfach im Browser; er enthält die Spezifikation und seinen Fortschritt.</p></section>`;
+    <p class="klein">Einen Link von einem Freund öffnest du einfach im Browser; er enthält die Spezifikation und seinen Fortschritt.</p>${Speichern.istTauri(window) ? uebernahmeKarte() : ''}</section>`;
+}
+/** Nur in der Windows-Anwendung: Hilfe, ein Projekt aus dem Browser zu übernehmen (der Programmspeicher ist vom Browser getrennt). */
+function uebernahmeKarte() {
+  return `<div class="karte"><h3>Projekt aus dem Browser übernehmen</h3>
+    <p class="klein">Im Browser: „Datei sichern“ (oder „Link kopieren“). Hier: die Datei öffnen oder den Link einfügen. Fortschritt und Änderungen kommen mit.</p>
+    <div class="knoepfe"><button data-a="oeffnen">Projektdatei öffnen</button></div>
+    <div class="knoepfe"><input id="u-link" type="text" placeholder="Link aus dem Browser hier einfügen" aria-label="Link aus dem Browser" style="flex:1;min-width:16em"><button data-a="link-einfuegen">Link öffnen</button></div></div>`;
 }
 function rechnet() {
   return `<div class="rechnet"><div>${esc(z.status ?? 'Bauplan wird berechnet …')} <span class="klein">(Auftrag ${esc(z.lauf ?? 0)})</span></div><div class="balken"><i></i></div><p class="klein">Der Plan wird deterministisch aus der Spezifikation geplant und geprüft.</p></div>`;
@@ -1036,6 +1043,12 @@ async function aktion(name, el) {
     else if (name === 'umbau-ja') umbauEntscheiden(true);
     else if (name === 'umbau-nein') umbauEntscheiden(false);
     else if (name === 'oeffnen') document.getElementById('datei').click();
+    else if (name === 'link-einfuegen') {
+      const text = document.getElementById('u-link')?.value.trim() ?? '';
+      const p = text ? await teilen.ausLink(text) : null;
+      if (!p) { toast('In diesem Text steckt kein Blockwerk-Projekt. Der Link muss „#p=…“ enthalten.'); return; }
+      startProjekt(p.spezifikation, p.fortschritt ?? null, [], null, p.aenderungen ?? null); toast(Speichern.importMeldung(p));
+    }
     else if (name === 'neu') {
       z.fehler = null; z.rueckfragen = null; z.daten = null;
       if (z.vorher) { const v = z.vorher; z.vorher = null; z.bearbeitung = false; z.spec = v.spec; z.daten = v.daten; z.fortschritt = v.fortschritt; z.planfassung = v.planfassung ?? z.planfassung; speicher.schreib('blockwerk.projekt', v.spec); sichereAenderungen(); toast('Die bisherige Fassung gilt weiter.'); } // die neue Fassung ließ sich nicht bauen
@@ -1140,7 +1153,7 @@ document.addEventListener('change', async (ev) => {
   if (ev.target.id === 'e-im-raum') { z.e.imRaum = ev.target.checked; return; }
   if (ev.target.id === 'e-teil' || ev.target.id === 'e-art') { Eingabe.eingabeGeaendert(ev.target.id, ev.target.value, z.e); return; }
   if (ev.target.id !== 'datei' || !ev.target.files[0]) return;
-  try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null, [], null, d.aenderungen ?? null); } catch (f) { z.fehler = String(f.message ?? f); render(); }
+  try { const d = teilen.importDatei(await ev.target.files[0].text()); startProjekt(d.spezifikation, d.fortschritt ?? null, [], null, d.aenderungen ?? null); if (Speichern.istTauri(window)) toast(Speichern.importMeldung(d)); } catch (f) { z.fehler = String(f.message ?? f); render(); }
   ev.target.value = '';
 });
 window.addEventListener('resize', () => { if (z.daten) render(); });

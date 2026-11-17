@@ -30,3 +30,13 @@ export function meldung(erg) {
   if (erg.status === 'fehler') return `Speichern fehlgeschlagen: ${erg.meldung}`;
   return null;
 }
+
+/** Läuft die Oberfläche in der Windows-Anwendung (Tauri)? */
+export const istTauri = (fenster) => typeof fenster?.__TAURI__?.core?.invoke === 'function';
+
+/** Meldung nach dem Öffnen einer Datei oder eines Links (d = geprüftes Paket aus teilen.importDatei/ausLink). */
+export function importMeldung(d) {
+  const name = d?.spezifikation?.projekt?.name;
+  const mit = [d?.fortschritt ? 'Fortschritt' : null, d?.aenderungen ? 'Änderungen' : null].filter(Boolean);
+  return `Projekt${name ? ` „${name}“` : ''} übernommen${mit.length ? ` (mit ${mit.join(' und ')})` : ''}.`;
+}

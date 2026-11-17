@@ -53,3 +53,33 @@ test('Tauri: Fehler wird gemeldet und fällt nicht still auf Download zurück', 
   assert.match(meldung(erg), /fehlgeschlagen: Zugriff verweigert/);
   assert.equal(protokoll.length, 0);
 });
+
+// ---- Übernahme aus dem Browser (nur in der Windows-Anwendung sichtbar) ----
+import { istTauri, importMeldung } from '../web/speichern.js';
+import * as teilen from '../src/ebene5/teilen.js';
+import { readFileSync } from 'node:fs';
+
+test('istTauri: nur mit window.__TAURI__.core.invoke', () => {
+  assert.equal(istTauri({ __TAURI__: { core: { invoke() {} } } }), true);
+  assert.equal(istTauri({}), false);
+  assert.equal(istTauri(undefined), false);
+  assert.equal(istTauri({ __TAURI__: {} }), false);
+});
+
+test('importMeldung: Name und mitgekommene Teile', () => {
+  const s = { projekt: { name: 'Zitadelle' } };
+  assert.equal(importMeldung({ spezifikation: s }), 'Projekt „Zitadelle“ übernommen.');
+  assert.equal(importMeldung({ spezifikation: s, fortschritt: {}, aenderungen: {} }), 'Projekt „Zitadelle“ übernommen (mit Fortschritt und Änderungen).');
+  assert.equal(importMeldung({ spezifikation: s, fortschritt: {} }), 'Projekt „Zitadelle“ übernommen (mit Fortschritt).');
+  assert.equal(importMeldung({ spezifikation: {} }), 'Projekt übernommen.');
+});
+
+test('Übernahme: ein Browser-Link und eine Browser-Datei liefern dasselbe Projekt (auch aus fremder Adresse)', async () => {
+  const spec = JSON.parse(readFileSync(new URL('../data/beispiele/zitadelle-klein.json', import.meta.url), 'utf8'));
+  const { link } = await teilen.link('https://thalrail.github.io/Blockwerk/', { spezifikation: spec });
+  const ausLink = await teilen.ausLink(`  ${link}`.trim());
+  const ausDatei = teilen.importDatei(teilen.exportDatei({ spezifikation: spec }));
+  assert.deepEqual(ausLink.spezifikation, spec);
+  assert.deepEqual(ausDatei.spezifikation, spec);
+  assert.equal(await teilen.ausLink('kein Link'), null);
+});

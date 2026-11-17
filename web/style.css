@@ -26,6 +26,9 @@ input[type=text] { background: var(--flaeche2); border: 1px solid var(--linie); 
 .start { margin: 8vh auto; max-width: 640px; padding: 24px; background: var(--flaeche); border: 1px solid var(--linie); border-radius: 12px; }
 .start h2 { margin-top: 0; }
 .start .knoepfe { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.start .karte { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--linie); }
+.start .karte h3 { margin: 0 0 6px; }
+.start .karte .knoepfe { margin: 10px 0; }
 .rechnet { margin: 16vh auto; text-align: center; color: var(--leise); }
 .rechnet .balken { width: 260px; height: 6px; margin: 14px auto 0; background: var(--flaeche2); border-radius: 3px; overflow: hidden; }
 .rechnet .balken i { display: block; width: 40%; height: 100%; background: var(--akzent); animation: lauf 1.2s linear infinite; }

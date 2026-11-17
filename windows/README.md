@@ -22,12 +22,12 @@ cargo tauri build
 Ergebnis: `windows/src-tauri/target/release/bundle/nsis/Blockwerk_0.1.0_x64-setup.exe` und `…/release/blockwerk-windows.exe`. `kopiere-dist.mjs` kopiert nur `index.html`, `manifest.webmanifest`, `web/`, `src/`, `data/` nach `windows/dist` (keine Git-Daten, Dokumentation, Datenbanken, versteckten Dateien). `Cargo.lock` ist eingecheckt (reproduzierbarer Build). Tests: `npm test` (`test/windows.test.js`).
 
 ## Geprüft (11/2026, Windows 11, WebView2 157)
-Start ohne Server; Engine-Worker und `fetch` aus `data/`; Zitadelle (klein) berechnet und angezeigt; 3D-Ansicht; Freiflug: Klick fängt die Maus, Blick ohne gedrückte Taste, W/A/S/D, echtes Esc gibt frei, Fokuswechsel gibt frei; Projekt nach vollständigem Neustart wieder da; Export über den Speichern-Dialog (Datei geschrieben, Abbruch geprüft); Import einer exportierten Datei.
+Start ohne Server; Engine-Worker und `fetch` aus `data/`; Zitadelle (klein) berechnet und angezeigt; 3D-Ansicht; Freiflug: Klick fängt die Maus, Blick ohne gedrückte Taste, W/A/S/D, echtes Esc gibt frei, Fokuswechsel gibt frei; Projekt nach vollständigem Neustart wieder da; Export über den Speichern-Dialog (Datei geschrieben, Abbruch geprüft); Import einer exportierten Datei; Übernahme eines echten Browser-Projekts (Fortschritt und manuelle Änderung) über die echte Zwischenablage, Daten byte-gleich; Link-Sperre.
 
 ## Noch nicht unterstützt / Grenzen
 - Kein Signieren, kein automatisches Update, nur Windows (x64), nur NSIS (kein MSI).
 - Der Kompaktmodus („Immer im Vordergrund“, Fenster im Vordergrund) nutzt `documentPictureInPicture`; in WebView2 vorhanden, aber im Alltag noch nicht erprobt.
 - Kein Zugriff auf Minecraft-Welten oder Gelände (nicht Teil von W1).
-- Der Programmspeicher ist vom Browser getrennt: Übernahme per Datei oder Link (Punkt 5), nur das aktuelle Projekt, kein automatischer Abgleich und keine Übernahme von Sicherungen/Einstellungen. „Link kopieren“ in der App erzeugt eine Adresse `tauri.localhost`, die Freunde nicht öffnen können; dafür „Datei sichern“ nutzen (offene Produktentscheidung: feste Web-Adresse für Links).
+- Der Programmspeicher ist vom Browser getrennt: Übernahme per Datei oder Link (Punkt 5), nur das aktuelle Projekt, kein automatischer Abgleich und keine Übernahme von Sicherungen/Einstellungen. Es gibt noch keine öffentliche Web-Adresse (GitHub Pages ist aus, am 17.11.2026 geprüft); deshalb gibt die App keinen „Link kopieren“- und keinen Raum-Link aus, sondern einen Hinweis auf „Datei sichern“ (Entscheidung für später: feste Web-Adresse).
 - Live-Abhaken braucht Netz und den eingerichteten Dienst. Weil die Dienst-Adresse per Link frei wählbar ist, erlaubt die Inhaltsrichtlinie (`connect-src`) beliebige `https:`/`wss:`-Ziele (Codex-Hinweis); eine Einschränkung auf feste Dienste wäre eine Produktentscheidung für später.
 - Spieltest mit längerer Nutzung (Maus bei Mehrfenster-Betrieb, mehrere Bildschirme) steht aus.

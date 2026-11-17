@@ -981,6 +981,7 @@ function liveAktion(name) {
   else if (name === 'live-start') { z.liveOffen = false; live.start(document.getElementById('live-dienst')?.value); }
   else if (name === 'live-verbinden') live.verbinde();
   else if (name === 'live-trennen') live.trennen();
+  else if (name === 'live-link' && !Speichern.kannLinkTeilen(window)) toast(Speichern.HINWEIS_RAUMLINK);
   else if (name === 'live-link') navigator.clipboard.writeText(live.link()).then(() => toast('Raum-Link kopiert. Wer ihn öffnet, ist live dabei.'));
   else if (name === 'live-uebernehmen') live.uebernehmen();
   else if (name === 'live-spaeter') live.spaeter();
@@ -1079,6 +1080,7 @@ async function aktion(name, el) {
       const a = abschnitt(), alle = a.schichten.every((s) => fertig(a, s));
       haken({ keys: a.schichten.map((s) => key(a, s)), wert: !alle }); render();
     } else if (name === 'link') {
+      if (!Speichern.kannLinkTeilen(window)) { toast(Speichern.HINWEIS_LINK); return; }
       const { link, zuLang } = await teilen.link(location.href, { spezifikation: z.spec, fortschritt: z.fortschritt, aenderungen: z.planfassung });
       await navigator.clipboard.writeText(link);
       toast(zuLang ? 'Link kopiert – er ist ziemlich lang. Falls ein Chat ihn abschneidet, nimm „Datei sichern“.' : 'Link kopiert. Wer ihn öffnet, sieht denselben Bauplan mit deinem Fortschritt.');

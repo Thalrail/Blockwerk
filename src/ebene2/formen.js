@@ -5,7 +5,7 @@
 // Koordinaten: Nullpunkt ist der Block x = floor(breite / 2), z = floor(tiefe / 2) der Grundfläche (bei ungerader Breite die Mitte), y = 0 ist die unterste Schicht.
 // Hohle Formen: Hülle der Dicke `wandstaerke` (Blöcke mit Nachbarn außerhalb, 6er-Nachbarschaft = wasserdicht). Zylinder und Kuppel sind unten offen,
 // der Zylinder auch oben (Turmrohr); Deckel und Boden sind eigene Scheiben.
-import { definiere, param, huelleVon } from './baustein.js';
+import { definiere, param, listeParam, huelleVon } from './baustein.js';
 
 const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2, Grundregel Maßstabsfreiheit)';
 const MAX = 512;
@@ -60,14 +60,15 @@ export function schichtZellen({ B, T, innen, versatz }, j) {
  * Decken (D4): Auf den Schichten `erste + k × abstand` (k < anzahl, nur innerhalb der Höhe) füllt die Form ihre ganze Innenfläche mit Blöcken der Rolle „boden“ aus; die Wandzellen der Schicht
  * bleiben unverändert. So schließt die Decke genau an die Wand an (kein Spalt, keine Überschneidung). Ohne anzahl bleibt alles beim Alten.
  */
-export function mitDecken(bloecke, form, H, { deckenAnzahl, deckenErste, deckenAbstand }) {
+export function mitDecken(bloecke, form, H, { deckenAnzahl, deckenErste, deckenAbstand, deckenLoecher = [] }) {
   if (!deckenAnzahl) return bloecke;
+  const loecher = new Set(deckenLoecher); // Öffnungen für Treppe und Leiter: Einträge „schicht,x,z“ (Schicht wie im Paket)
   const belegt = new Set(bloecke.map((b) => `${b.x},${b.y},${b.z}`));
   const neu = [...bloecke];
   for (let k = 0; k < deckenAnzahl; k++) {
     const j = deckenErste + k * deckenAbstand;
     if (j >= H) break;
-    for (const c of schichtZellen(form, j)) if (!belegt.has(`${c.x},${j},${c.z}`)) neu.push({ x: c.x, y: j, z: c.z, rolle: 'boden' });
+    for (const c of schichtZellen(form, j)) if (!belegt.has(`${c.x},${j},${c.z}`) && !loecher.has(`${j},${c.x},${c.z}`)) neu.push({ x: c.x, y: j, z: c.z, rolle: 'boden' });
   }
   return neu;
 }
@@ -88,6 +89,7 @@ const DECKEN_PARAMETER = () => [
   param('deckenAnzahl', 'geometrie', { intern: true, min: 0, max: 64, standard: 0, beschreibung: 'Zahl der Geschossdecken in diesem Teil (0 = keine)' }),
   param('deckenErste', 'geometrie', { intern: true, min: 0, max: 511, standard: 0, beschreibung: 'Schicht der ersten Decke in diesem Teil (0 = unterste Schicht)' }),
   param('deckenAbstand', 'geometrie', { intern: true, min: 1, max: 64, standard: 5, beschreibung: 'Abstand der Decken in Schichten (Geschosshöhe)' }),
+  listeParam('deckenLoecher', 'geometrie', { intern: true, min: 0, max: 4096, standard: [], beschreibung: 'Öffnungen in den Decken (Treppe, Leiter): Einträge „schicht,x,z“ im Koordinatensystem des Teils' }),
 ];
 
 /**
@@ -121,10 +123,10 @@ export function erzeugeFormen({ regelwerk }) {
       ...DECKEN_PARAMETER(),
     ],
     testszenario: { start: 'leere Welt, Baustein darauf gesetzt', erwartung: 'Prüfer meldet keinen Verstoß; jede Schicht ist gleich, Rohr ist wasserdicht' },
-    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, wandzonen, innenzone, deckenAnzahl, deckenErste, deckenAbstand }) => {
+    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, wandzonen, innenzone, deckenAnzahl, deckenErste, deckenAbstand, deckenLoecher }) => {
       const [a, c] = halbachsen(B, T);
       const innenFn = (x, j, z) => rund(x, z, a, c) <= 1;
-      const bloecke = mitDecken(raster({ B, H, T, innen: innenFn, versatz, dicke: wandstaerke, offenUnten: true, offenOben: true, rolle: 'wand' }), { B, T, innen: innenFn, versatz }, H, { deckenAnzahl, deckenErste, deckenAbstand });
+      const bloecke = mitDecken(raster({ B, H, T, innen: innenFn, versatz, dicke: wandstaerke, offenUnten: true, offenOben: true, rolle: 'wand' }), { B, T, innen: innenFn, versatz }, H, { deckenAnzahl, deckenErste, deckenAbstand, deckenLoecher });
       const anschluesse = wandstaerke > 0 ? [{ art: 'oeffnung', seite: 'unten' }, { art: 'oeffnung', seite: 'oben' }] : [];
       // D3/D4: Wandzonen je Himmelsrichtung (äußerste Zellschicht der Seite) und Innenraum, nur auf Wunsch (interne Parameter)
       const einbauzonen = rohrZonen(bloecke, { wandzonen, innenzone, wandstaerke });
@@ -164,10 +166,10 @@ export function erzeugeFormen({ regelwerk }) {
     id: 'form.kegel', titel: 'Kegel (Spitze oben, unten offen)', quelle: QUELLE,
     parameter: [breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 9, beschreibung: 'Höhe in Schichten' }), wand(1), ...DECKEN_PARAMETER()],
     testszenario: { start: 'leere Welt, Baustein darauf gesetzt', erwartung: 'Prüfer meldet keinen Verstoß; jede Schicht liegt in der darunter' },
-    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, innenzone, deckenAnzahl, deckenErste, deckenAbstand }) => {
+    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, innenzone, deckenAnzahl, deckenErste, deckenAbstand, deckenLoecher }) => {
       const [a, c] = halbachsen(B, T);
       const innenFn = (x, j, z) => { const s = 1 - (j + 0.5) / H; return s > 0 && rund(x, z, a * s, c * s) <= 1; };
-      const bloecke = mitDecken(raster({ B, H, T, innen: innenFn, versatz, dicke: wandstaerke, offenUnten: true, offenOben: false, rolle: 'wand' }), { B, T, innen: innenFn, versatz }, H, { deckenAnzahl, deckenErste, deckenAbstand });
+      const bloecke = mitDecken(raster({ B, H, T, innen: innenFn, versatz, dicke: wandstaerke, offenUnten: true, offenOben: false, rolle: 'wand' }), { B, T, innen: innenFn, versatz }, H, { deckenAnzahl, deckenErste, deckenAbstand, deckenLoecher });
       const einbauzonen = rohrZonen(bloecke, { innenzone, wandstaerke });
       return {
         bloecke,

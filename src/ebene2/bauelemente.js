@@ -3,7 +3,7 @@
 // Formgebundene Blöcke (Treppe, Tür, Scheibe) tragen `form` und `richtung`; das Material entscheidet Ebene 3 über die Rolle (siehe `platziere`).
 // Koordinaten: x = Ost, z = Süd, y = oben. Gang, Treppe, Tür, Fenster: Blick nach Norden (der Weg läuft nach Norden, z wird kleiner). Nullpunkt = Mitte
 // der Grundfläche (bei ungerader Breite ein Block, bei gerader floor(Breite / 2)), y = 0 ist die Gehhöhe (Füße) bzw. die unterste Schicht des Elements.
-import { definiere, param } from './baustein.js';
+import { definiere, param, listeParam } from './baustein.js';
 
 const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Bauelemente, Menschenmaß bleibt fest)';
 const QUELLE_RAUM = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/haus-sonde.md (Haus-Sonde: ein geschlossener Raum mit Tür und Fenstern fehlte); Tür-Ausrichtung wie bau.tuer';
@@ -287,10 +287,14 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
   // Leiter (D4): ein Block breiter Schacht; nur für die Planung (intern): Leiterblöcke sind fest (Technikblöcke), die Leiter blickt nach Norden und hängt an der Wand dahinter (Süden).
   const leiter = definiere({
     id: 'bau.leiter', titel: 'Leiter (ein Block breit, senkrecht)', quelle: QUELLE, intern: true,
-    parameter: [param('hoehe', 'geometrie', { min: 1, max: 64, standard: 5, beschreibung: 'Zahl der Leiterblöcke übereinander' })],
+    parameter: [
+      param('hoehe', 'geometrie', { min: 1, max: 64, standard: 5, beschreibung: 'Zahl der Leiterblöcke übereinander' }),
+      listeParam('stuetzen', 'geometrie', { intern: true, min: 0, max: 64, standard: [], beschreibung: 'Höhen (0 = unterster Leiterblock), an denen hinter der Leiter ein Wandblock als Halt steht, weil dort keine Wand ist (eine Leiter braucht einen festen Block dahinter)' }),
+    ],
     testszenario: { start: 'leere Welt, Wand mit Leiter davor', erwartung: 'Der Spieler klettert hinauf (Dorfbewohner und Baby nicht)' },
-    baue: ({ hoehe }) => {
+    baue: ({ hoehe, stuetzen }) => {
       const bloecke = [], aussparungen = [];
+      for (const s of stuetzen) { const y = Number(s); if (!Number.isInteger(y) || y < 0 || y >= hoehe) throw new Error(`bau.leiter: Stütze in Höhe ${s} liegt außerhalb der Leiter`); bloecke.push({ x: 0, y, z: 1, rolle: 'wand' }); }
       for (let y = 0; y < hoehe; y++) {
         bloecke.push({ x: 0, y, z: 0, technik: true, id: 'minecraft:ladder', zustand: { facing_direction: 2 } });
         aussparungen.push({ art: 'oeffnung', von: { x: 0, y, z: 0 }, bis: { x: 0, y, z: 0 } }); // wo der Träger (Decke) liegt, ersetzt der Leiterblock ihn

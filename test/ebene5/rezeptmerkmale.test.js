@@ -15,7 +15,7 @@ const bauen = (e, s) => bauePlan(e, e.ebene4.freigeben(structuredClone(s), 'test
 
 test('Info und Anzeige: wählbare Merkmale aus dem Vokabular mit Anzeigetexten; Teile ohne Rezept haben keine', async () => {
   const e = await engine(), i = info(e);
-  assert.deepEqual(i.rezepte.turm.merkmale, { eingang: ['nord', 'ost', 'sued', 'west'], fenster: ['schlitze'] });
+  assert.deepEqual(i.rezepte.turm.merkmale, { eingang: ['nord', 'ost', 'sued', 'west'], fenster: ['schlitze'], geschosse: ['standard'], treppe: ['auto', 'wendel', 'gerade', 'leiter'] });
   const m = T.rezeptMerkmale(i, 'turm');
   assert.deepEqual(m.eingang.map((o) => o.anzeige), ['Norden', 'Osten', 'Süden', 'Westen']);
   assert.deepEqual(m.fenster, [{ wert: 'schlitze', anzeige: 'Fensterschlitze' }]);

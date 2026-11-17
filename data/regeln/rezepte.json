@@ -5,7 +5,7 @@
     {
       "id": "rezepte.turm",
       "titel": "Turm: Sockel, Schaft in zwei Segmenten, Krone und Kegeldach",
-      "regel": "Ein Teil der Spezifikation mit `rezept: \"turm\"` und den Außenmaßen breite, tiefe, hoehe wird aus gestapelten Ebene-2-Formen (Gliedern, von unten nach oben) zusammengesetzt. Jedes Glied nennt seinen Baustein, seinen Einzug je Seite (so bleibt die Parität der Breite und damit die Mittigkeit erhalten) und seine Höhe: als Anteil der Gesamthöhe (mit Mindest- und Höchstwert), als Anteil der eigenen Breite (ebenso) oder als Gewicht am Rest (ohne Grenzen; jedes Restglied bekommt mindestens eine Schicht). Mindestmaße: Breite und Tiefe ab 9, Höhe ab 16 und mindestens so groß wie die größere Breite (sonst ist es kein Turm). Die Summe der Höhen ist genau die Gesamthöhe, der Rest wird nach größtem Bruchteil verteilt. Sockel (Einzug 0, Wand 2) und Kegeldach (Einzug 0) sind am breitesten; das Dach überragt die Krone (bei kleinen Breiten Einzug 1 gegenüber dem Sockel, bei großen mehr: max(1, gerundet 5 % der Breite)) und den Schaft; der Schaft verjüngt sich in zwei Segmenten; die Krone kragt über den oberen Schaft aus (bei kleinen Breiten einen Block; der Einzug ist ein Anteil der Breite, bei großen Breiten kragt sie mehr aus, bei Breite 45 drei Blöcke). Damit jede Stufe geschlossen bleibt (kein Spalt zwischen den Gliedern), verdickt die Auswertung die Wand des tragenden Glieds (beim Verjüngen) oder des auskragenden Glieds (beim Auskragen) auf mindestens den Einzugsunterschied plus `auflage` (0 oder 1, Standard 0). Rollen: Sockel und Krone tragen den Block der Rolle `akzent`, alles andere `wand` (der Block der Rolle wird nicht von Blockwerk gewählt, sondern von der Palette). Optional (D3, `merkmale`): ein Eingang (Tür im Sockel, Himmelsrichtung wählbar) und Fensterschlitze je Geschoss in den Schaftgliedern; beides sind Kinder der Glieder (Einbau-Architektur), die Regeln stehen unter `parameter.merkmale`. Nicht Teil von D2/D3: Geschossdecken, Treppen, Innenräume, weitere Dekoration.",
+      "regel": "Ein Teil der Spezifikation mit `rezept: \"turm\"` und den Außenmaßen breite, tiefe, hoehe wird aus gestapelten Ebene-2-Formen (Gliedern, von unten nach oben) zusammengesetzt. Jedes Glied nennt seinen Baustein, seinen Einzug je Seite (so bleibt die Parität der Breite und damit die Mittigkeit erhalten) und seine Höhe: als Anteil der Gesamthöhe (mit Mindest- und Höchstwert), als Anteil der eigenen Breite (ebenso) oder als Gewicht am Rest (ohne Grenzen; jedes Restglied bekommt mindestens eine Schicht). Mindestmaße: Breite und Tiefe ab 9, Höhe ab 16 und mindestens so groß wie die größere Breite (sonst ist es kein Turm). Die Summe der Höhen ist genau die Gesamthöhe, der Rest wird nach größtem Bruchteil verteilt. Sockel (Einzug 0, Wand 2) und Kegeldach (Einzug 0) sind am breitesten; das Dach überragt die Krone (bei kleinen Breiten Einzug 1 gegenüber dem Sockel, bei großen mehr: max(1, gerundet 5 % der Breite)) und den Schaft; der Schaft verjüngt sich in zwei Segmenten; die Krone kragt über den oberen Schaft aus (bei kleinen Breiten einen Block; der Einzug ist ein Anteil der Breite, bei großen Breiten kragt sie mehr aus, bei Breite 45 drei Blöcke). Damit jede Stufe geschlossen bleibt (kein Spalt zwischen den Gliedern), verdickt die Auswertung die Wand des tragenden Glieds (beim Verjüngen) oder des auskragenden Glieds (beim Auskragen) auf mindestens den Einzugsunterschied plus `auflage` (0 oder 1, Standard 0). Rollen: Sockel und Krone tragen den Block der Rolle `akzent`, alles andere `wand` (der Block der Rolle wird nicht von Blockwerk gewählt, sondern von der Palette). Optional (D3, `merkmale`): ein Eingang (Tür im Sockel, Himmelsrichtung wählbar) und Fensterschlitze je Geschoss in den Schaftgliedern; beides sind Kinder der Glieder (Einbau-Architektur), die Regeln stehen unter `parameter.merkmale`. Optional (D4, `merkmale.geschosse` und `merkmale.treppe`): Geschossdecken im Abstand der Etagenhöhe und eine durchgehende Treppe (Wendel, gerade im Zickzack oder Leiter) vom Erdgeschoss bis zur obersten nutzbaren Ebene; Fenster richten sich dann an den Decken aus. Nicht Teil von D2 bis D4: Innenausstattung, weitere Dekoration.",
       "parameter": {
         "auflage": 1,
         "mindest": {
@@ -143,6 +143,62 @@
                     "west"
                   ]
                 ]
+              }
+            }
+          },
+          "geschosse": {
+            "formen": {
+              "standard": {
+                "titel": "Geschosse: Etagen von 5 Blöcken (4 Blöcke lichte Höhe, 1 Block Decke) mit durchgehender Treppe",
+                "etage": 5,
+                "obersteMindestlicht": 3,
+                "fenster": {
+                  "schwelleAbBoden": 2
+                },
+                "treppen": {
+                  "auto": [
+                    "wendel",
+                    "gerade"
+                  ],
+                  "formen": {
+                    "wendel": {
+                      "art": "wendel",
+                      "baustein": "bau.wendeltreppe",
+                      "titel": "Wendeltreppe um die Mitte",
+                      "radien": [
+                        6,
+                        5,
+                        4,
+                        3,
+                        2,
+                        1
+                      ],
+                      "begehbar": [
+                        "spieler",
+                        "dorfbewohner",
+                        "baby"
+                      ]
+                    },
+                    "gerade": {
+                      "art": "gerade",
+                      "baustein": "bau.treppe",
+                      "titel": "Gerade Treppe im Zickzack (zwei Spuren)",
+                      "begehbar": [
+                        "spieler",
+                        "dorfbewohner",
+                        "baby"
+                      ]
+                    },
+                    "leiter": {
+                      "art": "leiter",
+                      "baustein": "bau.leiter",
+                      "titel": "Leiter an der Wand (nur für Spieler)",
+                      "begehbar": [
+                        "spieler"
+                      ]
+                    }
+                  }
+                }
               }
             }
           }

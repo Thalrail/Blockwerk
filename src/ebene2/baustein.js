@@ -11,8 +11,9 @@ export const FORMEN = Object.freeze(['voll', 'treppe', 'tuer', 'scheibe']);
 export const RICHTUNGEN = Object.freeze(['north', 'east', 'south', 'west']);
 
 /** Beschreibt einen Parameter. `ganzzahl: false` erlaubt Kommazahlen (Proportionen). */
-export function param(name, groessenart, { min, max, standard, beschreibung, ganzzahl = true }) {
-  const p = { name, groessenart, min, max, standard, beschreibung, ganzzahl };
+/** `intern: true`: Parameter für die Planung (Ebene 3), nicht für den Leser und nicht für die Oberfläche (Vokabular und Briefing blenden ihn aus). */
+export function param(name, groessenart, { min, max, standard, beschreibung, ganzzahl = true, intern = false }) {
+  const p = { name, groessenart, min, max, standard, beschreibung, ganzzahl, ...(intern ? { intern: true } : {}) };
   if (!GROESSENARTEN.includes(groessenart)) throw new Error(`Parameter ${name}: Größenart "${groessenart}" ungültig`);
   for (const k of ['min', 'max', 'standard']) if (!Number.isFinite(p[k])) throw new Error(`Parameter ${name}: ${k} fehlt`);
   if (p.min > p.max || p.standard < p.min || p.standard > p.max) throw new Error(`Parameter ${name}: Bereich widersprüchlich`);

@@ -73,7 +73,7 @@ export function erzeugeFormen({ regelwerk }) {
     id: 'form.zylinder', titel: 'Zylinder (Turmrohr, oben und unten offen)', quelle: QUELLE,
     parameter: [
       breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 8, beschreibung: 'Höhe in Schichten' }), wand(1),
-      param('wandzonen', 'geometrie', { min: 0, max: 1, standard: 0, beschreibung: '1 = bietet je Himmelsrichtung eine Wandzone für Kinder (Tür, Fenster); 0 = keine Zonen, die Blöcke sind in beiden Fällen gleich' }),
+      param('wandzonen', 'geometrie', { intern: true, min: 0, max: 1, standard: 0, beschreibung: '1 = bietet je Himmelsrichtung eine Wandzone für Kinder (Tür, Fenster); 0 = keine Zonen, die Blöcke sind in beiden Fällen gleich' }),
     ],
     testszenario: { start: 'leere Welt, Baustein darauf gesetzt', erwartung: 'Prüfer meldet keinen Verstoß; jede Schicht ist gleich, Rohr ist wasserdicht' },
     baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, wandzonen }) => {

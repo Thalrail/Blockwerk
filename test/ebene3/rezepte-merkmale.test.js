@@ -184,3 +184,26 @@ test('Mindestmaß: auch der kleinste Turm 9×9×16 trägt Eingang und Fenster (S
   assert.equal(bl.filter((c) => /_door$/.test(idVon(c))).length, 2, 'die Tür ist da; Fenster passen hier mit Randzeilen nicht in den kurzen Schaft (gewollt: keine Fenster auf Kosten der Tragfähigkeit)');
   assert.equal(messeAufbau(bl).unverbunden.bloecke, 0);
 });
+
+test('Interne Parameter (wandzonen, tiefe bei Tür und Fenster) sehen weder Leser noch Oberfläche; in einer Spezifikation werden sie abgelehnt', async () => {
+  const e = await engine();
+  const briefing = e.ebene4.briefing();
+  assert.doesNotMatch(briefing, /wandzonen/);
+  assert.doesNotMatch(briefing, /bau\.(tuer|fenster)[^\n]*tiefe/);
+  const namen = (id) => e.ebene4.vokabular.bausteine.find((b) => b.id === id).parameter.map((p) => p.name);
+  assert.deepEqual(namen('form.zylinder'), ['breite', 'tiefe', 'hoehe', 'wandstaerke']);
+  assert.deepEqual(namen('bau.tuer'), ['fluegel']);
+  assert.deepEqual(namen('bau.fenster'), ['breite', 'hoehe', 'rahmen']);
+  const s = spec(13, 13, 34); delete s.teile[0].rezept; s.teile[0].form = { baustein: 'form.zylinder', groesse: { breite: 9, tiefe: 9, hoehe: 9, wandzonen: 1 } };
+  assert.ok(e.ebene4.pruefe(s).rueckfragen.some((q) => q.pfad === 'teile[0].form.groesse.wandzonen'), 'wandzonen in der Spezifikation → Rückfrage (kein Umweg an der Zonen-Regel vorbei)');
+});
+
+test('Tür aus der Materialwahl: ein Block, der keine Tür ist (Stein, Falltür, unbekannt), ergibt eine klare Rückfrage der Spezifikationsprüfung, nie einen gesetzten Nicht-Türblock', async () => {
+  const e = await engine();
+  const meldung = (id) => e.ebene4.pruefe(spec(13, 13, 34, { eingang: 'sued' }, { stimmung: 'hell-nordisch', palette: { akzent: { tuer: id } } })).rueckfragen.map((q) => q.frage).join(' | ');
+  assert.match(meldung('minecraft:stone'), /passt nicht zur Form „tuer“/);
+  assert.match(meldung('minecraft:oak_trapdoor'), /nicht im Blockregister/);
+  assert.match(meldung('minecraft:nope'), /nicht im Blockregister/);
+  assert.equal(meldung('minecraft:spruce_door'), '');
+  assert.equal(meldung('minecraft:copper_door'), '');
+});

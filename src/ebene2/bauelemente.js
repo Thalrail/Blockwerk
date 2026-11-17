@@ -223,7 +223,7 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
     id: 'bau.tuer', titel: 'Tür (1 oder 2 Flügel, 2 Blöcke hoch, ohne Rahmen)', quelle: QUELLE,
     parameter: [
       param('fluegel', 'menschenmass', { min: 1, max: 2, standard: 1, beschreibung: '1 = einfache Tür, 2 = Doppeltür (Scharniere außen)' }),
-      param('tiefe', 'geometrie', { min: 1, max: 16, standard: 1, beschreibung: 'Wanddicke in Blöcken, die die Öffnung durchstößt (Standard 1 = dünne Mauer); die Tür sitzt an der Vorderseite, dahinter hält der Baustein den Durchgang frei (Freihaltung)' }),
+      param('tiefe', 'geometrie', { intern: true, min: 1, max: 16, standard: 1, beschreibung: 'Wanddicke in Blöcken, die die Öffnung durchstößt (Standard 1 = dünne Mauer); die Tür sitzt an der Vorderseite, dahinter hält der Baustein den Durchgang frei (Freihaltung)' }),
     ],
     testszenario: { start: 'leere Welt mit Boden, Tür in eine Mauer gesetzt', erwartung: 'Spieler und Dorfbewohner gehen durch (Holztür); Eisentür bleibt für Dorfbewohner zu' },
     baue: ({ fluegel, tiefe }) => {
@@ -243,7 +243,7 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
       param('breite', 'geometrie', { min: 1, max: 64, standard: 3, beschreibung: 'Breite der Glasfläche in Blöcken' }),
       param('hoehe', 'geometrie', { min: 1, max: 64, standard: 2, beschreibung: 'Höhe der Glasfläche in Blöcken' }),
       param('rahmen', 'menschenmass', { min: 0, max: 4, standard: 1, beschreibung: 'Rahmendicke in Blöcken (0 = ohne Rahmen)' }),
-      param('tiefe', 'geometrie', { min: 1, max: 16, standard: 1, beschreibung: 'Wanddicke in Blöcken, die die Öffnung durchstößt (Standard 1 = dünne Mauer); Rahmen und Scheiben sitzen an der Vorderseite, dahinter ist die Laibung frei' }),
+      param('tiefe', 'geometrie', { intern: true, min: 1, max: 16, standard: 1, beschreibung: 'Wanddicke in Blöcken, die die Öffnung durchstößt (Standard 1 = dünne Mauer); Rahmen und Scheiben sitzen an der Vorderseite, dahinter ist die Laibung frei' }),
     ],
     testszenario: { start: 'leere Welt, Fenster in eine Mauer gesetzt', erwartung: 'Die Öffnung ist lückenlos mit Rahmen und Scheiben gefüllt' },
     baue: ({ breite, hoehe, rahmen, tiefe }) => {

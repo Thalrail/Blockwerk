@@ -74,7 +74,7 @@ Jede Metrik hat eine feste Formel auf den Blockdaten; die **Schwellen kommen aus
 | Silhouette | Höhenstaffelung: Verhältnisse der Baukörperhöhen (größte zu kleinste, Anzahl verschiedener Höhenstufen) gegen die Referenz | innerhalb der Toleranz der Referenz |
 | Achsensymmetrie | Anteil der Blöcke der Gesamtanlage, die an der Hauptachse ein spiegelbildliches Gegenstück haben, gegen die Referenz | innerhalb der Toleranz der Referenz |
 | Hofanteil und Materialkonsistenz | Hofflächenanteil an der Grundfläche; Zahl und Verteilung der Materialien je Baukörperart | innerhalb der Toleranz der Referenz |
-Ohne bestätigte Schwellen gibt es keine automatische Abnahme; dann entscheidet allein der Bildvergleich von Jonah.
+Ist der Nenner einer Quote 0 (keine Fügungen beziehungsweise keine deklarierten Anschlüsse), gilt die Metrik als „nicht anwendbar“, nie als bestanden; D5.0 legt je Referenz eine Mindestanzahl fest. Ohne bestätigte Schwellen gibt es keine automatische Abnahme; dann entscheidet allein der Bildvergleich von Jonah.
 
 ## 7. Risiken
 - **Optische Qualität ist teilweise subjektiv.** Metriken sind Mindestschwellen; die Abnahme bleibt der Blick von Jonah. Deshalb D5.0 zuerst.

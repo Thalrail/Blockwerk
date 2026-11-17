@@ -22,12 +22,12 @@ export function param(name, groessenart, { min, max, standard, beschreibung, gan
 }
 
 /** Beschreibt einen Listenparameter (z. B. die Gegenstandssorten eines Lagers): Liste von Texten mit Länge min…max. */
-export function listeParam(name, groessenart, { min, max, standard, beschreibung }) {
+export function listeParam(name, groessenart, { min, max, standard, beschreibung, intern = false }) {
   if (!GROESSENARTEN.includes(groessenart)) throw new Error(`Parameter ${name}: Größenart "${groessenart}" ungültig`);
   if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min > max) throw new Error(`Parameter ${name}: Längenbereich widersprüchlich`);
   if (!Array.isArray(standard) || standard.length < min || standard.length > max) throw new Error(`Parameter ${name}: Standardliste passt nicht`);
   if (typeof beschreibung !== 'string' || !beschreibung) throw new Error(`Parameter ${name}: Beschreibung fehlt`);
-  return Object.freeze({ name, groessenart, min, max, standard, beschreibung, liste: true });
+  return Object.freeze({ name, groessenart, min, max, standard, beschreibung, liste: true, ...(intern ? { intern: true } : {}) });
 }
 
 export const ZONENARTEN = Object.freeze(['innenraum', 'wand', 'decke', 'boden']);
@@ -142,7 +142,7 @@ export function huelleVon(bloecke) {
 export function definiere(def) {
   const beschreibung = new Map(def.parameter.map((p) => [p.name, p]));
   const baustein = {
-    id: def.id, titel: def.titel, quelle: def.quelle, status: def.status ?? 'simuliert',
+    id: def.id, titel: def.titel, quelle: def.quelle, status: def.status ?? 'simuliert', ...(def.intern === true ? { intern: true } : {}), // intern: nur für die Planung (Ebene 3), nicht im Vokabular des Lesers
     parameter: def.parameter, testszenario: def.testszenario,
     /** Werte prüfen (Bereich, Ganzzahl), Standardwerte ergänzen, bauen. */
     erzeuge(eingabe = {}) {

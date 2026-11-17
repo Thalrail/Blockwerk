@@ -271,6 +271,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
     if (rueckfragen.length) return leer();
     /** Achsen, in denen ein Glied symmetrisch bleibt: Sitzt ein Kind (Eingang, Fenster) nur an einer Seite ohne Gegenstück (nord ohne sued, ost ohne west), entfällt die Spiegelung über diese Achse. */
     const symmetrieAchsen = (rezept, gliedRef) => {
+      if (rezept.teile.find((q) => q.ref === gliedRef)?.parameter.deckenLoecher?.length) return []; // Öffnungen für Treppe oder Leiter in den Decken: keine Spiegelsymmetrie mehr
       const seiten = new Set((rezept.kinder ?? []).filter((k) => k.traeger === gliedRef).map((k) => k.einbau.zone.replace(/^wand-/, '')));
       return ['x', 'z'].filter((a) => (a === 'z' ? seiten.has('nord') === seiten.has('sued') : seiten.has('ost') === seiten.has('west')));
     };
@@ -286,6 +287,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
       const ratio = t.form.proportionen?.hoehe_zu_breite;
       if (ratio !== undefined && x.hoeheParam && x.groesse.breite !== undefined) soll.verhaeltnis = { hoehe_zu_breite: ratio, toleranz: Math.max(0.5, toleranz * x.groesse.breite * ratio) };
       hinweise.push({ pfad: `teile[${x.i}]`, text: `${t.name}: Abschnitt „${t.id}“ von (${hu.von.x}, ${hu.von.y}, ${hu.von.z}) bis (${hu.bis.x}, ${hu.bis.y}, ${hu.bis.z}), ${x.W} × ${x.D} × ${x.H} Blöcke.${x.rezept ? ` Rezept „${x.rezept.rezept}“ mit ${x.rezept.teile.length} Gliedern.` : ''}` });
+      for (const h of x.rezept?.geschosse?.hinweise ?? []) hinweise.push({ pfad: `teile[${x.i}].merkmale.geschosse`, text: `${t.name}: ${h}` });
       return {
         id: t.id, name: t.name, huelle: hu, nach: [...nach.get(t.id)].sort(),
         zonen, ...(x.bedarf.length ? { bedarf: x.bedarf } : {}),

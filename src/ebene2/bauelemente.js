@@ -3,7 +3,7 @@
 // Formgebundene Blöcke (Treppe, Tür, Scheibe) tragen `form` und `richtung`; das Material entscheidet Ebene 3 über die Rolle (siehe `platziere`).
 // Koordinaten: x = Ost, z = Süd, y = oben. Gang, Treppe, Tür, Fenster: Blick nach Norden (der Weg läuft nach Norden, z wird kleiner). Nullpunkt = Mitte
 // der Grundfläche (bei ungerader Breite ein Block, bei gerader floor(Breite / 2)), y = 0 ist die Gehhöhe (Füße) bzw. die unterste Schicht des Elements.
-import { definiere, param } from './baustein.js';
+import { definiere, param, listeParam } from './baustein.js';
 
 const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2: Bauelemente, Menschenmaß bleibt fest)';
 const QUELLE_RAUM = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/haus-sonde.md (Haus-Sonde: ein geschlossener Raum mit Tür und Fenstern fehlte); Tür-Ausrichtung wie bau.tuer';
@@ -204,18 +204,25 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
       param('radius', 'geometrie', { min: 1, max: 24, standard: 2, beschreibung: 'Abstand des Rings von der Mitte in Blöcken; je größer, desto mehr Stufen pro Umdrehung' }),
       param('stufen', 'geometrie', { min: 1, max: 512, standard: 16, beschreibung: 'Zahl der Stufen insgesamt (Höhe = Stufen × Stufenhöhe 1)' }),
       param('drehsinn', 'menschenmass', { min: 0, max: 1, standard: 1, beschreibung: '1 = im Uhrzeigersinn aufwärts (von oben gesehen), 0 = gegen den Uhrzeigersinn' }),
+      param('start', 'geometrie', { intern: true, min: 0, max: 4095, standard: 0, beschreibung: 'Ringzelle der ersten Stufe (für ein Stück einer durchgehenden Wendeltreppe, z. B. eine Etage)' }),
+      param('aussparung', 'geometrie', { intern: true, min: 0, max: 1, standard: 0, beschreibung: '1 = meldet je Stufe die Öffnung (eigener Block) und die Kopffreiheit darüber, damit Decken des Trägers dort entfallen' }),
     ],
     testszenario: { start: 'leere Welt mit Boden, Wendeltreppe mit Plattform oben', erwartung: 'Spieler, Dorfbewohner und Baby gehen ohne Sprung hinauf; über jeder Stufe sind 2 Blöcke frei' },
-    baue: ({ radius, stufen, drehsinn }) => {
+    baue: ({ radius, stufen, drehsinn, start, aussparung }) => {
       const pfad = ring(radius);
       if (pfad.length < mindeststufen) throw new Error(`bau.wendeltreppe: nur ${pfad.length} Stufen pro Umdrehung (mindestens ${mindeststufen})`);
       const lauf = drehsinn === 1 ? pfad : pfad.slice().reverse();
       const bloecke = [];
+      const aussparungen = [];
       for (let s = 0; s < stufen; s++) {
-        const a = lauf[s % lauf.length], b = lauf[(s + 1) % lauf.length];
+        const a = lauf[(start + s) % lauf.length], b = lauf[(start + s + 1) % lauf.length];
         bloecke.push({ x: a.x, y: s * stufenhoehe, z: a.z, rolle: 'boden', form: 'treppe', richtung: richtungZu(a, b) });
+        if (aussparung === 1) { // wie bau.treppe: die Stufe selbst ersetzt den Block des Trägers, darüber bleiben 3 Zellen frei (2 zum Stehen, 1 für den Aufstieg)
+          aussparungen.push({ art: 'oeffnung', von: { x: a.x, y: s * stufenhoehe, z: a.z }, bis: { x: a.x, y: s * stufenhoehe, z: a.z } });
+          aussparungen.push({ art: 'freihaltung', von: { x: a.x, y: s * stufenhoehe + 1, z: a.z }, bis: { x: a.x, y: s * stufenhoehe + gangHoehe + 1, z: a.z } });
+        }
       }
-      return { bloecke, anschluesse: [{ art: 'durchgang', seite: 'unten', stufenProUmdrehung: lauf.length }, { art: 'durchgang', seite: 'oben', hoehe: stufen * stufenhoehe }] };
+      return { bloecke, anschluesse: [{ art: 'durchgang', seite: 'unten', stufenProUmdrehung: lauf.length }, { art: 'durchgang', seite: 'oben', hoehe: stufen * stufenhoehe }], ...(aussparungen.length ? { aussparungen } : {}) };
     },
   });
 
@@ -277,5 +284,24 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
     },
   });
 
-  return { gang, raum, wand, treppe, wendeltreppe, tuer, fenster, saeule, alle: [gang, raum, wand, treppe, wendeltreppe, tuer, fenster, saeule] };
+  // Leiter (D4): ein Block breiter Schacht; nur für die Planung (intern): Leiterblöcke sind fest (Technikblöcke), die Leiter blickt nach Norden und hängt an der Wand dahinter (Süden).
+  const leiter = definiere({
+    id: 'bau.leiter', titel: 'Leiter (ein Block breit, senkrecht)', quelle: QUELLE, intern: true,
+    parameter: [
+      param('hoehe', 'geometrie', { min: 1, max: 64, standard: 5, beschreibung: 'Zahl der Leiterblöcke übereinander' }),
+      listeParam('stuetzen', 'geometrie', { intern: true, min: 0, max: 64, standard: [], beschreibung: 'Höhen (0 = unterster Leiterblock), an denen hinter der Leiter ein Wandblock als Halt steht, weil dort keine Wand ist (eine Leiter braucht einen festen Block dahinter)' }),
+    ],
+    testszenario: { start: 'leere Welt, Wand mit Leiter davor', erwartung: 'Der Spieler klettert hinauf (Dorfbewohner und Baby nicht)' },
+    baue: ({ hoehe, stuetzen }) => {
+      const bloecke = [], aussparungen = [];
+      for (const s of stuetzen) { const y = Number(s); if (!Number.isInteger(y) || y < 0 || y >= hoehe) throw new Error(`bau.leiter: Stütze in Höhe ${s} liegt außerhalb der Leiter`); bloecke.push({ x: 0, y, z: 1, rolle: 'wand' }); }
+      for (let y = 0; y < hoehe; y++) {
+        bloecke.push({ x: 0, y, z: 0, technik: true, id: 'minecraft:ladder', zustand: { facing_direction: 2 } });
+        aussparungen.push({ art: 'oeffnung', von: { x: 0, y, z: 0 }, bis: { x: 0, y, z: 0 } }); // wo der Träger (Decke) liegt, ersetzt der Leiterblock ihn
+      }
+      return { bloecke, anschluesse: [{ art: 'durchgang', seite: 'unten' }, { art: 'durchgang', seite: 'oben', hoehe }], aussparungen };
+    },
+  });
+
+  return { gang, raum, wand, treppe, wendeltreppe, tuer, fenster, saeule, leiter, alle: [gang, raum, wand, treppe, wendeltreppe, tuer, fenster, saeule, leiter] };
 }

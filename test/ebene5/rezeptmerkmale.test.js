@@ -15,7 +15,7 @@ const bauen = (e, s) => bauePlan(e, e.ebene4.freigeben(structuredClone(s), 'test
 
 test('Info und Anzeige: wählbare Merkmale aus dem Vokabular mit Anzeigetexten; Teile ohne Rezept haben keine', async () => {
   const e = await engine(), i = info(e);
-  assert.deepEqual(i.rezepte.turm.merkmale, { eingang: ['nord', 'ost', 'sued', 'west'], fenster: ['schlitze'] });
+  assert.deepEqual(i.rezepte.turm.merkmale, { eingang: ['nord', 'ost', 'sued', 'west'], fenster: ['schlitze'], geschosse: ['standard'], treppe: ['auto', 'wendel', 'gerade', 'leiter'] });
   const m = T.rezeptMerkmale(i, 'turm');
   assert.deepEqual(m.eingang.map((o) => o.anzeige), ['Norden', 'Osten', 'Süden', 'Westen']);
   assert.deepEqual(m.fenster, [{ wert: 'schlitze', anzeige: 'Fensterschlitze' }]);
@@ -81,4 +81,52 @@ test('Neuplanung: Aktivieren, Ändern und Deaktivieren laufen durch die echte Pi
   const eisen = e.ebene4.baue(e.ebene4.freigeben(T.setzeMerkmal(spec(undefined, { stimmung: 'dunkel-industriell' }), 'turm', 'eingang', 'sued', i), 'test'));
   assert.notEqual(eisen.status, 'fertig');
   assert.match(JSON.stringify(eisen.rueckfragen), /nicht von Hand/);
+});
+
+// ---- D4.4: Geschosse und Treppenform ----
+test('Geschosse und Treppenform: Anzeigetexte, Abhängigkeit, „automatisch“ braucht kein Feld, Abschalten der Geschosse nimmt die Treppenform mit', async () => {
+  const e = await engine(), i = info(e), s0 = spec();
+  const m = T.rezeptMerkmale(i, 'turm');
+  assert.deepEqual(m.geschosse.map((o) => o.anzeige), ['Geschosse (Etagen von 5 Blöcken)']);
+  assert.deepEqual(m.treppe.map((o) => o.wert), ['auto', 'wendel', 'gerade', 'leiter']);
+  assert.equal(m.treppe.find((o) => o.wert === 'leiter').anzeige, 'Leiter (nur für Spieler)', 'die Einschränkung ist sichtbar');
+  assert.throws(() => T.setzeMerkmal(s0, 'turm', 'treppe', 'wendel', i), (f) => f instanceof T.TeileFehler && /zuerst die Geschosse/.test(f.message));
+  const g = T.setzeMerkmal(s0, 'turm', 'geschosse', 'standard', i);
+  assert.deepEqual(g.teile[0].merkmale, { geschosse: 'standard' });
+  const w = T.setzeMerkmal(g, 'turm', 'treppe', 'wendel', i);
+  assert.deepEqual(w.teile[0].merkmale, { geschosse: 'standard', treppe: 'wendel' });
+  const auto = T.setzeMerkmal(w, 'turm', 'treppe', 'auto', i);
+  assert.deepEqual(auto.teile[0].merkmale, { geschosse: 'standard' }, 'automatisch = kein Feld');
+  const ohne = T.setzeMerkmal(w, 'turm', 'geschosse', null, i);
+  assert.deepEqual(ohne, s0, 'ohne Geschosse auch keine Treppenform: wieder die Ausgangsfassung');
+  assert.throws(() => T.setzeMerkmal(g, 'turm', 'treppe', 'rutsche', i), (f) => f instanceof T.TeileFehler && /wendel/.test(f.message));
+});
+
+test('Felder: Geschosse und Treppenform über m-geschosse und m-treppe; Anzeige der vorhandenen Werte; leer schaltet ab', async () => {
+  const e = await engine(), i = info(e);
+  const s = spec({ eingang: 'sued', geschosse: 'standard', treppe: 'gerade' });
+  const f = T.felderVon(s, 'turm');
+  assert.deepEqual([f['m-eingang'], f['m-geschosse'], f['m-treppe']], ['sued', 'standard', 'gerade']);
+  assert.equal(T.felderVon(spec({ geschosse: 'standard', treppe: 'auto' }), 'turm')['m-treppe'], '', 'ein ausdrückliches „auto“ erscheint als Automatisch');
+  assert.deepEqual(T.wendeFelder(s, 'turm', f, i), s, 'unveränderte Felder: unveränderte Kopie');
+  const wechsel = T.wendeFelder(s, 'turm', { ...f, 'm-treppe': 'leiter' }, i);
+  assert.equal(wechsel.teile[0].merkmale.treppe, 'leiter');
+  const aus = T.wendeFelder(s, 'turm', { ...f, 'm-geschosse': '', 'm-treppe': 'gerade' }, i); // die Treppenform bleibt im Formular stehen, gilt aber ohne Geschosse nicht
+  assert.deepEqual(aus.teile[0].merkmale, { eingang: 'sued' });
+  const neu = T.wendeFelder(spec(), 'turm', { ...T.felderVon(spec(), 'turm'), 'm-geschosse': 'standard' }, i);
+  assert.deepEqual(neu.teile[0].merkmale, { geschosse: 'standard' });
+});
+
+test('Vorschau und Neuplanung: Platzproblem als verständliche Rückfrage (nichts wird übernommen), passender Turm wird gebaut, Abschalten ergibt wieder den Ausgangsplan', async () => {
+  const e = await engine(), i = info(e);
+  const klein = spec(); klein.teile[0].form.groesse = { breite: 9, tiefe: 9, hoehe: 16 };
+  const zuKlein = T.setzeMerkmal(klein, 'turm', 'geschosse', 'standard', i);
+  const v = T.vorschau(e, { spezifikation: zuKlein, aenderungen: null, messungen: [], planVorher: { aenderungen: [] } });
+  assert.ok(v.rueckfragen.length >= 1 && /keine einzige Etage möglich/.test(v.rueckfragen.map((q) => q.frage).join(' ')), JSON.stringify(v.rueckfragen).slice(0, 200));
+  const ohne = bauen(e, spec());
+  const mit = bauen(e, T.setzeMerkmal(T.setzeMerkmal(spec(), 'turm', 'geschosse', 'standard', i), 'turm', 'treppe', 'wendel', i));
+  assert.equal(mit.status, 'fertig');
+  assert.ok(mit.entwurf.teile.filter((p) => /^turm\.treppe-wendel-/.test(p.ref ?? '')).length >= 4);
+  const wieder = bauen(e, T.setzeMerkmal(T.setzeMerkmal(spec({ geschosse: 'standard', treppe: 'wendel' }), 'turm', 'geschosse', null, i), 'turm', 'treppe', null, i));
+  assert.deepEqual(wieder.entwurf, ohne.entwurf, 'abgeschaltet = Ausgangsplan, Teil für Teil');
 });

@@ -2,6 +2,8 @@
 // Die Rezepte sind Daten (data/regeln/rezepte.json, Regel rezepte.<name>); hier steht nur die feste, deterministische Auswertung. Gleiche Eingabe = gleiches Ergebnis.
 // Die Spezifikation (Ebene 4) wählt nur den Namen und nennt die Außenmaße; die Glieder, ihre Maße und Lagen kennt allein dieses Rezept.
 
+import { erzeugeGeschosse } from './geschosse.js';
+
 const PRAEFIX = 'rezepte.';
 const ganz = (n) => Number.isSafeInteger(n);
 const OBJEKT = (w) => w !== null && typeof w === 'object' && !Array.isArray(w);
@@ -19,6 +21,7 @@ export class RezeptFehler extends Error {
  * @param {{regelwerk: object, ebene2: object}} quellen
  */
 export function erzeugeRezepte({ regelwerk, ebene2 }) {
+  const G = erzeugeGeschosse({ ebene2 });
   const rollenErlaubt = regelwerk.parameter('plan.palette', 'rollen');
   const regeln = () => regelwerk.alle().filter((r) => r.id.startsWith(PRAEFIX));
   const namen = () => regeln().map((r) => r.id.slice(PRAEFIX.length));
@@ -57,7 +60,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
   /** Daten der optionalen Merkmale (Eingang, Fensterformen): jede Angabe wird beim Laden geprüft, nichts davon rät die Auswertung. */
   function pruefeMerkmale(name, d, f) {
     const m = d.merkmale;
-    if (!OBJEKT(m) || Object.keys(m).some((k) => !['eingang', 'fenster'].includes(k))) f('merkmale darf nur eingang und fenster enthalten');
+    if (!OBJEKT(m) || Object.keys(m).some((k) => !['eingang', 'fenster', 'geschosse'].includes(k))) f('merkmale darf nur eingang, fenster und geschosse enthalten (die Treppenformen stehen in geschosse.formen.*.treppen)');
     const gliedIds = new Set(d.glieder.map((g) => g.id));
     const seiten = (x, wo) => { if (!Array.isArray(x) || !x.length || x.some((q) => !SEITEN.includes(q)) || new Set(x).size !== x.length) f(`${wo}: Seiten aus ${SEITEN.join(', ')} (ohne Doppelte)`); };
     const baustein = (id, wo, params) => {
@@ -101,6 +104,34 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
         for (const k of ['geschoss', 'schwelle', 'randUnten', 'randOben']) if (!(ganz(fo[k]) && fo[k] >= (k === 'geschoss' ? 1 : 0))) f(`${wo}.${k}: ganze Zahl`);
         if (!Array.isArray(fo.seitenfolge) || !fo.seitenfolge.length) f(`${wo}.seitenfolge fehlt`);
         fo.seitenfolge.forEach((q, i) => seiten(q, `${wo}.seitenfolge[${i}]`));
+      }
+    }
+    const ge = m.geschosse;
+    if (ge !== undefined) {
+      if (!OBJEKT(ge) || !OBJEKT(ge.formen) || !Object.keys(ge.formen).length) f('merkmale.geschosse.formen braucht mindestens eine Geschossform');
+      for (const [gn, go] of Object.entries(ge.formen)) {
+        const wo = `merkmale.geschosse.formen.${gn}`;
+        if (!ID.test(gn) || !OBJEKT(go) || typeof go.titel !== 'string' || !go.titel) f(`${wo}: Name (Kleinbuchstaben) und titel nötig`);
+        if (!(ganz(go.etage) && go.etage >= 5 && go.etage <= 16)) f(`${wo}.etage: ganze Zahl von 5 bis 16 (mindestens 4 lichte Höhe und 1 Block Decke)`);
+        if (!(ganz(go.obersteMindestlicht) && go.obersteMindestlicht >= 3 && go.obersteMindestlicht <= go.etage - 1)) f(`${wo}.obersteMindestlicht: ganze Zahl ab 3 (Kopffreiheit auf der obersten Ebene), höchstens die lichte Höhe`);
+        if (!(ganz(go.hoechstZellen) && go.hoechstZellen >= 1000)) f(`${wo}.hoechstZellen: ganze Zahl ab 1000 (größtes Bauwerk, für das die Geschosse geplant werden: Breite × Tiefe × Höhe)`);
+        if (!OBJEKT(go.fenster) || !(ganz(go.fenster.schwelleAbBoden) && go.fenster.schwelleAbBoden >= 0 && go.fenster.schwelleAbBoden <= go.etage - 3)) f(`${wo}.fenster.schwelleAbBoden: ganze Zahl ab 0 innerhalb der Etage`);
+        const tr = go.treppen;
+        if (!OBJEKT(tr) || !OBJEKT(tr.formen) || !Object.keys(tr.formen).length) f(`${wo}.treppen.formen braucht mindestens eine Treppenform`);
+        if (!Array.isArray(tr.auto) || !tr.auto.length || tr.auto.some((q) => !Object.hasOwn(tr.formen, q)) || tr.auto.includes('leiter')) f(`${wo}.treppen.auto: Treppenformen aus formen, nie die Leiter (die gilt nur bei ausdrücklicher Wahl)`);
+        for (const [tn, to] of Object.entries(tr.formen)) {
+          const w2 = `${wo}.treppen.formen.${tn}`;
+          if (!ID.test(tn) || tn === 'auto' || !OBJEKT(to) || !['wendel', 'gerade', 'leiter'].includes(to.art) || typeof to.titel !== 'string' || !to.titel) f(`${w2}: Name (nicht „auto“), art (wendel, gerade, leiter) und titel nötig`);
+          if (!Array.isArray(to.begehbar) || !to.begehbar.length || to.begehbar.some((q) => !['spieler', 'dorfbewohner', 'baby'].includes(q))) f(`${w2}.begehbar: Liste aus spieler, dorfbewohner, baby`);
+          const b = ebene2.bausteine.get(to.baustein);
+          if (!b || to.baustein.startsWith('form.')) f(`${w2}.baustein: ${String(to.baustein)} ist kein Bauelement`);
+          if (to.art === 'wendel') {
+            if (!Array.isArray(to.radien) || !to.radien.length) f(`${w2}.radien: Liste ganzer Radien`);
+            for (const r of to.radien) imBereich(to.baustein, 'radius', r, w2);
+            imBereich(to.baustein, 'stufen', go.etage + 1, w2);
+          } else if (to.art === 'gerade') { imBereich(to.baustein, 'stufen', go.etage, w2); imBereich(to.baustein, 'breite', 1, w2); }
+          else imBereich(to.baustein, 'hoehe', go.etage, w2);
+        }
       }
     }
   }
@@ -201,19 +232,36 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       y += h[i];
       return teil;
     });
-    const kinder = (mm.eingang || mm.fenster) ? baueKinder(name, d, mm, teile, praefix) : [];
-    return { rezept: name, huelle: { breite: B, tiefe: T, hoehe: H }, teile, ...(kinder.length ? { kinder } : {}) };
+    // Geschosse (D4): Decken und eine durchgehende Treppe, gegen die echte Geometrie geplant (keine Schätzung); die Glieder bekommen die internen Parameter erst danach
+    let geschosse = null;
+    if (mm.geschosse) {
+      const fehler = (pfad, text) => { const f = new RezeptFehler(text); f.pfad = pfad; throw f; };
+      const sockel = mm.eingang ? teile.find((q) => q.glied === d.merkmale.eingang.glied) : null;
+      const eingang = mm.eingang ? { seite: mm.eingang, breite: ((mm.eingang === 'nord' || mm.eingang === 'sued' ? sockel.parameter.breite : sockel.parameter.tiefe) % 2 === 0 ? d.merkmale.eingang.fluegel.gerade : d.merkmale.eingang.fluegel.ungerade) } : null;
+      geschosse = G.plane({ name, form: d.merkmale.geschosse.formen[mm.geschosse], wahl: mm.treppe ?? 'auto', teile, praefix, eingang, fehler });
+      for (const q of teile) {
+        const deck = geschosse.decken.get(q.glied);
+        if (deck) q.parameter = { ...q.parameter, deckenAnzahl: deck.anzahl, deckenErste: deck.erste, deckenAbstand: geschosse.etage, deckenLoecher: deck.loecher };
+        if (geschosse.traegerGlieder.has(q.glied)) q.parameter = { ...q.parameter, innenzone: 1 };
+      }
+    }
+    const kinder = (mm.eingang || mm.fenster) ? baueKinder(name, d, mm, teile, praefix, geschosse) : [];
+    if (geschosse) kinder.push(...geschosse.kinder);
+    return {
+      rezept: name, huelle: { breite: B, tiefe: T, hoehe: H }, teile, ...(kinder.length ? { kinder } : {}),
+      ...(geschosse ? { geschosse: { form: geschosse.form, treppe: geschosse.art, etagen: geschosse.n, obersteEbene: geschosse.obersteEbene, begehbar: geschosse.begehbar, hinweise: geschosse.hinweise } } : {}),
+    };
   }
 
   /** Prüft die gewählten Merkmale gegen die Rezeptdaten (unbekannte Werte nennen die möglichen) und gibt { eingang: seite|null, fenster: form|null } zurück. */
   function waehleMerkmale(name, d, merkmale) {
     const fehler = (pfad, text) => { const f = new RezeptFehler(text); f.pfad = pfad; throw f; };
     const m = merkmale === undefined ? {} : merkmale; // nur ein fehlendes Feld heißt „keine Merkmale“; null oder ein anderer Typ bekommt die Rückfrage
-    if (!OBJEKT(m)) fehler('merkmale', `„${name}“: merkmale muss eine Zuordnung sein (eingang, fenster)`);
-    const erg = { eingang: null, fenster: null };
+    if (!OBJEKT(m)) fehler('merkmale', `„${name}“: merkmale muss eine Zuordnung sein (eingang, fenster, geschosse, treppe)`);
+    const erg = { eingang: null, fenster: null, geschosse: null, treppe: null };
     const gewaehlt = Object.keys(m).filter((k) => m[k] !== undefined);
-    if (gewaehlt.length && d.merkmale === undefined) fehler('merkmale', `„${name}“ bietet keine Merkmale (Eingang, Fenster)`);
-    for (const k of gewaehlt) if (!['eingang', 'fenster'].includes(k)) fehler(`merkmale.${k}`, `„${name}“ kennt das Merkmal „${k}“ nicht (möglich: eingang, fenster)`);
+    if (gewaehlt.length && d.merkmale === undefined) fehler('merkmale', `„${name}“ bietet keine Merkmale (Eingang, Fenster, Geschosse)`);
+    for (const k of gewaehlt) if (!['eingang', 'fenster', 'geschosse', 'treppe'].includes(k)) fehler(`merkmale.${k}`, `„${name}“ kennt das Merkmal „${k}“ nicht (möglich: eingang, fenster, geschosse, treppe)`);
     if (m.eingang !== undefined) {
       if (!d.merkmale.eingang) fehler('merkmale.eingang', `„${name}“ bietet keinen Eingang`);
       if (!d.merkmale.eingang.seiten.includes(m.eingang)) fehler('merkmale.eingang', `„${name}“: der Eingang „${String(m.eingang)}“ ist keine mögliche Seite (möglich: ${d.merkmale.eingang.seiten.join(', ')})`);
@@ -224,6 +272,17 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       if (!formen.includes(m.fenster)) fehler('merkmale.fenster', `„${name}“: die Fensterform „${String(m.fenster)}“ gibt es nicht (möglich: ${formen.join(', ') || 'keine'})`);
       erg.fenster = m.fenster;
     }
+    if (m.geschosse !== undefined) {
+      const formen = Object.keys(d.merkmale?.geschosse?.formen ?? {});
+      if (!formen.includes(m.geschosse)) fehler('merkmale.geschosse', `„${name}“: die Geschossform „${String(m.geschosse)}“ gibt es nicht (möglich: ${formen.join(', ') || 'keine'})`);
+      erg.geschosse = m.geschosse;
+    }
+    if (m.treppe !== undefined) {
+      if (m.geschosse === undefined) fehler('merkmale.treppe', `„${name}“: Die Treppenform gilt nur zusammen mit Geschossen. Entweder Geschosse wählen oder die Treppenform weglassen.`);
+      const moeglich = ['auto', ...Object.keys(d.merkmale.geschosse.formen[m.geschosse].treppen.formen)];
+      if (!moeglich.includes(m.treppe)) fehler('merkmale.treppe', `„${name}“: die Treppenform „${String(m.treppe)}“ gibt es nicht (möglich: ${moeglich.join(', ')})`);
+      erg.treppe = m.treppe;
+    }
     return erg;
   }
 
@@ -232,7 +291,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
    * Die Wanddicke (tiefe) wird an den echten Blöcken des Trägers gemessen: von der äußersten Zellschicht nach innen bis zur ersten freien Zelle, an allen Spalten und Zeilen der Öffnung.
    * Gerade Breite → zwei Spalten um die Mitte (die Mitte liegt zwischen zwei Blöcken), ungerade → eine; so bleibt jede Öffnung symmetrisch.
    */
-  function baueKinder(name, d, mm, teile, praefix) {
+  function baueKinder(name, d, mm, teile, praefix, geschosse = null) {
     const kinder = [];
     const nachGlied = new Map(teile.map((t) => [t.glied, t]));
     const messe = (glied, seite, spalten, y0, zeilen, wo) => {
@@ -266,13 +325,20 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       const fo = d.merkmale.fenster.formen[mm.fenster], hoehe = fo.parameter.hoehe;
       const erste = nachGlied.get(fo.glieder[0]), letztes = nachGlied.get(fo.glieder.at(-1));
       const zaehler = new Map();
+      let gesetzteReihen = 0;
+      // Ohne Geschosse gilt der Rhythmus der Fensterform (ab dem ersten Schaftglied). Mit Geschossen richten sich die Fenster an den Decken aus: je Etage die Brüstung über dem Fußboden (Daten: geschosse.fenster.schwelleAbBoden).
+      const etage = geschosse?.etage, schwelleBoden = geschosse ? d.merkmale.geschosse.formen[mm.geschosse].fenster.schwelleAbBoden : 0;
       for (let k = 0; k < 1000; k++) { // die Obergrenze ist nur ein Netz: die Schleife endet über die Höhe des letzten Glieds
-        const yk = erste.versatz.y + fo.schwelle + k * fo.geschoss; // absolute Schicht des Fensterfußes im Rhythmus der Geschosse
+        if (geschosse && k > geschosse.n) break; // nur auf wirklich geplanten Ebenen (Erdgeschoss bis oberste Ebene), nie auf Böden, die es nicht gibt
+        const yk = geschosse ? k * etage + schwelleBoden : erste.versatz.y + fo.schwelle + k * fo.geschoss; // absolute Schicht des Fensterfußes
         if (yk + hoehe - 1 > letztes.versatz.y + letztes.parameter.hoehe - 1) break;
         // das Fenster muss ganz in einem Glied liegen, mit Randzeilen zu dessen Unter- und Oberkante (dort liegt das nächste Glied auf: tragender Übergang)
         const glied = fo.glieder.map((g) => nachGlied.get(g)).find((t) => yk >= t.versatz.y + fo.randUnten && yk + hoehe - 1 <= t.versatz.y + t.parameter.hoehe - 1 - fo.randOben);
         if (!glied) continue;
-        for (const seite of fo.seitenfolge[k % fo.seitenfolge.length]) {
+        // ohne Geschosse wechselt die Seitenfolge mit dem Geschossindex (wie in D3, unverändert); mit Geschossen nach den tatsächlich gesetzten Reihen (so bekommen alle vier Seiten Fenster)
+        const folge = fo.seitenfolge[(geschosse ? gesetzteReihen : k) % fo.seitenfolge.length];
+        gesetzteReihen++;
+        for (const seite of folge) {
           const breite = paritaetBreite(glied.glied, seite, fo.breite);
           const y0 = yk - glied.versatz.y;
           const tiefe = messe(glied.glied, seite, breite, y0, hoehe, 'ein Fenster');

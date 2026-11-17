@@ -79,8 +79,12 @@ export const rezeptBekannt = (info, name) => typeof name === 'string' && Object.
 export const rezeptZeile = (info, name) => `Rezept: ${rezeptBekannt(info, name) ? info.rezepte[name].titel.split(':')[0] : name} (${name})`;
 // Merkmale eines Rezepts (D3: Eingang, Fenster): die wählbaren Werte kommen aus dem Vokabular (Ebene 4), hier nur die Anzeigetexte; eine neue Himmelsrichtung oder Fensterform erscheint
 // ohne Anzeigetext mit ihrem Namen.
-const MERKMAL_ANZEIGE = { eingang: { nord: 'Norden', ost: 'Osten', sued: 'Süden', west: 'Westen' }, fenster: { schlitze: 'Fensterschlitze' } };
-const MERKMAL_TITEL = { eingang: 'Eingang', fenster: 'Fenster' };
+const MERKMAL_ANZEIGE = {
+  eingang: { nord: 'Norden', ost: 'Osten', sued: 'Süden', west: 'Westen' }, fenster: { schlitze: 'Fensterschlitze' }, geschosse: { standard: 'Geschosse (Etagen von 5 Blöcken)' },
+  treppe: { auto: 'Automatisch', wendel: 'Wendeltreppe', gerade: 'Gerade Treppe (Zickzack)', leiter: 'Leiter (nur für Spieler)' },
+};
+// Reihenfolge wie im Formular: die Treppenform hängt an den Geschossen
+const MERKMAL_TITEL = { eingang: 'Eingang', fenster: 'Fenster', geschosse: 'Geschosse', treppe: 'Treppenform' };
 /** Wählbare Merkmale eines Rezepts als { eingang: [{wert, anzeige}], fenster: [...] } (nur, was das Rezept bietet), sonst null. */
 export function rezeptMerkmale(info, name) {
   const m = rezeptBekannt(info, name) ? info.rezepte[name].merkmale ?? {} : {};
@@ -95,7 +99,9 @@ export function setzeMerkmal(spec, id, art, wert, info) {
   if (!m || !Object.hasOwn(m, art) || art === 'titel') throw new TeileFehler(`Das Rezept „${t.rezept}“ bietet kein Merkmal „${String(art)}“.`);
   if (wert !== null && !m[art].some((o) => o.wert === wert)) throw new TeileFehler(`${MERKMAL_TITEL[art]}: „${String(wert)}“ gibt es nicht (möglich: ${m[art].map((o) => o.wert).join(', ')}).`);
   const merkmale = { ...(t.merkmale ?? {}) };
-  if (wert === null) delete merkmale[art]; else merkmale[art] = wert;
+  if (art === 'treppe' && wert !== null && wert !== 'auto' && merkmale.geschosse === undefined) throw new TeileFehler('Die Treppenform gilt nur mit Geschossen: bitte zuerst die Geschosse einschalten.');
+  if (wert === null || (art === 'treppe' && wert === 'auto')) delete merkmale[art]; else merkmale[art] = wert; // „automatisch“ ist die Voreinstellung und braucht kein Feld
+  if (art === 'geschosse' && wert === null) delete merkmale.treppe; // ohne Geschosse gibt es keine Treppenform
   if (Object.keys(merkmale).length) t.merkmale = merkmale; else delete t.merkmale;
   return neu;
 }
@@ -312,7 +318,7 @@ export function felderVon(spec, id) {
   const f = { name: t.name ?? '', wicht: t.wichtigkeit ?? '', rel: l.relation ?? '', bezug: l.bezug ?? 'projekt', abstand: l.abstand === undefined ? '' : String(l.abstand), anker: l.anker ?? '', ausr: l.ausrichtung ?? '' };
   for (const [k, w] of Object.entries(l.versatz ?? {})) f[`v-${k}`] = String(w);
   for (const [k, w] of Object.entries(t.form?.groesse ?? {})) f[`p-${k}`] = String(w);
-  if (typeof t.rezept === 'string') for (const art of Object.keys(MERKMAL_TITEL)) f[`m-${art}`] = t.merkmale?.[art] ?? ''; // leer = abgeschaltet
+  if (typeof t.rezept === 'string') for (const art of Object.keys(MERKMAL_TITEL)) f[`m-${art}`] = (art === 'treppe' && t.merkmale?.treppe === 'auto') ? '' : (t.merkmale?.[art] ?? ''); // leer = abgeschaltet (bei der Treppenform: automatisch)
   return f;
 }
 
@@ -341,8 +347,10 @@ export function wendeFelder(spec, id, felder, info) {
     if (Object.keys(werte).length) neu = setzeRezeptGroesse(neu, id, werte, info);
     for (const art of Object.keys(MERKMAL_TITEL)) { // Eingang und Fenster: nur was sich unterscheidet; leer = abschalten
       if (!Object.hasOwn(felder, `m-${art}`)) continue;
-      const ziel = felder[`m-${art}`] || null;
-      if (ziel !== (t0.merkmale?.[art] ?? null)) neu = setzeMerkmal(neu, id, art, ziel, info);
+      let ziel = felder[`m-${art}`] || null;
+      if (art === 'treppe' && !(felder['m-geschosse'] ?? t0.merkmale?.geschosse)) ziel = null; // ohne Geschosse keine Treppenform
+      const jetzt = art === 'treppe' && t0.merkmale?.treppe === 'auto' ? null : (t0.merkmale?.[art] ?? null);
+      if (ziel !== jetzt) neu = setzeMerkmal(neu, id, art, ziel, info);
     }
   }
   const baustein = info.bausteine.find((b) => b.id === t0.form?.baustein);

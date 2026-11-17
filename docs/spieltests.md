@@ -432,3 +432,13 @@ Hintergrund: Die Messgröße „Aufbau“ (`src/ebene3/aufbau.js`) nimmt konserv
 2. **Überhang/Brücke:** Setze einen Block seitlich an einen Nachbarn in derselben Schicht, unter dem selbst keine Stütze steht (mehrere Blöcke in Reihe). Geht das auch ohne Block darunter?
 3. **Reichweite und Schleichen:** Kurz prüfen, ob Reichweite oder Schleichen am Rand die Antworten zu 1 und 2 ändern.
 Status bleibt `ungeprüft`, bis Jonah das Ergebnis meldet. Quellen: https://minecraft.wiki/w/Tutorial:Bridging, https://minecraft.wiki/w/Sneaking (Bedrock).
+
+## Turm mit Eingang und Fensterschlitzen (D3, 17.11.2026, `ungeprüft`)
+Hintergrund: `docs/architektur-rezepte.md` (Merkmale). Kreativ-Testwelt auf ebenem Gelände; Turm 13×13×34 mit Eingang Süd und Fenstern (Reiter „Teile“, Rezeptteil), danach 12×12×30 (gerade Breite). Stimmung hell-nordisch (Fichtentür) und, zum Vergleich, mit `stil.palette.akzent.tuer` = `minecraft:copper_door`.
+1. **Tür öffnet von Hand:** Lässt sich die Fichtentür und (zweiter Durchlauf) die Kupfertür mit Rechtsklick öffnen (Bedrock, PS5)? Eisentür bewusst nicht gebaut: Blockwerk fragt zurück.
+2. **Blickrichtung und Scharnier:** Zeigt die Tür nach außen, sitzt das Scharnier wie im Plan? Bei 12×12×30 (Doppeltür): Öffnen die beiden Flügel nach außen auseinander, ohne sich zu blockieren?
+3. **Tür auf Gelände:** Steht die Tür auf dem Boden, den du vorher eingeebnet hast, und lässt sich der Block darunter belassen (Türen brauchen in Bedrock einen tragenden Block darunter)? Gehst du ohne Sprung hinein?
+4. **Durchgang:** Reicht die Öffnung durch die ganze Wand (zwei Blöcke tief, hinter der Tür frei), und kommst du bis in die Mitte des Turms?
+5. **Fensterschlitze:** Sitzen sie mittig, ein Block breit (bei gerader Breite zwei), zwei hoch? Wie wirkt die Laibung hinter der Scheibe (die Scheibe sitzt außen, dahinter ist die Wand ausgespart)? Sieht man hinaus und fällt Licht hinein?
+6. **Baubarkeit:** Lässt sich der Turm Schicht für Schicht so bauen, wie der Plan es zeigt (Sturz über der Tür, Fensterzeilen), ohne Hilfsblöcke?
+Status bleibt `ungeprüft`, bis Jonah das Ergebnis meldet. Quelle zur Tür: https://minecraft.wiki/w/Door (Holz- und Kupfertüren von Hand, Eisentür nur mit Redstone).

@@ -5,21 +5,153 @@
     {
       "id": "rezepte.turm",
       "titel": "Turm: Sockel, Schaft in zwei Segmenten, Krone und Kegeldach",
-      "regel": "Ein Teil der Spezifikation mit `rezept: \"turm\"` und den Außenmaßen breite, tiefe, hoehe wird aus gestapelten Ebene-2-Formen (Gliedern, von unten nach oben) zusammengesetzt. Jedes Glied nennt seinen Baustein, seinen Einzug je Seite (so bleibt die Parität der Breite und damit die Mittigkeit erhalten) und seine Höhe: als Anteil der Gesamthöhe (mit Mindest- und Höchstwert), als Anteil der eigenen Breite (ebenso) oder als Gewicht am Rest (ohne Grenzen; jedes Restglied bekommt mindestens eine Schicht). Mindestmaße: Breite und Tiefe ab 9, Höhe ab 16 und mindestens so groß wie die größere Breite (sonst ist es kein Turm). Die Summe der Höhen ist genau die Gesamthöhe, der Rest wird nach größtem Bruchteil verteilt. Sockel (Einzug 0, Wand 2) und Kegeldach (Einzug 0) sind am breitesten; das Dach überragt die Krone (bei kleinen Breiten Einzug 1 gegenüber dem Sockel, bei großen mehr: max(1, gerundet 5 % der Breite)) und den Schaft; der Schaft verjüngt sich in zwei Segmenten; die Krone kragt über den oberen Schaft aus (bei kleinen Breiten einen Block; der Einzug ist ein Anteil der Breite, bei großen Breiten kragt sie mehr aus, bei Breite 45 drei Blöcke). Damit jede Stufe geschlossen bleibt (kein Spalt zwischen den Gliedern), verdickt die Auswertung die Wand des tragenden Glieds (beim Verjüngen) oder des auskragenden Glieds (beim Auskragen) auf mindestens den Einzugsunterschied plus `auflage` (0 oder 1, Standard 0). Rollen: Sockel und Krone tragen den Block der Rolle `akzent`, alles andere `wand` (der Block der Rolle wird nicht von Blockwerk gewählt, sondern von der Palette). Nicht Teil von D2: Fensterachsen, Türen, Innenräume, weitere Dekoration.",
+      "regel": "Ein Teil der Spezifikation mit `rezept: \"turm\"` und den Außenmaßen breite, tiefe, hoehe wird aus gestapelten Ebene-2-Formen (Gliedern, von unten nach oben) zusammengesetzt. Jedes Glied nennt seinen Baustein, seinen Einzug je Seite (so bleibt die Parität der Breite und damit die Mittigkeit erhalten) und seine Höhe: als Anteil der Gesamthöhe (mit Mindest- und Höchstwert), als Anteil der eigenen Breite (ebenso) oder als Gewicht am Rest (ohne Grenzen; jedes Restglied bekommt mindestens eine Schicht). Mindestmaße: Breite und Tiefe ab 9, Höhe ab 16 und mindestens so groß wie die größere Breite (sonst ist es kein Turm). Die Summe der Höhen ist genau die Gesamthöhe, der Rest wird nach größtem Bruchteil verteilt. Sockel (Einzug 0, Wand 2) und Kegeldach (Einzug 0) sind am breitesten; das Dach überragt die Krone (bei kleinen Breiten Einzug 1 gegenüber dem Sockel, bei großen mehr: max(1, gerundet 5 % der Breite)) und den Schaft; der Schaft verjüngt sich in zwei Segmenten; die Krone kragt über den oberen Schaft aus (bei kleinen Breiten einen Block; der Einzug ist ein Anteil der Breite, bei großen Breiten kragt sie mehr aus, bei Breite 45 drei Blöcke). Damit jede Stufe geschlossen bleibt (kein Spalt zwischen den Gliedern), verdickt die Auswertung die Wand des tragenden Glieds (beim Verjüngen) oder des auskragenden Glieds (beim Auskragen) auf mindestens den Einzugsunterschied plus `auflage` (0 oder 1, Standard 0). Rollen: Sockel und Krone tragen den Block der Rolle `akzent`, alles andere `wand` (der Block der Rolle wird nicht von Blockwerk gewählt, sondern von der Palette). Optional (D3, `merkmale`): ein Eingang (Tür im Sockel, Himmelsrichtung wählbar) und Fensterschlitze je Geschoss in den Schaftgliedern; beides sind Kinder der Glieder (Einbau-Architektur), die Regeln stehen unter `parameter.merkmale`. Nicht Teil von D2/D3: Geschossdecken, Treppen, Innenräume, weitere Dekoration.",
       "parameter": {
         "auflage": 1,
-        "mindest": { "breite": 9, "tiefe": 9, "hoehe": 16, "hoeheZuBreite": 1 },
+        "mindest": {
+          "breite": 9,
+          "tiefe": 9,
+          "hoehe": 16,
+          "hoeheZuBreite": 1
+        },
         "glieder": [
-          { "id": "sockel", "baustein": "form.zylinder", "einzug": { "anteil": 0, "min": 0 }, "wandstaerke": 2, "hoehe": { "anteil": 0.1, "min": 2, "max": 5 }, "rollen": { "wand": "akzent" } },
-          { "id": "schaft-unten", "baustein": "form.zylinder", "einzug": { "anteil": 0.04, "min": 1 }, "wandstaerke": 2, "hoehe": { "rest": 6 } },
-          { "id": "schaft-oben", "baustein": "form.zylinder", "einzug": { "anteil": 0.075, "min": 2 }, "wandstaerke": 2, "hoehe": { "rest": 4 } },
-          { "id": "krone", "baustein": "form.zylinder", "einzug": { "anteil": 0.04, "min": 1 }, "wandstaerke": 2, "hoehe": { "anteil": 0.06, "min": 1, "max": 2 }, "rollen": { "wand": "akzent" } },
-          { "id": "dach", "baustein": "form.kegel", "einzug": { "anteil": 0, "min": 0 }, "wandstaerke": 2, "hoehe": { "zuBreite": 0.8, "min": 5, "maxAnteil": 0.38 } }
-        ]
+          {
+            "id": "sockel",
+            "baustein": "form.zylinder",
+            "einzug": {
+              "anteil": 0,
+              "min": 0
+            },
+            "wandstaerke": 2,
+            "hoehe": {
+              "anteil": 0.1,
+              "min": 2,
+              "max": 5
+            },
+            "rollen": {
+              "wand": "akzent"
+            }
+          },
+          {
+            "id": "schaft-unten",
+            "baustein": "form.zylinder",
+            "einzug": {
+              "anteil": 0.04,
+              "min": 1
+            },
+            "wandstaerke": 2,
+            "hoehe": {
+              "rest": 6
+            }
+          },
+          {
+            "id": "schaft-oben",
+            "baustein": "form.zylinder",
+            "einzug": {
+              "anteil": 0.075,
+              "min": 2
+            },
+            "wandstaerke": 2,
+            "hoehe": {
+              "rest": 4
+            }
+          },
+          {
+            "id": "krone",
+            "baustein": "form.zylinder",
+            "einzug": {
+              "anteil": 0.04,
+              "min": 1
+            },
+            "wandstaerke": 2,
+            "hoehe": {
+              "anteil": 0.06,
+              "min": 1,
+              "max": 2
+            },
+            "rollen": {
+              "wand": "akzent"
+            }
+          },
+          {
+            "id": "dach",
+            "baustein": "form.kegel",
+            "einzug": {
+              "anteil": 0,
+              "min": 0
+            },
+            "wandstaerke": 2,
+            "hoehe": {
+              "zuBreite": 0.8,
+              "min": 5,
+              "maxAnteil": 0.38
+            }
+          }
+        ],
+        "merkmale": {
+          "eingang": {
+            "seiten": [
+              "nord",
+              "ost",
+              "sued",
+              "west"
+            ],
+            "glied": "sockel",
+            "baustein": "bau.tuer",
+            "fluegel": {
+              "ungerade": 1,
+              "gerade": 2
+            },
+            "sockelMindesthoehe": 3,
+            "tuer": {
+              "nichtPerHand": [
+                "minecraft:iron_door"
+              ],
+              "status": "ungeprueft",
+              "quelle": "https://minecraft.wiki/w/Door",
+              "hinweis": "Holztüren und Kupfertüren lassen sich von Hand öffnen, Eisentüren nur durch ein Redstone-Signal; das Bedrock-Verhalten der Kupfertür nennt die Quelle nicht ausdrücklich"
+            }
+          },
+          "fenster": {
+            "formen": {
+              "schlitze": {
+                "titel": "Schmale Fensterschlitze (1 oder 2 Blöcke breit, 2 hoch) je Geschoss mittig in den Seiten",
+                "baustein": "bau.fenster",
+                "parameter": {
+                  "hoehe": 2,
+                  "rahmen": 0
+                },
+                "breite": {
+                  "ungerade": 1,
+                  "gerade": 2
+                },
+                "glieder": [
+                  "schaft-unten",
+                  "schaft-oben"
+                ],
+                "geschoss": 5,
+                "schwelle": 2,
+                "randUnten": 1,
+                "randOben": 1,
+                "seitenfolge": [
+                  [
+                    "nord",
+                    "sued"
+                  ],
+                  [
+                    "ost",
+                    "west"
+                  ]
+                ]
+              }
+            }
+          }
+        }
       },
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/roadmap-v2.md (D2 Bausteinrezepte, Entscheidung Jonah 15.11.2026); Proportionen nach Blockwerk-Entwurf, kein Bedrock-Wert",
       "status": "entworfen",
-      "ungeprueft": false
+      "ungeprueft": true,
+      "testanleitung": "docs/spieltests.md, Abschnitt „Turm mit Eingang und Fensterschlitzen (D3)“: Tür von Hand öffnen (Holz und Kupfer), Blickrichtung und Scharnier, Tür auf Gelände, Durchgang durch die Wand, Fensterschlitze und Baubarkeit im Spiel prüfen"
     }
   ]
 }

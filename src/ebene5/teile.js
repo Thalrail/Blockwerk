@@ -34,7 +34,7 @@ export function teileInfo(vokabular) {
 const MASSE = [['breite', 'Breite'], ['tiefe', 'Tiefe'], ['hoehe', 'Höhe']];
 function rezepteInfo(vokabular) {
   return Object.fromEntries(Object.entries(vokabular.rezepte ?? {}).map(([name, r]) => [name, {
-    id: name, titel: r.titel, mindest: { ...r.mindest },
+    id: name, titel: r.titel, mindest: { ...r.mindest }, merkmale: structuredClone(r.merkmale ?? {}),
     parameter: MASSE.map(([k, anzeige]) => ({
       name: k, ganzzahl: true, min: r.mindest[k], max: vokabular.bauplatz[k].max,
       beschreibung: `${anzeige} in Blöcken${k === 'hoehe' && r.mindest.hoeheZuBreite ? ` (mindestens ${r.mindest.hoeheZuBreite} × die größere Breite)` : ''}`,
@@ -77,6 +77,29 @@ export const rezeptAusAuswahl = (wert) => (typeof wert === 'string' && wert.star
 export const rezeptBekannt = (info, name) => typeof name === 'string' && Object.hasOwn(info.rezepte ?? {}, name);
 /** Kopfzeile eines Rezeptteils: „Rezept: <Kurztitel> (<name>)“ (Titel bis zum ersten „:“; ein unbekanntes Rezept zeigt nur den Namen). */
 export const rezeptZeile = (info, name) => `Rezept: ${rezeptBekannt(info, name) ? info.rezepte[name].titel.split(':')[0] : name} (${name})`;
+// Merkmale eines Rezepts (D3: Eingang, Fenster): die wählbaren Werte kommen aus dem Vokabular (Ebene 4), hier nur die Anzeigetexte; eine neue Himmelsrichtung oder Fensterform erscheint
+// ohne Anzeigetext mit ihrem Namen.
+const MERKMAL_ANZEIGE = { eingang: { nord: 'Norden', ost: 'Osten', sued: 'Süden', west: 'Westen' }, fenster: { schlitze: 'Fensterschlitze' } };
+const MERKMAL_TITEL = { eingang: 'Eingang', fenster: 'Fenster' };
+/** Wählbare Merkmale eines Rezepts als { eingang: [{wert, anzeige}], fenster: [...] } (nur, was das Rezept bietet), sonst null. */
+export function rezeptMerkmale(info, name) {
+  const m = rezeptBekannt(info, name) ? info.rezepte[name].merkmale ?? {} : {};
+  const erg = Object.fromEntries(Object.entries(m).filter(([, w]) => Array.isArray(w) && w.length).map(([art, w]) => [art, w.map((wert) => ({ wert, anzeige: MERKMAL_ANZEIGE[art]?.[wert] ?? wert }))]));
+  return Object.keys(erg).length ? Object.assign(erg, { titel: { ...MERKMAL_TITEL } }) : null;
+}
+/** Eingang oder Fenster eines Rezeptteils setzen (Kopie); `null` schaltet das Merkmal ab. Sind alle Merkmale abgeschaltet, verschwindet das Feld ganz: die Spezifikation ist dann wieder genau die ohne Merkmale. */
+export function setzeMerkmal(spec, id, art, wert, info) {
+  const neu = structuredClone(spec), t = teilVon(neu, id);
+  if (typeof t.rezept !== 'string') throw new TeileFehler('Eingang und Fenster gibt es nur bei Teilen mit Rezept (zum Beispiel dem Turm).');
+  const m = rezeptMerkmale(info, t.rezept);
+  if (!m || !Object.hasOwn(m, art) || art === 'titel') throw new TeileFehler(`Das Rezept „${t.rezept}“ bietet kein Merkmal „${String(art)}“.`);
+  if (wert !== null && !m[art].some((o) => o.wert === wert)) throw new TeileFehler(`${MERKMAL_TITEL[art]}: „${String(wert)}“ gibt es nicht (möglich: ${m[art].map((o) => o.wert).join(', ')}).`);
+  const merkmale = { ...(t.merkmale ?? {}) };
+  if (wert === null) delete merkmale[art]; else merkmale[art] = wert;
+  if (Object.keys(merkmale).length) t.merkmale = merkmale; else delete t.merkmale;
+  return neu;
+}
+
 /** Größenfelder und Hinweistexte eines Rezepts für die Oberfläche: Breite, Tiefe, Höhe mit Bereich und Mindestmaß-Hinweis; pflicht gilt für vorhandene Teile, hinweis für „Neues Teil“. */
 export function rezeptFelder(info, name) {
   const r = rezeptDaten(info, name), anzeige = Object.fromEntries(MASSE);
@@ -96,7 +119,7 @@ const istKind = (t, kindrelationen) => typeof t?.lage?.relation === 'string' && 
 /** Die Teile für die Liste: Kennung, Name, Baustein, Wichtigkeit, Größe als Text, ob es in einem anderen Bauteil liegt (Kindteil) und worin. */
 export function teilListe(spec, kindrelationen = []) {
   return (spec.teile ?? []).map((t) => ({
-    id: t.id, name: t.name ?? t.id, baustein: t.form?.baustein ?? null, rezept: typeof t.rezept === 'string' ? t.rezept : null, art: t.art, wichtigkeit: t.wichtigkeit,
+    id: t.id, name: t.name ?? t.id, baustein: t.form?.baustein ?? null, rezept: typeof t.rezept === 'string' ? t.rezept : null, merkmale: t.merkmale ? { ...t.merkmale } : null, art: t.art, wichtigkeit: t.wichtigkeit,
     groesse: Object.entries(t.form?.groesse ?? {}).map(([k, w]) => `${k} ${w}`).join(', '), kind: istKind(t, kindrelationen), traeger: istKind(t, kindrelationen) ? t.lage.bezug : null,
   }));
 }
@@ -289,6 +312,7 @@ export function felderVon(spec, id) {
   const f = { name: t.name ?? '', wicht: t.wichtigkeit ?? '', rel: l.relation ?? '', bezug: l.bezug ?? 'projekt', abstand: l.abstand === undefined ? '' : String(l.abstand), anker: l.anker ?? '', ausr: l.ausrichtung ?? '' };
   for (const [k, w] of Object.entries(l.versatz ?? {})) f[`v-${k}`] = String(w);
   for (const [k, w] of Object.entries(t.form?.groesse ?? {})) f[`p-${k}`] = String(w);
+  if (typeof t.rezept === 'string') for (const art of Object.keys(MERKMAL_TITEL)) f[`m-${art}`] = t.merkmale?.[art] ?? ''; // leer = abgeschaltet
   return f;
 }
 
@@ -315,6 +339,11 @@ export function wendeFelder(spec, id, felder, info) {
     const werte = {};
     for (const [k, anzeige] of MASSE) if (Object.hasOwn(felder, `p-${k}`)) { const w = zahlAus(felder[`p-${k}`], anzeige); if (w !== t0.form?.groesse?.[k]) werte[k] = w; }
     if (Object.keys(werte).length) neu = setzeRezeptGroesse(neu, id, werte, info);
+    for (const art of Object.keys(MERKMAL_TITEL)) { // Eingang und Fenster: nur was sich unterscheidet; leer = abschalten
+      if (!Object.hasOwn(felder, `m-${art}`)) continue;
+      const ziel = felder[`m-${art}`] || null;
+      if (ziel !== (t0.merkmale?.[art] ?? null)) neu = setzeMerkmal(neu, id, art, ziel, info);
+    }
   }
   const baustein = info.bausteine.find((b) => b.id === t0.form?.baustein);
   for (const p of baustein?.parameter ?? []) {

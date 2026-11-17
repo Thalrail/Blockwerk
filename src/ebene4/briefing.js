@@ -93,6 +93,12 @@ export function erzeugeBriefing({ vokabular: V }) {
     if (Object.keys(V.rezepte).length) {
       z.push('Bauart („rezept“, optional; statt „form.baustein“): Blockwerk gliedert das Teil selbst (Sockel, Schaft, Krone, Dach …). Dann nennst du nur den Namen und in „form.groesse“ die AUSSENMASSE des fertigen Bauwerks (breite, tiefe, hoehe), keinen Baustein, keine Proportionen, keine Funktionen, nie die einzelnen Glieder:');
       z.push(...Object.entries(V.rezepte).map(([name, r]) => `- ${name} (${r.titel.split(':')[0]}): mindestens ${r.mindest.breite} × ${r.mindest.tiefe} × ${r.mindest.hoehe} Blöcke (Breite × Tiefe × Höhe)${r.mindest.hoeheZuBreite ? `, Höhe mindestens ${r.mindest.hoeheZuBreite} × die größere Breite` : ''}`));
+      const mitMerkmalen = Object.entries(V.rezepte).filter(([, r]) => r.merkmale);
+      if (mitMerkmalen.length) {
+        z.push('Merkmale („merkmale“, optional, nur zusammen mit „rezept“): Wünscht der Auftraggeber einen Eingang oder Fenster, nennst du nur DAS, nie Maße, Lage oder Blöcke:');
+        z.push(...mitMerkmalen.map(([name, r]) => '- ' + name + ': ' + [r.merkmale.eingang ? 'eingang = Himmelsrichtung der Tür (' + r.merkmale.eingang.join(', ') + ')' : null, r.merkmale.fenster ? 'fenster = Fensterform (' + r.merkmale.fenster.join(', ') + ')' : null].filter(Boolean).join('; ')));
+        z.push('Ohne ausdrücklichen Wunsch lässt du „merkmale“ weg.');
+      }
       z.push('');
     }
     z.push('Funktionen („funktionen[].art“):');

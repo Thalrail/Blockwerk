@@ -5,7 +5,7 @@
 // Koordinaten: Nullpunkt ist der Block x = floor(breite / 2), z = floor(tiefe / 2) der Grundfläche (bei ungerader Breite die Mitte), y = 0 ist die unterste Schicht.
 // Hohle Formen: Hülle der Dicke `wandstaerke` (Blöcke mit Nachbarn außerhalb, 6er-Nachbarschaft = wasserdicht). Zylinder und Kuppel sind unten offen,
 // der Zylinder auch oben (Turmrohr); Deckel und Boden sind eigene Scheiben.
-import { definiere, param } from './baustein.js';
+import { definiere, param, huelleVon } from './baustein.js';
 
 const QUELLE = 'https://github.com/Thalrail/Blockwerk/blob/main/docs/ebenen.md (Ebene 2, Grundregel Maßstabsfreiheit)';
 const MAX = 512;
@@ -71,13 +71,26 @@ export function erzeugeFormen({ regelwerk }) {
 
   const zylinder = definiere({
     id: 'form.zylinder', titel: 'Zylinder (Turmrohr, oben und unten offen)', quelle: QUELLE,
-    parameter: [breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 8, beschreibung: 'Höhe in Schichten' }), wand(1)],
+    parameter: [
+      breite(), tiefe(), param('hoehe', 'geometrie', { min: 1, max: MAX, standard: 8, beschreibung: 'Höhe in Schichten' }), wand(1),
+      param('wandzonen', 'geometrie', { intern: true, min: 0, max: 1, standard: 0, beschreibung: '1 = bietet je Himmelsrichtung eine Wandzone für Kinder (Tür, Fenster); 0 = keine Zonen, die Blöcke sind in beiden Fällen gleich' }),
+    ],
     testszenario: { start: 'leere Welt, Baustein darauf gesetzt', erwartung: 'Prüfer meldet keinen Verstoß; jede Schicht ist gleich, Rohr ist wasserdicht' },
-    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke }) => {
+    baue: ({ breite: B, tiefe: T, hoehe: H, wandstaerke, wandzonen }) => {
       const [a, c] = halbachsen(B, T);
       const bloecke = raster({ B, H, T, innen: (x, j, z) => rund(x, z, a, c) <= 1, versatz, dicke: wandstaerke, offenUnten: true, offenOben: true, rolle: 'wand' });
       const anschluesse = wandstaerke > 0 ? [{ art: 'oeffnung', seite: 'unten' }, { art: 'oeffnung', seite: 'oben' }] : [];
-      return { bloecke, anschluesse };
+      // D3: je Himmelsrichtung eine Wandzone, nur die äußerste Zellschicht der Seite (Kinder wie Tür und Fenster sitzen mit ihrer Vorderseite dort; ihre Aussparung reicht von dort nach innen durch die Wand)
+      const seite = (id, von, bis) => ({ id: `wand-${id}`, art: 'wand', seite: id, von, bis });
+      let einbauzonen = [];
+      if (wandzonen === 1 && wandstaerke > 0 && bloecke.length) {
+        const h = huelleVon(bloecke), { von: v, bis: b } = h; // die Zonen folgen den echten Blöcken (Referenzrahmen), nicht den Parametern
+        einbauzonen = [
+          seite('nord', { x: v.x, y: v.y, z: v.z }, { x: b.x, y: b.y, z: v.z }), seite('ost', { x: b.x, y: v.y, z: v.z }, { x: b.x, y: b.y, z: b.z }),
+          seite('sued', { x: v.x, y: v.y, z: b.z }, { x: b.x, y: b.y, z: b.z }), seite('west', { x: v.x, y: v.y, z: v.z }, { x: v.x, y: b.y, z: b.z }),
+        ];
+      }
+      return { bloecke, anschluesse, ...(einbauzonen.length ? { einbauzonen } : {}) };
     },
   });
 

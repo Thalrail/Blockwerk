@@ -583,6 +583,14 @@ function paramFelderHtml(p, f, baustein) {
   if (!baustein) return '';
   return baustein.parameter.map((q) => `<label class="klein zustand" title="${esc(q.beschreibung ?? '')}">${esc(q.name)} <input id="${p}p-${esc(q.name)}" type="number" step="${q.ganzzahl ? 1 : 'any'}" min="${q.min}" max="${q.max}" placeholder="${q.standard ?? ''}" value="${feld(f, 'p-' + q.name)}" style="width:5em"> <span class="plakette">${esc(GROESSENART[q.groessenart] ?? q.groessenart)}</span> <span class="klein">${q.min}–${q.max}</span></label>`).join('');
 }
+/** Eingang und Fenster eines Rezeptteils (D3): Auswahl mit „abgeschaltet“; die Werte kommen aus dem Vokabular. Änderungen laufen über „Prüfen und übernehmen“ wie die Größe. */
+function merkmaleHtml(f, info, rez, rezUnbekannt) {
+  const m = rez !== null && !rezUnbekannt ? Teile.rezeptMerkmale(info, rez) : null;
+  if (!m) return '';
+  const wahl = (art, leer) => `<select id="tl-m-${art}"><option value="">${esc(leer)}</option>${m[art].map((o) => `<option value="${esc(o.wert)}" ${f['m-' + art] === o.wert ? 'selected' : ''}>${esc(o.anzeige)}</option>`).join('')}</select>`;
+  return `<h4>Eingang und Fenster</h4>${m.eingang ? `<label class="klein zustand">Eingang ${wahl('eingang', 'kein Eingang')}</label>` : ''}${m.fenster ? `<label class="klein zustand">Fenster ${wahl('fenster', 'keine Fenster')}</label>` : ''}
+    <p class="klein">Die Tür steht auf Bodenhöhe im Sockel, die Fenster sitzen mittig in den Seiten, je Geschoss. Beides geht durch die ganze Wand. Vorher siehst du, was mit deinen Einzelblockänderungen geschieht.</p>`;
+}
 /** Größenfelder eines Rezepts (Breite, Tiefe, Höhe; Pflicht, Texte aus teile.js). */
 function rezeptFelderHtml(p, f, info, name, vorbelegen = false) {
   return Teile.rezeptFelder(info, name).felder.map((q) => `<label class="klein zustand">${esc(q.anzeige)} <input id="${p}p-${esc(q.name)}" type="number" required step="1" min="${q.min}" max="${q.max}" value="${vorbelegen && f['p-' + q.name] === undefined ? q.vorgabe : feld(f, 'p-' + q.name)}" style="width:5em"> <span class="klein">${esc(q.hinweis)}</span></label>`).join('');
@@ -612,6 +620,7 @@ function teilePanel() {
     <label class="klein zustand">Name <input id="tl-name" type="text" maxlength="60" value="${feld(f, 'name')}"></label>
     <label class="klein zustand">Wichtigkeit <select id="tl-wicht">${optionen(info.wichtigkeiten, f.wicht)}</select></label>
     <h4>Größe</h4>${rezUnbekannt ? '<p class="fehler">Unbekanntes Rezept – bitte das Teil entfernen und neu anlegen</p>' : rez !== null ? rezeptFelderHtml('tl-', f, info, rez) + `<p class="klein">${esc(rezF.pflicht)}</p>` : paramFelderHtml('tl-', f, baustein) + '<p class="klein">Leer lassen = Standard des Bausteins.</p>'}
+    ${merkmaleHtml(f, info, rez, rezUnbekannt)}
     <h4>Lage</h4>${lageFelderHtml('tl-', f, info, t.id, teile)}
     <div class="knoepfe"><button class="haupt" data-a="tl-anwenden">Prüfen und übernehmen</button><button data-a="tl-neu">Neues Teil …</button><button data-a="tl-entfernen">Teil entfernen …</button></div>`;
   return h;

@@ -221,16 +221,19 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
 
   const tuer = definiere({
     id: 'bau.tuer', titel: 'Tür (1 oder 2 Flügel, 2 Blöcke hoch, ohne Rahmen)', quelle: QUELLE,
-    parameter: [param('fluegel', 'menschenmass', { min: 1, max: 2, standard: 1, beschreibung: '1 = einfache Tür, 2 = Doppeltür (Scharniere außen)' })],
+    parameter: [
+      param('fluegel', 'menschenmass', { min: 1, max: 2, standard: 1, beschreibung: '1 = einfache Tür, 2 = Doppeltür (Scharniere außen)' }),
+      param('tiefe', 'geometrie', { intern: true, min: 1, max: 512, standard: 1, beschreibung: 'Wanddicke in Blöcken, die die Öffnung durchstößt (Standard 1 = dünne Mauer); die Tür sitzt an der Vorderseite, dahinter hält der Baustein den Durchgang frei (Freihaltung)' }),
+    ],
     testszenario: { start: 'leere Welt mit Boden, Tür in eine Mauer gesetzt', erwartung: 'Spieler und Dorfbewohner gehen durch (Holztür); Eisentür bleibt für Dorfbewohner zu' },
-    baue: ({ fluegel }) => {
+    baue: ({ fluegel, tiefe }) => {
       const bloecke = [];
       for (let i = 0; i < fluegel; i++) {
         const scharnier = fluegel === 1 || i === 0 ? 'links' : 'rechts';
         for (const [h, y] of [['unten', 0], ['oben', 1]]) if (y < tuerHoehe) bloecke.push({ x: i, y, z: 0, rolle: 'akzent', form: 'tuer', richtung: 'north', haelfte: h, scharnier });
       }
       // Aussparung: genau die Zellen der Tür (Wandblöcke dort entfallen)
-      return { bloecke, anschluesse: [{ art: 'durchgang', achse: 'z', breite: fluegel, hoehe: tuerHoehe }], aussparungen: [{ art: 'oeffnung', von: { x: 0, y: 0, z: 0 }, bis: { x: fluegel - 1, y: tuerHoehe - 1, z: 0 } }] };
+      return { bloecke, anschluesse: [{ art: 'durchgang', achse: 'z', breite: fluegel, hoehe: tuerHoehe }], aussparungen: [{ art: 'oeffnung', von: { x: 0, y: 0, z: 0 }, bis: { x: fluegel - 1, y: tuerHoehe - 1, z: 0 } }, ...(tiefe > 1 ? [{ art: 'freihaltung', von: { x: 0, y: 0, z: 1 }, bis: { x: fluegel - 1, y: tuerHoehe - 1, z: tiefe - 1 } }] : [])] };
     },
   });
 
@@ -240,9 +243,10 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
       param('breite', 'geometrie', { min: 1, max: 64, standard: 3, beschreibung: 'Breite der Glasfläche in Blöcken' }),
       param('hoehe', 'geometrie', { min: 1, max: 64, standard: 2, beschreibung: 'Höhe der Glasfläche in Blöcken' }),
       param('rahmen', 'menschenmass', { min: 0, max: 4, standard: 1, beschreibung: 'Rahmendicke in Blöcken (0 = ohne Rahmen)' }),
+      param('tiefe', 'geometrie', { intern: true, min: 1, max: 512, standard: 1, beschreibung: 'Wanddicke in Blöcken, die die Öffnung durchstößt (Standard 1 = dünne Mauer); Rahmen und Scheiben sitzen an der Vorderseite, dahinter ist die Laibung frei' }),
     ],
     testszenario: { start: 'leere Welt, Fenster in eine Mauer gesetzt', erwartung: 'Die Öffnung ist lückenlos mit Rahmen und Scheiben gefüllt' },
-    baue: ({ breite, hoehe, rahmen }) => {
+    baue: ({ breite, hoehe, rahmen, tiefe }) => {
       const B = breite + 2 * rahmen;
       const ox = Math.floor(B / 2);
       const bloecke = [];
@@ -251,7 +255,7 @@ export function erzeugeBauelemente({ regelwerk, formen }) {
         bloecke.push(glas ? { x: i - ox, y: j, z: 0, rolle: 'glas', form: 'scheibe' } : { x: i - ox, y: j, z: 0, rolle: 'akzent' });
       }
       // Aussparung: der ganze Fensterkörper samt Rahmen (dort entfällt die Wand; Rahmen und Scheiben füllen die Öffnung wieder lückenlos)
-      return { bloecke, anschluesse: [{ art: 'oeffnung', achse: 'z', breite, hoehe }], aussparungen: [{ art: 'oeffnung', von: { x: -ox, y: 0, z: 0 }, bis: { x: B - 1 - ox, y: hoehe + 2 * rahmen - 1, z: 0 } }] };
+      return { bloecke, anschluesse: [{ art: 'oeffnung', achse: 'z', breite, hoehe }], aussparungen: [{ art: 'oeffnung', von: { x: -ox, y: 0, z: 0 }, bis: { x: B - 1 - ox, y: hoehe + 2 * rahmen - 1, z: 0 } }, ...(tiefe > 1 ? [{ art: 'freihaltung', von: { x: -ox, y: 0, z: 1 }, bis: { x: B - 1 - ox, y: hoehe + 2 * rahmen - 1, z: tiefe - 1 } }] : [])] };
     },
   });
 

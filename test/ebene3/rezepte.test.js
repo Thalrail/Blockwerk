@@ -141,7 +141,9 @@ test('Prüfer: ein Rezept in einem anderen Bauteil → Rückfrage', () => {
   assert.ok(pfade(s).includes('teile[1].rezept'));
 });
 test('Leser sieht nur Name und Mindestmaße des Rezepts, nie die Schritte; Schema bleibt 1', () => {
-  assert.deepEqual(Object.keys(L.vokabular.rezepte.turm).sort(), ['mindest', 'titel']);
+  assert.deepEqual(Object.keys(L.vokabular.rezepte.turm).sort(), ['merkmale', 'mindest', 'titel']);
+  // D3: die wählbaren Merkmale sind nur Namen (Eingang: Himmelsrichtungen, Fenster: Fensterformen), nie Regeln, Maße oder Blöcke
+  assert.deepEqual(L.vokabular.rezepte.turm.merkmale, { eingang: ['nord', 'ost', 'sued', 'west'], fenster: ['schlitze'] });
   assert.equal(L.vokabular.schema, 1);
   const prompt = L.briefing();
   assert.match(prompt, /rezept/);

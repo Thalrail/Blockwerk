@@ -6,6 +6,8 @@ const PRAEFIX = 'rezepte.';
 const ganz = (n) => Number.isSafeInteger(n);
 const OBJEKT = (w) => w !== null && typeof w === 'object' && !Array.isArray(w);
 const ID = /^[a-z0-9-]+$/;
+const SEITEN = ['nord', 'ost', 'sued', 'west'];
+const WANDSEITE = { nord: 0, ost: 1, sued: 2, west: 3 }; // Drehung des Kinds: Bausteine blicken im Paket nach Norden, die Wandseite legt die Blickrichtung nach außen fest (wie in uebersetzung.js)
 const NACH = 3; // höchste Vergrößerung je Maß beim Anpassen der Hülle (Breite/Tiefe: 2 × NACH Blöcke, Höhe: NACH Schichten)
 
 /** Fehler eines Rezepts: unbekannter Name, Maße zu klein oder nicht stimmig (kein stilles Raten, die Meldung geht als Rückfrage an Jonah). */
@@ -49,6 +51,45 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       if (g.rollen !== undefined && !(OBJEKT(g.rollen) && Object.entries(g.rollen).every(([von, nach]) => rollenErlaubt.includes(von) && rollenErlaubt.includes(nach)))) f(`Glied ${g.id}: rollen ordnet nur Rollen (${rollenErlaubt.join(', ')}) einander zu`);
     }
     if (!d.glieder.some((g) => g.hoehe.rest !== undefined)) f('mindestens ein Glied braucht hoehe.rest (sonst ergibt die Summe nicht die Gesamthöhe)');
+    if (d.merkmale !== undefined) pruefeMerkmale(name, d, f);
+  }
+
+  /** Daten der optionalen Merkmale (Eingang, Fensterformen): jede Angabe wird beim Laden geprüft, nichts davon rät die Auswertung. */
+  function pruefeMerkmale(name, d, f) {
+    const m = d.merkmale;
+    if (!OBJEKT(m) || Object.keys(m).some((k) => !['eingang', 'fenster'].includes(k))) f('merkmale darf nur eingang und fenster enthalten');
+    const gliedIds = new Set(d.glieder.map((g) => g.id));
+    const seiten = (x, wo) => { if (!Array.isArray(x) || !x.length || x.some((q) => !SEITEN.includes(q)) || new Set(x).size !== x.length) f(`${wo}: Seiten aus ${SEITEN.join(', ')} (ohne Doppelte)`); };
+    const baustein = (id, wo, params) => {
+      const b = ebene2.bausteine.get(id);
+      if (!b || id.startsWith('form.')) f(`${wo}: ${String(id)} ist kein Bauelement`);
+      for (const p of params) if (!b.parameter.some((x) => x.name === p)) f(`${wo}: ${id} hat keinen Parameter „${p}“`);
+    };
+    const paritaet = (x, wo) => { if (!OBJEKT(x) || !ganz(x.ungerade) || !ganz(x.gerade) || x.ungerade < 1 || x.gerade < 1) f(`${wo}: braucht ganze Zahlen ab 1 für ungerade und gerade Breite`); };
+    const e = m.eingang;
+    if (e !== undefined) {
+      if (!OBJEKT(e)) f('merkmale.eingang muss ein Objekt sein');
+      seiten(e.seiten, 'merkmale.eingang.seiten');
+      if (!gliedIds.has(e.glied) || d.glieder.find((g) => g.id === e.glied).baustein !== 'form.zylinder') f('merkmale.eingang.glied muss ein Zylinder-Glied des Rezepts sein');
+      baustein(e.baustein, 'merkmale.eingang.baustein', ['fluegel', 'tiefe']);
+      paritaet(e.fluegel, 'merkmale.eingang.fluegel');
+      if (!(ganz(e.sockelMindesthoehe) && e.sockelMindesthoehe >= 3)) f('merkmale.eingang.sockelMindesthoehe: ganze Zahl ab 3 (zwei Blöcke Tür und mindestens ein Block Sturz)');
+      if (!OBJEKT(e.tuer) || !Array.isArray(e.tuer.nichtPerHand) || e.tuer.nichtPerHand.some((x) => typeof x !== 'string') || typeof e.tuer.quelle !== 'string' || !e.tuer.quelle) f('merkmale.eingang.tuer braucht nichtPerHand (Liste), status und quelle');
+    }
+    const fe = m.fenster;
+    if (fe !== undefined) {
+      if (!OBJEKT(fe) || !OBJEKT(fe.formen) || !Object.keys(fe.formen).length) f('merkmale.fenster.formen braucht mindestens eine Fensterform');
+      for (const [fn, fo] of Object.entries(fe.formen)) {
+        const wo = `merkmale.fenster.formen.${fn}`;
+        if (!ID.test(fn) || !OBJEKT(fo) || typeof fo.titel !== 'string') f(`${wo}: Name (Kleinbuchstaben) und titel nötig`);
+        baustein(fo.baustein, wo, [...Object.keys(fo.parameter ?? {}), 'breite', 'tiefe']);
+        paritaet(fo.breite, `${wo}.breite`);
+        if (!Array.isArray(fo.glieder) || !fo.glieder.length || fo.glieder.some((g) => !gliedIds.has(g) || d.glieder.find((x) => x.id === g).baustein !== 'form.zylinder')) f(`${wo}.glieder: Zylinder-Glieder des Rezepts`);
+        for (const k of ['geschoss', 'schwelle', 'randUnten', 'randOben']) if (!(ganz(fo[k]) && fo[k] >= (k === 'geschoss' ? 1 : 0))) f(`${wo}.${k}: ganze Zahl`);
+        if (!Array.isArray(fo.seitenfolge) || !fo.seitenfolge.length) f(`${wo}.seitenfolge fehlt`);
+        fo.seitenfolge.forEach((q, i) => seiten(q, `${wo}.seitenfolge[${i}]`));
+      }
+    }
   }
   for (const n of namen()) pruefeDaten(n, regelwerk.regel(PRAEFIX + n).parameter);
 
@@ -59,14 +100,14 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
   }
 
   /** Höhen der Glieder (Summe = Gesamthöhe): feste zuerst, der Rest nach Gewicht (größter Bruchteil, bei Gleichstand das untere Glied). */
-  function hoehen(name, d, b, H) {
+  function hoehen(name, d, b, H, ueber = {}) {
     const h = new Array(d.glieder.length).fill(0);
     d.glieder.forEach((g, i) => {
       const q = g.hoehe;
       if (q.rest !== undefined) return;
       const roh = Math.round(q.anteil !== undefined ? q.anteil * H : q.zuBreite * b[i]);
       const oben = Math.min(q.max ?? Infinity, q.maxAnteil !== undefined ? Math.floor(q.maxAnteil * H) : Infinity);
-      h[i] = Math.max(q.min ?? 1, Math.min(oben, roh)); // das Mindestmaß geht vor
+      h[i] = Math.max(q.min ?? 1, ueber[g.id] ?? 0, Math.min(oben, roh)); // das Mindestmaß geht vor (ein Merkmal kann es anheben, z. B. der Sturz über der Tür)
     });
     const rest = d.glieder.map((g, i) => (g.hoehe.rest !== undefined ? i : -1)).filter((i) => i >= 0);
     const uebrig = H - h.reduce((s, x) => s + x, 0);
@@ -116,8 +157,9 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
    * @param {string} [praefix] Vorsatz der stabilen Kennungen der Teile (`<praefix>.<glied>`), Standard der Rezeptname
    * @returns {{rezept: string, huelle: {breite: number, tiefe: number, hoehe: number}, teile: {glied: string, ref: string, baustein: string, parameter: object, versatz: {x: number, y: number, z: number}, rollen?: object}[]}}
    */
-  function wendeRezeptAn(name, groesse, praefix = name) {
+  function wendeRezeptAn(name, groesse, praefix = name, merkmale = {}) {
     const d = rezept(name);
+    const mm = waehleMerkmale(name, d, merkmale);
     const { breite: B, tiefe: T, hoehe: H } = groesse ?? {};
     if (![B, T, H].every(ganz)) throw new RezeptFehler(`„${name}“ braucht ganze Außenmaße breite, tiefe und hoehe`);
     const m = d.mindest;
@@ -129,7 +171,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
     const b = ex.map((e) => B - 2 * e), t = ez.map((e) => T - 2 * e);
     if (b.some((x) => x < 1) || t.some((x) => x < 1)) throw new RezeptFehler(`„${name}“: bei ${B} × ${T} Blöcken würde ein Glied kein Maß mehr haben`);
     if (Math.max(...b) !== B || Math.max(...t) !== T) throw new RezeptFehler(`„${name}“: kein Glied füllt die Außenmaße ${B} × ${T}`);
-    const h = hoehen(name, d, b, H);
+    const h = hoehen(name, d, b, H, mm.eingang ? { [d.merkmale.eingang.glied]: d.merkmale.eingang.sockelMindesthoehe } : {});
     // Stufen schließen: wo sich der Einzug zwischen zwei Gliedern ändert, muss die Wand des tragenden (Verjüngung) oder des auskragenden Glieds (Auskragung) mindestens so dick sein wie der Unterschied
     // plus die Auflage (Rezeptdatum `auflage`, Standard 0): mit 1 liegt das obere Glied auf dem Ring des unteren auf, statt nur an dessen Innenkante zu hängen
     const wand = d.glieder.map((g) => g.wandstaerke);
@@ -138,15 +180,97 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       const traeger = dx + dz > 0 ? i - 1 : i; // oben schmaler: das untere Glied trägt; oben breiter: das obere kragt aus
       wand[traeger] = Math.max(wand[traeger], diff + (d.auflage ?? 0));
     }
+    const genutzt = new Set([...(mm.eingang ? [d.merkmale.eingang.glied] : []), ...(mm.fenster ? d.merkmale.fenster.formen[mm.fenster].glieder : [])]);
     let y = 0;
     const teile = d.glieder.map((g, i) => {
-      const parameter = passend(name, g, b[i], t[i], h[i], wand[i]);
+      const parameter = { ...passend(name, g, b[i], t[i], h[i], wand[i]), ...(genutzt.has(g.id) ? { wandzonen: 1 } : {}) }; // nur Glieder, die ein Merkmal trägt, bieten Wandzonen (die Blöcke bleiben gleich)
       const teil = { glied: g.id, ref: `${praefix}.${g.id}`, baustein: g.baustein, parameter, versatz: { x: 0, y, z: 0 }, ...(g.rollen ? { rollen: { ...g.rollen } } : {}) };
       y += h[i];
       return teil;
     });
-    return { rezept: name, huelle: { breite: B, tiefe: T, hoehe: H }, teile };
+    const kinder = (mm.eingang || mm.fenster) ? baueKinder(name, d, mm, teile, praefix) : [];
+    return { rezept: name, huelle: { breite: B, tiefe: T, hoehe: H }, teile, ...(kinder.length ? { kinder } : {}) };
   }
 
-  return { namen, rezept, wendeRezeptAn, RezeptFehler };
+  /** Prüft die gewählten Merkmale gegen die Rezeptdaten (unbekannte Werte nennen die möglichen) und gibt { eingang: seite|null, fenster: form|null } zurück. */
+  function waehleMerkmale(name, d, merkmale) {
+    const fehler = (pfad, text) => { const f = new RezeptFehler(text); f.pfad = pfad; throw f; };
+    const m = merkmale ?? {};
+    if (!OBJEKT(m)) fehler('merkmale', `„${name}“: merkmale muss eine Zuordnung sein (eingang, fenster)`);
+    const erg = { eingang: null, fenster: null };
+    const gewaehlt = Object.keys(m).filter((k) => m[k] !== undefined);
+    if (gewaehlt.length && d.merkmale === undefined) fehler('merkmale', `„${name}“ bietet keine Merkmale (Eingang, Fenster)`);
+    for (const k of gewaehlt) if (!['eingang', 'fenster'].includes(k)) fehler(`merkmale.${k}`, `„${name}“ kennt das Merkmal „${k}“ nicht (möglich: eingang, fenster)`);
+    if (m.eingang !== undefined) {
+      if (!d.merkmale.eingang) fehler('merkmale.eingang', `„${name}“ bietet keinen Eingang`);
+      if (!d.merkmale.eingang.seiten.includes(m.eingang)) fehler('merkmale.eingang', `„${name}“: der Eingang „${String(m.eingang)}“ ist keine mögliche Seite (möglich: ${d.merkmale.eingang.seiten.join(', ')})`);
+      erg.eingang = m.eingang;
+    }
+    if (m.fenster !== undefined) {
+      const formen = Object.keys(d.merkmale?.fenster?.formen ?? {});
+      if (!formen.includes(m.fenster)) fehler('merkmale.fenster', `„${name}“: die Fensterform „${String(m.fenster)}“ gibt es nicht (möglich: ${formen.join(', ') || 'keine'})`);
+      erg.fenster = m.fenster;
+    }
+    return erg;
+  }
+
+  /**
+   * Eingang und Fenster als Kinder der Glieder (Einbau-Architektur): Träger, Wandzone, Anker Mitte, Versatz nach oben, Drehung nach außen.
+   * Die Wanddicke (tiefe) wird an den echten Blöcken des Trägers gemessen: von der äußersten Zellschicht nach innen bis zur ersten freien Zelle, an allen Spalten und Zeilen der Öffnung.
+   * Gerade Breite → zwei Spalten um die Mitte (die Mitte liegt zwischen zwei Blöcken), ungerade → eine; so bleibt jede Öffnung symmetrisch.
+   */
+  function baueKinder(name, d, mm, teile, praefix) {
+    const kinder = [];
+    const nachGlied = new Map(teile.map((t) => [t.glied, t]));
+    const messe = (glied, seite, spalten, y0, zeilen, wo) => {
+      const t = nachGlied.get(glied);
+      const paket = ebene2.baue(t.baustein, t.parameter);
+      const z = paket.einbauzonen.find((q) => q.id === `wand-${seite}`);
+      const belegt = new Set(paket.bloecke.map((q) => `${q.x},${q.y},${q.z}`));
+      const quer = seite === 'nord' || seite === 'sued';
+      const mitte = quer ? z.von.x + Math.floor((z.bis.x - z.von.x) / 2) : z.von.z + Math.floor((z.bis.z - z.von.z) / 2);
+      const aussen = { nord: z.von.z, sued: z.bis.z, west: z.von.x, ost: z.bis.x }[seite];
+      const schritt = { nord: 1, sued: -1, west: 1, ost: -1 }[seite];
+      const schluessel = (a, tiefe, y) => (quer ? `${a},${y},${aussen + schritt * tiefe}` : `${aussen + schritt * tiefe},${y},${a}`);
+      let tiefe = 0;
+      for (let i = 0; i < spalten; i++) for (let j = 0; j < zeilen; j++) {
+        const y = z.von.y + y0 + j;
+        let k = 0;
+        while (belegt.has(schluessel(mitte + i, k, y))) k++;
+        if (k === 0) throw new RezeptFehler(`„${name}“: ${wo} trifft an der Seite ${seite} keinen Wandblock (Zeile ${y0 + j} des Glieds ${glied}); die Maße etwas ändern`);
+        tiefe = Math.max(tiefe, k);
+      }
+      return tiefe;
+    };
+    const paritaetBreite = (glied, seite, p) => ((seite === 'nord' || seite === 'sued' ? nachGlied.get(glied).parameter.breite : nachGlied.get(glied).parameter.tiefe) % 2 === 0 ? p.gerade : p.ungerade);
+    if (mm.eingang) {
+      const e = d.merkmale.eingang, seite = mm.eingang;
+      const fluegel = paritaetBreite(e.glied, seite, e.fluegel);
+      const tiefe = messe(e.glied, seite, fluegel, 0, 2, 'der Eingang');
+      kinder.push({ ref: `${praefix}.eingang`, name: 'Eingang', baustein: e.baustein, parameter: { fluegel, tiefe }, traeger: nachGlied.get(e.glied).ref, einbau: { zone: `wand-${seite}`, anker: 'mitte', versatz: { x: 0, y: 0, z: 0 }, drehung: WANDSEITE[seite] } });
+    }
+    if (mm.fenster) {
+      const fo = d.merkmale.fenster.formen[mm.fenster], hoehe = fo.parameter.hoehe;
+      const erste = nachGlied.get(fo.glieder[0]), letztes = nachGlied.get(fo.glieder.at(-1));
+      const zaehler = new Map();
+      for (let k = 0; ; k++) {
+        const yk = erste.versatz.y + fo.schwelle + k * fo.geschoss; // absolute Schicht des Fensterfußes im Rhythmus der Geschosse
+        if (yk + hoehe - 1 > letztes.versatz.y + letztes.parameter.hoehe - 1) break;
+        // das Fenster muss ganz in einem Glied liegen, mit Randzeilen zu dessen Unter- und Oberkante (dort liegt das nächste Glied auf: tragender Übergang)
+        const glied = fo.glieder.map((g) => nachGlied.get(g)).find((t) => yk >= t.versatz.y + fo.randUnten && yk + hoehe - 1 <= t.versatz.y + t.parameter.hoehe - 1 - fo.randOben);
+        if (!glied) continue;
+        for (const seite of fo.seitenfolge[k % fo.seitenfolge.length]) {
+          const breite = paritaetBreite(glied.glied, seite, fo.breite);
+          const y0 = yk - glied.versatz.y;
+          const tiefe = messe(glied.glied, seite, breite, y0, hoehe, 'ein Fenster');
+          const schluessel = `${glied.glied}-${seite}`;
+          const n = (zaehler.get(schluessel) ?? 0) + 1; zaehler.set(schluessel, n);
+          kinder.push({ ref: `${praefix}.fenster-${schluessel}-${n}`, name: 'Fenster', baustein: fo.baustein, parameter: { ...fo.parameter, breite, tiefe }, traeger: glied.ref, einbau: { zone: `wand-${seite}`, anker: 'mitte', versatz: { x: 0, y: y0, z: 0 }, drehung: WANDSEITE[seite] } });
+        }
+      }
+    }
+    return kinder;
+  }
+
+return { namen, rezept, wendeRezeptAn, RezeptFehler };
 }

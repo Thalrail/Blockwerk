@@ -15,7 +15,7 @@ export function erzeugeVokabular({ regelwerk, ebene0, ebene2 }) {
     .map(([id, b]) => ({ id, titel: b.titel.replace(/\s*\(.*$/, ''), parameter: b.parameter.map((p) => ({ ...p })) }));
 
   // Bausteinrezepte (Regeln rezepte.<name>, nur Daten): erlaubte Namen und Mindestmaße; die Rezeptschritte kennt nur Ebene 3
-  const rezepte = Object.fromEntries(regelwerk.alle().filter((r) => r.id.startsWith('rezepte.')).map((r) => [r.id.slice('rezepte.'.length), { titel: r.titel, mindest: { ...r.parameter.mindest } }]));
+  const rezepte = Object.fromEntries(regelwerk.alle().filter((r) => r.id.startsWith('rezepte.')).map((r) => [r.id.slice('rezepte.'.length), { titel: r.titel, mindest: { ...r.parameter.mindest }, ...(r.parameter.merkmale ? { merkmale: { ...(r.parameter.merkmale.eingang ? { eingang: [...r.parameter.merkmale.eingang.seiten] } : {}), ...(r.parameter.merkmale.fenster ? { fenster: Object.keys(r.parameter.merkmale.fenster.formen) } : {}) } } : {}) }]));
 
   const funktionen = {};
   for (const [art, regel] of Object.entries(S('funktionen'))) funktionen[art] = { ...regel, modul: arten[art] ?? null };

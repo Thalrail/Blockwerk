@@ -49,7 +49,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
         if ((t.funktionen ?? []).length) { frage(`${pf}.funktionen`, `${t.name}: Funktionen (Bedarf) zusammen mit einem Rezept kommen später; sie gehören an ein eigenes Teil.`, [{ id: 'entfernen', text: 'Die Funktion weglassen' }]); return; }
         if (t.form?.baustein !== undefined) { frage(`${pf}.form.baustein`, `${t.name}: das Rezept „${t.rezept}“ und der Baustein „${String(t.form.baustein)}“ nennen dasselbe doppelt; nur eines gilt.`, [{ id: 'entfernen', text: 'Den Baustein weglassen (das Rezept gilt)' }]); return; }
         let r;
-        try { r = rezepte.wendeRezeptAn(t.rezept, t.form?.groesse ?? {}, t.id); } catch (f) { frage(`${pf}.form.groesse`, `${t.name}: ${f.message}`); return; }
+        try { r = rezepte.wendeRezeptAn(t.rezept, t.form?.groesse ?? {}, t.id, t.merkmale); } catch (f) { frage(`${pf}.${f.pfad ?? 'form.groesse'}`, `${t.name}: ${f.message}`, f.pfad ? [{ id: 'entfernen', text: 'Das Merkmal weglassen' }] : []); return; }
         const form = { w: r.huelle.breite, d: r.huelle.tiefe, h: r.huelle.hoehe };
         info.set(t.id, { t, i, bs: null, rezept: r, groesse: { ...r.huelle }, form, bedarf: [], mind: null, wt: 0, W: form.w + 2 * rand, D: form.d + 2 * rand, H: form.h, hoeheParam: null });
         return;
@@ -253,6 +253,27 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
       const stimmung = t.stil.stimmung ?? gesamt;
       return { ...(stimmung ? { stimmung } : {}), palette: mischePaletten(t.stil.stimmung ? {} : (gesamtPalette ?? {}), eigene) };
     };
+    // Eingang (D3): Die Tür kommt aus der Palette (Rolle akzent, Form tuer). Fehlt sie oder lässt sie sich nicht von Hand öffnen, gibt es eine Rückfrage statt eines Ersatzblocks.
+    const stimmungsPaletten = regelwerk.parameter('plan.palette', 'stimmungen');
+    for (const x of info.values()) {
+      const eingang = x.rezept?.kinder?.find((k) => k.ref === `${x.t.id}.eingang`);
+      if (!eingang) continue;
+      const stimmung = x.t.stil?.stimmung ?? gesamt;
+      const palette = mischePaletten(mischePaletten(stimmung ? (stimmungsPaletten[stimmung] ?? {}) : {}, x.t.stil?.stimmung ? {} : (gesamtPalette ?? {})), x.t.stil?.palette ?? {});
+      if (!Object.keys(palette).length) continue; // keine Materialwahl bekannt: die Prüfung auf eine vollständige Palette kommt beim Zusammenbau
+      const akzent = palette.akzent, tuer = akzent && typeof akzent === 'object' && !('id' in akzent) ? akzent.tuer : undefined;
+      const id = typeof tuer === 'string' ? tuer : tuer?.id;
+      const regel = rezepte.rezept(x.t.rezept).merkmale.eingang.tuer;
+      const pf = `teile[${x.i}].merkmale.eingang`;
+      if (id === undefined) frage(pf, `${x.t.name}: Die Materialwahl hat keinen Türblock (Rolle „akzent“, Form „tuer“); Blockwerk nimmt keinen anderen Block als Ersatz. Entweder den Eingang weglassen oder in „stil.palette“ einen Türblock für „akzent“ (Form „tuer“) wählen.`, [{ id: 'entfernen', text: 'Den Eingang weglassen' }]);
+      else if (regel.nichtPerHand.includes(id)) frage(pf, `${x.t.name}: Die Tür der Materialwahl (${id}) lässt sich in Bedrock nicht von Hand öffnen (nur mit Redstone); ein Eingang ohne Schaltung wäre verschlossen. Entweder den Eingang weglassen oder in „stil.palette“ eine Holz- oder Kupfertür für „akzent“ (Form „tuer“) wählen. Quelle: ${regel.quelle}`, [{ id: 'entfernen', text: 'Den Eingang weglassen' }]);
+    }
+    if (rueckfragen.length) return leer();
+    /** Achsen, in denen ein Glied symmetrisch bleibt: Sitzt ein Kind (Eingang, Fenster) nur an einer Seite ohne Gegenstück (nord ohne sued, ost ohne west), entfällt die Spiegelung über diese Achse. */
+    const symmetrieAchsen = (rezept, gliedRef) => {
+      const seiten = new Set((rezept.kinder ?? []).filter((k) => k.traeger === gliedRef).map((k) => k.einbau.zone.replace(/^wand-/, '')));
+      return ['x', 'z'].filter((a) => (a === 'z' ? seiten.has('nord') === seiten.has('sued') : seiten.has('ost') === seiten.has('west')));
+    };
     const abschnitte = teile.filter((t) => !istKind(t)).map((t) => {
       const x = info.get(t.id), hu = huellen.get(t.id);
       let zonen = [{ funktion: 'optik', anteil: 100 }];
@@ -269,9 +290,9 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
         id: t.id, name: t.name, huelle: hu, nach: [...nach.get(t.id)].sort(),
         zonen, ...(x.bedarf.length ? { bedarf: x.bedarf } : {}),
         formen: x.rezept
-          ? x.rezept.teile.map((g) => ({ baustein: g.baustein, parameter: g.parameter, zone: 'optik', anker: 'mitte', versatz: g.versatz, ref: g.ref, ...(rund.includes(g.baustein) ? { soll: { symmetrie: ['x', 'z'] } } : {}), ...(g.rollen ? { rollen: g.rollen } : {}) }))
+          ? x.rezept.teile.map((g) => ({ baustein: g.baustein, parameter: g.parameter, zone: 'optik', anker: 'mitte', versatz: g.versatz, ref: g.ref, ...(rund.includes(g.baustein) ? { soll: { symmetrie: symmetrieAchsen(x.rezept, g.ref) } } : {}), ...(g.rollen ? { rollen: g.rollen } : {}) }))
           : [{ baustein: x.bs, parameter: x.groesse, zone: 'optik', anker: 'mitte', ref: t.id, ...(Object.keys(soll).length ? { soll } : {}) }],
-        ...(kinder.get(t.id).length ? { kinder: kinder.get(t.id) } : {}),
+        ...((kinder.get(t.id).length || x.rezept?.kinder?.length) ? { kinder: [...kinder.get(t.id), ...(x.rezept?.kinder ?? [])] } : {}),
         ...(verb.get(t.id).length ? { verbindungen: verb.get(t.id) } : {}),
         ...materialVon(t),
       };

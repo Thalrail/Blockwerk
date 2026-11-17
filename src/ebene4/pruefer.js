@@ -4,7 +4,7 @@
 import { PROJEKT_ID } from './spezifikation.js';
 
 const ID_MUSTER = /^[a-z0-9][a-z0-9-]*$/;
-const TEIL_FELDER = ['id', 'name', 'art', 'form', 'rezept', 'lage', 'funktionen', 'stil', 'wichtigkeit', 'verbindungen'];
+const TEIL_FELDER = ['id', 'name', 'art', 'form', 'rezept', 'merkmale', 'lage', 'funktionen', 'stil', 'wichtigkeit', 'verbindungen'];
 const OBER_FELDER = ['schema', 'version', 'projekt', 'teile', 'offeneFragen', 'freigabe'];
 
 const istObjekt = (w) => w !== null && typeof w === 'object' && !Array.isArray(w);
@@ -87,6 +87,19 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
       }
     };
 
+    /** Merkmale eines Rezepts (D3): nur Namen aus dem Vokabular (Eingang: Himmelsrichtung, Fenster: Fensterform); alles Weitere (Maße, Lage, Blöcke) bestimmt Ebene 3. */
+    const pruefeMerkmale = (t, pf, wer) => {
+      const entfernen = (text) => [{ id: 'entfernen', text }];
+      if (t.rezept === undefined) { frage(`${pf}.merkmale`, 'leser.schema', `${wer}: Merkmale (Eingang, Fenster) gibt es nur bei einem Teil mit Rezept.`, entfernen('Die Merkmale weglassen')); return; }
+      if (!Object.hasOwn(V.rezepte, t.rezept)) return; // das unbekannte Rezept ist schon gemeldet
+      const m = t.merkmale, erlaubt = V.rezepte[t.rezept].merkmale ?? {};
+      if (!istObjekt(m)) { frage(`${pf}.merkmale`, 'leser.schema', `${wer}: merkmale muss eine Zuordnung sein (${Object.keys(erlaubt).join(', ') || 'das Rezept bietet keine'}).`, entfernen('Die Merkmale weglassen')); return; }
+      for (const [k, w] of Object.entries(m)) {
+        if (!Object.hasOwn(erlaubt, k)) { frage(`${pf}.merkmale.${String(k).slice(0, 60)}`, 'leser.schema', `${wer}: das Merkmal „${String(k).slice(0, 60)}“ bietet das Rezept „${t.rezept}“ nicht (möglich: ${Object.keys(erlaubt).join(', ') || 'keine'}).`, entfernen('Das Merkmal weglassen')); continue; }
+        if (typeof w !== 'string' || !erlaubt[k].includes(w)) unbekannt(`${pf}.merkmale.${k}`, 'leser.schema', `Das Merkmal „${k}“ von ${wer}`, w, erlaubt[k]);
+      }
+    };
+
     if (!istObjekt(spec)) { frage('', 'leser.schema', 'Die Spezifikation ist kein JSON-Objekt.'); return { rueckfragen, hinweise }; }
     for (const k of Object.keys(spec)) if (!OBER_FELDER.includes(k)) frage(k, 'leser.schema', `Das Feld „${k}“ kennt das Schema nicht (erlaubt: ${OBER_FELDER.join(', ')}).`, [{ id: 'entfernen', text: 'Feld weglassen' }]);
     if (spec.schema !== V.schema) frage('schema', 'leser.schema', `Die Schema-Version ist ${JSON.stringify(spec.schema)}, Blockwerk versteht Schema ${V.schema}.`, wahl([V.schema]));
@@ -157,6 +170,7 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
 
       // Form
       const f = t.form;
+      if (t.merkmale !== undefined) pruefeMerkmale(t, pf, wer);
       if (t.rezept !== undefined) pruefeRezept(t, pf, wer);
       else if (!istObjekt(f)) frage(`${pf}.form`, 'leser.schema', `${wer} braucht eine Form (baustein, groesse).`);
       else {

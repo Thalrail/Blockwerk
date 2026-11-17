@@ -75,7 +75,8 @@ export function erzeugeGeschosse({ ebene2 }) {
     const etage = form.etage, mind = form.obersteMindestlicht;
     const m = masken(teile);
     const treppen = form.treppen;
-    const kandidaten = wahl === 'auto' ? treppen.auto : [wahl];
+    if (wahl !== 'auto' && !Object.hasOwn(treppen.formen, wahl)) fehler('merkmale.treppe', `„${name}“: die Treppenform „${String(wahl)}“ gibt es nicht (möglich: auto, ${Object.keys(treppen.formen).join(', ')})`);
+    const kandidaten = (wahl === 'auto' ? treppen.auto : [wahl]).filter((f) => Object.hasOwn(treppen.formen, f));
     const reichweite = teile.map((t) => { const h = huelleVon(ebene2.baue(t.baustein, t.parameter).bloecke); return { t, von: t.versatz.y + h.von.y, bis: t.versatz.y + h.bis.y }; });
     const gliedBei = (y) => reichweite.find((r) => y >= r.von && y <= r.bis)?.t;
 

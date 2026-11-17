@@ -328,6 +328,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       // Ohne Geschosse gilt der Rhythmus der Fensterform (ab dem ersten Schaftglied). Mit Geschossen richten sich die Fenster an den Decken aus: je Etage die Brüstung über dem Fußboden (Daten: geschosse.fenster.schwelleAbBoden).
       const etage = geschosse?.etage, schwelleBoden = geschosse ? d.merkmale.geschosse.formen[mm.geschosse].fenster.schwelleAbBoden : 0;
       for (let k = 0; k < 1000; k++) { // die Obergrenze ist nur ein Netz: die Schleife endet über die Höhe des letzten Glieds
+        if (geschosse && k > geschosse.n) break; // nur auf wirklich geplanten Ebenen (Erdgeschoss bis oberste Ebene), nie auf Böden, die es nicht gibt
         const yk = geschosse ? k * etage + schwelleBoden : erste.versatz.y + fo.schwelle + k * fo.geschoss; // absolute Schicht des Fensterfußes
         if (yk + hoehe - 1 > letztes.versatz.y + letztes.parameter.hoehe - 1) break;
         // das Fenster muss ganz in einem Glied liegen, mit Randzeilen zu dessen Unter- und Oberkante (dort liegt das nächste Glied auf: tragender Übergang)

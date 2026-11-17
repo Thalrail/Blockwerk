@@ -134,8 +134,10 @@ test('Eingang, Fenster und Dach bleiben: Tür und Scheiben wie ohne Geschosse an
     const scheiben = blM.filter((c) => /_pane$/.test(idVon(c)));
     assert.ok(scheiben.length > 0, 'Fenster vorhanden');
     const y0 = Math.min(...blM.map((c) => c.y));
+    const etagen = mit.e.ebene3.rezepte.wendeRezeptAn('turm', { breite: b, tiefe: t, hoehe: h }, 'turm', { eingang: 'sued', fenster: 'schlitze', geschosse: 'standard', treppe: 'wendel' }).geschosse.etagen;
     for (const s of scheiben) {
       const rel = s.y - y0, innerhalb = rel % ETAGE;
+      assert.ok(Math.floor(rel / ETAGE) <= etagen, `${b}×${t}×${h}: Fenster in Höhe ${rel} gehört zu einer Etage über der obersten geplanten (${etagen})`);
       assert.ok(innerhalb === 2 || innerhalb === 3, `${b}×${t}×${h}: Fenster in Höhe ${rel} liegt nicht an der Brüstung über dem Fußboden (2 oder 3 über der Decke)`);
     }
     // Das Dach (Kegel) behält seine Außenhülle: jeder Block der Wand ohne Geschosse ist auch mit Geschossen da (nur Öffnungen für Fenster ändern sich)
@@ -195,4 +197,13 @@ test('Spezifikation (Ebene 4): Vokabular nennt nur Namen, Prüfer fragt bei fals
   assert.doesNotMatch(briefing, /deckenLoecher|deckenAnzahl|deckenErste|wandzonen|innenzone|obersteMindestlicht|sockelMindesthoehe/, 'keine internen Parameter oder Regeldaten im Briefing');
   const z = e.ebene4.zusammenfassung?.(spec(13, 13, 34, { eingang: 'sued', geschosse: 'standard', treppe: 'wendel' }));
   if (z) assert.match(JSON.stringify(z), /Geschosse mit Treppe wendel/);
+});
+
+test('Planung direkt: eine unbekannte Treppenform ergibt die Rückfrage am Merkmal, nie einen Absturz', async () => {
+  const e = await engine();
+  const form = e.ebene3.rezepte.rezept('turm').merkmale.geschosse.formen.standard;
+  const r = e.ebene3.rezepte.wendeRezeptAn('turm', { breite: 13, tiefe: 13, hoehe: 34 }, 'turm', { eingang: 'sued' });
+  const fehler = (pfad, text) => { const f = new Error(text); f.pfad = pfad; throw f; };
+  const G = (await import('../../src/ebene3/geschosse.js')).erzeugeGeschosse({ ebene2: e.ebene2 });
+  assert.throws(() => G.plane({ name: 'turm', form, wahl: 'rutsche', teile: r.teile, praefix: 'turm', eingang: null, fehler }), (f) => f.pfad === 'merkmale.treppe' && /rutsche/.test(f.message));
 });

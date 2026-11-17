@@ -6,7 +6,7 @@ Blockwerk als eigenständiges Windows-Programm (Tauri 2). Das Fenster zeigt die 
 1. `Blockwerk_0.1.0_x64-setup.exe` ausführen. Installation nur für deinen Benutzer, kein Administrator nötig. Der Installer ist **nicht signiert**: Windows SmartScreen warnt beim ersten Start („Weitere Informationen“ → „Trotzdem ausführen“).
 2. Blockwerk aus dem Startmenü starten. Es braucht keinen Server und keine Internetverbindung (nur Live-Abhaken braucht das Netz).
 3. **3D-Ansicht → Freiflug:** ins Bild klicken fängt die Maus; Maus = umsehen, W/A/S/D = bewegen, Leertaste = hoch, Umschalt = runter, **Esc** gibt die Maus frei (ebenso ein Wechsel in ein anderes Fenster).
-4. **Projekte:** werden automatisch im Programm gespeichert und sind nach einem Neustart wieder da. „Datei sichern“ schreibt eine `.blockwerk.json` in den Ordner **Downloads** (ohne Dialog, siehe Grenzen); „Datei öffnen“ lädt sie wieder.
+4. **Projekte:** werden automatisch im Programm gespeichert und sind nach einem Neustart wieder da. „Datei sichern“ öffnet den Windows-Dialog „Speichern unter“ (Vorschlag `<Projekt>.blockwerk.json`) und meldet den Pfad; Abbrechen schreibt nichts. „Datei öffnen“ lädt die Datei wieder.
 5. **Wichtig:** Der Programmspeicher ist vom Browser getrennt. Projekte aus dem Browser kommen per „Datei sichern“ (Browser) und „Datei öffnen“ (Programm) hinüber.
 
 ## Selbst bauen (Entwickler)
@@ -22,10 +22,9 @@ cargo tauri build
 Ergebnis: `windows/src-tauri/target/release/bundle/nsis/Blockwerk_0.1.0_x64-setup.exe` und `…/release/blockwerk-windows.exe`. `kopiere-dist.mjs` kopiert nur `index.html`, `manifest.webmanifest`, `web/`, `src/`, `data/` nach `windows/dist` (keine Git-Daten, Dokumentation, Datenbanken, versteckten Dateien). `Cargo.lock` ist eingecheckt (reproduzierbarer Build). Tests: `npm test` (`test/windows.test.js`).
 
 ## Geprüft (11/2026, Windows 11, WebView2 157)
-Start ohne Server; Engine-Worker und `fetch` aus `data/`; Zitadelle (klein) berechnet und angezeigt; 3D-Ansicht; Freiflug: Klick fängt die Maus, Blick ohne gedrückte Taste, W/A/S/D, echtes Esc gibt frei, Fokuswechsel gibt frei; Projekt nach vollständigem Neustart wieder da; Export schreibt eine Datei; Import einer exportierten Datei.
+Start ohne Server; Engine-Worker und `fetch` aus `data/`; Zitadelle (klein) berechnet und angezeigt; 3D-Ansicht; Freiflug: Klick fängt die Maus, Blick ohne gedrückte Taste, W/A/S/D, echtes Esc gibt frei, Fokuswechsel gibt frei; Projekt nach vollständigem Neustart wieder da; Export über den Speichern-Dialog (Datei geschrieben, Abbruch geprüft); Import einer exportierten Datei.
 
 ## Noch nicht unterstützt / Grenzen
-- Kein Speichern-unter-Dialog: der Export landet still in `Downloads`, ohne Rückmeldung in der Oberfläche (geplant: Tauri-Dateidialog).
 - Kein Signieren, kein automatisches Update, nur Windows (x64), nur NSIS (kein MSI).
 - Der Kompaktmodus („Immer im Vordergrund“, Fenster im Vordergrund) nutzt `documentPictureInPicture`; in WebView2 vorhanden, aber im Alltag noch nicht erprobt.
 - Kein Zugriff auf Minecraft-Welten oder Gelände (nicht Teil von W1).

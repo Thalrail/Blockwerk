@@ -2,6 +2,7 @@
 // die Engine läuft im Worker (engine-worker.js), die Mengen- und Fortschrittslogik kommt aus src/ebene5.
 import * as fortschritt from '../src/ebene5/fortschritt.js';
 import * as teilen from '../src/ebene5/teilen.js';
+import * as Speichern from './speichern.js';
 const Teilen = teilen;
 import * as Umbau from '../src/ebene5/umbau.js';
 import * as Projekt from '../src/ebene5/projektid.js';
@@ -1070,9 +1071,8 @@ async function aktion(name, el) {
       toast(zuLang ? 'Link kopiert – er ist ziemlich lang. Falls ein Chat ihn abschneidet, nimm „Datei sichern“.' : 'Link kopiert. Wer ihn öffnet, sieht denselben Bauplan mit deinem Fortschritt.');
     } else if (name === 'sichern') {
       const text = teilen.exportDatei({ spezifikation: z.spec, fortschritt: z.fortschritt, aenderungen: z.planfassung });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' })); a.download = `${(plan().projekt.name || 'blockwerk').replace(/[^\w-]+/g, '-')}.blockwerk.json`; a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      const erg = await Speichern.sichereDatei({ text, projektName: plan().projekt.name, tauri: window.__TAURI__, doc: document, urlApi: URL });
+      const m = Speichern.meldung(erg); if (m) toast(m);
     }
   } catch (f) { toast(String(f?.message ?? f)); }
 }

@@ -34,7 +34,7 @@ Ohne `rezept` ist die Planung byte-identisch zu vor D2: `test/ebene3/rezepte-rue
 - Nur das Rezept `turm`; Mindestmaß 9 × 9 × 16 und Höhe mindestens so groß wie die größere Breite.
 - Die Krone kragt bei kleinen Breiten einen Block aus; der Einzug ist ein Anteil der Breite, daher bei großen Breiten mehr (bei 45 drei Blöcke). Bewusst so.
 - Die Rollen `akzent` (Sockel, Krone) und `wand` wirken nur, wenn die Palette der Stimmung sie liefert; Blockwerk wählt kein Material.
-- Keine Fenster, Türen, Innenräume, Dekoration.
+- Keine Innenräume, Geschossdecken, Treppen, Dekoration. Eingang und Fenster nur als optionale Merkmale (siehe unten, D3).
 - Befund (D2.2, behoben in Paket 1a Teil 2): Wandstärke 1 bei runder Form (Schaft oben, Dach) war nur diagonal zusammenhängend (bei 13×13×34 vier, bei 31×31×60 26 Hilfspunkte). Jetzt Wand 2 bei Schaft oben und Dach. Dünne runde Wände sind nur diagonal verbunden, auch beim bisherigen Rohr; der Test (`rezepte-groessenreihe.test.js`) prüft deshalb die 26er-Nachbarschaft. Wand 1 bleibt nur beim bisherigen Rohr; das Turm-Rezept nutzt Wand 2 (Schaft oben, Dach).
 
 ## Ein neues Rezept ergänzen
@@ -66,3 +66,20 @@ Dazu `test/ebene3/rezepte-groessenreihe.test.js`: acht Größen (9×9×16 bis 45
 | 45×45×80 | 16732 (9920) | 42 → 0 | 30 |
 
 Restwerte: keine. Kosten: bis +69 % Blöcke bei 45×45×80 (dickere Ringe), Mindestmaße unverändert (9 × 9 × 16 bleibt baubar, Dach dort 6 von 16 Schichten). Spieltest offen.
+
+## Merkmale (D3): Eingang und Fensterschlitze
+Stand 17.11.2026, `entworfen` (Spieltest offen, nie von Agenten auf `geprüft` zu setzen). Entscheidung: `docs/entscheidungen.md` (Fenster und Türen für das Turm-Rezept).
+
+**Spezifikation (nur WAS):** optional `teile[].merkmale: { "eingang": "nord|ost|sued|west", "fenster": "schlitze" }`, beide einzeln wählbar, nur zusammen mit `rezept`. Ohne das Feld (auch mit `{}`) ist der Entwurf byte-identisch (`test/ebene3/rezepte-merkmale.test.js`). Der Leser sieht nur die Namen (Vokabular `rezepte.turm.merkmale`, Briefing-Abschnitt „Merkmale“); Maße, Lage und Blöcke bestimmt Ebene 3.
+
+**Regeln als Daten** (`data/regeln/rezepte.json`, `parameter.merkmale`, beim Laden geprüft): `eingang` (Seiten, Glied `sockel`, Baustein `bau.tuer`, Flügel nach Parität der Breite, `sockelMindesthoehe` 3, Regel `tuer.nichtPerHand` mit Quelle) und `fenster.formen.<name>` (Baustein, Parameter, Breite nach Parität, tragende Glieder, Geschosshöhe 5, Schwelle 2, Randzeilen, Seitenfolge). Eine neue Fensterform ist nur ein weiterer Eintrag.
+
+**Platzierung (`src/ebene3/rezepte.js`):** Kinder der Glieder (`turm.eingang`, `turm.fenster-<glied>-<seite>-<n>`, stabile Kennungen) in der Wandzone (`wand-<seite>`, Anker Mitte). Ungerade Breite: eine Spalte, gerade: zwei Spalten um die Mitte (symmetrisch). Die Wanddicke wird an den echten Blöcken des Trägers gemessen; die Öffnung (`bau.tuer`/`bau.fenster`, Parameter `tiefe`) ersetzt an der Vorderseite die Wand, dahinter hält eine Freihaltung den Durchgang frei (ein manuell gesetzter Block dort ist ein Konflikt, nie stilles Zumauern). Mit Eingang ist der Sockel mindestens 3 Schichten hoch (Sturz). Fenster nur in den Schaftgliedern, ganz in einem Glied mit je einer Randzeile zu dessen Kanten (dort liegt das nächste Glied auf); bei sehr kleinen Türmen (9×9×16) passt kein Fenster. Nur Glieder mit Merkmal bekommen den Parameter `wandzonen: 1` (`form.zylinder`), die Blöcke bleiben gleich. Die Soll-Symmetrie der Glieder entfällt nur für die Achse, die der Eingang bricht.
+
+**Tür aus der Palette:** Rolle `akzent`, Form `tuer`. Fehlt sie oder lässt sie sich nicht von Hand öffnen (Eisentür der Stimmung `dunkel-industriell`), gibt Ebene 3 eine Rückfrage mit Quelle statt eines Ersatzblocks; Abhilfe: Eingang weglassen oder `stil.palette.akzent.tuer` (Holz- oder Kupfertür). Hinweis: Die Tür braucht in Bedrock einen tragenden Block darunter (Gelände); der Plan setzt die Schwelle auf Bodenhöhe (`ungeprüft`).
+
+**Manuelle Änderungen:** Eine Änderung genau an der Türzelle oder im Durchgang ist ein Konflikt (die Planung wartet, Jonah entscheidet); beim Abschalten eines Merkmals wird eine Änderung an seinem Kind verwaist gemeldet; Änderungen an den Gliedern bleiben stabil (`test/ebene5/merkmale-aenderungen.test.js`). Geänderte Schichten erscheinen in den Umbauhinweisen.
+
+**Ebene 5 (D3.4):** Reiter „Teile“, Rezeptteil: Auswahl Eingang (Himmelsrichtung oder keiner) und Fenster; läuft wie die Größe über „Prüfen und übernehmen“ (Vorschau, Folgen, Umbauhinweise); `src/ebene5/teile.js` (`setzeMerkmal`, `rezeptMerkmale`, Felder `m-eingang`, `m-fenster`). Abschalten entfernt das Feld ganz.
+
+**Nachweis:** `test/ebene3/rezepte-merkmale.test.js` (9 Größen × 4 Seiten: mittig, durch die Wand, Durchgang bis in den Innenraum, Außenmaß, Prüfer Ebene 1 ohne Verstoß, `messeAufbau` 0 unverbundene Blöcke und 0 Hilfspunkte, Symmetrie, Determinismus, Palettenkonflikte), `test/ebene2/wandzonen-tiefe.test.js`, `test/ebene5/rezeptmerkmale.test.js`. Echt geprüft im Windows-Fenster (aktivieren, ändern, Neustart, abschalten; Eisentür-Meldung).

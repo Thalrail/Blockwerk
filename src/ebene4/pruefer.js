@@ -96,7 +96,9 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
       if (!istObjekt(m)) { frage(`${pf}.merkmale`, 'leser.schema', `${wer}: merkmale muss eine Zuordnung sein (${Object.keys(erlaubt).join(', ') || 'das Rezept bietet keine'}).`, entfernen('Die Merkmale weglassen')); return; }
       for (const [k, w] of Object.entries(m)) {
         if (!Object.hasOwn(erlaubt, k)) { frage(`${pf}.merkmale.${String(k).slice(0, 60)}`, 'leser.schema', `${wer}: das Merkmal „${String(k).slice(0, 60)}“ bietet das Rezept „${t.rezept}“ nicht (möglich: ${Object.keys(erlaubt).join(', ') || 'keine'}).`, entfernen('Das Merkmal weglassen')); continue; }
-        if (typeof w !== 'string' || !erlaubt[k].includes(w)) unbekannt(`${pf}.merkmale.${k}`, 'leser.schema', `Das Merkmal „${k}“ von ${wer}`, w, erlaubt[k]);
+        // Die Treppenformen hängen an der Geschossform (Rezeptdaten): erlaubt ist, was die gewählte Form bietet
+        const moeglich = k === 'treppe' && typeof m.geschosse === 'string' && V.rezepte[t.rezept].treppenJeGeschoss?.[m.geschosse] ? V.rezepte[t.rezept].treppenJeGeschoss[m.geschosse] : erlaubt[k];
+        if (typeof w !== 'string' || !moeglich.includes(w)) unbekannt(`${pf}.merkmale.${k}`, 'leser.schema', `Das Merkmal „${k}“ von ${wer}`, w, moeglich);
       }
       // Die Treppenform gehört zu den Geschossen (D4): ohne Geschosse gibt es keine Treppe
       if (m.treppe !== undefined && m.geschosse === undefined && Object.hasOwn(erlaubt, 'treppe')) frage(`${pf}.merkmale.treppe`, 'leser.schema', `${wer}: Die Treppenform gilt nur zusammen mit Geschossen („geschosse“). Entweder Geschosse wählen oder die Treppenform weglassen.`, entfernen('Die Treppenform weglassen'));

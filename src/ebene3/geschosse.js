@@ -98,7 +98,7 @@ export function erzeugeGeschosse({ ebene2 }) {
     /** Eine Treppenform planen: so viele Etagen wie möglich. Liefert { n, fluege, grund }. */
     function planeForm(art, daten) {
       let beste = { n: 0, fluege: [], grund: null };
-      for (const r of art === 'wendel' ? daten.radien : [null]) {
+      for (const r of art === 'wendel' ? daten.radien : art === 'gerade' ? [0, 1] : [null]) { // wendel: Radien; gerade: Lauf entlang z (0) oder um ein Viertel gedreht entlang x (1); die bessere Achse gewinnt, bei Gleichstand z
         const lauf = []; let wieso = null;
         for (let k = 0; k < 200; k++) {
           const yk = k * etage;
@@ -116,9 +116,11 @@ export function erzeugeGeschosse({ ebene2 }) {
             flug = { zellen, loecher, segment };
           } else if (art === 'gerade') {
             const paket = ebene2.baue(daten.baustein, { stufen: etage, breite: 1 });
-            const z0 = m.mitte.z + Math.floor((etage + 1) / 2) - 1, nachNorden = k % 2 === 0;
-            const drehung = nachNorden ? 0 : 2;
-            const ur0 = nachNorden ? { x: m.mitte.x - 1, y: yk, z: z0 } : { x: m.mitte.x, y: yk, z: z0 - etage };
+            const z0rel = Math.floor((etage + 1) / 2) - 1, nachNorden = k % 2 === 0;
+            const quer = r; // Vierteldrehungen des ganzen Aufbaus um die Mitte
+            const versatz = dreheViertel(nachNorden ? { x: -1, z: z0rel } : { x: 0, z: z0rel - etage }, quer);
+            const drehung = ((nachNorden ? 0 : 2) + quer) % 4;
+            const ur0 = { x: nf(m.mitte.x + versatz.x), y: yk, z: nf(m.mitte.z + versatz.z) };
             const zellen = paket.aussparungen.flatMap((a) => quaderZellen(a, drehung, ur0));
             const loecher = zellen.filter(([, y]) => y === yk + etage - 1);
             const e = dreheViertel({ x: 0, z: -etage }, drehung);

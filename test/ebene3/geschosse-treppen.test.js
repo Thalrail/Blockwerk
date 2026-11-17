@@ -76,7 +76,7 @@ test('Größenreihe × Treppenformen: entweder eine klare Rückfrage (nie ein st
     }
     geprueft++;
   }
-  assert.ok(geprueft >= 15 && rueckfragen >= 3, `geprüft ${geprueft}, Rückfragen ${rueckfragen}`);
+  assert.ok(geprueft >= 20 && rueckfragen >= 1, `geprüft ${geprueft}, Rückfragen ${rueckfragen}`); // die gerade Treppe liegt jetzt auch quer: weniger Platzprobleme als zuvor
 });
 
 test('Treppenblöcke: Ausrichtung folgt dem Aufstieg (jede Stufe blickt zur nächsten höheren), alle vier Drehungen und beide Spuren der geraden Treppe', async () => {
@@ -206,4 +206,36 @@ test('Planung direkt: eine unbekannte Treppenform ergibt die Rückfrage am Merkm
   const fehler = (pfad, text) => { const f = new Error(text); f.pfad = pfad; throw f; };
   const G = (await import('../../src/ebene3/geschosse.js')).erzeugeGeschosse({ ebene2: e.ebene2 });
   assert.throws(() => G.plane({ name: 'turm', form, wahl: 'rutsche', teile: r.teile, praefix: 'turm', eingang: null, fehler }), (f) => f.pfad === 'merkmale.treppe' && /rutsche/.test(f.message));
+});
+
+test('Gerade Treppe in beiden Achsen: schmale Rechtecktürme und ihre Transponierten bekommen gleich viele Etagen und sind begehbar (der Lauf liegt entlang der längeren Achse)', async () => {
+  const e = await engine(), B = e.ebene1.bewegung;
+  for (const [[b, t, h], [b2, t2, h2]] of [[[21, 11, 40], [11, 21, 40]], [[25, 13, 40], [13, 25, 40]], [[15, 9, 30], [9, 15, 30]]]) {
+    const merkmale = { eingang: 'sued', geschosse: 'standard', treppe: 'gerade' };
+    const a = e.ebene3.rezepte.wendeRezeptAn('turm', { breite: b, tiefe: t, hoehe: h }, 'turm', merkmale);
+    const c = e.ebene3.rezepte.wendeRezeptAn('turm', { breite: b2, tiefe: t2, hoehe: h2 }, 'turm', merkmale);
+    assert.equal(a.geschosse.etagen, c.geschosse.etagen, `${b}×${t} und ${b2}×${t2}: gleich viele Etagen`);
+    assert.ok(a.geschosse.etagen >= 2);
+    const richtungen = (r) => new Set(r.kinder.filter((k) => /^turm\.treppe-gerade-/.test(k.ref)).map((k) => k.einbau.drehung % 2));
+    assert.deepEqual([...richtungen(a)], [1], `${b}×${t}: Lauf entlang x (Ost/West)`);
+    assert.deepEqual([...richtungen(c)], [0], `${b2}×${t2}: Lauf entlang z (Nord/Süd)`);
+    for (const [bb, tt, hh] of [[b, t, h], [b2, t2, h2]]) {
+      const r = e.ebene4.baue(e.ebene4.freigeben(spec(bb, tt, hh, merkmale), 'test'));
+      assert.equal(r.status, 'fertig', `${bb}×${tt}: ${JSON.stringify(r.rueckfragen ?? '')}`);
+      const g = welt(e, r.entwurf), ziel = stehstelle(g, a.geschosse.etagen);
+      assert.ok(ziel, `${bb}×${tt}: oberste Ebene hat eine Austrittsfläche`);
+      for (const art of ['spieler', 'dorfbewohner', 'baby']) assert.equal(B.weg(g.w, g.von, ziel, art, { radius: 70 }).ok, true, `${bb}×${tt} ${art}`);
+    }
+  }
+});
+
+test('Treppenformen je Geschossform: Vokabular nennt sie, die Oberfläche lehnt eine unpassende Kombination ab (kein stilles Behalten einer ungültigen Form)', async () => {
+  const e = await engine(), T = await import('../../src/ebene5/teile.js');
+  assert.deepEqual(e.ebene4.vokabular.rezepte.turm.treppenJeGeschoss, { standard: ['auto', 'wendel', 'gerade', 'leiter'] });
+  const i = T.teileInfo(e.ebene4.vokabular);
+  i.rezepte.turm.treppenJeGeschoss = { standard: ['auto', 'wendel'] }; // eine (erfundene) Geschossform ohne gerade Treppe und ohne Leiter
+  const s = spec(13, 13, 34, { geschosse: 'standard', treppe: 'wendel' });
+  assert.throws(() => T.setzeMerkmal(s, 'turm', 'treppe', 'gerade', i), (f) => f instanceof T.TeileFehler && /bei dieser Geschossform nicht/.test(f.message));
+  const mitGerade = spec(13, 13, 34, { treppe: 'gerade' }); mitGerade.teile[0].merkmale = { geschosse: 'standard', treppe: 'gerade' };
+  assert.throws(() => T.setzeMerkmal(spec(13, 13, 34, { geschosse: 'standard', treppe: 'gerade' }), 'turm', 'geschosse', 'standard', i), (f) => f instanceof T.TeileFehler && /zuerst die Treppenform ändern/.test(f.message));
 });

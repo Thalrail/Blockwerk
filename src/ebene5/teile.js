@@ -34,7 +34,7 @@ export function teileInfo(vokabular) {
 const MASSE = [['breite', 'Breite'], ['tiefe', 'Tiefe'], ['hoehe', 'Höhe']];
 function rezepteInfo(vokabular) {
   return Object.fromEntries(Object.entries(vokabular.rezepte ?? {}).map(([name, r]) => [name, {
-    id: name, titel: r.titel, mindest: { ...r.mindest }, merkmale: structuredClone(r.merkmale ?? {}),
+    id: name, titel: r.titel, mindest: { ...r.mindest }, merkmale: structuredClone(r.merkmale ?? {}), treppenJeGeschoss: structuredClone(r.treppenJeGeschoss ?? {}),
     parameter: MASSE.map(([k, anzeige]) => ({
       name: k, ganzzahl: true, min: r.mindest[k], max: vokabular.bauplatz[k].max,
       beschreibung: `${anzeige} in Blöcken${k === 'hoehe' && r.mindest.hoeheZuBreite ? ` (mindestens ${r.mindest.hoeheZuBreite} × die größere Breite)` : ''}`,
@@ -99,6 +99,9 @@ export function setzeMerkmal(spec, id, art, wert, info) {
   if (!m || !Object.hasOwn(m, art) || art === 'titel') throw new TeileFehler(`Das Rezept „${t.rezept}“ bietet kein Merkmal „${String(art)}“.`);
   if (wert !== null && !m[art].some((o) => o.wert === wert)) throw new TeileFehler(`${MERKMAL_TITEL[art]}: „${String(wert)}“ gibt es nicht (möglich: ${m[art].map((o) => o.wert).join(', ')}).`);
   const merkmale = { ...(t.merkmale ?? {}) };
+  const treppenZu = (geschosse) => info.rezepte[t.rezept].treppenJeGeschoss?.[geschosse] ?? m.treppe?.map((o) => o.wert) ?? [];
+  if (art === 'treppe' && wert !== null && merkmale.geschosse !== undefined && !treppenZu(merkmale.geschosse).includes(wert)) throw new TeileFehler(`Die Treppenform „${wert}“ gibt es bei dieser Geschossform nicht (möglich: ${treppenZu(merkmale.geschosse).join(', ')}).`);
+  if (art === 'geschosse' && wert !== null && merkmale.treppe !== undefined && !treppenZu(wert).includes(merkmale.treppe)) throw new TeileFehler(`Die gewählte Treppenform „${merkmale.treppe}“ passt nicht zu dieser Geschossform (möglich: ${treppenZu(wert).join(', ')}). Bitte zuerst die Treppenform ändern.`);
   if (art === 'treppe' && wert !== null && wert !== 'auto' && merkmale.geschosse === undefined) throw new TeileFehler('Die Treppenform gilt nur mit Geschossen: bitte zuerst die Geschosse einschalten.');
   if (wert === null || (art === 'treppe' && wert === 'auto')) delete merkmale[art]; else merkmale[art] = wert; // „automatisch“ ist die Voreinstellung und braucht kein Feld
   if (art === 'geschosse' && wert === null) delete merkmale.treppe; // ohne Geschosse gibt es keine Treppenform

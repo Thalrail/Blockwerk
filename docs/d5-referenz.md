@@ -18,9 +18,9 @@ Herkunft jeder Zahl:
 | Plateau | 240 × 240 | B (08, 09, 14) |
 | Hauptgebäude | 168 × 168, mittig, Rand 36 rundum | B (14); Rand R |
 | Untergeschoss | Y −16 bis 0 | B (09, 10, 11) |
-| Hauptebene (Handelsviertel) | Y 0 bis 20 | B |
-| Obergeschoss | Y 20 bis 36 | B |
-| Kuppel (Rotunde) | bis Y 64 | B |
+| Hauptebene (Handelsviertel) | Y 0 bis 20 | B (09) |
+| Obergeschoss | Y 20 bis 36 | B (09) |
+| Kuppel (Rotunde) | bis Y 64 | B (09, 14) |
 | Ecktürme | bis Y 80 | B (02, 09) |
 | Hauptturm | bis Y 110 | B (09) |
 | Himmelsrichtung | Portal Süd, Süden unten im Bild | B (09, 14) |
@@ -100,7 +100,7 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Q1 bis Q9 sind von Jonah
 
 | Nr. | Metrik | Formel | Vorgeschlagene Schwelle (Referenz) |
 |---|---|---|---|
-| Q1 | Anschlussqualität | Fügungen ohne Spalt und ohne Versatz / alle Fügungen | 100 %; Mindestzahl Fügungen bei der Zitadelle: **35** = Rotunde–Strahlen 8 (7 Viertel und Eingangshalle) + Eckturm–Gang 4 + Gang–Hauptgebäude 4 + Mauer–Turm 8 (4 Mauern, je zwei Enden) + Portal–Südmauer 1 + Portal–Eingangshalle 1 + Brücke–Portal 2 + Brücke–Plateaurand 2 + Hauptturm–Viertel Nord 1 + Terrasse–Strahlende 4 |
+| Q1 | Anschlussqualität | Fügungen ohne Spalt und ohne Versatz / alle Fügungen | 100 %; Mindestzahl Fügungen bei der Zitadelle: **40** = Rotunde–Strahlen 8 (7 Viertel und Eingangshalle) + Eckturm–Gang 4 + Gang–Hauptgebäude 4 + Mauer–Turm 8 (4 Mauern, je zwei Enden) + Portal–Südmauer 1 + Portal–Eingangshalle 1 + Brücke–Portal 2 + Brücke–Plateaurand 2 + Hauptturm–Viertel Nord 1 + Terrasse–Strahlende 4 + Terrasse–Außenmauer 4 + Portal–Südterrasse 1 |
 | Q2 | Erreichbarkeit | vom Portal zu Fuß erreichte Räume (Rotunde, 8 Strahlen, 4 Ecktürme, Hauptturm, 4 Terrassen) / deklarierte Räume, über Ebene 1 `bewegung.weg` (Spieler) | 100 % |
 | Q3 | Höhenstaffel | je Baukörperart Verhältnis Höhe / Hauptgebäudebreite gegen Abschnitt 1 | je Verhältnis ±5 % der Referenz; genau 5 Höhenstufen |
 | Q4 | Spiegelordnung | Baukörperpaare, die an der Nord-Süd-Achse (x = 120) spiegelbildlich gleich liegen (Türme, Brücken, Viertel W/O, NW/NO, SW/SO, Terrassenseiten) / alle erwarteten Paare | 100 % der Paare; Abweichung der Lage höchstens ½ Block. An der Ost-West-Achse ist die Anlage bewusst nicht symmetrisch (Portal Süd, Hauptturm Nord) |
@@ -117,7 +117,7 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Q1 bis Q9 sind von Jonah
 2. Verbindungsgänge zwischen Ecktürmen und Hauptgebäude **5** breit.
 3. Brückenfelder **46** als Referenzmaß; mehrere Felder dürfen kombiniert werden, ohne automatisch zusätzliche sichtbare Unterbrechungen zu erzwingen (Regel für Fügung und Gestaltung, keine feste Zahl).
 4. Ecktürme im ersten Entwurf an den Gebäudeecken; der aus Bild 14 abgelesene Versatz bleibt dokumentierte Gestaltungsvariante (Abschnitt 1).
-5. D5.0b: Terrassen- und Hofanteile aus Bild 14 (Abschnitt 5a).
+5. D5.0b: Grün- und Wasseranteile aus Bild 14; gepflasterte Hof- und Terrassenanteile folgen als Q6b ab D5.4 (Abschnitt 5a).
 6. Q1 bis Q9 vorläufig, Schwellen bis zur visuellen Kalibrierung vorläufig.
 Weiter offen (Annahme **N**, kein Widerspruch): Hauptturm-Grundfläche Ø 21, Mauerhöhen, Terrassen- und Hofeinzelmaße. Eckturm-Ebenen: Hauptmaße −16 bis 0 gelten (Entscheidung 27.10.2026).
 
@@ -136,7 +136,7 @@ Verfahren: Draufsicht Bild 14 (1273 × 1236 Pixel); Plateau 0 bis 240 auf dem Li
 | Beispielviertel NW (50–100 × 50–100) | 8,7 % | 4,6 % | 8,6 % | 78,1 % |
 
 Folgerungen für die Messlatte:
-- **Grün- und Wasseranteil des Hauptgebäudes** (Grün plus Blau) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13,4 bis 20,0 %); Höfe und Terrassen sind darin nicht enthalten (die Terrassen liegen außerhalb der Fläche 36 bis 204, gepflasterte Höfe zählen als Stein/Gold). Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
+- **Grün- und Wasseranteil des Hauptgebäudes** (Grün plus Blau) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13,4 bis 20,0 %); Die Terrassen außerhalb von 36 bis 204 sind nicht enthalten; innerhalb liegende Höfe tragen mit ihren Grün- und Blauzellen bei, ihre gepflasterten Flächen zählen als Stein/Gold. Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
 - Die Terrassen sind mit 10 bis 17 % Grün **nicht** reine Grünflächen, sondern überwiegend gepflasterte Plätze (Stein/Gold über 62 %). Eine Terrasse ist also ein bebauter Platz mit Begrünung, kein Garten.
 - Der Rand (Plateau ohne Hauptgebäude) ist zu etwa einem Fünftel Fels; Gelände gehört nicht zum Bauplan (Entscheidung 27.10.2026).
 - Kalibrierung: die Verhältnisse sind für die visuelle Abnahme brauchbar, als harte Schwelle zu ungenau; deshalb bleibt Q6 vorläufig.

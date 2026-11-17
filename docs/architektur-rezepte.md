@@ -34,7 +34,7 @@ Ohne `rezept` ist die Planung byte-identisch zu vor D2: `test/ebene3/rezepte-rue
 - Nur das Rezept `turm`; Mindestmaß 9 × 9 × 16 und Höhe mindestens so groß wie die größere Breite.
 - Die Krone kragt bei kleinen Breiten einen Block aus; der Einzug ist ein Anteil der Breite, daher bei großen Breiten mehr (bei 45 drei Blöcke). Bewusst so.
 - Die Rollen `akzent` (Sockel, Krone) und `wand` wirken nur, wenn die Palette der Stimmung sie liefert; Blockwerk wählt kein Material.
-- Keine Innenräume, Geschossdecken, Treppen, Dekoration. Eingang und Fenster nur als optionale Merkmale (siehe unten, D3).
+- Keine Innenausstattung, Dekoration. Eingang, Fenster, Geschosse und Treppe nur als optionale Merkmale (siehe unten, D3 und D4).
 - Befund (D2.2, behoben in Paket 1a Teil 2): Wandstärke 1 bei runder Form (Schaft oben, Dach) war nur diagonal zusammenhängend (bei 13×13×34 vier, bei 31×31×60 26 Hilfspunkte). Jetzt Wand 2 bei Schaft oben und Dach. Dünne runde Wände sind nur diagonal verbunden, auch beim bisherigen Rohr; der Test (`rezepte-groessenreihe.test.js`) prüft deshalb die 26er-Nachbarschaft. Wand 1 bleibt nur beim bisherigen Rohr; das Turm-Rezept nutzt Wand 2 (Schaft oben, Dach).
 
 ## Ein neues Rezept ergänzen
@@ -83,3 +83,22 @@ Stand 17.11.2026, `entworfen` (Spieltest offen, nie von Agenten auf `geprüft` z
 **Ebene 5 (D3.4):** Reiter „Teile“, Rezeptteil: Auswahl Eingang (Himmelsrichtung oder keiner) und Fenster; läuft wie die Größe über „Prüfen und übernehmen“ (Vorschau, Folgen, Umbauhinweise); `src/ebene5/teile.js` (`setzeMerkmal`, `rezeptMerkmale`, Felder `m-eingang`, `m-fenster`). Abschalten entfernt das Feld ganz.
 
 **Nachweis:** `test/ebene3/rezepte-merkmale.test.js` (13 Größen × 4 Seiten, quadratisch, rechteckig und mit gemischter Parität: mittig, durch die Wand, Durchgang bis in den Innenraum, Außenmaß, Prüfer Ebene 1 ohne Verstoß, `messeAufbau` 0 unverbundene Blöcke und 0 Hilfspunkte, Symmetrie, Determinismus, Palettenkonflikte), `test/ebene2/wandzonen-tiefe.test.js`, `test/ebene5/rezeptmerkmale.test.js`. Echt geprüft im Windows-Fenster (aktivieren, ändern, Neustart, abschalten; Eisentür-Meldung).
+
+## Geschosse und Treppen (D4)
+Stand 17.11.2026, `entworfen` (Spieltest offen, nie von Agenten auf `geprüft` zu setzen). Entscheidung: `docs/entscheidungen.md` (Geschosse und Treppen für das Turm-Rezept).
+
+**Spezifikation (nur WAS):** `teile[].merkmale.geschosse: "standard"` und `merkmale.treppe: "auto" | "wendel" | "gerade" | "leiter"` (nur zusammen mit `geschosse`; ohne Angabe gilt auto). Ohne `geschosse` ist der Entwurf byte-identisch (`test/ebene3/geschosse-treppen.test.js`).
+
+**Etagen (Daten `merkmale.geschosse.formen.standard`):** 5 Blöcke je Etage (4 lichte Höhe plus 1 Decke), das Erdgeschoss steht auf dem Gelände. Die Decken füllen die lichte Innenfläche der Schicht (nach der echten Geometrie des geschlossenen Rohrs, auch im Kegeldach) bis auf die Öffnung der Treppe. Es gibt keine Abschlussdecke über der obersten Ebene; deren Austritt braucht 3 Blöcke lichte Höhe. Wie viele Etagen es gibt, folgt allein aus dem Platz.
+
+**Treppenformen (Daten `treppen`):** `wendel` (`bau.wendeltreppe`, größter passender Ring um die Mitte, Radien aus den Daten), `gerade` (`bau.treppe` im Zickzack auf zwei Spuren, Lauf von 6 Blöcken), `leiter` (`bau.leiter`, an der Wand; Stützblöcke dahinter, wo keine Wand steht). `auto` nimmt die Wendeltreppe, sonst die gerade Treppe, nie die Leiter. Passt die gewählte Form nicht (keine einzige Etage), gibt es eine Rückfrage mit der Begründung aus der Messung („der lichte Querschnitt ist dort nur w Blöcke breit“), den Mindestanforderungen und den Formen, die ginge: nie ein stiller Wechsel. Gemessen (13 Größen, `rezepte` aus der Pipeline): Wendel ab 10×10×20 (1 Etage), 11×11×24: 3, 13×13×34: 5, 31×31×60: 10; gerade Treppe ab etwa 13×13×34 (2), 17×17×40: 6; Leiter bis 9×9×16 (1 Etage, nur Spieler).
+
+**Platzierung (`src/ebene3/geschosse.js`):** Jede Etage ist ein Lauf (Kind mit `traeger` = das Glied der Decke, Zone `innenraum`); überspannt er eine Gliedgrenze, wird er in Segmente zerlegt (Blöcke eines Kinds müssen in der Zone seines Trägers liegen). Die Öffnungen in den Decken sind der Glied-Parameter `deckenLoecher`, die Kinder melden die Kopffreiheit zusätzlich als Freihaltung (Änderung dort = Konflikt). Kennungen: `turm.treppe-<form>-<etage>-<glied>` und `turm.leiter-<etage>-<glied>`; ein Wechsel der Form macht Änderungen an Stufen verwaist statt sie auf eine andere Stufe zu übertragen. Der Raum hinter der Tür bleibt frei. Mit Geschossen sitzen die Fenster 2 Blöcke über dem Fußboden jeder Etage (ohne Geschosse unverändert der D3-Rhythmus); Glieder mit Öffnungen verlieren die Spiegelsymmetrie als Soll.
+
+**Begehbarkeit:** Modellbeweis mit Ebene 1 (`weg` von außen durch die Tür bis auf jede Etage: Spieler, Dorfbewohner, Baby je nach Form; die Leiter nur Spieler). Die Regel `bewegung.treppe` ist eine **Java-Annahme** (`ungeprüft`), das Ergebnis ist kein Bedrock-Beweis. Die Leiter kennzeichnen Hinweis und Oberfläche („nur für Spieler“). Ob die Eckverbindungen der Treppenblöcke (`minecraft:corner`) beim Platzieren im Spiel wie geplant einrasten, ist ungeprüft.
+
+**Baubarkeit (`messeAufbau`):** keine unverbundenen oder freischwebenden Blöcke; Hilfspunkte nur an Treppenstufen (höchstens 3 je Etage: eine aufsteigende Stufe berührt die vorige nur diagonal und braucht beim Bauen einen Hilfsblock), ohne Geschosse keine.
+
+**Ebene 5 (D4.4):** Reiter „Teile“: Geschosse (aus/Standard) und Treppenform (Automatisch, Wendeltreppe, Gerade Treppe, Leiter nur für Spieler); die Treppenform hängt an den Geschossen. Läuft wie Eingang und Fenster über „Prüfen und übernehmen“ (Vorschau, Platzproblem-Rückfragen, Umbauhinweise); Abschalten entfernt die Felder.
+
+**Nachweis:** `test/ebene2/geschosse.test.js`, `test/ebene3/geschosse-treppen.test.js` (7 Größen × 4 Formen, Ebene 1, Ausrichtung der Treppenblöcke, `messeAufbau`, Eingang, Fenster und Dach, Determinismus, Rückfragen), `test/ebene5/geschosse-aenderungen.test.js`, `test/ebene5/rezeptmerkmale.test.js`.

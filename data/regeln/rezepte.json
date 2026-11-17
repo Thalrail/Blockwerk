@@ -207,7 +207,7 @@
       "quelle": "https://github.com/Thalrail/Blockwerk/blob/main/docs/roadmap-v2.md (D2 Bausteinrezepte, Entscheidung Jonah 15.11.2026); Proportionen nach Blockwerk-Entwurf, kein Bedrock-Wert",
       "status": "entworfen",
       "ungeprueft": true,
-      "testanleitung": "docs/spieltests.md, Abschnitt „Turm mit Eingang und Fensterschlitzen (D3)“: Tür von Hand öffnen (Holz und Kupfer), Blickrichtung und Scharnier, Tür auf Gelände, Durchgang durch die Wand, Fensterschlitze und Baubarkeit im Spiel prüfen"
+      "testanleitung": "docs/spieltests.md, Abschnitt „Turm mit Eingang und Fensterschlitzen (D3)“: Tür von Hand öffnen (Holz und Kupfer), Blickrichtung und Scharnier, Tür auf Gelände, Durchgang durch die Wand, Fensterschlitze und Baubarkeit im Spiel prüfen; zusätzlich docs/spieltests.md, Abschnitt „Turm mit Geschossen und Treppe (D4)“: Treppen ohne Sprung (Java-Annahme), Dorfbewohner, Treppenecken, Leiter, Austritte"
     }
   ]
 }

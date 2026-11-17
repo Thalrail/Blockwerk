@@ -442,3 +442,14 @@ Hintergrund: `docs/architektur-rezepte.md` (Merkmale). Kreativ-Testwelt auf eben
 5. **Fensterschlitze:** Sitzen sie mittig, ein Block breit (bei gerader Breite zwei), zwei hoch? Wie wirkt die Laibung hinter der Scheibe (die Scheibe sitzt außen, dahinter ist die Wand ausgespart)? Sieht man hinaus und fällt Licht hinein?
 6. **Baubarkeit:** Lässt sich der Turm Schicht für Schicht so bauen, wie der Plan es zeigt (Sturz über der Tür, Fensterzeilen), ohne Hilfsblöcke?
 Status bleibt `ungeprüft`, bis Jonah das Ergebnis meldet. Quelle zur Tür: https://minecraft.wiki/w/Door (Holz- und Kupfertüren von Hand, Eisentür nur mit Redstone).
+
+## Turm mit Geschossen und Treppe (D4, 17.11.2026, `ungeprüft`)
+Hintergrund: `docs/architektur-rezepte.md` (Geschosse und Treppen). Die Begehbarkeit der Treppen stützt sich auf eine **Java-Annahme** (Ebene 1, `bewegung.treppe`): sie ist nicht als Bedrock-Mechanik bestätigt. Kreativ-Testwelt auf ebenem Gelände; Turm 13×13×34 und 11×11×24 mit Eingang, Fenstern und Geschossen (Reiter „Teile“), Treppenform automatisch, danach „gerade“ (13×13×34) und „Leiter“.
+1. **Treppe ohne Sprung:** Kommst du als Spieler auf der Wendeltreppe von der Tür bis zur obersten Ebene, ohne zu springen? Prüfe Kopffreiheit auf jeder Stufe und die Öffnungen in den Decken.
+2. **Dorfbewohner und Baby:** Lass einen Dorfbewohner (und ein Baby) der Treppe folgen oder hineinlocken: kommen sie hinauf? Bei der Leiter ausdrücklich nicht erwartet (die Oberfläche kennzeichnet sie als „nur für Spieler“).
+3. **Treppenblöcke und Ecken:** Stehen die Stufen so, dass jede zur nächsten höheren zeigt? Rasten die Eckverbindungen der Treppenblöcke (`minecraft:corner`) beim Platzieren wie geplant ein, oder musst du sie anders setzen?
+4. **Leiter:** Steht die Leiter fest an der Wand (die Stützblöcke dahinter), geht sie durch die Decke, und kommst du oben auf den Boden der Etage?
+5. **Austritt auf jeder Etage:** Kannst du auf jeder Etage vom Treppenaustritt aus frei laufen (Platz, Kopffreiheit, Fenster nicht im Weg)?
+6. **Bauanleitung:** Lässt sich der Turm Schicht für Schicht nach dem Plan bauen? Die Treppenstufen brauchen einen Hilfsblock (jede Stufe berührt die vorige nur diagonal); sind es höchstens 3 je Etage und störend?
+7. **Fenster an den Decken:** Sitzen die Fenster auf Brüstungshöhe über dem Boden jeder Etage?
+Status bleibt `ungeprüft`, bis Jonah das Ergebnis meldet. Quellen: https://minecraft.wiki/w/Stairs (Treppen heben ohne Sprung), https://minecraft.wiki/w/Ladder (Leiter: Platzierung, Klettern).

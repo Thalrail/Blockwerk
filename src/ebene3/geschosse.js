@@ -73,6 +73,9 @@ export function erzeugeGeschosse({ ebene2 }) {
    */
   function plane({ name, form, wahl, teile, praefix, eingang, fehler }) {
     const etage = form.etage, mind = form.obersteMindestlicht;
+    // Schutz: die Planung misst jede Schicht (Flutfüllung); bei riesigen Bauwerken wäre das zu aufwendig, deshalb eine Obergrenze aus den Daten
+    const zellen = Math.max(...teile.map((q) => q.parameter.breite)) * Math.max(...teile.map((q) => q.parameter.tiefe)) * Math.max(...teile.map((q) => q.versatz.y + q.parameter.hoehe));
+    if (zellen > form.hoechstZellen) fehler('merkmale.geschosse', `„${name}“: Für ein so großes Bauwerk (${zellen} Zellen Breite × Tiefe × Höhe) werden Geschosse nicht geplant (höchstens ${form.hoechstZellen}). Entweder das Bauwerk kleiner machen oder die Geschosse weglassen.`);
     const m = masken(teile);
     const treppen = form.treppen;
     if (wahl !== 'auto' && !Object.hasOwn(treppen.formen, wahl)) fehler('merkmale.treppe', `„${name}“: die Treppenform „${String(wahl)}“ gibt es nicht (möglich: auto, ${Object.keys(treppen.formen).join(', ')})`);

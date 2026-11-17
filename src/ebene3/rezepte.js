@@ -114,6 +114,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
         if (!ID.test(gn) || !OBJEKT(go) || typeof go.titel !== 'string' || !go.titel) f(`${wo}: Name (Kleinbuchstaben) und titel nötig`);
         if (!(ganz(go.etage) && go.etage >= 5 && go.etage <= 16)) f(`${wo}.etage: ganze Zahl von 5 bis 16 (mindestens 4 lichte Höhe und 1 Block Decke)`);
         if (!(ganz(go.obersteMindestlicht) && go.obersteMindestlicht >= 3 && go.obersteMindestlicht <= go.etage - 1)) f(`${wo}.obersteMindestlicht: ganze Zahl ab 3 (Kopffreiheit auf der obersten Ebene), höchstens die lichte Höhe`);
+        if (!(ganz(go.hoechstZellen) && go.hoechstZellen >= 1000)) f(`${wo}.hoechstZellen: ganze Zahl ab 1000 (größtes Bauwerk, für das die Geschosse geplant werden: Breite × Tiefe × Höhe)`);
         if (!OBJEKT(go.fenster) || !(ganz(go.fenster.schwelleAbBoden) && go.fenster.schwelleAbBoden >= 0 && go.fenster.schwelleAbBoden <= go.etage - 3)) f(`${wo}.fenster.schwelleAbBoden: ganze Zahl ab 0 innerhalb der Etage`);
         const tr = go.treppen;
         if (!OBJEKT(tr) || !OBJEKT(tr.formen) || !Object.keys(tr.formen).length) f(`${wo}.treppen.formen braucht mindestens eine Treppenform`);

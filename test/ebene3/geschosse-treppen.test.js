@@ -239,3 +239,20 @@ test('Treppenformen je Geschossform: Vokabular nennt sie, die Oberfläche lehnt 
   const mitGerade = spec(13, 13, 34, { treppe: 'gerade' }); mitGerade.teile[0].merkmale = { geschosse: 'standard', treppe: 'gerade' };
   assert.throws(() => T.setzeMerkmal(spec(13, 13, 34, { geschosse: 'standard', treppe: 'gerade' }), 'turm', 'geschosse', 'standard', i), (f) => f instanceof T.TeileFehler && /zuerst die Treppenform ändern/.test(f.message));
 });
+
+test('Paar-Update und Größengrenze: Geschossform und Treppenform lassen sich gemeinsam ändern; zu große Bauwerke bekommen eine Rückfrage statt einer ausufernden Planung', async () => {
+  const e = await engine(), T = await import('../../src/ebene5/teile.js');
+  const i = T.teileInfo(e.ebene4.vokabular), r = i.rezepte.turm;
+  r.merkmale.geschosse = ['a', 'b']; // zwei (erfundene) Geschossformen mit getrennten Treppenformen
+  r.treppenJeGeschoss = { a: ['auto', 'wendel'], b: ['auto', 'gerade', 'leiter'] };
+  const s = spec(13, 13, 34, { geschosse: 'a', treppe: 'wendel' });
+  const f = { ...T.felderVon(s, 'turm'), 'm-geschosse': 'b', 'm-treppe': 'gerade' };
+  assert.deepEqual(T.wendeFelder(s, 'turm', f, i).teile[0].merkmale, { geschosse: 'b', treppe: 'gerade' }, 'beide Felder in einem Schritt');
+  const nurGeschosse = T.wendeFelder(s, 'turm', { ...T.felderVon(s, 'turm'), 'm-geschosse': 'b', 'm-treppe': '' }, i);
+  assert.deepEqual(nurGeschosse.teile[0].merkmale, { geschosse: 'b' }, 'unpassende alte Treppenform fällt weg, wenn das Formular „Automatisch“ sagt');
+  assert.deepEqual(T.treppenFuer(i, 'turm', 'a'), ['auto', 'wendel']);
+  // Größengrenze (Rezeptdatum hoechstZellen)
+  const gross = e.ebene4.baue(e.ebene4.freigeben(spec(120, 120, 300, { geschosse: 'standard' }), 'test'));
+  assert.notEqual(gross.status, 'fertig');
+  assert.match(JSON.stringify(gross.rueckfragen), /Geschosse nicht geplant/);
+});

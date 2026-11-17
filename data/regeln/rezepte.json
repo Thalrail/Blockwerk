@@ -152,6 +152,7 @@
                 "titel": "Geschosse: Etagen von 5 Blöcken (4 Blöcke lichte Höhe, 1 Block Decke) mit durchgehender Treppe",
                 "etage": 5,
                 "obersteMindestlicht": 3,
+                "hoechstZellen": 3000000,
                 "fenster": {
                   "schwelleAbBoden": 2
                 },

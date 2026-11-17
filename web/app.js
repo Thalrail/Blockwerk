@@ -589,7 +589,7 @@ function merkmaleHtml(f, info, rez, rezUnbekannt) {
   if (!m) return '';
   const wahl = (art, leer, nur = null, aus = false) => `<select id="tl-m-${art}"${aus ? ' disabled' : ''}><option value="">${esc(leer)}</option>${m[art].filter((o) => !nur || nur(o)).map((o) => `<option value="${esc(o.wert)}" ${f['m-' + art] === o.wert ? 'selected' : ''}>${esc(o.anzeige)}</option>`).join('')}</select>`;
   const hatGeschosse = !!f['m-geschosse'];
-  return `<h4>Eingang, Fenster und Geschosse</h4>${m.eingang ? `<label class="klein zustand">Eingang ${wahl('eingang', 'kein Eingang')}</label>` : ''}${m.fenster ? `<label class="klein zustand">Fenster ${wahl('fenster', 'keine Fenster')}</label>` : ''}${m.geschosse ? `<label class="klein zustand">Geschosse ${wahl('geschosse', 'keine Geschosse')}</label>` : ''}${m.treppe ? `<label class="klein zustand">Treppenform ${wahl('treppe', hatGeschosse ? 'Automatisch' : 'erst Geschosse wählen', (o) => o.wert !== 'auto', !hatGeschosse)}</label>` : ''}
+  return `<h4>Eingang, Fenster und Geschosse</h4>${m.eingang ? `<label class="klein zustand">Eingang ${wahl('eingang', 'kein Eingang')}</label>` : ''}${m.fenster ? `<label class="klein zustand">Fenster ${wahl('fenster', 'keine Fenster')}</label>` : ''}${m.geschosse ? `<label class="klein zustand">Geschosse ${wahl('geschosse', 'keine Geschosse')}</label>` : ''}${m.treppe ? `<label class="klein zustand">Treppenform ${wahl('treppe', hatGeschosse ? 'Automatisch' : 'erst Geschosse wählen', (o) => o.wert !== 'auto' && Teile.treppenFuer(info, rez, f['m-geschosse']).includes(o.wert), !hatGeschosse)}</label>` : ''}
     <p class="klein">Die Tür steht auf Bodenhöhe im Sockel, die Fenster sitzen mittig in den Seiten. Beides geht durch die ganze Wand. Mit Geschossen bekommt das Bauwerk Decken in gleichmäßigem Abstand und eine durchgehende Treppe bis zur obersten nutzbaren Ebene; die Fenster richten sich dann an den Decken aus. „Automatisch“ wählt eine passende Treppenform. Die Leiter ist nur für den Spieler begehbar (Dorfbewohner und Baby kommen nicht hinauf). Passt die Form nicht, sagt Blockwerk, warum. Vorher siehst du, was mit deinen Einzelblockänderungen und gebauten Schichten geschieht.</p>`;
 }
 /** Größenfelder eines Rezepts (Breite, Tiefe, Höhe; Pflicht, Texte aus teile.js). */
@@ -1145,7 +1145,12 @@ document.addEventListener('change', async (ev) => {
   const id = ev.target.id;
   merkeTeileFeld(ev);
   if (id === 'tl-teil') { z.teile.rev++; z.teile.id = ev.target.value; z.teile.felder = null; z.teile.meldung = ''; render(); return; }
-  if (id === 'tl-m-geschosse') { const f = liesFelder('tl-'); delete f.teil; if (!f['m-geschosse']) f['m-treppe'] = ''; z.teile.felder = f; render(); return; } // die Treppenform hängt an den Geschossen
+  if (id === 'tl-m-geschosse') { // die Treppenform hängt an den Geschossen: eine Form, die zur neuen Geschossform nicht passt, geht auf „Automatisch"
+    const f = liesFelder('tl-'); delete f.teil;
+    const rez = z.spec.teile.find((x) => x.id === z.teile.id)?.rezept;
+    if (!f['m-geschosse'] || (f['m-treppe'] && !Teile.treppenFuer(z.teile.info, rez, f['m-geschosse']).includes(f['m-treppe']))) f['m-treppe'] = '';
+    z.teile.felder = f; render(); return;
+  }
   if (id === 'tl-rel' || id === 'tl-bezug') { const f = liesFelder('tl-'); delete f.teil; z.teile.felder = f; render(); return; }
   if (id === 'tn-rel' || id === 'tn-bezug' || id === 'tn-baustein') { z.teile.neu = { ...z.teile.neu, ...liesFelder('tn-') }; if (id === 'tn-baustein') { for (const k of Object.keys(z.teile.neu)) if (k.startsWith('p-')) delete z.teile.neu[k]; const r = Teile.rezeptAusAuswahl(z.teile.neu.baustein); if (r && !z.teile.artManuell && z.teile.info.teilarten.includes(r)) z.teile.neu.art = r; } render(); return; }
   if (id.startsWith('st-z-')) { // Zustandswert der Materialwahl (Index in der Liste der erlaubten Werte)

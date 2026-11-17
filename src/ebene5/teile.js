@@ -91,6 +91,11 @@ export function rezeptMerkmale(info, name) {
   const erg = Object.fromEntries(Object.entries(m).filter(([, w]) => Array.isArray(w) && w.length).map(([art, w]) => [art, w.map((wert) => ({ wert, anzeige: MERKMAL_ANZEIGE[art]?.[wert] ?? wert }))]));
   return Object.keys(erg).length ? Object.assign(erg, { titel: { ...MERKMAL_TITEL } }) : null;
 }
+/** Mögliche Treppenformen zu einer Geschossform (Rezeptdaten über das Vokabular), sonst alle genannten. */
+export function treppenFuer(info, rezept, geschosse) {
+  const r = rezeptBekannt(info, rezept) ? info.rezepte[rezept] : null;
+  return r?.treppenJeGeschoss?.[geschosse] ?? r?.merkmale?.treppe ?? [];
+}
 /** Eingang oder Fenster eines Rezeptteils setzen (Kopie); `null` schaltet das Merkmal ab. Sind alle Merkmale abgeschaltet, verschwindet das Feld ganz: die Spezifikation ist dann wieder genau die ohne Merkmale. */
 export function setzeMerkmal(spec, id, art, wert, info) {
   const neu = structuredClone(spec), t = teilVon(neu, id);
@@ -352,7 +357,10 @@ export function wendeFelder(spec, id, felder, info) {
       if (!Object.hasOwn(felder, `m-${art}`)) continue;
       let ziel = felder[`m-${art}`] || null;
       if (art === 'treppe' && !(felder['m-geschosse'] ?? t0.merkmale?.geschosse)) ziel = null; // ohne Geschosse keine Treppenform
-      const jetzt = art === 'treppe' && t0.merkmale?.treppe === 'auto' ? null : (t0.merkmale?.[art] ?? null);
+      // Geschossform und Treppenform werden als Paar angewendet: ändert sich die Geschossform, geht eine bisherige Treppenform zuerst weg (sie könnte zur neuen nicht passen) und das Ziel kommt danach
+      if (art === 'geschosse' && ziel !== (teilVon(neu, id).merkmale?.geschosse ?? null) && teilVon(neu, id).merkmale?.treppe !== undefined) neu = setzeMerkmal(neu, id, 'treppe', null, info);
+      const aktuell = teilVon(neu, id).merkmale?.[art] ?? null;
+      const jetzt = art === 'treppe' && aktuell === 'auto' ? null : aktuell;
       if (ziel !== jetzt) neu = setzeMerkmal(neu, id, art, ziel, info);
     }
   }

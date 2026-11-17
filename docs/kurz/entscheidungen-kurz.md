@@ -26,21 +26,21 @@ Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwo
 - Reihenfolge der Oberfläche (Jonah, 25.10.2026): Bauplan zuerst, dann 3D, Eingabe mit Rückfragen, Faithful-Texturen.
 - Texturen (Jonah, 25.10.2026): Faithful 32x grundlegend; im Repo nur benötigte Texturen (`data/texturen/`) mit Lizenzkopie und Nennung; fehlende = markierte Ersatzfarbe.
 - Live-Transport (Jonah, 25.10.2026): eigener kleiner Dienst auf Cloudflare (Worker + Durable Object), Probedienst lokal; keine Zugangsdaten im Repo.
-- Teilen und Live-Abhaken (Jonah, 25.10.2026): erst Teilen per Link oder Datei, Live später; Fortschritt als mischbares Datenmodell (Abdruck je Schicht).
+- Teilen und Live-Abhaken (Jonah, 25.10.2026): erst Teilen per Link oder Datei, Live später; Fortschritt mischbar (Abdruck je Schicht).
 - Prüfstein Zitadelle (Jonah, 27.10.2026): Stufe 1 = Hülle und Handel, Rest als Anfragen; 16 Kategorien × 3 Gegenstände; Lage „strahlenförmig“; Nische von Bild 07 wird eigener Baustein.
 - Zitadelle, Nischenzahl (Jonah, 27.10.2026): 140 Handelsnischen (sieben Viertel), nicht 160.
 - Lorenbahn-Nische (Jonah, 27.10.2026): Baustein `tech.handelsnischen-lore`; Aktivierungsschienen dauerhaft an, Weiche je Nische (Steuerung = Schaltungsanfrage), Wasserkanal mit Gefälle.
 - Weichensteuerung im Bedarf (Jonah, 30.10.2026): ausdrückliche bleiben einzeln erhalten; automatisch höchstens eine je Teil, nur bei Bauart `lorenbahn` ohne ausdrückliche.
 - Keine stillen Testmaterialien (Jonah, 30.10.2026, nach dem Codex-Review): unvollständige Palette → Rückfrage statt eigener Materialwahl; `TESTPALETTE` nur mit `testmaterial: true`, nie in einem Bauplan.
-- Multi-Agenten-Orchestrierung (Jonah, 30.10.2026): Snapshot + Seed, Koordinator als Skill `/blockwerk-auftrag`, risikobasierte Freigabegrenzen (Grenzen im Detail: CLAUDE.md); Codex nur über das isolierte Review-Paket im Einzelmodus. Technik: `docs/orchestrierung.md`.
+- Multi-Agenten-Orchestrierung (Jonah, 30.10.2026): Snapshot + Seed, Koordinator als Skill `/blockwerk-auftrag`, risikobasierte Freigabegrenzen; Codex nur über das Review-Paket.
 - Ponytail und Agent Skills (Jonah, 30.10.2026): Ponytail nur als Regeln (Skill `einfachheit`), sieben Agent Skills projektlokal und angepasst; Blockwerk-Freigabegrenzen haben Vorrang; Graphify und OmniRoute bleiben deaktiviert (Lizenzen: `docs/fremdlizenzen/`).
-- Token-Effizienz (Jonah, 31.10.2026): höchste Priorität (Pro-Limit). Schlanker Sitzungsstart, Skills nur bei Bedarf, Codex bei jedem Auftrag (Stufe nach Risiko), Repo-Karte `tools/karte.js`; OmniRoute aus. Messwerte: `docs/token-effizienz.md`.
+- Token-Effizienz (Jonah, 31.10.2026): höchste Priorität (Pro-Limit). Schlanker Sitzungsstart, Skills nur bei Bedarf, Codex bei jedem Auftrag (Stufe nach Risiko), Repo-Karte `tools/karte.js`; OmniRoute aus.
 - Graphify optional (Jonah, 31.10.2026): lokales, optionales Analysewerkzeug (`tools/graphify.js`), `tools/karte.js` bleibt Standard; nie Pflicht, kein Lauf beim Start. Nutzung: `docs/token-effizienz.md`.
 - Autonomer Auftragslauf bis zur Draft-PR (Jonah, 31.10.2026): `/blockwerk-auftrag` arbeitet nach der Freigabe selbstständig bis zur Draft-PR; Codex prüft jede Umsetzung (höchstens drei Korrekturschleifen); Übernahme nur mit grünen Tests und gültigem Review; Commit, Push, PR nur über `cli.js abschluss`; gemergt wird nie automatisch (`docs/orchestrierung.md`).
 - Modell-Routing (Jonah, 31.10.2026): Haiku nur für rein mechanische Änderungen; Sonnet bei Heuristik, Regex, Zustandslogik, Architektur oder Korrektheitsgarantie; nach gescheiterter Haiku-Umsetzung zu Sonnet; Opus nur mit ausdrücklicher Zustimmung von Jonah.
-- Testumgebung und Manipulationserkennung (Jonah, 31.10.2026): Testprozess nur mit Positivliste und privatem Home; nur die letzte rechnende Testzusammenfassung zählt; Änderung von Hauptbaum, HEAD oder Laufzustand sperrt den Lauf. Erkennung, keine Prozessisolation. Details: `docs/orchestrierung.md`.
+- Testumgebung und Manipulationserkennung (Jonah, 31.10.2026): Testprozess nur mit Positivliste und privatem Home; nur die letzte rechnende Testzusammenfassung zählt; Änderung von Hauptbaum, HEAD oder Laufzustand sperrt den Lauf. Keine Prozessisolation (`docs/orchestrierung.md`).
 - Gehärteter Abschluss und erneute Integritätsprüfung (Jonah, 31.10.2026): Git-Konfiguration, Hooks, Worktree-Metadaten im Manipulationsabdruck; Git-Aufrufe gehärtet; erneute Prüfung vor jedem schreibenden Schritt, Abweichung sperrt den Lauf. Details: `docs/orchestrierung.md`.
-- Ausnahme für die Sperrdatei von Claude Code (Jonah, 12.11.2026): nur `.claude/scheduled_tasks.lock` ist vom Dateivergleich des Hauptbaums ausgenommen; Restrisiko (Herkunft unbestätigt, Änderung unentdeckt) bewusst akzeptiert (`docs/orchestrierung.md`).
+- Ausnahme für die Sperrdatei von Claude Code (Jonah, 12.11.2026): nur `.claude/scheduled_tasks.lock` ist vom Dateivergleich des Hauptbaums ausgenommen; Restrisiko bewusst akzeptiert (`docs/orchestrierung.md`).
 - Veröffentlichung vorbereiteter Branches (Jonah, 12.11.2026): `cli.js veroeffentlichen` pusht nur den geprüften `claude/*`-Branch, PR gegen `main`, Ready, Checks; der Bestätigungsdialog ist das Okay; kein Merge (`docs/orchestrierung.md`).
 - Produktvision: universeller Bauplaner, Zitadelle nur Referenz (Jonah, 13.11.2026): Reihenfolge und offene Punkte in `docs/roadmap.md`.
 - Bearbeitungsmodell B (Jonah, 13.11.2026): Blockänderungen relativ zum Bauteil (stabile Id); Technikänderung löst Neuprüfung aus; Mehrspieler über versionierte Planfassung; Verwaistes entscheidet der Benutzer (Volltext).
@@ -53,3 +53,4 @@ Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwo
 - Windows-Anwendung mit Tauri 2 (Jonah, 17.11.2026): `windows/` (W1), Weboberfläche unverändert, `tauri-cli` 2.12.4, nur NSIS (`windows/README.md`).
 - Fenster und Türen für das Turm-Rezept (Jonah, 17.11.2026): optionales `merkmale` (eingang, fenster), Regeln als Daten (`docs/architektur-rezepte.md`).
 - Geschosse und Treppen für das Turm-Rezept (Jonah, 17.11.2026): optionales `geschosse` und `treppe`, Begehbarkeit Java-Annahme (`docs/architektur-rezepte.md`).
+- Produktrichtung D5 Gebäudekomposition (Jonah, 17.11.2026): Modell A vorläufig, keine Sonderlogik, Abnahme = Messwerte plus Bildvergleich; D5.0 zuerst (`docs/d5-referenz.md`).

@@ -82,7 +82,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       baustein(e.baustein, 'merkmale.eingang.baustein', ['fluegel', 'tiefe']);
       paritaet(e.fluegel, 'merkmale.eingang.fluegel', e.baustein, 'fluegel');
       if (!(ganz(e.sockelMindesthoehe) && e.sockelMindesthoehe >= 3)) f('merkmale.eingang.sockelMindesthoehe: ganze Zahl ab 3 (zwei Blöcke Tür und mindestens ein Block Sturz)');
-      if (!OBJEKT(e.tuer) || !Array.isArray(e.tuer.nichtPerHand) || e.tuer.nichtPerHand.some((x) => typeof x !== 'string') || typeof e.tuer.quelle !== 'string' || !/^https?:\/\/\S+$/.test(e.tuer.quelle)) f('merkmale.eingang.tuer braucht nichtPerHand (Liste), status und quelle (nur die Adresse, Erläuterungen gehören in hinweis)');
+      if (!OBJEKT(e.tuer) || !Array.isArray(e.tuer.nichtPerHand) || e.tuer.nichtPerHand.some((x) => typeof x !== 'string' || !x) || !['ungeprueft', 'geprueft'].includes(e.tuer.status) || typeof e.tuer.quelle !== 'string' || !/^https?:\/\/\S+$/.test(e.tuer.quelle)) f('merkmale.eingang.tuer braucht nichtPerHand (Liste), status und quelle (nur die Adresse, Erläuterungen gehören in hinweis)');
     }
     const fe = m.fenster;
     if (fe !== undefined) {

@@ -7,7 +7,7 @@ Blockwerk als eigenständiges Windows-Programm (Tauri 2). Das Fenster zeigt die 
 2. Blockwerk aus dem Startmenü starten. Es braucht keinen Server und keine Internetverbindung (nur Live-Abhaken braucht das Netz).
 3. **3D-Ansicht → Freiflug:** ins Bild klicken fängt die Maus; Maus = umsehen, W/A/S/D = bewegen, Leertaste = hoch, Umschalt = runter, **Esc** gibt die Maus frei (ebenso ein Wechsel in ein anderes Fenster).
 4. **Projekte:** werden automatisch im Programm gespeichert und sind nach einem Neustart wieder da. „Datei sichern“ öffnet den Windows-Dialog „Speichern unter“ (Vorschlag `<Projekt>.blockwerk.json`) und meldet den Pfad; Abbrechen schreibt nichts. „Datei öffnen“ lädt die Datei wieder.
-5. **Wichtig:** Der Programmspeicher ist vom Browser getrennt. Projekte aus dem Browser kommen per „Datei sichern“ (Browser) und „Datei öffnen“ (Programm) hinüber.
+5. **Projekt aus dem Browser übernehmen:** Der Programmspeicher ist vom Browser getrennt. Im Browser „Datei sichern“ (oder „Link kopieren“), im Programm auf der Startseite „Projektdatei öffnen“ oder den Link einfügen; Fortschritt und Änderungen kommen mit. Danach zeigt eine Meldung, was übernommen wurde.
 
 ## Selbst bauen (Entwickler)
 Voraussetzungen: Rust (MSVC-Toolchain), Visual-Studio-Build-Tools mit „Desktopentwicklung mit C++“, WebView2 (in Windows 11 enthalten), und die Tauri-Kommandozeile in der festgelegten Version:
@@ -28,6 +28,6 @@ Start ohne Server; Engine-Worker und `fetch` aus `data/`; Zitadelle (klein) bere
 - Kein Signieren, kein automatisches Update, nur Windows (x64), nur NSIS (kein MSI).
 - Der Kompaktmodus („Immer im Vordergrund“, Fenster im Vordergrund) nutzt `documentPictureInPicture`; in WebView2 vorhanden, aber im Alltag noch nicht erprobt.
 - Kein Zugriff auf Minecraft-Welten oder Gelände (nicht Teil von W1).
-- Der Programmspeicher ist vom Browser getrennt (siehe oben); kein automatischer Abgleich.
+- Der Programmspeicher ist vom Browser getrennt: Übernahme per Datei oder Link (Punkt 5), nur das aktuelle Projekt, kein automatischer Abgleich und keine Übernahme von Sicherungen/Einstellungen. „Link kopieren“ in der App erzeugt eine Adresse `tauri.localhost`, die Freunde nicht öffnen können; dafür „Datei sichern“ nutzen (offene Produktentscheidung: feste Web-Adresse für Links).
 - Live-Abhaken braucht Netz und den eingerichteten Dienst. Weil die Dienst-Adresse per Link frei wählbar ist, erlaubt die Inhaltsrichtlinie (`connect-src`) beliebige `https:`/`wss:`-Ziele (Codex-Hinweis); eine Einschränkung auf feste Dienste wäre eine Produktentscheidung für später.
 - Spieltest mit längerer Nutzung (Maus bei Mehrfenster-Betrieb, mehrere Bildschirme) steht aus.

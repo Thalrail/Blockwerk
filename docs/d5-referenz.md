@@ -8,7 +8,7 @@ Herkunft jeder Zahl:
 - **B** = Beschriftung auf einem Bild (zuverlässig, Bildnummer genannt).
 - **A** = aus dem Bild abgelesen (Schätzung, Genauigkeit angegeben; Bild 14 hat ein Lineal von 0 bis 240, Bild 09 eines von −120 bis 120).
 - **R** = aus B-Werten gerechnet.
-- **N** = angenommen (nicht auf den Bildern; Begründung genannt, von Jonah zu bestätigen).
+- **N** = angenommen: kein verlässliches Bildmaß (auch grobe Schätzung nach Bildeindruck); Begründung genannt, von Jonah zu bestätigen.
 
 ## 1. Maße
 
@@ -28,14 +28,14 @@ Herkunft jeder Zahl:
 ### Baukörper
 | Teil | Maß | Herkunft |
 |---|---|---|
-| Rotunde | Innendurchmesser 33, mittig (120/120) | B (05, 14); Lage A |
+| Rotunde | Innendurchmesser 33, mittig (120/120) | B (05, 14); Lage R (Mitte des Hauptgebäudes) |
 | Hauptturm | Höhe 110; Mitte ≈ 40 nördlich der Rotunden-Mitte auf der Mittelachse (±5) | Höhe B; Lage A (14) |
-| Hauptturm, Grundfläche | Ø 21 | **N**: nicht beschriftet, geschätzt aus Bild 09 (etwa das 1,1-fache des Eckturm-Schafts) |
+| Hauptturm, Grundfläche | Ø 21 | **N**: nicht beschriftet, kein verlässliches Bildmaß; grob nach Bild 09 etwa das 1,1-fache des Eckturm-Schafts |
 | Eckturm, Höhe | 80; Ebenen 20–36 Durchgang, 36–52 Wohnebene, 52–60 Aussicht, 68–80 Spitze | B (02) |
 | Eckturm, Schaft | Ø 17 bis 20; D5.0 nimmt **19** | A (09: Schaft ≈ 17; 02: Kern ≈ 20), Wert N |
 | Eckturm, Grundriss mit Erkern | ≈ 30 bis 33 | A (02), nur zur Information |
 | Eckturm, Mitte | erster Entwurf: **auf der Gebäudeecke (36/36)** (Entscheidung Jonah). Gestaltungsvariante „Bildversatz“: Mitte ≈ 30 von beiden Plateaukanten (±6), das heißt etwa 6 Blöcke außerhalb der Ecke | A (14) |
-| Portal | Breite 15, Höhe 20, Spitzbogen, Mitte der Südfront (120/204) | B (01); Lage A |
+| Portal | Breite 15, Höhe 20, Spitzbogen, Mitte der Südfront (120/204) | B (01); Lage R (Mitte der Südkante des Hauptgebäudes) |
 | Brücke West / Ost | Länge 46, 7 Pfeiler (Höhe 28) | B (01) |
 | Hauptbrücke, Breite | **13** (Bild 01) | B, von Jonah festgelegt |
 | Verbindungsgang Eckturm–Hauptgebäude, Breite | **5** (Bild 02, Brückenboden) | B, von Jonah festgelegt |
@@ -100,12 +100,12 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Q1 bis Q9 sind von Jonah
 
 | Nr. | Metrik | Formel | Vorgeschlagene Schwelle (Referenz) |
 |---|---|---|---|
-| Q1 | Anschlussqualität | Fügungen ohne Spalt und ohne Versatz / alle Fügungen | 100 %; Mindestzahl Fügungen bei der Zitadelle: 30 (4 Türme, 4 Mauern, Portal, 2 Brücken, 8 Viertel, 4 Terrassen, Hauptturm, Rotunde) |
+| Q1 | Anschlussqualität | Fügungen ohne Spalt und ohne Versatz / alle Fügungen | 100 %; Mindestzahl Fügungen bei der Zitadelle: **35** = Rotunde–Strahlen 8 (7 Viertel und Eingangshalle) + Eckturm–Gang 4 + Gang–Hauptgebäude 4 + Mauer–Turm 8 (4 Mauern, je zwei Enden) + Portal–Südmauer 1 + Portal–Eingangshalle 1 + Brücke–Portal 2 + Brücke–Plateaurand 2 + Hauptturm–Viertel Nord 1 + Terrasse–Strahlende 4 |
 | Q2 | Erreichbarkeit | vom Portal zu Fuß erreichte Räume (Rotunde, 8 Strahlen, 4 Ecktürme, Hauptturm, 4 Terrassen) / deklarierte Räume, über Ebene 1 `bewegung.weg` (Spieler) | 100 % |
 | Q3 | Höhenstaffel | je Baukörperart Verhältnis Höhe / Hauptgebäudebreite gegen Abschnitt 1 | je Verhältnis ±5 % der Referenz; genau 5 Höhenstufen |
-| Q4 | Spiegelordnung | Baukörperpaare, die an der Ost-West-Achse spiegelbildlich gleich liegen (Türme, Brücken, Viertel W/O, NW/NO, SW/SO, Terrassenseiten) / alle erwarteten Paare | 100 % der Paare; Abweichung der Lage höchstens ½ Block. Nord–Süd ist bewusst nicht symmetrisch (Portal Süd, Hauptturm Nord) |
+| Q4 | Spiegelordnung | Baukörperpaare, die an der Nord-Süd-Achse (x = 120) spiegelbildlich gleich liegen (Türme, Brücken, Viertel W/O, NW/NO, SW/SO, Terrassenseiten) / alle erwarteten Paare | 100 % der Paare; Abweichung der Lage höchstens ½ Block. An der Ost-West-Achse ist die Anlage bewusst nicht symmetrisch (Portal Süd, Hauptturm Nord) |
 | Q5 | Radialordnung | Winkel der 8 Strahlen zur Rotunde | 45° mit höchstens ½ Block Lageabweichung am Strahlende |
-| Q6 | Freiflächenanteil | Fläche aus Hof-, Terrassen-, Grün- und Wasserzellen / Grundfläche des Hauptgebäudes (Draufsicht) | Referenz ≈ 17 % (Abschnitt 5a), Toleranz ±20 % relativ, also 13 bis 20 % |
+| Q6 | Grün- und Wasseranteil | Zellen mit Laub, Gras oder Wasser in der Draufsicht / Grundfläche des Hauptgebäudes (36 bis 204) | Referenz ≈ 16,7 % (Abschnitt 5a; Bild-Näherung, Blau kann Dekoration sein), Toleranz ±20 % relativ, also 13,4 bis 20,0 %. Der Anteil gepflasterter Höfe und Terrassen wird hier **nicht** gemessen (eigene Metrik Q6b ab D5.4, sobald Höfe und Terrassen als Teile mit Blockdaten bestehen) |
 | Q7 | Materialkonsistenz | Zahl der Materialien je Rolle und Baukörperart; Anteil der Rolle „Wand“ | höchstens die Palette „Glanz“ (Weiß, Gold, Blau + Glas); je Baukörperart höchstens 1 Materialwechsel an der Fuge |
 | Q8 | Menschenmaß | Türen 2 hoch, Gänge ab 2 breit, Stufe 1, an jedem Maßstab | 100 % |
 | Q9 | Gesamtzusammenhang | `messeAufbau` über die ganze Anlage | 0 unverbundene Blöcke, 0 freischwebende, 0 Hilfspunkte |
@@ -136,7 +136,7 @@ Verfahren: Draufsicht Bild 14 (1273 × 1236 Pixel); Plateau 0 bis 240 auf dem Li
 | Beispielviertel NW (50–100 × 50–100) | 8,7 % | 4,6 % | 8,6 % | 78,1 % |
 
 Folgerungen für die Messlatte:
-- **Freiflächenanteil des Hauptgebäudes** (Grün plus Blau) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13 bis 20 %). Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
+- **Grün- und Wasseranteil des Hauptgebäudes** (Grün plus Blau) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13,4 bis 20,0 %); Höfe und Terrassen sind darin nicht enthalten (die Terrassen liegen außerhalb der Fläche 36 bis 204, gepflasterte Höfe zählen als Stein/Gold). Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
 - Die Terrassen sind mit 10 bis 17 % Grün **nicht** reine Grünflächen, sondern überwiegend gepflasterte Plätze (Stein/Gold über 62 %). Eine Terrasse ist also ein bebauter Platz mit Begrünung, kein Garten.
 - Der Rand (Plateau ohne Hauptgebäude) ist zu etwa einem Fünftel Fels; Gelände gehört nicht zum Bauplan (Entscheidung 27.10.2026).
 - Kalibrierung: die Verhältnisse sind für die visuelle Abnahme brauchbar, als harte Schwelle zu ungenau; deshalb bleibt Q6 vorläufig.

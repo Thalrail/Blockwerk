@@ -34,7 +34,7 @@ Herkunft jeder Zahl:
 | Eckturm, Höhe | 80; Ebenen 20–36 Durchgang, 36–52 Wohnebene, 52–60 Aussicht, 68–80 Spitze | B (02) |
 | Eckturm, Schaft | Ø 17 bis 20; D5.0 nimmt **19** | A (09: Schaft ≈ 17; 02: Kern ≈ 20), Wert N |
 | Eckturm, Grundriss mit Erkern | ≈ 30 bis 33 | A (02), nur zur Information |
-| Eckturm, Mitte | erster Entwurf: **auf der Gebäudeecke (36/36)** (Entscheidung Jonah). Gestaltungsvariante „Bildversatz“: Mitte ≈ 30 von beiden Plateaukanten (±6), das heißt etwa 6 Blöcke außerhalb der Ecke | A (14) |
+| Eckturm, Mitte | erster Entwurf: **auf der Gebäudeecke (36/36)**; Lage Entscheidung Jonah, Koordinate R aus dem Gebäuderand 36. Gestaltungsvariante „Bildversatz“: Mitte ≈ 30 von beiden Plateaukanten (±6), das heißt etwa 6 Blöcke außerhalb der Ecke | Variante A (14) |
 | Portal | Breite 15, Höhe 20, Spitzbogen, Mitte der Südfront (120/204) | B (01); Lage R (Mitte der Südkante des Hauptgebäudes) |
 | Brücke West / Ost | Länge 46, 7 Pfeiler (Höhe 28) | B (01) |
 | Hauptbrücke, Breite | **13** (Bild 01) | B, von Jonah festgelegt |
@@ -105,7 +105,7 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Q1 bis Q9 sind von Jonah
 | Q3 | Höhenstaffel | je Baukörperart Verhältnis Höhe / Hauptgebäudebreite gegen Abschnitt 1 | je Verhältnis ±5 % der Referenz; genau 5 Höhenstufen |
 | Q4 | Spiegelordnung | Baukörperpaare, die an der Nord-Süd-Achse (x = 120) spiegelbildlich gleich liegen (Türme, Brücken, Viertel W/O, NW/NO, SW/SO, Terrassenseiten) / alle erwarteten Paare | 100 % der Paare; Abweichung der Lage höchstens ½ Block. An der Ost-West-Achse ist die Anlage bewusst nicht symmetrisch (Portal Süd, Hauptturm Nord) |
 | Q5 | Radialordnung | Winkel der 8 Strahlen zur Rotunde | 45° mit höchstens ½ Block Lageabweichung am Strahlende |
-| Q6 | Grün- und Wasseranteil | Zellen mit Laub, Gras oder Wasser in der Draufsicht / Grundfläche des Hauptgebäudes (36 bis 204) | Referenz ≈ 16,7 % (Abschnitt 5a; Bild-Näherung, Blau kann Dekoration sein), Toleranz ±20 % relativ, also 13,4 bis 20,0 %. Der Anteil gepflasterter Höfe und Terrassen wird hier **nicht** gemessen (eigene Metrik Q6b ab D5.4, sobald Höfe und Terrassen als Teile mit Blockdaten bestehen) |
+| Q6 | Sichtbarer Grün- und Blauanteil | Zellen der Farbklassen Grün (Laub, Gras, Moos) und Blau (Wasser **und** blaue Dekoration wie blauer Beton, blaue Wolle, blaues Glas) in der Draufsicht / Grundfläche des Hauptgebäudes (36 bis 204); gleiche Klassen wie die Bildmessung, Wasser und Dekoration werden bewusst nicht getrennt | Referenz ≈ 16,7 % (Abschnitt 5a), Toleranz ±20 % relativ, also 13,4 bis 20,0 %. Der Anteil gepflasterter Höfe und Terrassen wird hier **nicht** gemessen (eigene Metrik Q6b ab D5.4, sobald Höfe und Terrassen als Teile mit Blockdaten bestehen) |
 | Q7 | Materialkonsistenz | Zahl der Materialien je Rolle und Baukörperart; Anteil der Rolle „Wand“ | höchstens die Palette „Glanz“ (Weiß, Gold, Blau + Glas); je Baukörperart höchstens 1 Materialwechsel an der Fuge |
 | Q8 | Menschenmaß | Türen 2 hoch, Gänge ab 2 breit, Stufe 1, an jedem Maßstab | 100 % |
 | Q9 | Gesamtzusammenhang | `messeAufbau` über die ganze Anlage | 0 unverbundene Blöcke, 0 freischwebende, 0 Hilfspunkte |
@@ -117,7 +117,7 @@ Jede Metrik hat eine feste Formel auf den Blockdaten. **Q1 bis Q9 sind von Jonah
 2. Verbindungsgänge zwischen Ecktürmen und Hauptgebäude **5** breit.
 3. Brückenfelder **46** als Referenzmaß; mehrere Felder dürfen kombiniert werden, ohne automatisch zusätzliche sichtbare Unterbrechungen zu erzwingen (Regel für Fügung und Gestaltung, keine feste Zahl).
 4. Ecktürme im ersten Entwurf an den Gebäudeecken; der aus Bild 14 abgelesene Versatz bleibt dokumentierte Gestaltungsvariante (Abschnitt 1).
-5. D5.0b: Grün- und Wasseranteile aus Bild 14; gepflasterte Hof- und Terrassenanteile folgen als Q6b ab D5.4 (Abschnitt 5a).
+5. D5.0b: Sichtbare Grün- und Blauanteile aus Bild 14; gepflasterte Hof- und Terrassenanteile folgen als Q6b ab D5.4 (Abschnitt 5a).
 6. Q1 bis Q9 vorläufig, Schwellen bis zur visuellen Kalibrierung vorläufig.
 Weiter offen (Annahme **N**, kein Widerspruch): Hauptturm-Grundfläche Ø 21, Mauerhöhen, Terrassen- und Hofeinzelmaße. Eckturm-Ebenen: Hauptmaße −16 bis 0 gelten (Entscheidung 27.10.2026).
 
@@ -136,7 +136,7 @@ Verfahren: Draufsicht Bild 14 (1273 × 1236 Pixel); Plateau 0 bis 240 auf dem Li
 | Beispielviertel NW (50–100 × 50–100) | 8,7 % | 4,6 % | 8,6 % | 78,1 % |
 
 Folgerungen für die Messlatte:
-- **Grün- und Wasseranteil des Hauptgebäudes** (Grün plus Blau) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13,4 bis 20,0 %); Die Terrassen außerhalb von 36 bis 204 sind nicht enthalten; innerhalb liegende Höfe tragen mit ihren Grün- und Blauzellen bei, ihre gepflasterten Flächen zählen als Stein/Gold. Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
+- **Sichtbarer Grün- und Blauanteil des Hauptgebäudes** (Grün plus Blau, Wasser und Dekoration zusammen) ≈ **16,7 %** (Q6, Toleranz ±20 % relativ: 13,4 bis 20,0 %); Die Terrassen außerhalb von 36 bis 204 sind nicht enthalten; innerhalb liegende Höfe tragen mit ihren Grün- und Blauzellen bei, ihre gepflasterten Flächen zählen als Stein/Gold. Der Hauptgebäude-Anteil an Fels ist mit 7,8 % ein Messrauschen (Schatten, graue Dachflächen) und wird nicht verwendet.
 - Die Terrassen sind mit 10 bis 17 % Grün **nicht** reine Grünflächen, sondern überwiegend gepflasterte Plätze (Stein/Gold über 62 %). Eine Terrasse ist also ein bebauter Platz mit Begrünung, kein Garten.
 - Der Rand (Plateau ohne Hauptgebäude) ist zu etwa einem Fünftel Fels; Gelände gehört nicht zum Bauplan (Entscheidung 27.10.2026).
 - Kalibrierung: die Verhältnisse sind für die visuelle Abnahme brauchbar, als harte Schwelle zu ungenau; deshalb bleibt Q6 vorläufig.

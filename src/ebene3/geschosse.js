@@ -205,7 +205,7 @@ export function erzeugeGeschosse({ ebene2 }) {
         const gedreht = huelleVon(paket.bloecke.map((b) => ({ ...dreheViertel(b, seg.drehung), y: b.y })));
         const ecke = { x: gedreht.von.x + Math.floor((gedreht.bis.x - gedreht.von.x) / 2), y: gedreht.von.y, z: gedreht.von.z + Math.floor((gedreht.bis.z - gedreht.von.z) / 2) };
         kinder.push({
-          ref: `${praefix}.${daten.art === 'leiter' ? 'leiter' : 'treppe'}-${k + 1}-${g.glied}`, name: daten.art === 'leiter' ? 'Leiter' : 'Treppe', baustein: seg.baustein, parameter: seg.parameter, traeger: g.ref,
+          ref: `${praefix}.${daten.art === 'leiter' ? 'leiter' : `treppe-${daten.art}`}-${k + 1}-${g.glied}`, name: daten.art === 'leiter' ? 'Leiter' : 'Treppe', baustein: seg.baustein, parameter: seg.parameter, traeger: g.ref,
           einbau: { zone: 'innenraum', anker: 'mitte', versatz: { x: nf(seg.ur.x - ziel.x + ecke.x), y: seg.ur.y - g.versatz.y - ziel.y + ecke.y, z: nf(seg.ur.z - ziel.z + ecke.z) }, drehung: seg.drehung },
         });
         traegerGlieder.add(g.glied);

@@ -95,8 +95,8 @@ export function erzeugeBriefing({ vokabular: V }) {
       z.push(...Object.entries(V.rezepte).map(([name, r]) => `- ${name} (${r.titel.split(':')[0]}): mindestens ${r.mindest.breite} × ${r.mindest.tiefe} × ${r.mindest.hoehe} Blöcke (Breite × Tiefe × Höhe)${r.mindest.hoeheZuBreite ? `, Höhe mindestens ${r.mindest.hoeheZuBreite} × die größere Breite` : ''}`));
       const mitMerkmalen = Object.entries(V.rezepte).filter(([, r]) => r.merkmale);
       if (mitMerkmalen.length) {
-        z.push('Merkmale („merkmale“, optional, nur zusammen mit „rezept“): Wünscht der Auftraggeber einen Eingang oder Fenster, nennst du nur DAS, nie Maße, Lage oder Blöcke:');
-        z.push(...mitMerkmalen.map(([name, r]) => '- ' + name + ': ' + [r.merkmale.eingang ? 'eingang = Himmelsrichtung der Tür (' + r.merkmale.eingang.join(', ') + ')' : null, r.merkmale.fenster ? 'fenster = Fensterform (' + r.merkmale.fenster.join(', ') + ')' : null].filter(Boolean).join('; ')));
+        z.push('Merkmale („merkmale“, optional, nur zusammen mit „rezept“): Wünscht der Auftraggeber einen Eingang, Fenster oder Geschosse (Etagen mit Treppe), nennst du nur DAS, nie Maße, Lage oder Blöcke:');
+        z.push(...mitMerkmalen.map(([name, r]) => '- ' + name + ': ' + [r.merkmale.eingang ? 'eingang = Himmelsrichtung der Tür (' + r.merkmale.eingang.join(', ') + ')' : null, r.merkmale.fenster ? 'fenster = Fensterform (' + r.merkmale.fenster.join(', ') + ')' : null, r.merkmale.geschosse ? 'geschosse = Etagen mit Decken und durchgehender Treppe (' + r.merkmale.geschosse.join(', ') + ')' : null, r.merkmale.treppe ? 'treppe = Treppenform, nur zusammen mit geschosse (' + r.merkmale.treppe.join(', ') + '; ohne Angabe gilt auto: Blockwerk wählt selbst die passende, die Leiter nur auf ausdrücklichen Wunsch)' : null].filter(Boolean).join('; ')));
         z.push('Ohne ausdrücklichen Wunsch lässt du „merkmale“ weg.');
       }
       z.push('');

@@ -98,6 +98,8 @@ export function erzeugePruefer({ regelwerk, vokabular: V, paletten }) {
         if (!Object.hasOwn(erlaubt, k)) { frage(`${pf}.merkmale.${String(k).slice(0, 60)}`, 'leser.schema', `${wer}: das Merkmal „${String(k).slice(0, 60)}“ bietet das Rezept „${t.rezept}“ nicht (möglich: ${Object.keys(erlaubt).join(', ') || 'keine'}).`, entfernen('Das Merkmal weglassen')); continue; }
         if (typeof w !== 'string' || !erlaubt[k].includes(w)) unbekannt(`${pf}.merkmale.${k}`, 'leser.schema', `Das Merkmal „${k}“ von ${wer}`, w, erlaubt[k]);
       }
+      // Die Treppenform gehört zu den Geschossen (D4): ohne Geschosse gibt es keine Treppe
+      if (m.treppe !== undefined && m.geschosse === undefined && Object.hasOwn(erlaubt, 'treppe')) frage(`${pf}.merkmale.treppe`, 'leser.schema', `${wer}: Die Treppenform gilt nur zusammen mit Geschossen („geschosse“). Entweder Geschosse wählen oder die Treppenform weglassen.`, entfernen('Die Treppenform weglassen'));
     };
 
     if (!istObjekt(spec)) { frage('', 'leser.schema', 'Die Spezifikation ist kein JSON-Objekt.'); return { rueckfragen, hinweise }; }

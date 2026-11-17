@@ -150,7 +150,7 @@ test('Determinismus und stabile Kennungen: zweimal planen gleich, Kennungen Etag
   const a = await plane(13, 13, 34, m), b = await plane(13, 13, 34, m);
   assert.deepEqual(a.r.entwurf, b.r.entwurf);
   const refs = a.r.entwurf.teile.map((p) => p.ref).filter((x) => /^turm\.treppe-/.test(x));
-  assert.ok(refs.length >= 4 && refs.every((x) => /^turm\.treppe-\d+-[a-z-]+$/.test(x)));
+  assert.ok(refs.length >= 4 && refs.every((x) => /^turm\.treppe-wendel-\d+-[a-z-]+$/.test(x)), 'Kennung: Treppenform, Etage, Glied (ein Wechsel der Form macht Änderungen an Stufen verwaist, statt sie auf eine andere Stufe zu übertragen)');
   assert.equal(new Set(refs).size, refs.length);
   // ohne geschosse: byte-identisch zu einem Entwurf ohne jede Spur von Geschossen
   const ohne = await plane(13, 13, 34, { eingang: 'sued', fenster: 'schlitze' });
@@ -175,6 +175,24 @@ test('Platzproblem: kleine Türme bekommen eine verständliche Rückfrage, nie e
   assert.equal(leiter.r.status, 'fertig');
   assert.match(JSON.stringify(leiter.r.hinweise ?? leiter.r), /nur für den Spieler begehbar/);
   // Treppenform ohne Geschosse: Rückfrage
-  const ohneGeschosse = e.ebene4.baue(e.ebene4.freigeben(spec(13, 13, 34, { eingang: 'sued', treppe: 'wendel' }), 'test'));
-  assert.notEqual(ohneGeschosse.status, 'fertig');
+  assert.ok(e.ebene4.pruefe(spec(13, 13, 34, { eingang: 'sued', treppe: 'wendel' })).rueckfragen.some((q) => q.pfad === 'teile[0].merkmale.treppe' && /nur zusammen mit Geschossen/.test(q.frage)), 'schon die Spezifikationsprüfung fragt');
+  assert.throws(() => e.ebene3.rezepte.wendeRezeptAn('turm', { breite: 13, tiefe: 13, hoehe: 34 }, 'turm', { treppe: 'wendel' }), (f) => f.pfad === 'merkmale.treppe', 'und Ebene 3 lehnt es ebenfalls ab');
+});
+
+test('Spezifikation (Ebene 4): Vokabular nennt nur Namen, Prüfer fragt bei falschen Werten, Briefing und Zusammenfassung kennen Geschosse und Treppe', async () => {
+  const e = await engine();
+  assert.deepEqual(e.ebene4.vokabular.rezepte.turm.merkmale.geschosse, ['standard']);
+  assert.deepEqual(e.ebene4.vokabular.rezepte.turm.merkmale.treppe, ['auto', 'wendel', 'gerade', 'leiter']);
+  const pfade = (m) => e.ebene4.pruefe(spec(13, 13, 34, m)).rueckfragen.map((q) => q.pfad);
+  assert.deepEqual(pfade({ geschosse: 'standard' }), [], 'treppe ist optional (auto)');
+  assert.deepEqual(pfade({ geschosse: 'standard', treppe: 'leiter' }), []);
+  assert.ok(pfade({ geschosse: 'hoch' }).includes('teile[0].merkmale.geschosse'));
+  assert.ok(pfade({ geschosse: 'standard', treppe: 'rutsche' }).includes('teile[0].merkmale.treppe'));
+  assert.ok(pfade({ treppe: 'wendel' }).includes('teile[0].merkmale.treppe'));
+  const briefing = e.ebene4.briefing();
+  assert.match(briefing, /geschosse = Etagen mit Decken und durchgehender Treppe \(standard\)/);
+  assert.match(briefing, /treppe = Treppenform, nur zusammen mit geschosse \(auto, wendel, gerade, leiter;/);
+  assert.doesNotMatch(briefing, /deckenLoecher|deckenAnzahl|deckenErste|wandzonen|innenzone|obersteMindestlicht|sockelMindesthoehe/, 'keine internen Parameter oder Regeldaten im Briefing');
+  const z = e.ebene4.zusammenfassung?.(spec(13, 13, 34, { eingang: 'sued', geschosse: 'standard', treppe: 'wendel' }));
+  if (z) assert.match(JSON.stringify(z), /Geschosse mit Treppe wendel/);
 });

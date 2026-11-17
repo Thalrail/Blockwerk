@@ -26,6 +26,9 @@ test('Zylinder: jede Wandzone liegt auf der äußersten Zellschicht ihrer Seite,
     const z = Object.fromEntries(p.einbauzonen.map((q) => [q.seite, q]));
     assert.deepEqual([z.nord.von.z, z.nord.bis.z, z.sued.von.z, z.sued.bis.z, z.west.von.x, z.west.bis.x, z.ost.von.x, z.ost.bis.x], [z0, z0, z1, z1, x0, x0, x1, x1]);
     for (const q of p.einbauzonen) assert.deepEqual([q.von.y, q.bis.y], [y0, y1]);
+    // über die ganze Länge der Seite (nicht abgeschnitten)
+    assert.deepEqual([z.nord.von.x, z.nord.bis.x, z.sued.von.x, z.sued.bis.x], [x0, x1, x0, x1]);
+    assert.deepEqual([z.west.von.z, z.west.bis.z, z.ost.von.z, z.ost.bis.z], [z0, z1, z0, z1]);
     // Die Mitte jeder Seite (Anker „mitte“) trifft bei ungerader Breite den mittleren Block, bei gerader den kleineren Mittelblock: symmetrisch zu den Blöcken
     const mitte = (v, b) => v + Math.floor((b - v) / 2);
     const dichte = new Set(p.bloecke.map(KEY));
@@ -51,4 +54,12 @@ test('Tür und Fenster: ohne tiefe wie bisher (eine Zelle tief), mit tiefe reich
   // Die Blöcke der Bausteine bleiben gleich (nur die Aussparung wird tiefer)
   assert.deepEqual(ebene2.baue('bau.tuer', { fluegel: 1, tiefe: 3 }).bloecke, ebene2.baue('bau.tuer', { fluegel: 1 }).bloecke);
   assert.deepEqual(ebene2.baue('bau.fenster', { breite: 1, hoehe: 2, rahmen: 0, tiefe: 3 }).bloecke, ebene2.baue('bau.fenster', { breite: 1, hoehe: 2, rahmen: 0 }).bloecke);
+});
+
+test('Tür und Fenster: auch durch eine sehr dicke Wand (über 16 Blöcke) reicht die Freihaltung lückenlos', async () => {
+  const { ebene2 } = await engine();
+  for (const [id, parameter] of [['bau.tuer', { fluegel: 2, tiefe: 40 }], ['bau.fenster', { breite: 2, hoehe: 2, rahmen: 0, tiefe: 40 }]]) {
+    const p = ebene2.baue(id, parameter);
+    assert.deepEqual(p.aussparungen.map((a) => `${a.art}:${a.von.z}-${a.bis.z}`), ['oeffnung:0-0', 'freihaltung:1-39'], id);
+  }
 });

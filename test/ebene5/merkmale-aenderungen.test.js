@@ -68,15 +68,25 @@ test('Änderung am Eingang selbst: wirkt mit Eingang, wird beim Abschalten verwa
   assert.equal(ohne.r.rueckfragen.filter((q) => q.art === 'aenderung').length, 1);
 });
 
-test('Änderung an einer Fensterzelle: bleibt nach Seitenwechsel des Eingangs und bei Größenänderung der Fenster erhalten oder wird verwaist gemeldet, nie still verworfen', async () => {
+test('Änderung an einer Fensterzelle: bleibt beim Wechsel der Eingangsseite erhalten, bei anderer Größe oder abgeschaltetem Fenster wirkt sie weiter oder wird verwaist gemeldet, nie still verworfen', async () => {
   const mit = await aus(spec({ eingang: 'sued', fenster: 'schlitze' }));
   const fenster = mit.r.entwurf.teile.find((p) => /^turm\.fenster-/.test(p.ref));
   assert.ok(fenster, 'ein Fenster existiert');
   const f = pf(fenster.ref, { x: 0, y: 0, z: 0 }, GLAS);
   const gleich = await aus(spec({ eingang: 'sued', fenster: 'schlitze' }), f);
   assert.equal(gleich.plan.aenderungen[0].status, 'angewandt');
+  // Der Eingang wechselt die Seite: die Kennungen der Fenster hängen nicht an ihm, die Änderung wirkt unverändert weiter
+  const andereSeite = await aus(spec({ eingang: 'ost', fenster: 'schlitze' }), f);
+  assert.equal(andereSeite.r.status, 'fertig');
+  assert.deepEqual([andereSeite.plan.aenderungen[0].teil, andereSeite.plan.aenderungen[0].status], [fenster.ref, 'angewandt']);
+  // Fenster abgeschaltet: das Kind gibt es nicht mehr, die Änderung wird verwaist gemeldet, die Planung wartet
   const ohneFenster = await aus(spec({ eingang: 'sued' }), f);
   assert.equal(ohneFenster.r.status, 'wartet');
-  assert.equal(ohneFenster.plan.aenderungen[0].status, 'verwaist');
-  assert.equal(ohneFenster.plan.aenderungen[0].teil, fenster.ref);
+  assert.deepEqual([ohneFenster.plan.aenderungen[0].teil, ohneFenster.plan.aenderungen[0].status], [fenster.ref, 'verwaist']);
+  // Größe ändert sich (andere Fensterzeilen): die Änderung ist nie weg; entweder wirkt sie weiter oder sie wird verwaist gemeldet
+  const grosse = spec({ eingang: 'sued', fenster: 'schlitze' }); grosse.teile[0].form.groesse = { breite: 21, tiefe: 21, hoehe: 45 };
+  const anders = await aus(grosse, f);
+  assert.equal(anders.plan.aenderungen.length, 1, 'die Änderung bleibt gespeichert');
+  assert.ok(['angewandt', 'verwaist'].includes(anders.plan.aenderungen[0].status), anders.plan.aenderungen[0].status);
+  if (anders.plan.aenderungen[0].status === 'verwaist') assert.equal(anders.r.status, 'wartet', 'verwaist heißt: Jonah entscheidet');
 });

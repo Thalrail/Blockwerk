@@ -184,3 +184,22 @@ test('Auflage: das tragende Glied wird um die Auflage dicker (Mutationsprobe: oh
   assert.equal(mit.dach, ohne.dach + 1);
   assert.ok(Object.keys(ohne).every((g) => mit[g] >= ohne[g]));
 });
+
+test('Rezeptdaten (D3): kaputte Merkmale werfen RezeptFehler beim Laden (nie eine hängende oder falsche Planung)', () => {
+  const kaputt = {
+    'Fensterform ohne parameter': (p) => { delete p.merkmale.fenster.formen.schlitze.parameter; },
+    'parameter ohne hoehe': (p) => { p.merkmale.fenster.formen.schlitze.parameter = { rahmen: 0 }; },
+    'hoehe keine Zahl': (p) => { p.merkmale.fenster.formen.schlitze.parameter.hoehe = 'zwei'; },
+    'hoehe außerhalb des Bereichs': (p) => { p.merkmale.fenster.formen.schlitze.parameter.hoehe = 9999; },
+    'rahmen außerhalb': (p) => { p.merkmale.fenster.formen.schlitze.parameter.rahmen = 99; },
+    'Fensterbreite 0': (p) => { p.merkmale.fenster.formen.schlitze.breite.ungerade = 0; },
+    'Fensterbreite zu groß': (p) => { p.merkmale.fenster.formen.schlitze.breite.gerade = 999; },
+    'Flügel über 2': (p) => { p.merkmale.eingang.fluegel.gerade = 3; },
+    'Quelle keine Adresse': (p) => { p.merkmale.eingang.tuer.quelle = 'siehe Wiki'; },
+    'Sockelhöhe unter 3': (p) => { p.merkmale.eingang.sockelMindesthoehe = 2; },
+    'Glied kein Zylinder': (p) => { p.merkmale.fenster.formen.schlitze.glieder = ['dach']; },
+    'unbekannte Seite': (p) => { p.merkmale.eingang.seiten = ['oben']; },
+  };
+  for (const [name, aendere] of Object.entries(kaputt)) assert.throws(mitRezept(aendere), (f) => f instanceof RezeptFehler, name);
+  assert.doesNotThrow(mitRezept(() => {}));
+});

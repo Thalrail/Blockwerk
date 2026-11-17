@@ -10,7 +10,9 @@ const spec = (b, t, h, merkmale, stil = { stimmung: 'hell-nordisch' }) => ({
   projekt: { name: 'Turm D3', bauplatz: { breite: 140, hoehe: 140, tiefe: 140 }, massstab: 1 },
   teile: [{ id: 'turm', name: 'Turm', art: 'turm', wichtigkeit: 'muss', rezept: 'turm', ...(merkmale !== undefined ? { merkmale } : {}), form: { groesse: { breite: b, tiefe: t, hoehe: h } }, lage: { bezug: 'projekt', relation: 'mitte' }, stil }],
 });
-const REIHE = [[9, 9, 16], [11, 11, 24], [12, 12, 30], [13, 13, 34], [18, 18, 40], [21, 15, 45], [21, 21, 45], [45, 45, 80], [30, 14, 36]];
+// auch gemischte Paritäten (Breite ungerade, Tiefe gerade und umgekehrt): die Öffnung folgt der Parität der jeweiligen Wand
+const REIHE = [[9, 9, 16], [11, 11, 24], [12, 12, 30], [13, 13, 34], [18, 18, 40], [21, 15, 45], [21, 21, 45], [45, 45, 80], [30, 14, 36], [13, 12, 34], [12, 13, 34], [21, 16, 45], [16, 21, 45]];
+const RICHTUNG = { nord: 'north', ost: 'east', sued: 'south', west: 'west' }; // Bedrock-Zustand der Tür: sie blickt nach außen
 const SEITEN = ['nord', 'ost', 'sued', 'west'];
 const AUSSEN = { nord: [0, -1], sued: [0, 1], west: [-1, 0], ost: [1, 0] }; // Schritt nach außen (dx, dz)
 
@@ -62,6 +64,14 @@ test('Größenreihe × vier Seiten: Eingang und Fenster sitzen mittig, gehen dur
       const achse = seite === 'nord' || seite === 'sued' ? 'x' : 'z', mitte = achse === 'x' ? m.cx : m.cz;
       assert.deepEqual([...new Set(tueren.map((c) => c[achse]))].sort((p, q) => p - q), breite === 1 ? [mitte] : [mitte, mitte + 1], `${name}: symmetrisch zur Mitte`);
       for (const c of tueren.filter((q) => q.y === Math.min(...tueren.map((p) => p.y)))) durchgang(karte, c, seite, m, `${name} Tür`);
+      // Zustände der Tür (Welt): Blickrichtung nach außen, obere Hälfte passt zur unteren, bei zwei Flügeln gegensätzliche Scharniere
+      const welt = e.ebene3.materialisiere(r.entwurf).welt;
+      const tw = welt.alleBloecke().filter((c) => /_door$/.test(c.id)).map((c) => ({ ...c, st: c.zustand }));
+      for (const c of tw) assert.equal(c.st['minecraft:cardinal_direction'], RICHTUNG[seite], `${name}: Tür schaut nach außen`);
+      const unten = tw.filter((c) => !c.st.upper_block_bit).sort((p, q) => p.x - q.x || p.z - q.z);
+      assert.equal(unten.length, breite);
+      if (breite === 2) assert.notEqual(unten[0].st.door_hinge_bit, unten[1].st.door_hinge_bit, `${name}: zwei Flügel mit gegensätzlichen Scharnieren`);
+      for (const u of unten) assert.equal(tw.find((o) => o.x === u.x && o.z === u.z && o.st.upper_block_bit).st.door_hinge_bit, u.st.door_hinge_bit, `${name}: obere Hälfte wie untere`);
       // Fenster: jede Scheibe hat einen freien Durchgang nach innen und freien Raum davor
       const scheiben = bl.filter((c) => /_pane$/.test(idVon(c)));
       if (b >= 11 && t >= 11) assert.ok(scheiben.length > 0, `${name}: Fenster fehlen`);
@@ -206,4 +216,12 @@ test('Tür aus der Materialwahl: ein Block, der keine Tür ist (Stein, Falltür,
   assert.match(meldung('minecraft:nope'), /nicht im Blockregister/);
   assert.equal(meldung('minecraft:spruce_door'), '');
   assert.equal(meldung('minecraft:copper_door'), '');
+});
+
+test('merkmale null oder von falschem Typ: Rückfrage statt stiller Annahme „keine Merkmale“', async () => {
+  const e = await engine();
+  assert.throws(() => e.ebene3.rezepte.wendeRezeptAn('turm', { breite: 13, tiefe: 13, hoehe: 34 }, 'turm', null), (f) => f.pfad === 'merkmale');
+  assert.throws(() => e.ebene3.rezepte.wendeRezeptAn('turm', { breite: 13, tiefe: 13, hoehe: 34 }, 'turm', 'sued'), (f) => f.pfad === 'merkmale');
+  assert.doesNotThrow(() => e.ebene3.rezepte.wendeRezeptAn('turm', { breite: 13, tiefe: 13, hoehe: 34 }, 'turm', undefined));
+  assert.ok(e.ebene4.pruefe(spec(13, 13, 34, null)).rueckfragen.some((q) => q.pfad === 'teile[0].merkmale'), 'schon die Spezifikationsprüfung fragt');
 });

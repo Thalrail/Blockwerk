@@ -108,7 +108,8 @@
                 "minecraft:iron_door"
               ],
               "status": "ungeprueft",
-              "quelle": "https://minecraft.wiki/w/Door (Holztüren und Kupfertüren lassen sich von Hand öffnen, Eisentüren nur durch ein Redstone-Signal; Bedrock-Verhalten der Kupfertür nicht ausdrücklich genannt)"
+              "quelle": "https://minecraft.wiki/w/Door",
+              "hinweis": "Holztüren und Kupfertüren lassen sich von Hand öffnen, Eisentüren nur durch ein Redstone-Signal; das Bedrock-Verhalten der Kupfertür nennt die Quelle nicht ausdrücklich"
             }
           },
           "fenster": {

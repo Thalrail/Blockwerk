@@ -266,7 +266,7 @@ export function erzeugeUebersetzung({ regelwerk, ebene2, techniker, rezepte }) {
       const regel = rezepte.rezept(x.t.rezept).merkmale.eingang.tuer;
       const pf = `teile[${x.i}].merkmale.eingang`;
       if (id === undefined) frage(pf, `${x.t.name}: Die Materialwahl hat keinen Türblock (Rolle „akzent“, Form „tuer“); Blockwerk nimmt keinen anderen Block als Ersatz. Entweder den Eingang weglassen oder in „stil.palette“ einen Türblock für „akzent“ (Form „tuer“) wählen.`, [{ id: 'entfernen', text: 'Den Eingang weglassen' }]);
-      else if (regel.nichtPerHand.includes(id)) frage(pf, `${x.t.name}: Die Tür der Materialwahl (${id}) lässt sich in Bedrock nicht von Hand öffnen (nur mit Redstone); ein Eingang ohne Schaltung wäre verschlossen. Entweder den Eingang weglassen oder in „stil.palette“ eine Holz- oder Kupfertür für „akzent“ (Form „tuer“) wählen. Quelle: ${regel.quelle}`, [{ id: 'entfernen', text: 'Den Eingang weglassen' }]);
+      else if (regel.nichtPerHand.includes(id)) frage(pf, `${x.t.name}: Die Tür der Materialwahl (${id}) lässt sich in Bedrock nicht von Hand öffnen (nur mit Redstone); ein Eingang ohne Schaltung wäre verschlossen. Entweder den Eingang weglassen oder in „stil.palette“ eine Holz- oder Kupfertür für „akzent“ (Form „tuer“) wählen. Quelle: ${regel.quelle} (${regel.hinweis ?? 'ungeprüft'})`, [{ id: 'entfernen', text: 'Den Eingang weglassen' }]);
     }
     if (rueckfragen.length) return leer();
     /** Achsen, in denen ein Glied symmetrisch bleibt: Sitzt ein Kind (Eingang, Fenster) nur an einer Seite ohne Gegenstück (nord ohne sued, ost ohne west), entfällt die Spiegelung über diese Achse. */

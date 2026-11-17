@@ -65,16 +65,24 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       if (!b || id.startsWith('form.')) f(`${wo}: ${String(id)} ist kein Bauelement`);
       for (const p of params) if (!b.parameter.some((x) => x.name === p)) f(`${wo}: ${id} hat keinen Parameter „${p}“`);
     };
-    const paritaet = (x, wo) => { if (!OBJEKT(x) || !ganz(x.ungerade) || !ganz(x.gerade) || x.ungerade < 1 || x.gerade < 1) f(`${wo}: braucht ganze Zahlen ab 1 für ungerade und gerade Breite`); };
+    // Jeder Wert aus den Daten muss in den Bereich des Bauelement-Parameters passen (ganzzahlig, min bis max), sonst scheitert erst die Planung.
+    const imBereich = (id, name, wert, wo) => {
+      const p = ebene2.bausteine.get(id).parameter.find((x) => x.name === name);
+      if (!Number.isFinite(wert) || (p.ganzzahl && !Number.isInteger(wert)) || wert < p.min || wert > p.max) f(`${wo}: ${name} = ${String(wert)} passt nicht zu ${id} (${p.min} bis ${p.max})`);
+    };
+    const paritaet = (x, wo, id, name) => {
+      if (!OBJEKT(x) || !ganz(x.ungerade) || !ganz(x.gerade) || x.ungerade < 1 || x.gerade < 1) f(`${wo}: braucht ganze Zahlen ab 1 für ungerade und gerade Breite der jeweiligen Wand`);
+      imBereich(id, name, x.ungerade, wo); imBereich(id, name, x.gerade, wo);
+    };
     const e = m.eingang;
     if (e !== undefined) {
       if (!OBJEKT(e)) f('merkmale.eingang muss ein Objekt sein');
       seiten(e.seiten, 'merkmale.eingang.seiten');
       if (!gliedIds.has(e.glied) || d.glieder.find((g) => g.id === e.glied).baustein !== 'form.zylinder') f('merkmale.eingang.glied muss ein Zylinder-Glied des Rezepts sein');
       baustein(e.baustein, 'merkmale.eingang.baustein', ['fluegel', 'tiefe']);
-      paritaet(e.fluegel, 'merkmale.eingang.fluegel');
+      paritaet(e.fluegel, 'merkmale.eingang.fluegel', e.baustein, 'fluegel');
       if (!(ganz(e.sockelMindesthoehe) && e.sockelMindesthoehe >= 3)) f('merkmale.eingang.sockelMindesthoehe: ganze Zahl ab 3 (zwei Blöcke Tür und mindestens ein Block Sturz)');
-      if (!OBJEKT(e.tuer) || !Array.isArray(e.tuer.nichtPerHand) || e.tuer.nichtPerHand.some((x) => typeof x !== 'string') || typeof e.tuer.quelle !== 'string' || !e.tuer.quelle) f('merkmale.eingang.tuer braucht nichtPerHand (Liste), status und quelle');
+      if (!OBJEKT(e.tuer) || !Array.isArray(e.tuer.nichtPerHand) || e.tuer.nichtPerHand.some((x) => typeof x !== 'string') || typeof e.tuer.quelle !== 'string' || !/^https?:\/\/\S+$/.test(e.tuer.quelle)) f('merkmale.eingang.tuer braucht nichtPerHand (Liste), status und quelle (nur die Adresse, Erläuterungen gehören in hinweis)');
     }
     const fe = m.fenster;
     if (fe !== undefined) {
@@ -82,8 +90,10 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       for (const [fn, fo] of Object.entries(fe.formen)) {
         const wo = `merkmale.fenster.formen.${fn}`;
         if (!ID.test(fn) || !OBJEKT(fo) || typeof fo.titel !== 'string') f(`${wo}: Name (Kleinbuchstaben) und titel nötig`);
-        baustein(fo.baustein, wo, [...Object.keys(fo.parameter ?? {}), 'breite', 'tiefe']);
-        paritaet(fo.breite, `${wo}.breite`);
+        if (!OBJEKT(fo.parameter) || !ganz(fo.parameter.hoehe) || fo.parameter.hoehe < 1) f(`${wo}.parameter: braucht ein Objekt mit ganzer hoehe ab 1`);
+        baustein(fo.baustein, wo, [...Object.keys(fo.parameter), 'breite', 'tiefe']);
+        for (const [k, v] of Object.entries(fo.parameter)) imBereich(fo.baustein, k, v, `${wo}.parameter`);
+        paritaet(fo.breite, `${wo}.breite`, fo.baustein, 'breite');
         if (!Array.isArray(fo.glieder) || !fo.glieder.length || fo.glieder.some((g) => !gliedIds.has(g) || d.glieder.find((x) => x.id === g).baustein !== 'form.zylinder')) f(`${wo}.glieder: Zylinder-Glieder des Rezepts`);
         for (const k of ['geschoss', 'schwelle', 'randUnten', 'randOben']) if (!(ganz(fo[k]) && fo[k] >= (k === 'geschoss' ? 1 : 0))) f(`${wo}.${k}: ganze Zahl`);
         if (!Array.isArray(fo.seitenfolge) || !fo.seitenfolge.length) f(`${wo}.seitenfolge fehlt`);
@@ -195,7 +205,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
   /** Prüft die gewählten Merkmale gegen die Rezeptdaten (unbekannte Werte nennen die möglichen) und gibt { eingang: seite|null, fenster: form|null } zurück. */
   function waehleMerkmale(name, d, merkmale) {
     const fehler = (pfad, text) => { const f = new RezeptFehler(text); f.pfad = pfad; throw f; };
-    const m = merkmale ?? {};
+    const m = merkmale === undefined ? {} : merkmale; // nur ein fehlendes Feld heißt „keine Merkmale“; null oder ein anderer Typ bekommt die Rückfrage
     if (!OBJEKT(m)) fehler('merkmale', `„${name}“: merkmale muss eine Zuordnung sein (eingang, fenster)`);
     const erg = { eingang: null, fenster: null };
     const gewaehlt = Object.keys(m).filter((k) => m[k] !== undefined);
@@ -253,7 +263,7 @@ export function erzeugeRezepte({ regelwerk, ebene2 }) {
       const fo = d.merkmale.fenster.formen[mm.fenster], hoehe = fo.parameter.hoehe;
       const erste = nachGlied.get(fo.glieder[0]), letztes = nachGlied.get(fo.glieder.at(-1));
       const zaehler = new Map();
-      for (let k = 0; ; k++) {
+      for (let k = 0; k < 1000; k++) { // die Obergrenze ist nur ein Netz: die Schleife endet über die Höhe des letzten Glieds
         const yk = erste.versatz.y + fo.schwelle + k * fo.geschoss; // absolute Schicht des Fensterfußes im Rhythmus der Geschosse
         if (yk + hoehe - 1 > letztes.versatz.y + letztes.parameter.hoehe - 1) break;
         // das Fenster muss ganz in einem Glied liegen, mit Randzeilen zu dessen Unter- und Oberkante (dort liegt das nächste Glied auf: tragender Übergang)

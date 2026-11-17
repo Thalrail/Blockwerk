@@ -40,3 +40,13 @@ export function importMeldung(d) {
   const mit = [d?.fortschritt ? 'Fortschritt' : null, d?.aenderungen ? 'Änderungen' : null].filter(Boolean);
   return `Projekt${name ? ` „${name}“` : ''} übernommen${mit.length ? ` (mit ${mit.join(' und ')})` : ''}.`;
 }
+
+/** Hinweise statt eines unbrauchbaren Links, solange es für die Windows-Anwendung keine öffentliche Web-Adresse gibt. */
+export const HINWEIS_LINK = 'Links lassen sich aus der Windows-App noch nicht teilen (es gibt keine öffentliche Web-Adresse). Nimm „Datei sichern“ und schick die Datei; der andere öffnet sie mit „Datei öffnen“.';
+export const HINWEIS_RAUMLINK = 'Raum-Links lassen sich aus der Windows-App noch nicht teilen (es gibt keine öffentliche Web-Adresse). Lade im Browser ein, dort funktioniert der Link.';
+
+/** Darf die Oberfläche einen Link aus der eigenen Adresse bauen? Nein in der Windows-Anwendung (Adresse tauri.localhost ist nur dort gültig). */
+export const kannLinkTeilen = (fenster) => typeof fenster?.location?.hostname === 'string' && fenster.location.hostname !== '' // ohne prüfbare Adresse: nein
+  && !istTauri(fenster)
+  && !/(^|\.)tauri\.localhost$/.test(fenster.location.hostname)
+  && fenster.location.protocol !== 'tauri:';

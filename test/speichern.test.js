@@ -83,3 +83,23 @@ test('Übernahme: ein Browser-Link und eine Browser-Datei liefern dasselbe Proje
   assert.deepEqual(ausDatei.spezifikation, spec);
   assert.equal(await teilen.ausLink('kein Link'), null);
 });
+
+test('Links: in der Windows-Anwendung (tauri.localhost) kein teilbarer Link, im Browser wie bisher', async () => {
+  const { kannLinkTeilen, HINWEIS_LINK, HINWEIS_RAUMLINK } = await import('../web/speichern.js');
+  const tauri = { core: { invoke() {} } };
+  assert.equal(kannLinkTeilen({ __TAURI__: tauri, location: { hostname: 'tauri.localhost', protocol: 'http:' } }), false);
+  assert.equal(kannLinkTeilen({ location: { hostname: 'tauri.localhost', protocol: 'http:' } }), false, 'auch ohne Tauri-Objekt');
+  assert.equal(kannLinkTeilen({ location: { hostname: 'localhost', protocol: 'tauri:' } }), false);
+  assert.equal(kannLinkTeilen({ location: { hostname: 'thalrail.github.io', protocol: 'https:' } }), true);
+  assert.equal(kannLinkTeilen({ location: { hostname: 'localhost', protocol: 'http:' } }), true, 'lokaler Entwicklungsserver im Browser');
+  assert.match(HINWEIS_LINK, /Datei sichern/);
+  assert.match(HINWEIS_RAUMLINK, /Browser/);
+});
+
+test('Links: ohne prüfbare Adresse wird nichts geteilt (sicher geschlossen)', async () => {
+  const { kannLinkTeilen } = await import('../web/speichern.js');
+  assert.equal(kannLinkTeilen(undefined), false);
+  assert.equal(kannLinkTeilen({}), false);
+  assert.equal(kannLinkTeilen({ location: {} }), false);
+  assert.equal(kannLinkTeilen({ location: { hostname: '' } }), false);
+});

@@ -12,6 +12,8 @@ function dateien(ordner, endung = '.js') {
     const p = join(ordner, n);
     // Worktree-Kopien und Laufzustand der Orchestrierung gehören nicht zum Repository-Inhalt (sonst sähe der Test die Texturen jeder Kopie)
     if (p === join(wurzel, '.claude', 'worktrees') || p === join(wurzel, '.claude', 'orchestrierung')) return [];
+    // Ungetrackte Build-Ausgaben des Windows-Rahmens (Kopie der Oberfläche samt Texturen, Rust-Ziel) sind kein Repository-Inhalt
+    if (p === join(wurzel, 'windows', 'dist') || p === join(wurzel, 'windows', 'src-tauri', 'target')) return [];
     return statSync(p).isDirectory() ? dateien(p, endung) : p.endsWith(endung) ? [p] : [];
   });
 }

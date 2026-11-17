@@ -85,7 +85,7 @@ Stand 17.11.2026, `entworfen` (Spieltest offen, nie von Agenten auf `geprüft` z
 **Nachweis:** `test/ebene3/rezepte-merkmale.test.js` (13 Größen × 4 Seiten, quadratisch, rechteckig und mit gemischter Parität: mittig, durch die Wand, Durchgang bis in den Innenraum, Außenmaß, Prüfer Ebene 1 ohne Verstoß, `messeAufbau` 0 unverbundene Blöcke und 0 Hilfspunkte, Symmetrie, Determinismus, Palettenkonflikte), `test/ebene2/wandzonen-tiefe.test.js`, `test/ebene5/rezeptmerkmale.test.js`. Echt geprüft im Windows-Fenster (aktivieren, ändern, Neustart, abschalten; Eisentür-Meldung).
 
 ## Geschosse und Treppen (D4)
-Stand 17.11.2026, `entworfen` (Spieltest offen, nie von Agenten auf `geprüft` zu setzen). Entscheidung: `docs/entscheidungen.md` (Geschosse und Treppen für das Turm-Rezept).
+Stand 17.11.2026, Status `entworfen`; **von Jonah für die getestete Bedrock-Konfiguration freigegeben, die allgemeine Regel bleibt `ungeprüft`** (nie von Agenten auf `geprüft` zu setzen; `docs/spieltests.md`). Entscheidung: `docs/entscheidungen.md` (Geschosse und Treppen für das Turm-Rezept).
 
 **Spezifikation (nur WAS):** `teile[].merkmale.geschosse: "standard"` und `merkmale.treppe: "auto" | "wendel" | "gerade" | "leiter"` (nur zusammen mit `geschosse`; ohne Angabe gilt auto). Ohne `geschosse` ist der Entwurf byte-identisch (`test/ebene3/geschosse-treppen.test.js`).
 

@@ -46,7 +46,7 @@ Regel: Die Mauer reicht über die Turmwand hinaus in den Turm; Mauerzellen inner
 | 5 | Übersichtsplan der Anlage, Schalter für Beziehungen, Anzeige der Fügungen und Wege |
 
 ### Schutz bestehender Projekte
-Alles ist **optional und datengetrieben**: ohne die neuen Beziehungen und Rezepte bleiben Pläne **byte-identisch** (Rand 4 und Lücke 8 bleiben für die alten Relationen). Abgeleitete Kürzungen sind keine Änderungen des Benutzers; eine Einzelblockänderung in einer gekürzten Zelle wird als überholt oder Konflikt gemeldet, wie bei den Aussparungen aus D3 und D4. Anschlüsse bekommen stabile Kennungen (`<teil>.anschluss-<n>`); Planfassung, Verwaistes und Konflikte laufen über die vorhandene Architektur.
+Alles ist **optional und datengetrieben**: ohne die neuen Beziehungen und Rezepte bleiben Pläne **byte-identisch** (Rand 4 und Lücke 8 bleiben für die alten Relationen). Abgeleitete Kürzungen sind keine Änderungen des Benutzers; eine Einzelblockänderung in einer gekürzten Zelle wird als überholt oder Konflikt gemeldet, wie bei den Aussparungen aus D3 und D4. Anschlüsse bekommen **semantische, ordnungsunabhängige Kennungen** (`<teil>.anschluss-<seite>-<art>`, zum Beispiel `turm-nw.anschluss-ost-wehrgang`; bei zwei gleichen Anschlüssen zusätzlich der Name der Gegenseite). Einfügen, Entfernen und Umsortieren ändern sie nicht; wird ein Teil umbenannt, gilt wie bei den Rezeptgliedern die Verwaist-Meldung statt einer stillen Übertragung. Planfassung, Verwaistes und Konflikte laufen über die vorhandene Architektur.
 
 ## 5. Paketaufteilung
 | Paket | Inhalt | Abnahme |
@@ -63,7 +63,18 @@ Alles ist **optional und datengetrieben**: ohne die neuen Beziehungen und Rezept
 D5.0 vor allem anderen (Messlatte), D5.1 trägt D5.2 bis D5.4, D5.5 kann nach D5.1 parallel zum Rest entstehen (nie auf demselben Branch), D5.7 am Schluss.
 
 ## 6. Akzeptanzkriterien (gesamt)
-Deterministisch; Pläne ohne die neuen Merkmale byte-identisch; Fügungen ohne Spalt und Versatz (Anschlussqualität 100 Prozent bei Fügungen, die die Regeln zulassen); `messeAufbau` ohne unverbundene Blöcke und ohne unerwartete Hilfspunkte; Wegegraph begehbar (Ebene 1); Anlagen-Metriken über der Schwelle der Referenz; **visueller Vergleich mit den Bildern von Jonah abgenommen**; manuelle Änderungen und stabile Kennungen geschützt; keine Zitadellen-Sonderlogik (die Zitadelle ist nur eine Spezifikation, kein Code); Browser- und Windows-Praxistest; Prüfstein; Codex-Review.
+Deterministisch; Pläne ohne die neuen Merkmale byte-identisch; Fügungen ohne Spalt und Versatz (Anschlussqualität 100 Prozent bei Fügungen, die die Regeln zulassen); `messeAufbau` ohne unverbundene Blöcke und ohne unerwartete Hilfspunkte; Wegegraph begehbar (Ebene 1); Anlagen-Metriken innerhalb der in D5.0 festgelegten Schwellen (siehe 6a); **visueller Vergleich mit den Bildern von Jonah abgenommen**; manuelle Änderungen und stabile Kennungen geschützt; keine Zitadellen-Sonderlogik (die Zitadelle ist nur eine Spezifikation, kein Code); Browser- und Windows-Praxistest; Prüfstein; Codex-Review.
+
+## 6a. Metriken und Schwellen (Entwurf, in D5.0 verbindlich festzulegen)
+Jede Metrik hat eine feste Formel auf den Blockdaten; die **Schwellen kommen aus der Referenzmessung von D5.0** (Zitadelle nach den Bildern, Toleranz je Metrik als Daten) und werden **vor D5.5 von Jonah bestätigt**. Vorläufige Definitionen:
+| Metrik | Formel | Pass |
+|---|---|---|
+| Anschlussqualität | Fügungen ohne Spalt und ohne Versatz geteilt durch alle zulässigen Fügungen | 100 Prozent |
+| Erreichbarkeit | vom Eingang begehbar erreichte deklarierte Anschlüsse (Türen, Höfe, Wehrgänge, Durchfahrten) geteilt durch alle | 100 Prozent |
+| Silhouette | Höhenstaffelung: Verhältnisse der Baukörperhöhen (größte zu kleinste, Anzahl verschiedener Höhenstufen) gegen die Referenz | innerhalb der Toleranz der Referenz |
+| Achsensymmetrie | Anteil der Blöcke der Gesamtanlage, die an der Hauptachse ein spiegelbildliches Gegenstück haben, gegen die Referenz | innerhalb der Toleranz der Referenz |
+| Hofanteil und Materialkonsistenz | Hofflächenanteil an der Grundfläche; Zahl und Verteilung der Materialien je Baukörperart | innerhalb der Toleranz der Referenz |
+Ohne bestätigte Schwellen gibt es keine automatische Abnahme; dann entscheidet allein der Bildvergleich von Jonah.
 
 ## 7. Risiken
 - **Optische Qualität ist teilweise subjektiv.** Metriken sind Mindestschwellen; die Abnahme bleibt der Blick von Jonah. Deshalb D5.0 zuerst.

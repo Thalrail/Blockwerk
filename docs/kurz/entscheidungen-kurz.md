@@ -1,18 +1,18 @@
 # Entscheidungen – Kurzfassung (Volltext mit Begründungen: `docs/entscheidungen.md`)
-Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwort bis zum ersten Doppelpunkt) muss identisch sein (Wächter: `test/dokumentation.test.js`).
+Neue Entscheidung: Volltext UND hier als Zeile; der Anfang (Stichwort bis zum ersten Doppelpunkt) muss identisch sein (Wächter: `test/dokumentation.test.js`).
 - Programmname: **Blockwerk**; GitHub-Konto Thalrail, Repo blockwerk (eigenes, neues Repo).
 - Server: Aternos, Bedrock; Bauwerke werden NICHT eingespielt, sondern von Hand nach Bauplan (Schicht für Schicht) gebaut.
 - Oberfläche: nur Desktop, keine Handy-App; gespielt wird auf der PS5, Blockwerk läuft daneben als Bauplan-Bildschirm.
 - Texturen: Faithful 32x (Bedrock); Pflichten in `docs/ebenen.md`, Ebene 5.
 - Ebenenmodell: `docs/ebenen.md` (Ebene 0–5 bestätigt).
-- Seed: später einpflegbar (Platzprüfung, Gelände/Biom über Messpunkte).
+- Seed: später einpflegbar (Platzprüfung, Gelände über Messpunkte).
 - Leser (einzige KI-Stelle): zunächst über den Claude-Chat (Briefing-Prompt → JSON zurück); API-Schlüssel später optional.
-- Tester: Jonah, jederzeit, auch mobil (Minecraft Pocket).
+- Tester: Jonah, jederzeit.
 - Zitadelle-Bilder (14) legt Jonah im Repo unter `docs/zitadelle/bilder/` ab.
 - Reihenfolge: allgemeine Engine zuerst, Zitadelle als Prüfstein.
 - Neubeginn (19.10.2026): komplett neu nach dem Ebenenmodell; früherer Prototyp und Blockplan nicht übernommen.
-- Technik: reines JavaScript (ES-Module), keine Abhängigkeiten, `npm test` (Node 22), GitHub Pages ohne Build.
-- Offen: Desktop-Umsetzung (später entschieden: Webseite, siehe 25.10.2026).
+- Technik: reines JavaScript, keine Abhängigkeiten, GitHub Pages ohne Build.
+- Offen: Desktop-Umsetzung (entschieden 25.10.2026).
 - Arbeitsweg: Claude Code, eigener Branch, Abnahme per Pull Request durch Jonah.
 - Sicherheit: keine Zugangsschlüssel (Token, Passwörter) im Chat oder im Repo; GitHub-Zugang über die Claude GitHub App.
 - Aternos-Server (Angabe von Jonah, 20.10.2026): Simulationsdistanz 4 Chunks, 20 Ticks/s (`data/server.json`).
@@ -53,3 +53,4 @@ Neue Entscheidung: immer in den Volltext UND hier als Zeile; der Anfang (Stichwo
 - Windows-Anwendung mit Tauri 2 (Jonah, 17.11.2026): `windows/` (W1), Weboberfläche unverändert, `tauri-cli` 2.12.4, nur NSIS (`windows/README.md`).
 - Fenster und Türen für das Turm-Rezept (Jonah, 17.11.2026): optionales `merkmale` (eingang, fenster), Regeln als Daten (`docs/architektur-rezepte.md`).
 - Geschosse und Treppen für das Turm-Rezept (Jonah, 17.11.2026): optionales `geschosse` und `treppe`, Begehbarkeit Java-Annahme (`docs/architektur-rezepte.md`).
+- Modell A und D5.0-Festlegungen (Jonah, 17.11.2026): Modell A verbindlich, B nicht, C später; Details `docs/d5-referenz.md`.
